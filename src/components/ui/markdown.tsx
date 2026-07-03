@@ -86,6 +86,36 @@ export const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) 
               {...props}
             />
           ),
+          table: ({ node, children, ...props }) => (
+            <div className="overflow-x-auto mb-4">
+              <table className="w-full text-sm text-left border-collapse" {...props}>
+                {children}
+              </table>
+            </div>
+          ),
+          thead: ({ node, children, ...props }) => (
+            <thead className="border-b border-hairline/40" {...props}>
+              {children}
+            </thead>
+          ),
+          tbody: ({ node, children, ...props }) => (
+            <tbody {...props}>{children}</tbody>
+          ),
+          tr: ({ node, children, ...props }) => (
+            <tr className="border-b border-hairline/20 last:border-0" {...props}>
+              {children}
+            </tr>
+          ),
+          th: ({ node, children, ...props }) => (
+            <th className="py-2 pr-4 font-display font-bold text-foreground" {...props}>
+              {children}
+            </th>
+          ),
+          td: ({ node, children, ...props }) => (
+            <td className="py-2 pr-4 text-foreground/90" {...props}>
+              {children}
+            </td>
+          ),
         }}
       >
         {content}
