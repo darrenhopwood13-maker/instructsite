@@ -124,15 +124,15 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <header className="border-b-4 border-neo-brutalist-border bg-background">
-        <nav className="mx-auto flex max-w-5xl items-center gap-8 px-4 py-4">
+      <header className="border-b border-hairline/20 bg-background">
+        <nav className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
           <Link
             to="/"
-            className="font-black text-lg uppercase tracking-widest text-foreground transition-colors hover:text-neo-brutalist"
+            className="font-display text-lg font-extrabold uppercase tracking-widest text-foreground"
           >
-            Home
+            Oracle
           </Link>
-          <Link to="/oracle" className="neo-button">
+          <Link to="/oracle" className="glass-orange rounded-lg px-4 py-2 text-sm">
             Oracle Tooling
           </Link>
         </nav>
