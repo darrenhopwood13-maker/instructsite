@@ -129,9 +129,9 @@ const OraclePage = () => {
               ) : error ? (
                 <div className="glass-accent p-4 text-sm text-alert">{error}</div>
               ) : (
-                <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-foreground/85">
-                  {answer}
-                </pre>
+                <div className="glass-panel max-h-[60vh] overflow-y-auto p-6">
+                  <MarkdownRenderer content={answer} />
+                </div>
               )}
             </div>
           </div>
