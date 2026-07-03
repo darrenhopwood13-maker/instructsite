@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText } from "ai";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const COMMAND_PROMPTS: Record<
   string,
@@ -69,6 +70,15 @@ type SiteDocument = {
   mime_type: string | null;
   bucket: string | null;
   created_at: string | null;
+  extraction_status: "pending" | "processing" | "complete" | "empty" | "failed" | null;
+  extraction_error: string | null;
+};
+
+type DocumentContent = {
+  content: string | null;
+  char_count: number | null;
+  extraction_status: "pending" | "processing" | "complete" | "empty" | "failed" | null;
+  extraction_error: string | null;
 };
 
 type Snippet = {
@@ -112,29 +122,20 @@ function scoreChunk(chunk: string, keywords: string[]): number {
 }
 
 async function retrieveSnippets(
+  supabase: any,
   keywords: string[],
 ): Promise<{ snippets: Snippet[]; docs: SiteDocument[] }> {
-  const url = process.env.SUPABASE_URL;
-  const serviceKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !serviceKey) return { snippets: [], docs: [] };
-
-  const { createClient } = await import("@supabase/supabase-js");
-  const supabaseAdmin = createClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
-  });
-
-  // Pull latest docs with their extracted content joined in
-  const { data: rows } = await supabaseAdmin
+  const { data: rows, error } = await supabase
     .from("site_documents")
     .select(
-      "id,file_name,file_path,mime_type,bucket,created_at,document_contents(content,char_count)",
+      "id,file_name,file_path,mime_type,bucket,created_at,extraction_status,extraction_error,document_contents(content,char_count,extraction_status,extraction_error)",
     )
     .order("created_at", { ascending: false })
     .limit(MAX_DOCS);
+  if (error) throw new Error(error.message);
 
   const docs = (rows as (SiteDocument & {
-    document_contents?: { content: string | null; char_count: number | null }[] | null;
+    document_contents?: DocumentContent[] | DocumentContent | null;
   })[] | null) ?? [];
   if (!docs.length) return { snippets: [], docs };
 
@@ -165,7 +166,11 @@ function formatContext(snippets: Snippet[], docs: SiteDocument[]): string {
     return "No project documents are available in the Project Bible yet.";
   }
   const inventory = docs
-    .map((d, i) => `${i + 1}. ${d.file_name} (${d.mime_type ?? "unknown"})`)
+    .map((d, i) => {
+      const status = d.extraction_status ? ` · extraction: ${d.extraction_status}` : "";
+      const error = d.extraction_error ? ` · ${d.extraction_error}` : "";
+      return `${i + 1}. ${d.file_name} (${d.mime_type ?? "unknown"}${status}${error})`;
+    })
     .join("\n");
 
   if (!snippets.length) {
@@ -173,7 +178,7 @@ function formatContext(snippets: Snippet[], docs: SiteDocument[]): string {
       "### Available documents",
       inventory,
       "",
-      "No passages in these documents matched the current query.",
+      "No extracted passages matched the current query. If extraction is pending, empty, or failed, say that plainly before giving general industry best practice.",
     ].join("\n");
   }
 
@@ -194,10 +199,11 @@ function formatContext(snippets: Snippet[], docs: SiteDocument[]): string {
 }
 
 export const runOracleCommand = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({ key: z.string().min(1) }).parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const prompt = COMMAND_PROMPTS[data.key];
     if (!prompt) {
       throw new Error(`Unknown Oracle command: ${data.key}`);
@@ -208,7 +214,7 @@ export const runOracleCommand = createServerFn({ method: "POST" })
       throw new Error("Missing LOVABLE_API_KEY");
     }
 
-    const { snippets, docs } = await retrieveSnippets(prompt.keywords);
+    const { snippets, docs } = await retrieveSnippets(context.supabase, prompt.keywords);
     const contextBlock = formatContext(snippets, docs);
 
     const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");

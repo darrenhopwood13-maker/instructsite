@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { runOracleCommand } from "@/lib/oracle.functions";
 import { MarkdownRenderer } from "@/components/ui/markdown";
 import { ProjectBibleUpload } from "@/components/oracle/ProjectBibleUpload";
+import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 const COMMANDS = [
   { key: "installation", label: "Installation Sequence", icon: Wrench, desc: "Step-by-step build & commissioning" },
@@ -30,6 +31,7 @@ const OraclePage = () => {
     setDialogOpen(true);
 
     try {
+      await ensureOracleSession();
       const result = await invokeOracle({ data: { key: cmd.key } });
       setAnswer(result?.answer ?? "No response returned.");
     } catch (err) {
