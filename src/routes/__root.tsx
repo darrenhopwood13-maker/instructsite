@@ -119,16 +119,16 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <header className="border-b border-border bg-background">
-        <nav className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
-          <Link to="/" className="font-semibold text-foreground">
+      <header className="border-b-4 border-neo-brutalist-border bg-background">
+        <nav className="mx-auto flex max-w-5xl items-center gap-8 px-4 py-4">
+          <Link
+            to="/"
+            className="font-black text-lg uppercase tracking-widest text-foreground transition-colors hover:text-neo-brutalist"
+          >
             Home
           </Link>
-          <Link
-            to="/oracle"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Oracle
+          <Link to="/oracle" className="neo-button">
+            Oracle Tooling
           </Link>
         </nav>
       </header>
