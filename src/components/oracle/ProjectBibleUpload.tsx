@@ -1,6 +1,8 @@
 import { useCallback, useState } from "react";
 import { UploadCloud, FileText, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { extractAndStoreDocumentText } from "@/lib/document-contents.functions";
 
 type UploadItem = {
   id: string;
@@ -22,6 +24,8 @@ function formatSize(bytes: number) {
 export function ProjectBibleUpload() {
   const [dragging, setDragging] = useState(false);
   const [items, setItems] = useState<UploadItem[]>([]);
+  const extractText = useServerFn(extractAndStoreDocumentText);
+
 
   const uploadFile = useCallback(async (file: File) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -40,19 +44,31 @@ export function ProjectBibleUpload() {
         .upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
 
-      const { error: dbErr } = await supabase.from("site_documents").insert({
-        file_name: file.name,
-        file_path: path,
-        file_size: file.size,
-        mime_type: file.type,
-        bucket: BUCKET,
-        uploaded_by: userData?.user?.id ?? null,
-      });
+      const { data: inserted, error: dbErr } = await supabase
+        .from("site_documents")
+        .insert({
+          file_name: file.name,
+          file_path: path,
+          file_size: file.size,
+          mime_type: file.type,
+          bucket: BUCKET,
+          uploaded_by: userData?.user?.id ?? null,
+        })
+        .select("id")
+        .single();
       if (dbErr) throw dbErr;
+
+      // Fire-and-forget text extraction; failures don't block upload UI
+      if (inserted?.id) {
+        void extractText({ data: { documentId: inserted.id as string } }).catch(
+          (err) => console.warn("Text extraction failed", err),
+        );
+      }
 
       setItems((prev) =>
         prev.map((i) => (i.id === id ? { ...i, status: "done" } : i)),
       );
+
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed";
       setItems((prev) =>

@@ -111,17 +111,6 @@ function scoreChunk(chunk: string, keywords: string[]): number {
   return score;
 }
 
-async function extractPdfText(bytes: Uint8Array): Promise<string> {
-  try {
-    const { extractText, getDocumentProxy } = await import("unpdf");
-    const pdf = await getDocumentProxy(bytes);
-    const { text } = await extractText(pdf, { mergePages: true });
-    return Array.isArray(text) ? text.join("\n") : text;
-  } catch {
-    return "";
-  }
-}
-
 async function retrieveSnippets(
   keywords: string[],
 ): Promise<{ snippets: Snippet[]; docs: SiteDocument[] }> {
@@ -135,28 +124,26 @@ async function retrieveSnippets(
     auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
   });
 
+  // Pull latest docs with their extracted content joined in
   const { data: rows } = await supabaseAdmin
     .from("site_documents")
-    .select("id,file_name,file_path,mime_type,bucket,created_at")
+    .select(
+      "id,file_name,file_path,mime_type,bucket,created_at,document_contents(content,char_count)",
+    )
     .order("created_at", { ascending: false })
     .limit(MAX_DOCS);
 
-  const docs = (rows as SiteDocument[] | null) ?? [];
+  const docs = (rows as (SiteDocument & {
+    document_contents?: { content: string | null; char_count: number | null }[] | null;
+  })[] | null) ?? [];
   if (!docs.length) return { snippets: [], docs };
 
   const scored: Snippet[] = [];
 
   for (const doc of docs) {
-    if (!doc.mime_type?.includes("pdf")) continue;
-    const bucket = doc.bucket ?? "project-bible";
-    const { data: blob, error } = await supabaseAdmin
-      .storage
-      .from(bucket)
-      .download(doc.file_path);
-    if (error || !blob) continue;
-
-    const buf = new Uint8Array(await blob.arrayBuffer());
-    const text = await extractPdfText(buf);
+    const joined = doc.document_contents;
+    const contentRow = Array.isArray(joined) ? joined[0] : joined;
+    const text = contentRow?.content?.trim();
     if (!text) continue;
 
     const chunks = chunkText(text);
@@ -171,6 +158,7 @@ async function retrieveSnippets(
   scored.sort((a, b) => b.score - a.score);
   return { snippets: scored.slice(0, MAX_SNIPPETS), docs };
 }
+
 
 function formatContext(snippets: Snippet[], docs: SiteDocument[]): string {
   if (!docs.length) {
