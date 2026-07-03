@@ -1,4 +1,6 @@
-import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain } from "lucide-react";
+import { useState } from "react";
+import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Loader2, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const COMMANDS = [
   { key: "installation", label: "Installation Sequence", icon: Wrench, desc: "Step-by-step build & commissioning" },
@@ -10,6 +12,43 @@ const COMMANDS = [
 ];
 
 const OraclePage = () => {
+  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [activeLabel, setActiveLabel] = useState<string>("");
+  const [answer, setAnswer] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleInvoke = async (cmd: { key: string; label: string }) => {
+    setLoadingKey(cmd.key);
+    setError(null);
+    setAnswer("");
+    setActiveLabel(cmd.label);
+    setDialogOpen(true);
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("instruct-brain", {
+        body: { key: cmd.key },
+      });
+      if (fnError) throw fnError;
+
+      const text =
+        typeof data === "string"
+          ? data
+          : data?.answer ?? data?.result ?? data?.message ?? JSON.stringify(data, null, 2);
+      setAnswer(text ?? "No response returned.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reach instruct-brain.");
+    } finally {
+      setLoadingKey(null);
+    }
+  };
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setAnswer("");
+    setError(null);
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-background p-6">
       <div className="aurora-bg" />
@@ -32,14 +71,17 @@ const OraclePage = () => {
         <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {COMMANDS.map((cmd) => {
             const Icon = cmd.icon;
+            const isLoading = loadingKey === cmd.key;
             return (
               <button
                 key={cmd.key}
                 type="button"
-                className="glass-panel group flex flex-col items-start gap-4 p-6 text-left transition-transform hover:-translate-y-1"
+                disabled={loadingKey !== null}
+                onClick={() => handleInvoke(cmd)}
+                className="glass-panel group flex flex-col items-start gap-4 p-6 text-left transition-transform hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <div className="glass-accent flex h-12 w-12 items-center justify-center">
-                  <Icon size={22} />
+                  {isLoading ? <Loader2 size={22} className="animate-spin" /> : <Icon size={22} />}
                 </div>
                 <div>
                   <div className="font-display text-lg font-bold text-foreground">
@@ -54,6 +96,52 @@ const OraclePage = () => {
           })}
         </div>
       </div>
+
+      {dialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm"
+          onClick={closeDialog}
+        >
+          <div
+            className="glass-panel relative w-full max-w-2xl p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={closeDialog}
+              className="glass-accent absolute right-4 top-4 flex h-9 w-9 items-center justify-center"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-alert">
+              Oracle Response
+            </p>
+            <h2
+              className="mt-2 text-2xl font-extrabold uppercase tracking-tight text-foreground"
+              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            >
+              {activeLabel}
+            </h2>
+
+            <div className="mt-6 min-h-[120px]">
+              {loadingKey !== null ? (
+                <div className="flex items-center gap-3 text-foreground/70">
+                  <Loader2 className="animate-spin" size={20} />
+                  <span>Consulting the Oracle…</span>
+                </div>
+              ) : error ? (
+                <div className="glass-accent p-4 text-sm text-alert">{error}</div>
+              ) : (
+                <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-foreground/85">
+                  {answer}
+                </pre>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
