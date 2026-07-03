@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Loader2, X } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { runOracleCommand } from "@/lib/oracle.functions";
+import { MarkdownRenderer } from "@/components/ui/markdown";
 
 const COMMANDS = [
   { key: "installation", label: "Installation Sequence", icon: Wrench, desc: "Step-by-step build & commissioning" },
@@ -128,9 +129,9 @@ const OraclePage = () => {
               ) : error ? (
                 <div className="glass-accent p-4 text-sm text-alert">{error}</div>
               ) : (
-                <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-foreground/85">
-                  {answer}
-                </pre>
+                <div className="glass-panel max-h-[60vh] overflow-y-auto p-6">
+                  <MarkdownRenderer content={answer} />
+                </div>
               )}
             </div>
           </div>
