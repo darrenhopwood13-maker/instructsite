@@ -227,6 +227,9 @@ export const runOracleCommand = createServerFn({ method: "POST" })
       "If the information isn't in the snippets, clearly state that, then provide general industry best practice as a fallback.",
       "When you use a snippet, cite the source file name inline (e.g. 'per Method_Statement.pdf').",
       "Format the response as an editorial briefing using markdown headings, bullet points, and bold for key insights.",
+      "You must end every response with a '## Citations' section.",
+      "Every citation must include the exact source file name from the Project Bible snippets. Do not invent page numbers, section numbers, or revision dates; if metadata does not explicitly include a page number, cite only the file name.",
+      "If the answer mixes Project Bible content with general industry best practice, clearly label each part: use 'Project Bible:' for project-sourced content and 'Industry Best Practice:' for fallback content.",
     ].join(" ");
 
     const userPrompt = [
@@ -239,8 +242,10 @@ export const runOracleCommand = createServerFn({ method: "POST" })
       `## Instructions`,
       `- Ground every recommendation in the retrieved snippets above where possible.`,
       `- Reference source file names inline when quoting or paraphrasing.`,
-      `- Where the snippets are silent, mark the section clearly (e.g. "Not in Project Bible — industry best practice:") and continue.`,
-      `- End with a "Sources" section listing document file names used, or "No project documents referenced" if none applied.`,
+      `- Where the snippets are silent, mark the section clearly (e.g. "Not in Project Bible — Industry Best Practice:").`,
+      `- Label every project-sourced statement or section as "Project Bible:" when it comes from the snippets.`,
+      `- Label every general fallback statement or section as "Industry Best Practice:" when it does not come from the snippets.`,
+      `- End with a "## Citations" section. List each source document file name used. If page numbers are explicitly provided in the snippet metadata, you may include them; otherwise cite only the file name. If no project documents were used, write "No project documents referenced."`,
     ].join("\n");
 
     const { text } = await generateText({
