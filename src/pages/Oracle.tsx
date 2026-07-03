@@ -3,6 +3,7 @@ import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Lo
 import { useServerFn } from "@tanstack/react-start";
 import { runOracleCommand } from "@/lib/oracle.functions";
 import { MarkdownRenderer } from "@/components/ui/markdown";
+import { ProjectBibleUpload } from "@/components/oracle/ProjectBibleUpload";
 
 const COMMANDS = [
   { key: "installation", label: "Installation Sequence", icon: Wrench, desc: "Step-by-step build & commissioning" },
@@ -90,6 +91,8 @@ const OraclePage = () => {
             );
           })}
         </div>
+
+        <ProjectBibleUpload />
       </div>
 
       {dialogOpen && (
