@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Loader2, X } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { runOracleCommand } from "@/lib/oracle.functions";
+import { MarkdownRenderer } from "@/components/ui/markdown";
 
 const COMMANDS = [
   { key: "installation", label: "Installation Sequence", icon: Wrench, desc: "Step-by-step build & commissioning" },
