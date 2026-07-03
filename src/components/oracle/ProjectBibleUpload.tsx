@@ -1,6 +1,8 @@
 import { useCallback, useState } from "react";
 import { UploadCloud, FileText, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { extractAndStoreDocumentText } from "@/lib/document-contents.functions";
 
 type UploadItem = {
   id: string;
