@@ -24,6 +24,8 @@ function formatSize(bytes: number) {
 export function ProjectBibleUpload() {
   const [dragging, setDragging] = useState(false);
   const [items, setItems] = useState<UploadItem[]>([]);
+  const extractText = useServerFn(extractAndStoreDocumentText);
+
 
   const uploadFile = useCallback(async (file: File) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
