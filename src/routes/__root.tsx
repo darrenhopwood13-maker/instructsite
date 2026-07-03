@@ -119,8 +119,22 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <header className="border-b border-border bg-background">
+        <nav className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
+          <Link to="/" className="font-semibold text-foreground">
+            Home
+          </Link>
+          <Link
+            to="/oracle"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Oracle
+          </Link>
+        </nav>
+      </header>
+      <main>
+        <Outlet />
+      </main>
     </QueryClientProvider>
   );
 }
