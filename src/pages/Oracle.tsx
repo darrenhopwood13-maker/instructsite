@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Loader2, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { runOracleCommand } from "@/lib/oracle.functions";
 
 const COMMANDS = [
   { key: "installation", label: "Installation Sequence", icon: Wrench, desc: "Step-by-step build & commissioning" },
@@ -12,6 +13,7 @@ const COMMANDS = [
 ];
 
 const OraclePage = () => {
+  const invokeOracle = useServerFn(runOracleCommand);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeLabel, setActiveLabel] = useState<string>("");
@@ -26,18 +28,10 @@ const OraclePage = () => {
     setDialogOpen(true);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("instruct-brain", {
-        body: { key: cmd.key },
-      });
-      if (fnError) throw fnError;
-
-      const text =
-        typeof data === "string"
-          ? data
-          : data?.answer ?? data?.result ?? data?.message ?? JSON.stringify(data, null, 2);
-      setAnswer(text ?? "No response returned.");
+      const result = await invokeOracle({ data: { key: cmd.key } });
+      setAnswer(result?.answer ?? "No response returned.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reach instruct-brain.");
+      setError(err instanceof Error ? err.message : "Failed to reach the Oracle.");
     } finally {
       setLoadingKey(null);
     }
