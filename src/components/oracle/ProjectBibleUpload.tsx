@@ -2,18 +2,20 @@ import { useCallback, useState } from "react";
 import { UploadCloud, FileText, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { extractAndStoreDocumentText } from "@/lib/document-contents.functions";
+import { registerAndExtractUploadedDocument } from "@/lib/document-contents.functions";
+import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 type UploadItem = {
   id: string;
   name: string;
   size: number;
-  status: "uploading" | "done" | "error";
+  status: "uploading" | "extracting" | "done" | "error";
   error?: string;
+  detail?: string;
 };
 
 const BUCKET = "project-bible";
-const ACCEPT = "application/pdf,image/*";
+const ACCEPT = "application/pdf,image/*,text/plain";
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -24,7 +26,7 @@ function formatSize(bytes: number) {
 export function ProjectBibleUpload() {
   const [dragging, setDragging] = useState(false);
   const [items, setItems] = useState<UploadItem[]>([]);
-  const extractText = useServerFn(extractAndStoreDocumentText);
+  const registerAndExtract = useServerFn(registerAndExtractUploadedDocument);
 
 
   const uploadFile = useCallback(async (file: File) => {
@@ -35,8 +37,8 @@ export function ProjectBibleUpload() {
     ]);
 
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData?.user?.id ?? "anonymous";
+      const user = await ensureOracleSession();
+      const userId = user.id;
       const path = `${userId}/${Date.now()}-${file.name.replace(/[^\w.\-]+/g, "_")}`;
 
       const { error: upErr } = await supabase.storage
@@ -44,29 +46,37 @@ export function ProjectBibleUpload() {
         .upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw upErr;
 
-      const { data: inserted, error: dbErr } = await supabase
-        .from("site_documents")
-        .insert({
-          file_name: file.name,
-          file_path: path,
-          file_size: file.size,
-          mime_type: file.type,
-          bucket: BUCKET,
-          uploaded_by: userData?.user?.id ?? null,
-        })
-        .select("id")
-        .single();
-      if (dbErr) throw dbErr;
+      setItems((prev) =>
+        prev.map((i) => (i.id === id ? { ...i, status: "extracting" } : i)),
+      );
 
-      // Fire-and-forget text extraction; failures don't block upload UI
-      if (inserted?.id) {
-        void extractText({ data: { documentId: inserted.id as string } }).catch(
-          (err) => console.warn("Text extraction failed", err),
-        );
+      const result = await registerAndExtract({
+        data: {
+          fileName: file.name,
+          filePath: path,
+          fileSize: file.size,
+          mimeType: file.type || "application/octet-stream",
+          bucket: BUCKET,
+        },
+      });
+
+      if (result.extractionStatus === "failed") {
+        throw new Error(result.error ?? "Upload succeeded, but text extraction failed.");
       }
 
       setItems((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, status: "done" } : i)),
+        prev.map((i) =>
+          i.id === id
+            ? {
+                ...i,
+                status: "done",
+                detail:
+                  result.charCount > 0
+                    ? `${result.charCount.toLocaleString()} characters extracted`
+                    : "Uploaded, but no readable text was found",
+              }
+            : i,
+        ),
       );
 
     } catch (err) {
@@ -75,7 +85,7 @@ export function ProjectBibleUpload() {
         prev.map((i) => (i.id === id ? { ...i, status: "error", error: message } : i)),
       );
     }
-  }, []);
+  }, [registerAndExtract]);
 
   const handleFiles = useCallback(
     (files: FileList | null) => {
@@ -122,7 +132,7 @@ export function ProjectBibleUpload() {
         <div className="font-display text-lg font-bold text-foreground">
           Drop files here, or click to browse
         </div>
-        <div className="text-sm text-foreground/60">PDF, PNG, JPG · up to your Supabase bucket limit</div>
+        <div className="text-sm text-foreground/60">PDF, PNG, JPG, TXT · up to your storage limit</div>
         <input
           id="project-bible-input"
           type="file"
@@ -147,10 +157,11 @@ export function ProjectBibleUpload() {
                 <div className="truncate text-sm font-medium text-foreground">{item.name}</div>
                 <div className="text-xs text-foreground/60">
                   {formatSize(item.size)}
+                  {item.detail ? ` · ${item.detail}` : ""}
                   {item.status === "error" && item.error ? ` · ${item.error}` : ""}
                 </div>
               </div>
-              {item.status === "uploading" && <Loader2 size={18} className="animate-spin text-foreground/70" />}
+              {(item.status === "uploading" || item.status === "extracting") && <Loader2 size={18} className="animate-spin text-foreground/70" />}
               {item.status === "done" && <CheckCircle2 size={18} className="text-emerald-400" />}
               {item.status === "error" && <AlertCircle size={18} className="text-alert" />}
               <button
