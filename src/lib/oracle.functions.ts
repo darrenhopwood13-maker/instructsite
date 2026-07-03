@@ -125,7 +125,15 @@ async function extractPdfText(bytes: Uint8Array): Promise<string> {
 async function retrieveSnippets(
   keywords: string[],
 ): Promise<{ snippets: Snippet[]; docs: SiteDocument[] }> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const url = process.env.SUPABASE_URL;
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !serviceKey) return { snippets: [], docs: [] };
+
+  const { createClient } = await import("@supabase/supabase-js");
+  const supabaseAdmin = createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
+  });
 
   const { data: rows } = await supabaseAdmin
     .from("site_documents")
