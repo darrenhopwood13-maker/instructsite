@@ -336,6 +336,19 @@ function DabsPage() {
           </form>
         </div>
       )}
+
+      {checkoutPin && (
+        <CheckoutDiaryModal
+          pin={{
+            id: checkoutPin.id,
+            project_id: projectId,
+            trade_package: checkoutPin.trade_package,
+            operative_count: checkoutPin.operative_count,
+            start_time: checkoutPin.start_time,
+          }}
+          onClose={() => setCheckoutPin(null)}
+        />
+      )}
     </div>
   );
 }
