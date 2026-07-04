@@ -147,6 +147,15 @@ function ProjectDetail() {
           </p>
         )}
 
+        <MasterAdminHUD
+          projectId={projectId}
+          projectName={project.data?.name ?? ""}
+          zones={(zones.data ?? []) as never}
+          onZonesChanged={() => zones.refetch()}
+        />
+
+
+
         {/* Upload engine row — symmetric 2-col */}
         <section className="mt-10">
           <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
