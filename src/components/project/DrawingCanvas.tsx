@@ -205,77 +205,84 @@ function EmptyPreview() {
   );
 }
 
-function InlinePreview({ openUrl, mime }: { openUrl: string; mime?: string }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: string }) {
+  const getPreviewFn = useServerFn(getDrawingPreview);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [errMsg, setErrMsg] = useState<string>("");
+  const [objectUrl, setObjectUrl] = useState<string>("");
+  const [mime, setMime] = useState<string>(mimeHint ?? "");
 
   useEffect(() => {
     let cancelled = false;
-    if (!openUrl) return;
+    let createdUrl = "";
     setStatus("loading");
+    setErrMsg("");
 
     (async () => {
       try {
-        const res = await fetch(openUrl, { credentials: "same-origin" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const blob = await res.blob();
-        const canvas = canvasRef.current;
-        if (!canvas || cancelled) return;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) throw new Error("no ctx");
-
-        const effectiveType = blob.type || mime || "";
-        if (effectiveType.startsWith("image/")) {
-          const bmp = await createImageBitmap(blob);
-          if (cancelled) return;
-          const maxW = 1600;
-          const scale = Math.min(1, maxW / bmp.width);
-          canvas.width = Math.round(bmp.width * scale);
-          canvas.height = Math.round(bmp.height * scale);
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-        } else if (effectiveType.includes("pdf")) {
-          const pdfjs: any = await import("pdfjs-dist");
-          pdfjs.GlobalWorkerOptions.workerSrc = "";
-          const buf = await blob.arrayBuffer();
-          const pdf = await pdfjs.getDocument({ data: buf, disableWorker: true }).promise;
-          const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 2 });
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          await page.render({ canvasContext: ctx, viewport, canvas }).promise;
-        } else {
-          throw new Error(`Unsupported type ${effectiveType}`);
+        const meta = await getPreviewFn({ data: { drawingId } });
+        if (cancelled) return;
+        const { data, error } = await supabase.storage
+          .from(meta.bucket)
+          .download(meta.path);
+        if (error || !data) throw new Error(error?.message ?? "Download failed");
+        if (cancelled) return;
+        createdUrl = URL.createObjectURL(data);
+        setObjectUrl(createdUrl);
+        setMime(data.type || meta.mimeType || mimeHint || "");
+        setStatus("ready");
+      } catch (e: any) {
+        if (!cancelled) {
+          setErrMsg(e?.message ?? "Preview failed");
+          setStatus("error");
         }
-        if (!cancelled) setStatus("ready");
-      } catch (e) {
-        if (!cancelled) setStatus("error");
       }
     })();
 
     return () => {
       cancelled = true;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
     };
-  }, [openUrl, mime]);
+  }, [drawingId, getPreviewFn, mimeHint]);
+
+  const isPdf = mime.includes("pdf");
+  const isImage = mime.startsWith("image/");
 
   return (
-    <div className="relative z-10 m-auto flex w-full flex-1 items-center justify-center p-3">
+    <div className="relative z-10 flex w-full flex-1 items-center justify-center p-3">
       {status === "loading" && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-foreground/60">
-          <Loader2 size={16} className="animate-spin" /> Rendering drawing…
+        <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-foreground/60">
+          <Loader2 size={16} className="animate-spin" /> Streaming drawing…
         </div>
       )}
       {status === "error" && (
-        <div className="absolute inset-0 z-20 m-auto flex flex-col items-center justify-center gap-2 text-center text-xs uppercase tracking-widest text-foreground/60">
+        <div className="m-auto flex flex-col items-center justify-center gap-2 text-center text-xs uppercase tracking-widest text-foreground/60">
           <FileText size={22} className="text-foreground/40" />
-          Preview unavailable. Use Open or Download.
+          Preview unavailable{errMsg ? `: ${errMsg}` : ""}.
         </div>
       )}
-      <canvas
-        ref={canvasRef}
-        className="max-h-[34rem] w-auto max-w-full rounded-md bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
-      />
+      {status === "ready" && objectUrl && isImage && (
+        <img
+          src={objectUrl}
+          alt="Drawing preview"
+          className="max-h-[34rem] w-auto max-w-full rounded-md bg-white object-contain shadow-[0_0_25px_rgba(255,120,0,0.15)]"
+        />
+      )}
+      {status === "ready" && objectUrl && isPdf && (
+        <iframe
+          src={objectUrl}
+          title="Drawing preview"
+          className="h-[34rem] w-full rounded-md border-0 bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
+        />
+      )}
+      {status === "ready" && objectUrl && !isImage && !isPdf && (
+        <div className="flex flex-col items-center gap-2 text-xs uppercase tracking-widest text-foreground/60">
+          <FileText size={22} className="text-foreground/40" />
+          <a href={objectUrl} target="_blank" rel="noopener noreferrer" className="underline">
+            Open file
+          </a>
+        </div>
+      )}
     </div>
   );
 }
