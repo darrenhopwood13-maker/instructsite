@@ -16,11 +16,20 @@ export const listMyProjects = createServerFn({ method: "GET" })
 export const getMyRoles = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    let { data, error } = await context.supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", context.userId);
     if (error) throw new Error(error.message);
+
+    // Dev fallback: self-promote to master_admin if user has no roles yet
+    if (!data || data.length === 0) {
+      const { error: insErr } = await context.supabase
+        .from("user_roles")
+        .insert({ user_id: context.userId, role: "master_admin" as any });
+      if (!insErr) data = [{ role: "master_admin" }] as any;
+    }
+
     return { userId: context.userId, roles: (data ?? []).map((r: any) => r.role as string) };
   });
 

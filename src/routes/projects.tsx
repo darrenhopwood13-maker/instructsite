@@ -64,14 +64,21 @@ function ProjectsPage() {
           )}
         </div>
 
-        {!isMaster && ready && (
-          <p className="mt-4 text-sm text-foreground/60">
-            You are signed in as{" "}
-            <span className="text-foreground">
-              {roles.data?.roles.join(", ") || "member"}
-            </span>
-            . Only Master Admins can onboard new projects.
-          </p>
+        {ready && roles.data && (
+          <div className="mt-4">
+            {isMaster ? (
+              <span
+                className="inline-flex items-center gap-2 rounded-full border border-alert bg-alert/10 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.3em] text-alert shadow-[0_0_20px_-6px_hsl(var(--alert))]"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-alert" />
+                Signed in as Master Admin
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.3em] text-foreground/70">
+                Signed in as {roles.data.roles.join(", ") || "member"}
+              </span>
+            )}
+          </div>
         )}
 
         <div className="mt-10 grid gap-4 md:grid-cols-2">
