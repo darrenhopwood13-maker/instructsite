@@ -694,10 +694,10 @@ function InlinePreview({
 
           <div
             ref={viewportRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={endDrag}
-            onMouseLeave={endDrag}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
             onDoubleClick={resetView}
             className={`relative flex-1 overflow-hidden rounded-md bg-black/40 select-none ${cursorClass}`}
           >
