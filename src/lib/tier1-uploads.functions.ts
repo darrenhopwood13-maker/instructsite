@@ -666,7 +666,27 @@ export const splitAndRegisterDrawingPack = createServerFn({ method: "POST" })
             .from("site_documents")
             .update({ extraction_status: "complete" })
             .eq("id", sd.id);
+
+          // Upsert every zone the Oracle spotted on this sheet.
+          const zoneCandidates: { name: string; level: string | null }[] = [];
+          if (meta.zone) zoneCandidates.push({ name: meta.zone, level: meta.level || null });
+          for (const z of meta.zones ?? []) {
+            if (z?.name) zoneCandidates.push({ name: z.name, level: z.level || meta.level || null });
+          }
+          for (const z of zoneCandidates) {
+            await supabase.from("work_zones").upsert(
+              {
+                project_id: data.projectId,
+                name: z.name,
+                level: z.level,
+                source: "drawing",
+              },
+              { onConflict: "project_id,name,level", ignoreDuplicates: true },
+            );
+          }
+
           results.push({ pageNumber, drawingId: pd.id, status: "complete" });
+
         } catch (aiErr) {
           const msg = aiErr instanceof Error ? aiErr.message : "AI extraction failed";
           await supabase
