@@ -555,11 +555,27 @@ function InlinePreview({
             className="flex-1 touch-pan-x touch-pan-y overflow-auto rounded-md bg-black/40"
           >
             <div className="flex min-h-full items-center justify-center p-2">
-              <canvas
-                ref={canvasRef}
-                className="rounded-sm bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
-              />
+              <div className="relative inline-block">
+                <canvas
+                  ref={canvasRef}
+                  onClick={(e) => {
+                    if (pinMode !== "drop" || !onDropPin) return;
+                    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+                    const xPct = (e.clientX - rect.left) / rect.width;
+                    const yPct = (e.clientY - rect.top) / rect.height;
+                    if (xPct < 0 || xPct > 1 || yPct < 0 || yPct > 1) return;
+                    onDropPin({ xPct, yPct });
+                  }}
+                  className={`rounded-sm bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)] ${pinMode === "drop" ? "cursor-crosshair" : ""}`}
+                />
+                <PinOverlay
+                  pins={pins}
+                  activePinId={activePinId}
+                  onPinClick={onPinClick}
+                />
+              </div>
             </div>
+
           </div>
         </>
       )}
