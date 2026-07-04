@@ -57,7 +57,7 @@ export async function splitPdfToPageImages(
       page.cleanup();
     }
   } finally {
-    await pdf.destroy();
+    await loadingTask.destroy();
   }
 
   return out;
