@@ -132,9 +132,17 @@ function RootComponent() {
           >
             Oracle
           </Link>
-          <Link to="/oracle" className="glass-orange rounded-lg px-4 py-2 text-sm">
-            Oracle Tooling
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/projects"
+              className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
+            >
+              Projects
+            </Link>
+            <Link to="/oracle" className="glass-orange rounded-lg px-4 py-2 text-sm">
+              Oracle Tooling
+            </Link>
+          </div>
         </nav>
       </header>
       <main>
