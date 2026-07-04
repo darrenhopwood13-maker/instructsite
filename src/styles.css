@@ -342,3 +342,20 @@
 @utility permit-flash {
   animation: permit-flash 1.1s ease-in-out infinite;
 }
+
+@keyframes oracle-pulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 8px rgba(125,211,252,0.4); }
+  50%      { opacity: 0.6; text-shadow: 0 0 16px rgba(125,211,252,0.9); }
+}
+@utility oracle-pulse {
+  animation: oracle-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes oracle-bar-shimmer {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@utility oracle-bar {
+  background-size: 200% 100%;
+  animation: oracle-bar-shimmer 1.6s linear infinite;
+}
