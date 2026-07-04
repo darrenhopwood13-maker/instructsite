@@ -133,8 +133,8 @@ export function DrawingCanvas({
             ) : (
               <InlinePreview
                 key={selectedId}
-                openUrl={openUrl}
-                mime={selected?.site_documents?.mime_type ?? undefined}
+                drawingId={selectedId}
+                mimeHint={selected?.site_documents?.mime_type ?? undefined}
               />
             )}
 
