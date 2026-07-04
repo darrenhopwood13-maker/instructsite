@@ -53,14 +53,19 @@ export function MasterAdminHUD({
     try {
       await deleteFn({ data: { projectId, confirmName: confirmText } });
       toast.success("Project deleted.");
-      qc.invalidateQueries();
+      // Drop every cached query tied to this project BEFORE navigating so the
+      // detail page's useQuery hooks don't refetch a now-missing project and
+      // spam "not found" errors during unmount.
+      qc.removeQueries({ predicate: (q) => q.queryKey.includes(projectId) });
       navigate({ to: "/projects" });
+      qc.invalidateQueries({ queryKey: ["projects"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Delete failed.");
     } finally {
       setBusyDelete(false);
     }
   };
+
 
   const runCreateZone = async (e: React.FormEvent) => {
     e.preventDefault();
