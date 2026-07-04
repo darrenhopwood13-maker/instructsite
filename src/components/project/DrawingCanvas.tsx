@@ -359,7 +359,7 @@ function InlinePreview({
     setPageNum(1);
     setTotalPages(1);
     setSheetSize(null);
-    setRenderedQuality(2);
+    setRenderedQuality(3);
 
     (async () => {
       try {
@@ -449,7 +449,7 @@ function InlinePreview({
     (async () => {
       try {
         const dpr = Math.min(window.devicePixelRatio || 1, 3);
-        const MAX_PIXELS = 40_000_000; // ~40 MP cap
+        const MAX_PIXELS = 80_000_000; // ~80 MP cap for crisper text on large sheets
 
         if (pdfDocRef.current) {
           const page = await pdfDocRef.current.getPage(pageNum);
@@ -519,10 +519,10 @@ function InlinePreview({
   useEffect(() => {
     if (status !== "ready") return;
     if (rerenderTimerRef.current) clearTimeout(rerenderTimerRef.current);
-    const targetQuality = Math.max(2, Math.ceil(zoom * 1.5));
+    const targetQuality = Math.max(3, Math.ceil(zoom * 2));
     if (targetQuality > renderedQuality) {
       rerenderTimerRef.current = setTimeout(() => {
-        setRenderedQuality(Math.min(targetQuality, 8));
+        setRenderedQuality(Math.min(targetQuality, 10));
       }, 250);
     }
     return () => {
@@ -543,18 +543,24 @@ function InlinePreview({
     });
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (pinMode === "drop") return;
-    if (e.button !== 0) return;
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    (e.currentTarget as HTMLDivElement).setPointerCapture?.(e.pointerId);
     setDragging(true);
     dragStartRef.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
   };
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragging || !dragStartRef.current) return;
     const s = dragStartRef.current;
     setOffset({ x: s.ox + (e.clientX - s.x), y: s.oy + (e.clientY - s.y) });
   };
-  const endDrag = () => {
+  const endDrag = (e?: React.PointerEvent<HTMLDivElement>) => {
+    if (e) {
+      try {
+        (e.currentTarget as HTMLDivElement).releasePointerCapture?.(e.pointerId);
+      } catch {}
+    }
     setDragging(false);
     dragStartRef.current = null;
   };
@@ -688,10 +694,10 @@ function InlinePreview({
 
           <div
             ref={viewportRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={endDrag}
-            onMouseLeave={endDrag}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
             onDoubleClick={resetView}
             className={`relative flex-1 overflow-hidden rounded-md bg-black/40 select-none ${cursorClass}`}
           >
