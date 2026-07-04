@@ -75,7 +75,7 @@ async function ensureProjectAccess(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { error: insertErr } = await supabaseAdmin
     .from("project_members")
-    .insert({ project_id: projectId, user_id: userId, role_on_project: "viewer" });
+    .insert({ project_id: projectId, user_id: userId, role_on_project: "subcontractor" });
   if (insertErr && !/duplicate|unique/i.test(insertErr.message ?? "")) {
     throw new Error("You are not a member of this project.");
   }
