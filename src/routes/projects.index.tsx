@@ -6,7 +6,7 @@ import { Plus, FolderOpen, MapPin, ShieldAlert } from "lucide-react";
 import { listMyProjects, getMyRoles } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
-export const Route = createFileRoute("/projects")({
+export const Route = createFileRoute("/projects/")({
   head: () => ({
     meta: [
       { title: "Projects — Site Operations Oracle" },
