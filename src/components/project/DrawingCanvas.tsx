@@ -543,18 +543,24 @@ function InlinePreview({
     });
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (pinMode === "drop") return;
-    if (e.button !== 0) return;
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    (e.currentTarget as HTMLDivElement).setPointerCapture?.(e.pointerId);
     setDragging(true);
     dragStartRef.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
   };
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragging || !dragStartRef.current) return;
     const s = dragStartRef.current;
     setOffset({ x: s.ox + (e.clientX - s.x), y: s.oy + (e.clientY - s.y) });
   };
-  const endDrag = () => {
+  const endDrag = (e?: React.PointerEvent<HTMLDivElement>) => {
+    if (e) {
+      try {
+        (e.currentTarget as HTMLDivElement).releasePointerCapture?.(e.pointerId);
+      } catch {}
+    }
     setDragging(false);
     dragStartRef.current = null;
   };
