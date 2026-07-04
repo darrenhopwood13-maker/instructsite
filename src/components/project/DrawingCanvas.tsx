@@ -756,9 +756,11 @@ function PinOverlay({
   pins?: PinRecord[];
   activePinId?: string | null;
   onPinClick?: (pin: PinRecord) => void;
+  inverseScale?: number;
 }) {
   if (!pins || pins.length === 0) return null;
   const now = Date.now();
+  const inv = inverseScale ?? 1;
   return (
     <div className="pointer-events-none absolute inset-0">
       {pins.map((pin) => {
@@ -773,8 +775,13 @@ function PinOverlay({
               e.stopPropagation();
               onPinClick?.(pin);
             }}
-            style={{ left: `${pin.x_pct * 100}%`, top: `${pin.y_pct * 100}%` }}
-            className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2"
+            style={{
+              left: `${pin.x_pct * 100}%`,
+              top: `${pin.y_pct * 100}%`,
+              transform: `translate(-50%, -50%) scale(${inv})`,
+              transformOrigin: "center",
+            }}
+            className="pointer-events-auto absolute"
             title={pin.trade_package ?? "Pin"}
           >
             <span
