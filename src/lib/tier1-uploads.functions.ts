@@ -609,8 +609,10 @@ export const splitAndRegisterDrawingPack = createServerFn({ method: "POST" })
     if (dlErr || !packBlob) throw new Error(dlErr?.message ?? "Pack download failed");
     const packBytes = new Uint8Array(await packBlob.arrayBuffer());
 
-    // 2) Split with pdf-lib.
-    const { PDFDocument } = await import("pdf-lib");
+    // 2) Split with pdf-lib's bundled ESM build. Importing the package root can
+    // resolve through its CJS/tslib helper path in SSR and crash with
+    // "Cannot destructure property '__extends'..." before any PDF work starts.
+    const { PDFDocument } = (await import("pdf-lib/dist/pdf-lib.esm.js")) as typeof import("pdf-lib");
     const src = await PDFDocument.load(packBytes, { ignoreEncryption: true });
     const pageCount = src.getPageCount();
     if (pageCount === 0) throw new Error("PDF contained no pages");
