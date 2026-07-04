@@ -307,25 +307,37 @@ function InlinePreview({
 }) {
 
   const getPreviewFn = useServerFn(getDrawingPreview);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const bufferRef = useRef<ArrayBuffer | null>(null);
   const pdfDocRef = useRef<any>(null);
   const imageBitmapRef = useRef<ImageBitmap | null>(null);
   const objectUrlRef = useRef<string>("");
   const renderTaskRef = useRef<any>(null);
+  const rerenderTimerRef = useRef<any>(null);
 
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [errMsg, setErrMsg] = useState<string>("");
   const [mime, setMime] = useState<string>(mimeHint ?? "");
-  const [zoom, setZoom] = useState<number>(1);
   const [pageNum, setPageNum] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [containerSize, setContainerSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
-  // Track container size for auto-fit
+  // Intrinsic sheet dimensions (PDF/image points) — set once when doc/page loads
+  const [sheetSize, setSheetSize] = useState<{ w: number; h: number } | null>(null);
+  // renderedQuality = multiplier used the last time we rasterized. We re-rasterize
+  // when the user zooms beyond this so text stays crisp.
+  const [renderedQuality, setRenderedQuality] = useState<number>(2);
+
+  // User zoom (1 = fit-to-window). Pan offset in CSS px relative to viewport.
+  const [zoom, setZoom] = useState<number>(1);
+  const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
+
+  // Track container size
   useEffect(() => {
-    const el = containerRef.current;
+    const el = viewportRef.current;
     if (!el) return;
     const ro = new ResizeObserver(() => {
       const rect = el.getBoundingClientRect();
@@ -343,8 +355,11 @@ function InlinePreview({
     setStatus("loading");
     setErrMsg("");
     setZoom(1);
+    setOffset({ x: 0, y: 0 });
     setPageNum(1);
     setTotalPages(1);
+    setSheetSize(null);
+    setRenderedQuality(2);
 
     (async () => {
       try {
@@ -406,38 +421,58 @@ function InlinePreview({
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = "";
       bufferRef.current = null;
+      if (rerenderTimerRef.current) clearTimeout(rerenderTimerRef.current);
     };
   }, [drawingId, getPreviewFn, mimeHint]);
 
-  // Render — auto-fit sheet to container, then apply zoom multiplier
+  // Compute fit scale — sheet drawn at this CSS size fits the viewport with padding
+  const { w: cw, h: ch } = containerSize;
+  const availW = Math.max(100, cw - 16);
+  const availH = Math.max(100, ch - 16);
+  const fitScale = sheetSize
+    ? Math.min(availW / sheetSize.w, availH / sheetSize.h)
+    : 1;
+  const fittedW = sheetSize ? sheetSize.w * fitScale : 0;
+  const fittedH = sheetSize ? sheetSize.h * fitScale : 0;
+
+  // Render (rasterize) — runs when doc changes, page changes, viewport size changes, or quality bumps
   useEffect(() => {
     if (status !== "ready") return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const { w: cw, h: ch } = containerSize;
     if (cw < 20 || ch < 20) return;
 
     let cancelled = false;
 
     (async () => {
       try {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        // Reserve a little padding
-        const availW = Math.max(100, cw - 16);
-        const availH = Math.max(100, ch - 16);
+        const dpr = Math.min(window.devicePixelRatio || 1, 3);
+        const MAX_PIXELS = 40_000_000; // ~40 MP cap
 
         if (pdfDocRef.current) {
           const page = await pdfDocRef.current.getPage(pageNum);
           if (cancelled) return;
           const baseVp = page.getViewport({ scale: 1 });
-          const fitScale = Math.min(availW / baseVp.width, availH / baseVp.height);
-          const viewport = page.getViewport({ scale: fitScale * zoom * dpr });
+          const baseFit = Math.min(availW / baseVp.width, availH / baseVp.height);
+
+          let renderScale = baseFit * renderedQuality * dpr;
+          const projectedPixels = baseVp.width * renderScale * baseVp.height * renderScale;
+          if (projectedPixels > MAX_PIXELS) {
+            renderScale *= Math.sqrt(MAX_PIXELS / projectedPixels);
+          }
+
+          const viewport = page.getViewport({ scale: renderScale });
           canvas.width = Math.floor(viewport.width);
           canvas.height = Math.floor(viewport.height);
-          canvas.style.width = `${Math.floor(viewport.width / dpr)}px`;
-          canvas.style.height = `${Math.floor(viewport.height / dpr)}px`;
+          const cssW = baseVp.width * baseFit;
+          const cssH = baseVp.height * baseFit;
+          canvas.style.width = `${cssW}px`;
+          canvas.style.height = `${cssH}px`;
+          if (!sheetSize || sheetSize.w !== baseVp.width || sheetSize.h !== baseVp.height) {
+            setSheetSize({ w: baseVp.width, h: baseVp.height });
+          }
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           try {
@@ -447,12 +482,21 @@ function InlinePreview({
           await renderTaskRef.current.promise;
         } else if (imageBitmapRef.current) {
           const bmp = imageBitmapRef.current;
-          const fitScale = Math.min(availW / bmp.width, availH / bmp.height);
-          const scale = fitScale * zoom * dpr;
-          canvas.width = Math.max(1, Math.round(bmp.width * scale));
-          canvas.height = Math.max(1, Math.round(bmp.height * scale));
-          canvas.style.width = `${Math.round(bmp.width * scale / dpr)}px`;
-          canvas.style.height = `${Math.round(bmp.height * scale / dpr)}px`;
+          const baseFit = Math.min(availW / bmp.width, availH / bmp.height);
+          let renderScale = baseFit * renderedQuality * dpr;
+          const projectedPixels = bmp.width * renderScale * bmp.height * renderScale;
+          if (projectedPixels > MAX_PIXELS) {
+            renderScale *= Math.sqrt(MAX_PIXELS / projectedPixels);
+          }
+          canvas.width = Math.max(1, Math.round(bmp.width * renderScale));
+          canvas.height = Math.max(1, Math.round(bmp.height * renderScale));
+          const cssW = bmp.width * baseFit;
+          const cssH = bmp.height * baseFit;
+          canvas.style.width = `${cssW}px`;
+          canvas.style.height = `${cssH}px`;
+          if (!sheetSize || sheetSize.w !== bmp.width || sheetSize.h !== bmp.height) {
+            setSheetSize({ w: bmp.width, h: bmp.height });
+          }
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
@@ -468,15 +512,103 @@ function InlinePreview({
     return () => {
       cancelled = true;
     };
-  }, [status, zoom, pageNum, containerSize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, pageNum, renderedQuality, cw, ch]);
 
-  const zoomIn = () => setZoom((z) => Math.min(z * 1.25, 6));
-  const zoomOut = () => setZoom((z) => Math.max(z / 1.25, 0.25));
-  const resetZoom = () => setZoom(1);
+  // When user zooms far beyond current rasterization, re-render at higher quality
+  useEffect(() => {
+    if (status !== "ready") return;
+    if (rerenderTimerRef.current) clearTimeout(rerenderTimerRef.current);
+    const targetQuality = Math.max(2, Math.ceil(zoom * 1.5));
+    if (targetQuality > renderedQuality) {
+      rerenderTimerRef.current = setTimeout(() => {
+        setRenderedQuality(Math.min(targetQuality, 8));
+      }, 250);
+    }
+    return () => {
+      if (rerenderTimerRef.current) clearTimeout(rerenderTimerRef.current);
+    };
+  }, [zoom, status, renderedQuality]);
+
+  // Anchored zoom helper — keep point (px,py) in viewport coords fixed under new zoom
+  const zoomAt = (nextZoom: number, px: number, py: number) => {
+    setZoom((prev) => {
+      const z = Math.max(0.1, Math.min(nextZoom, 12));
+      const ratio = z / prev;
+      setOffset((o) => ({
+        x: px - (px - o.x) * ratio,
+        y: py - (py - o.y) * ratio,
+      }));
+      return z;
+    });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (pinMode === "drop") return;
+    if (e.button !== 0) return;
+    setDragging(true);
+    dragStartRef.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
+  };
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!dragging || !dragStartRef.current) return;
+    const s = dragStartRef.current;
+    setOffset({ x: s.ox + (e.clientX - s.x), y: s.oy + (e.clientY - s.y) });
+  };
+  const endDrag = () => {
+    setDragging(false);
+    dragStartRef.current = null;
+  };
+
+  const resetView = () => {
+    setZoom(1);
+    setOffset({ x: 0, y: 0 });
+  };
+  const zoomIn = () => {
+    if (!viewportRef.current) return;
+    const r = viewportRef.current.getBoundingClientRect();
+    zoomAt(zoom * 1.25, r.width / 2, r.height / 2);
+  };
+  const zoomOut = () => {
+    if (!viewportRef.current) return;
+    const r = viewportRef.current.getBoundingClientRect();
+    zoomAt(zoom / 1.25, r.width / 2, r.height / 2);
+  };
+
+  // Native wheel listener with passive:false so preventDefault works
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!sheetSize) return;
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      setZoom((prev) => {
+        const z = Math.max(0.1, Math.min(prev * factor, 12));
+        const ratio = z / prev;
+        setOffset((o) => ({
+          x: px - (px - o.x) * ratio,
+          y: py - (py - o.y) * ratio,
+        }));
+        return z;
+      });
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [sheetSize]);
 
   const isPdf = mime.includes("pdf");
   const isImage = mime.startsWith("image/");
   const isCanvasable = isPdf || isImage;
+
+  const cursorClass =
+    pinMode === "drop"
+      ? "cursor-crosshair"
+      : dragging
+        ? "cursor-grabbing"
+        : "cursor-grab";
 
   return (
     <div className="relative z-10 flex w-full flex-1 flex-col p-3">
@@ -517,12 +649,16 @@ function InlinePreview({
               </button>
               <button
                 type="button"
-                onClick={resetZoom}
+                onClick={resetView}
                 className="ml-1 inline-flex h-7 items-center justify-center gap-1 rounded-sm px-2 text-[0.6rem] uppercase tracking-widest text-foreground/80 hover:bg-white/10"
                 title="Fit to window"
               >
                 <Maximize2 size={12} /> Fit
               </button>
+            </div>
+
+            <div className="hidden font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50 md:block">
+              Scroll to zoom · Drag to pan · Double-click to fit
             </div>
 
             {isPdf && totalPages > 1 && (
@@ -551,11 +687,26 @@ function InlinePreview({
           </div>
 
           <div
-            ref={containerRef}
-            className="flex-1 touch-pan-x touch-pan-y overflow-auto rounded-md bg-black/40"
+            ref={viewportRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={endDrag}
+            onMouseLeave={endDrag}
+            onDoubleClick={resetView}
+            className={`relative flex-1 overflow-hidden rounded-md bg-black/40 select-none ${cursorClass}`}
           >
-            <div className="flex min-h-full items-center justify-center p-2">
-              <div className="relative inline-block">
+            {sheetSize && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  width: fittedW,
+                  height: fittedH,
+                  transform: `translate(${(cw - fittedW) / 2 + offset.x}px, ${(ch - fittedH) / 2 + offset.y}px) scale(${zoom})`,
+                  transformOrigin: "0 0",
+                }}
+              >
                 <canvas
                   ref={canvasRef}
                   onClick={(e) => {
@@ -566,16 +717,16 @@ function InlinePreview({
                     if (xPct < 0 || xPct > 1 || yPct < 0 || yPct > 1) return;
                     onDropPin({ xPct, yPct });
                   }}
-                  className={`rounded-sm bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)] ${pinMode === "drop" ? "cursor-crosshair" : ""}`}
+                  className="block rounded-sm bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
                 />
                 <PinOverlay
                   pins={pins}
                   activePinId={activePinId}
                   onPinClick={onPinClick}
+                  inverseScale={1 / zoom}
                 />
               </div>
-            </div>
-
+            )}
           </div>
         </>
       )}
