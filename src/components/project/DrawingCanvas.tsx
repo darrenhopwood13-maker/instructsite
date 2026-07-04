@@ -288,7 +288,24 @@ function CompactMetadataStrip({ drawing }: { drawing: Drawing }) {
   );
 }
 
-function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: string }) {
+function InlinePreview({
+  drawingId,
+  mimeHint,
+  pins = [],
+  pinMode = "none",
+  onDropPin,
+  onPinClick,
+  activePinId,
+}: {
+  drawingId: string;
+  mimeHint?: string;
+  pins?: PinRecord[];
+  pinMode?: "drop" | "view" | "none";
+  onDropPin?: (coords: { xPct: number; yPct: number }) => void;
+  onPinClick?: (pin: PinRecord) => void;
+  activePinId?: string | null;
+}) {
+
   const getPreviewFn = useServerFn(getDrawingPreview);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
