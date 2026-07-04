@@ -13,6 +13,7 @@ import {
 import { DropZone } from "@/components/setup/DropZone";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { ZoneMap } from "@/components/project/ZoneMap";
+import { MasterAdminHUD } from "@/components/admin/MasterAdminHUD";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 export const Route = createFileRoute("/projects/$projectId")({
