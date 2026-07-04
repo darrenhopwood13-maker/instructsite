@@ -199,32 +199,43 @@ function DabsPage() {
 
         <section className="mt-6">
           <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
-            Active Pins on This Sheet
+            Active Shifts on This Sheet
           </h2>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 space-y-3">
             {(pins.data ?? []).map((p: any) => (
-              <li key={p.id} className="glass-panel flex items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
-                  <p className="text-sm text-foreground">
-                    {p.trade_package ?? "Untagged"} · {p.operative_count} operatives
-                  </p>
-                  <p className="mt-0.5 flex items-center gap-1 text-[0.6rem] uppercase tracking-widest text-foreground/50">
-                    <MapPin size={10} /> {p.work_zones?.name ?? "no zone"} · finish{" "}
-                    {new Date(p.scheduled_finish).toLocaleTimeString()}
-                  </p>
+              <li key={p.id} className="glass-panel p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-foreground">
+                      {p.trade_package ?? "Untagged"} · {p.operative_count} operatives
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1 text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                      <MapPin size={10} /> {p.work_zones?.name ?? "no zone"} · started{" "}
+                      {new Date(p.start_time).toLocaleTimeString()} · finish{" "}
+                      {new Date(p.scheduled_finish).toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => closePin(p.id)}
+                    className="rounded-sm border border-white/15 px-2 py-1 text-[0.55rem] uppercase tracking-widest text-foreground/50 hover:border-red-500 hover:text-red-400"
+                    title="Discard pin without diary (admin)"
+                  >
+                    Discard
+                  </button>
                 </div>
                 <button
                   type="button"
-                  onClick={() => closePin(p.id)}
-                  className="rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-alert hover:text-alert"
+                  onClick={() => setCheckoutPin(p)}
+                  className="glass-orange shimmer-btn mt-3 flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-xs font-bold uppercase tracking-widest"
                 >
-                  Clear Out
+                  <LogOut size={14} /> Close Out Today's Shift / Complete Daily Diary
                 </button>
               </li>
             ))}
             {(pins.data ?? []).length === 0 && (
               <li className="glass-panel p-4 text-center text-xs text-foreground/50">
-                No active pins on this sheet.
+                No active shifts on this sheet.
               </li>
             )}
           </ul>
