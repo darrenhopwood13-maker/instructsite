@@ -119,6 +119,82 @@ export type Database = {
           },
         ]
       }
+      live_site_activity: {
+        Row: {
+          created_at: string
+          drawing_id: string | null
+          id: string
+          notes: string | null
+          operative_count: number
+          project_id: string
+          scheduled_finish: string
+          start_time: string
+          status: string
+          subcontractor_id: string
+          trade_package: string | null
+          updated_at: string
+          x_pct: number
+          y_pct: number
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          drawing_id?: string | null
+          id?: string
+          notes?: string | null
+          operative_count?: number
+          project_id: string
+          scheduled_finish: string
+          start_time?: string
+          status?: string
+          subcontractor_id: string
+          trade_package?: string | null
+          updated_at?: string
+          x_pct: number
+          y_pct: number
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          drawing_id?: string | null
+          id?: string
+          notes?: string | null
+          operative_count?: number
+          project_id?: string
+          scheduled_finish?: string
+          start_time?: string
+          status?: string
+          subcontractor_id?: string
+          trade_package?: string | null
+          updated_at?: string
+          x_pct?: number
+          y_pct?: number
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_site_activity_drawing_id_fkey"
+            columns: ["drawing_id"]
+            isOneToOne: false
+            referencedRelation: "project_drawings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_site_activity_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_site_activity_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "work_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logistics_plans: {
         Row: {
           created_at: string
