@@ -477,28 +477,27 @@ function BlueprintMetadataCard({
   const canDownload = Boolean(downloadUrl) && !linksLoading;
 
   return (
-    <div className="relative z-10 m-auto w-full max-w-2xl p-5">
-      <div className="rounded-lg border border-alert/45 bg-gradient-to-br from-alert/20 via-black/80 to-black/95 p-5 shadow-[0_0_35px_rgba(255,120,0,0.22)]">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-4">
-          <div>
-            <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.35em] text-alert">
+    <div className="w-full">
+      <div className="rounded-lg border border-alert/45 bg-gradient-to-br from-alert/20 via-black/80 to-black/95 p-4 shadow-[0_0_35px_rgba(255,120,0,0.22)]">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-3">
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.35em] text-alert">
               Document Metadata Card
             </p>
-            <h4 className="mt-2 font-mono text-2xl font-black uppercase tracking-widest text-foreground">
+            <h4 className="mt-1.5 truncate font-mono text-lg font-black uppercase tracking-widest text-foreground">
               {drawing.drawing_no || "Drawing Pending"}
             </h4>
           </div>
-          <div className="rounded-md border border-alert/40 bg-alert px-3 py-2 text-right text-black">
-            <p className="text-[0.55rem] font-black uppercase tracking-[0.25em]">Revision</p>
-            <p className="font-mono text-xl font-black">{drawing.revision || "—"}</p>
+          <div className="shrink-0 rounded-md border border-alert/40 bg-alert px-3 py-1.5 text-right text-black">
+            <p className="text-[0.5rem] font-black uppercase tracking-[0.25em]">Revision</p>
+            <p className="font-mono text-base font-black leading-tight">{drawing.revision || "—"}</p>
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <MetadataField
             label="Sheet Title"
             value={drawing.title || drawing.site_documents?.file_name || "Untitled sheet"}
-            wide
           />
           <MetadataField label="Drawing Number" value={drawing.drawing_no || "Awaiting extraction"} />
           <MetadataField label="Revision Status" value={drawing.revision || "Not stated"} />
