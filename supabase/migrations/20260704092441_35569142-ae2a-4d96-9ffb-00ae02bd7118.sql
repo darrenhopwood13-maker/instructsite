@@ -1,0 +1,2 @@
+ALTER TABLE public.work_zones ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
+ALTER TABLE public.work_zones ADD CONSTRAINT work_zones_status_check CHECK (status IN ('active','closed'));

@@ -13,6 +13,7 @@ import {
 import { DropZone } from "@/components/setup/DropZone";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { ZoneMap } from "@/components/project/ZoneMap";
+import { MasterAdminHUD } from "@/components/admin/MasterAdminHUD";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 export const Route = createFileRoute("/projects/$projectId")({
@@ -145,6 +146,15 @@ function ProjectDetail() {
             {project.data.scope_brief}
           </p>
         )}
+
+        <MasterAdminHUD
+          projectId={projectId}
+          projectName={project.data?.name ?? ""}
+          zones={(zones.data ?? []) as never}
+          onZonesChanged={() => zones.refetch()}
+        />
+
+
 
         {/* Upload engine row — symmetric 2-col */}
         <section className="mt-10">

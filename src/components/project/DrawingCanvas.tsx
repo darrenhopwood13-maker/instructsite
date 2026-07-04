@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -11,11 +11,15 @@ import {
   MapPin,
   Maximize2,
   Sparkles,
+  Trash2,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { createDrawingDirectLinks, getDrawingPreview } from "@/lib/tier1-uploads.functions";
+import { deleteDrawing } from "@/lib/admin.functions";
+import { getMyRoles } from "@/lib/projects.functions";
 
 type Drawing = {
   id: string;
@@ -44,6 +48,16 @@ export function DrawingCanvas({
   onLockOracle: (payload: { kind: "drawing"; id: string; label: string }) => void;
 }) {
   const directLinksFn = useServerFn(createDrawingDirectLinks);
+  const rolesFn = useServerFn(getMyRoles);
+  const deleteFn = useServerFn(deleteDrawing);
+  const qc = useQueryClient();
+  const roles = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    staleTime: 60_000,
+  });
+  const isMaster = roles.data?.roles?.includes("master_admin");
+
   const links = useQuery<DrawingLinks>({
     queryKey: ["drawing-direct-links", selectedId],
     enabled: !!selectedId,
@@ -64,6 +78,26 @@ export function DrawingCanvas({
   const openUrl = absoluteUrl(links.data?.openPath);
   const downloadUrl = absoluteUrl(links.data?.downloadPath);
 
+  const [deleting, setDeleting] = useState(false);
+  const handleDelete = async () => {
+    if (!selected) return;
+    const ok = window.confirm(
+      `Permanently delete ${selected.drawing_no ?? "this drawing"}? This purges the sheet from the drawing vault and DABS selectors.`,
+    );
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      await deleteFn({ data: { drawingId: selected.id } });
+      toast.success("Drawing deleted.");
+      onSelect("");
+      qc.invalidateQueries({ queryKey: ["drawings"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Delete failed.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="glass-panel flex h-full flex-col p-5">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -79,26 +113,40 @@ export function DrawingCanvas({
           <span className="mb-1 block font-mono text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
             Select Sheet
           </span>
-          <select
-            value={selectedId ?? ""}
-            onChange={(e) => onSelect(e.target.value)}
-            className="w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
-          >
-            <option value="" disabled>
-              {drawings.length ? "— Choose a drawing —" : "No drawings uploaded"}
-            </option>
-            {drawings.map((d) => {
-              const title = d.title ?? d.site_documents?.file_name ?? "Untitled";
-              const rev = d.revision ? ` · Rev ${d.revision}` : "";
-              const sheet = d.page_number ? ` · Sheet ${d.page_number}` : "";
-              return (
-                <option key={d.id} value={d.id}>
-                  {(d.drawing_no ?? "DWG")}{rev}{sheet} — {title}
-                </option>
-              );
-            })}
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedId ?? ""}
+              onChange={(e) => onSelect(e.target.value)}
+              className="flex-1 rounded-md border border-white/15 bg-black/50 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
+            >
+              <option value="" disabled>
+                {drawings.length ? "— Choose a drawing —" : "No drawings uploaded"}
+              </option>
+              {drawings.map((d) => {
+                const title = d.title ?? d.site_documents?.file_name ?? "Untitled";
+                const rev = d.revision ? ` · Rev ${d.revision}` : "";
+                const sheet = d.page_number ? ` · Sheet ${d.page_number}` : "";
+                return (
+                  <option key={d.id} value={d.id}>
+                    {(d.drawing_no ?? "DWG")}{rev}{sheet} — {title}
+                  </option>
+                );
+              })}
+            </select>
+            {isMaster && selected && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                title="Delete drawing (Master Admin)"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-alert bg-alert/15 text-alert transition hover:bg-alert/30 disabled:opacity-40"
+              >
+                {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              </button>
+            )}
+          </div>
         </label>
+
       </div>
 
       {/* Compact metadata strip */}

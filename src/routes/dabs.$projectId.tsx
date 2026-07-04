@@ -137,9 +137,10 @@ function DabsPage() {
               >
                 <option value="">— Select zone —</option>
                 {zones.data?.map((z: any) => (
-                  <option key={z.id} value={z.id}>
+                  <option key={z.id} value={z.id} disabled={z.status === "closed"}>
                     {z.name}
                     {z.level ? ` · ${z.level}` : ""} ({z.source})
+                    {z.status === "closed" ? " — CLOSED" : ""}
                   </option>
                 ))}
               </select>
