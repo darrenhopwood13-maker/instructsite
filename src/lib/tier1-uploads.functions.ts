@@ -327,7 +327,8 @@ export const getDrawingPreview = createServerFn({ method: "GET" })
   .inputValidator((i: unknown) => z.object({ drawingId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: drawing, error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: drawing, error } = await supabaseAdmin
       .from("project_drawings")
       .select("project_id,site_documents(file_path,bucket,mime_type,file_name)")
       .eq("id", data.drawingId)
@@ -346,18 +347,21 @@ export const getDrawingPreview = createServerFn({ method: "GET" })
     };
   });
 
+
 export const createDrawingDirectLinks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ drawingId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: drawing, error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: drawing, error } = await supabaseAdmin
       .from("project_drawings")
       .select("project_id")
       .eq("id", data.drawingId)
       .maybeSingle();
     if (error || !drawing) throw new Error("Drawing not found");
     await ensureProjectAccess(supabase, userId, drawing.project_id);
+
 
     const { createDrawingAccessToken, getDrawingAccessSecret } = await import(
       "./drawing-token.server"
