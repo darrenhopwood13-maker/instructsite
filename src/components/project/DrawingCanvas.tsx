@@ -519,10 +519,10 @@ function InlinePreview({
   useEffect(() => {
     if (status !== "ready") return;
     if (rerenderTimerRef.current) clearTimeout(rerenderTimerRef.current);
-    const targetQuality = Math.max(2, Math.ceil(zoom * 1.5));
+    const targetQuality = Math.max(3, Math.ceil(zoom * 2));
     if (targetQuality > renderedQuality) {
       rerenderTimerRef.current = setTimeout(() => {
-        setRenderedQuality(Math.min(targetQuality, 8));
+        setRenderedQuality(Math.min(targetQuality, 10));
       }, 250);
     }
     return () => {
