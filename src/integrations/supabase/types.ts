@@ -14,6 +14,67 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          created_at: string
+          description: string
+          drawing_id: string | null
+          high_risk_flags: string[]
+          id: string
+          permit_status: string
+          project_id: string
+          subcontractor_id: string
+          updated_at: string
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          drawing_id?: string | null
+          high_risk_flags?: string[]
+          id?: string
+          permit_status?: string
+          project_id: string
+          subcontractor_id: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          drawing_id?: string | null
+          high_risk_flags?: string[]
+          id?: string
+          permit_status?: string
+          project_id?: string
+          subcontractor_id?: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_drawing_id_fkey"
+            columns: ["drawing_id"]
+            isOneToOne: false
+            referencedRelation: "project_drawings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "work_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_contents: {
         Row: {
           char_count: number
@@ -52,6 +113,293 @@ export type Database = {
           {
             foreignKeyName: "document_contents_document_id_fkey"
             columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "site_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logistics_plans: {
+        Row: {
+          created_at: string
+          extracted_zones: Json
+          extraction_error: string | null
+          extraction_status: string
+          id: string
+          project_id: string
+          site_document_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_zones?: Json
+          extraction_error?: string | null
+          extraction_status?: string
+          id?: string
+          project_id: string
+          site_document_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          extracted_zones?: Json
+          extraction_error?: string | null
+          extraction_status?: string
+          id?: string
+          project_id?: string
+          site_document_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logistics_plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_plans_site_document_id_fkey"
+            columns: ["site_document_id"]
+            isOneToOne: true
+            referencedRelation: "site_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permits: {
+        Row: {
+          activity_id: string | null
+          created_at: string
+          id: string
+          issued_by: string | null
+          permit_type: string
+          project_id: string
+          status: string
+          updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+        }
+        Insert: {
+          activity_id?: string | null
+          created_at?: string
+          id?: string
+          issued_by?: string | null
+          permit_type: string
+          project_id: string
+          status?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Update: {
+          activity_id?: string | null
+          created_at?: string
+          id?: string
+          issued_by?: string | null
+          permit_type?: string
+          project_id?: string
+          status?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permits_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permits_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_drawings: {
+        Row: {
+          created_at: string
+          drawing_no: string | null
+          extraction_error: string | null
+          extraction_status: string
+          id: string
+          is_active: boolean
+          level: string | null
+          project_id: string
+          revision: string | null
+          scale: string | null
+          site_document_id: string
+          title: string | null
+          updated_at: string
+          zone: string | null
+        }
+        Insert: {
+          created_at?: string
+          drawing_no?: string | null
+          extraction_error?: string | null
+          extraction_status?: string
+          id?: string
+          is_active?: boolean
+          level?: string | null
+          project_id: string
+          revision?: string | null
+          scale?: string | null
+          site_document_id: string
+          title?: string | null
+          updated_at?: string
+          zone?: string | null
+        }
+        Update: {
+          created_at?: string
+          drawing_no?: string | null
+          extraction_error?: string | null
+          extraction_status?: string
+          id?: string
+          is_active?: boolean
+          level?: string | null
+          project_id?: string
+          revision?: string | null
+          scale?: string | null
+          site_document_id?: string
+          title?: string | null
+          updated_at?: string
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_drawings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_drawings_site_document_id_fkey"
+            columns: ["site_document_id"]
+            isOneToOne: true
+            referencedRelation: "site_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_members: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          role_on_project: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          role_on_project: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          role_on_project?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          master_admin_id: string | null
+          name: string
+          project_admin_id: string | null
+          scope_brief: string | null
+          site_address: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          master_admin_id?: string | null
+          name: string
+          project_admin_id?: string | null
+          scope_brief?: string | null
+          site_address: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          master_admin_id?: string | null
+          name?: string
+          project_admin_id?: string | null
+          scope_brief?: string | null
+          site_address?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rams_documents: {
+        Row: {
+          created_at: string
+          high_risk_flags: string[]
+          id: string
+          permit_required: boolean
+          project_id: string
+          site_document_id: string
+          trade_package: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          high_risk_flags?: string[]
+          id?: string
+          permit_required?: boolean
+          project_id: string
+          site_document_id: string
+          trade_package: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          high_risk_flags?: string[]
+          id?: string
+          permit_required?: boolean
+          project_id?: string
+          site_document_id?: string
+          trade_package?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rams_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rams_documents_site_document_id_fkey"
+            columns: ["site_document_id"]
             isOneToOne: true
             referencedRelation: "site_documents"
             referencedColumns: ["id"]
@@ -100,15 +448,89 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      work_zones: {
+        Row: {
+          created_at: string
+          id: string
+          level: string | null
+          name: string
+          project_id: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: string | null
+          name: string
+          project_id: string
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string | null
+          name?: string
+          project_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_zones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_project_admin: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_project_member: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "master_admin"
+        | "project_admin"
+        | "site_manager"
+        | "subcontractor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -235,6 +657,13 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "master_admin",
+        "project_admin",
+        "site_manager",
+        "subcontractor",
+      ],
+    },
   },
 } as const
