@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Download, FileText, Loader2, ShieldAlert, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Download, ExternalLink, FileText, Loader2, ShieldAlert, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Drawing = {
@@ -181,7 +181,7 @@ export function DrawingCanvas({
           ) : preview.isError ? (
             <BlockedFallback onDownload={handleDownload} downloading={downloading} />
           ) : preview.data ? (
-            <PreviewFrame url={preview.data.dataUrl} mime={preview.data.mime} />
+            <PreviewFrame url={preview.data.dataUrl} mime={preview.data.mime} blob={preview.data.blob} />
           ) : null}
 
           {selected && (
@@ -232,30 +232,106 @@ function EmptyPreview() {
   );
 }
 
-function PreviewFrame({ url, mime }: { url: string; mime: string }) {
-  const isImage = /^image\//i.test(mime);
-  const isPdf = /pdf/i.test(mime);
-  if (isImage) {
-    return (
-      <img
-        src={url}
-        alt="Drawing preview"
-        className="relative m-auto max-h-[26rem] max-w-full object-contain"
-      />
-    );
-  }
-  if (isPdf) {
-    return (
-      <iframe
-        src={`${url}#toolbar=0&view=FitH`}
-        title="Drawing preview"
-        className="relative h-[28rem] w-full border-0 bg-white"
-      />
-    );
-  }
+function PreviewFrame({ url, mime, blob }: { url: string; mime: string; blob: Blob }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  const openInNewTab = () => {
+    const objUrl = URL.createObjectURL(blob);
+    window.open(objUrl, "_blank", "noopener,noreferrer");
+    setTimeout(() => URL.revokeObjectURL(objUrl), 60_000);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    setStatus("loading");
+
+    const paintImage = async () => {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url;
+      try {
+        await img.decode();
+      } catch {
+        if (!cancelled) setStatus("error");
+        return;
+      }
+      if (cancelled) return;
+      const maxW = 1400;
+      const scale = Math.min(1, maxW / img.naturalWidth);
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (!cancelled) setStatus("ready");
+    };
+
+    const paintPdf = async () => {
+      try {
+        const pdfjs = await import("pdfjs-dist");
+        // Use fake worker (main-thread) to avoid loading external worker asset.
+        (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } })
+          .GlobalWorkerOptions.workerSrc = "";
+        const buf = await blob.arrayBuffer();
+        if (cancelled) return;
+        const doc = await pdfjs.getDocument({
+          data: new Uint8Array(buf),
+          disableWorker: true,
+        } as never).promise;
+        if (cancelled) return;
+        const page = await doc.getPage(1);
+        const viewport = page.getViewport({ scale: 1.6 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport, canvas } as never).promise;
+        if (!cancelled) setStatus("ready");
+      } catch (err) {
+        console.error("PDF paint failed", err);
+        if (!cancelled) setStatus("error");
+      }
+    };
+
+    if (/^image\//i.test(mime)) void paintImage();
+    else if (/pdf/i.test(mime)) void paintPdf();
+    else setStatus("error");
+
+    return () => {
+      cancelled = true;
+    };
+  }, [url, mime, blob]);
+
   return (
-    <div className="relative m-auto p-4 text-center text-xs text-foreground/60">
-      Unsupported file type. Use Download to open it locally.
+    <div className="relative m-auto flex w-full flex-col items-center gap-2 p-3">
+      <canvas
+        ref={canvasRef}
+        id="drawingCanvas"
+        className="max-h-[26rem] w-auto max-w-full rounded-sm bg-white shadow-lg"
+      />
+      {status === "loading" && (
+        <div className="absolute inset-0 m-auto flex items-center justify-center text-[0.65rem] uppercase tracking-widest text-foreground/60">
+          <Loader2 size={14} className="mr-2 animate-spin text-alert" /> Painting canvas…
+        </div>
+      )}
+      {status === "error" && (
+        <div className="text-[0.7rem] text-foreground/70">
+          Could not paint preview. Use the link below.
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={openInNewTab}
+        className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/80 hover:border-white/40"
+      >
+        <ExternalLink size={10} /> Open Original Drawing File in New Tab
+      </button>
     </div>
   );
 }
