@@ -30,34 +30,36 @@ export const extractProjectFromDrawing = createServerFn({ method: "POST" })
       throw new Error("Unsupported file type. Upload a PDF drawing or a title-block image.");
     }
 
-    const userContent: Array<Record<string, unknown>> = [
+    const userContent: Array<
+      | { type: "text"; text: string }
+      | { type: "file"; data: string; mediaType: string; filename?: string }
+      | { type: "image"; image: string }
+    > = [
       {
         type: "text",
         text:
           "You are the InstructBrain Oracle. Analyse this construction General Arrangement (GA) drawing pack. Read every title block, revision block, and cover sheet. Extract these fields as plain strings. If a value is truly not present, return an empty string for that field — never invent. Fields: projectName, siteAddress (full postal address), clientName (aka end user / employer), mainContractor (principal contractor), projectBrief (1–3 sentences summarising scope / building type / phase from what the drawing shows).",
       },
     ];
+    const dataUrl = `data:${data.mimeType};base64,${data.dataBase64}`;
     if (isPdf) {
       userContent.push({
         type: "file",
-        file: {
-          filename: data.fileName,
-          file_data: `data:${data.mimeType};base64,${data.dataBase64}`,
-        },
+        data: dataUrl,
+        mediaType: data.mimeType,
+        filename: data.fileName,
       });
     } else {
-      userContent.push({
-        type: "image_url",
-        image_url: { url: `data:${data.mimeType};base64,${data.dataBase64}` },
-      });
+      userContent.push({ type: "image", image: dataUrl });
     }
 
     try {
       const { output } = await generateText({
         model: gateway("google/gemini-2.5-pro"),
         output: Output.object({ schema: Extracted }),
-        messages: [{ role: "user", content: userContent as never }],
+        messages: [{ role: "user", content: userContent }],
       });
+
       return output;
     } catch (error) {
       if (NoObjectGeneratedError.isInstance(error)) {
