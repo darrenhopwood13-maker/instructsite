@@ -69,9 +69,9 @@ export function DrawingCanvas({
         <span className="font-mono text-[0.7rem] text-foreground/60">{drawings.length}</span>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_1.4fr]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
         {/* List */}
-        <ul className="max-h-[28rem] space-y-1.5 overflow-y-auto pr-1">
+        <ul className="max-h-[44rem] space-y-1.5 overflow-y-auto pr-1">
           {drawings.map((d) => {
             const active = d.id === selectedId;
             return (
@@ -123,12 +123,64 @@ export function DrawingCanvas({
           )}
         </ul>
 
-        {/* Document metadata card */}
-        <div className="relative flex min-h-[24rem] flex-col overflow-hidden rounded-lg border border-white/15 bg-black/60">
-          <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,120,0,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,120,0,0.15)_1px,transparent_1px)] [background-size:32px_32px]" />
-          {!selectedId ? (
-            <EmptyPreview />
-          ) : selected ? (
+        {/* Preview + metadata */}
+        <div className="flex min-w-0 flex-col gap-4">
+          <div className="relative flex min-h-[36rem] flex-col overflow-hidden rounded-lg border border-white/15 bg-black/60">
+            <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,120,0,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,120,0,0.15)_1px,transparent_1px)] [background-size:32px_32px]" />
+            {!selectedId ? (
+              <EmptyPreview />
+            ) : (
+              <InlinePreview
+                key={selectedId}
+                openUrl={openUrl}
+                mime={selected?.site_documents?.mime_type ?? undefined}
+              />
+            )}
+
+            {selected && (
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-black/70 px-3 py-2 backdrop-blur">
+                <div className="min-w-0 truncate font-mono text-[0.65rem] uppercase tracking-widest text-foreground/80">
+                  {label}
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={openUrl || undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-disabled={!openUrl}
+                    className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                  >
+                    <ExternalLink size={10} /> Open
+                  </a>
+                  <a
+                    href={downloadUrl || undefined}
+                    download
+                    aria-disabled={!downloadUrl}
+                    className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                  >
+                    <Download size={10} /> Download
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
+                    className="glass-orange inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+                  >
+                    <Sparkles size={10} /> Lock to Oracle
+                  </button>
+                  <Link
+                    to="/oracle"
+                    search={{ drawingId: selected.id, label } as never}
+                    onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
+                    className="glass-btn inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+                  >
+                    Ask Oracle
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {selected && (
             <BlueprintMetadataCard
               drawing={selected}
               linksLoading={links.isLoading}
@@ -136,39 +188,6 @@ export function DrawingCanvas({
               openUrl={openUrl}
               downloadUrl={downloadUrl}
             />
-          ) : null}
-
-          {selected && (
-            <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-black/70 px-3 py-2 backdrop-blur">
-              <div className="min-w-0 truncate font-mono text-[0.65rem] uppercase tracking-widest text-foreground/80">
-                {label}
-              </div>
-              <div className="flex items-center gap-2">
-                <a
-                  href={downloadUrl || undefined}
-                  download
-                  aria-disabled={!downloadUrl}
-                  className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
-                >
-                  <Download size={10} /> Download
-                </a>
-                <button
-                  type="button"
-                  onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
-                  className="glass-orange inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
-                >
-                  <Sparkles size={10} /> Lock to Oracle
-                </button>
-                <Link
-                  to="/oracle"
-                  search={{ drawingId: selected.id, label } as never}
-                  onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
-                  className="glass-btn inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
-                >
-                  Ask Oracle
-                </Link>
-              </div>
-            </div>
           )}
         </div>
       </div>
