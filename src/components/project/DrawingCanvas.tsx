@@ -10,8 +10,10 @@ type Drawing = {
   revision?: string | null;
   title?: string | null;
   level?: string | null;
+  page_number?: number | null;
+  pack_name?: string | null;
   extraction_status?: string;
-  site_documents?: { file_name?: string } | null;
+  site_documents?: { file_name?: string; mime_type?: string } | null;
 };
 
 type PreviewBlob = {
