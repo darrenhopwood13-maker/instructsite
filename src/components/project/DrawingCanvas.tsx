@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Download,
   ExternalLink,
@@ -11,7 +11,8 @@ import {
   MapPin,
   Sparkles,
 } from "lucide-react";
-import { createDrawingDirectLinks } from "@/lib/tier1-uploads.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { createDrawingDirectLinks, getDrawingPreview } from "@/lib/tier1-uploads.functions";
 
 type Drawing = {
   id: string;
