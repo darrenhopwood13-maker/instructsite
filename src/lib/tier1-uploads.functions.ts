@@ -511,8 +511,10 @@ async function extractSheetMeta(
 
   const prompt =
     `You are the InstructBrain Oracle inspecting ONE isolated construction drawing sheet (page ${pageNumber} of pack "${packName}"). ` +
-    "Read the title block and any revision block. Return these fields as strings — use an empty string when a value is not visible. Never invent. " +
-    "drawing_no (e.g. MCL-MFE-ZZ-XX-DR-A-0100), revision (e.g. P1), title (e.g. Level 01 General Arrangement Plan), level (e.g. Level 1), zone (e.g. West Wing).";
+    "Read the title block, revision block AND the drawing content itself. Return these fields — use an empty string / empty array when a value is not visible. Never invent. " +
+    "drawing_no (e.g. MCL-MFE-ZZ-XX-DR-A-0100), revision (e.g. P1), title (e.g. Level 01 General Arrangement Plan), level (e.g. Level 1 / Ground Floor / Roof), zone (primary work zone shown, e.g. West Wing / Zone A), " +
+    "zones = array of every distinct work zone / grid area / room block / underpinning sequence labelled ON the drawing itself (objects with 'name' and optional 'level'). If the sheet shows an underpinning or work sequence with numbered stages (A, B, C or 1, 2, 3), include each stage as a zone.";
+
 
   const isPdf = /pdf/i.test(mime);
   const content: Array<
