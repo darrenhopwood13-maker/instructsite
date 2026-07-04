@@ -148,7 +148,7 @@ export function DropZone({
         );
       }
     },
-    [docType, extraFields, onUploaded, projectId, register, registerPage],
+    [docType, extraFields, onUploaded, projectId, register, splitPack],
   );
 
   const handleFiles = (files: FileList | null) => {
