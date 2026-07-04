@@ -590,16 +590,27 @@ function InlinePreview({
       const rect = el.getBoundingClientRect();
       const px = e.clientX - rect.left;
       const py = e.clientY - rect.top;
-      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      setZoom((prev) => {
-        const z = Math.max(0.1, Math.min(prev * factor, 12));
-        const ratio = z / prev;
-        setOffset((o) => ({
-          x: px - (px - o.x) * ratio,
-          y: py - (py - o.y) * ratio,
-        }));
-        return z;
-      });
+
+      // Pinch-zoom on trackpads reports ctrlKey=true. Otherwise two-finger
+      // scroll should pan, not zoom.
+      const isPinch = e.ctrlKey || e.metaKey;
+      if (isPinch) {
+        // Smaller factor scaled by deltaY magnitude for smooth pinch
+        const intensity = Math.min(Math.abs(e.deltaY), 40) / 100;
+        const factor = e.deltaY < 0 ? 1 + intensity : 1 / (1 + intensity);
+        setZoom((prev) => {
+          const z = Math.max(0.1, Math.min(prev * factor, 12));
+          const ratio = z / prev;
+          setOffset((o) => ({
+            x: px - (px - o.x) * ratio,
+            y: py - (py - o.y) * ratio,
+          }));
+          return z;
+        });
+      } else {
+        // Two-finger pan
+        setOffset((o) => ({ x: o.x - e.deltaX, y: o.y - e.deltaY }));
+      }
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
