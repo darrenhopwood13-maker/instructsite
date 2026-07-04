@@ -1,23 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { ArrowLeft, AlertTriangle, ClipboardList } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ClipboardList, MapPin, X } from "lucide-react";
+import { toast } from "sonner";
 import { getProject } from "@/lib/projects.functions";
 import { listProjectDrawings, listProjectZones } from "@/lib/tier1-uploads.functions";
-import { createActivity, listProjectActivities } from "@/lib/activities.functions";
+import { createLivePin, listLivePins, closeLivePin } from "@/lib/live-activity.functions";
+import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 export const Route = createFileRoute("/dabs/$projectId")({
-  head: () => ({ meta: [{ title: "DABS — Site Operations Oracle" }] }),
+  head: () => ({ meta: [{ title: "DABS — Spatial Labor Tracker" }] }),
   component: DabsPage,
 });
 
-const RISK = [
-  { id: "working_at_height", label: "Working at Height" },
-  { id: "hot_works", label: "Hot Works" },
-  { id: "confined_space", label: "Confined Space" },
-];
+function toLocalInput(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 function DabsPage() {
   const { projectId } = Route.useParams();
@@ -30,8 +31,9 @@ function DabsPage() {
   const getP = useServerFn(getProject);
   const drawingsFn = useServerFn(listProjectDrawings);
   const zonesFn = useServerFn(listProjectZones);
-  const actsFn = useServerFn(listProjectActivities);
-  const createFn = useServerFn(createActivity);
+  const pinsFn = useServerFn(listLivePins);
+  const createFn = useServerFn(createLivePin);
+  const closeFn = useServerFn(closeLivePin);
 
   const project = useQuery({
     queryKey: ["project", projectId],
@@ -48,49 +50,77 @@ function DabsPage() {
     queryFn: () => zonesFn({ data: { projectId } }),
     enabled: ready,
   });
-  const activities = useQuery({
-    queryKey: ["activities", projectId],
-    queryFn: () => actsFn({ data: { projectId } }),
-    enabled: ready,
+
+  const [selectedDrawing, setSelectedDrawing] = useState<string | null>(null);
+  const [zoneId, setZoneId] = useState<string>("");
+  const [trade, setTrade] = useState<string>("");
+
+  const drawingRows = useMemo(() => drawings.data ?? [], [drawings.data]);
+  useEffect(() => {
+    if (!selectedDrawing && drawingRows.length) setSelectedDrawing(drawingRows[0].id);
+  }, [drawingRows, selectedDrawing]);
+
+  const pins = useQuery({
+    queryKey: ["live-pins", projectId, selectedDrawing],
+    queryFn: () => pinsFn({ data: { projectId, drawingId: selectedDrawing!, activeOnly: true } }),
+    enabled: ready && !!selectedDrawing,
+    refetchInterval: 6000,
   });
 
-  const [drawingId, setDrawingId] = useState<string>("");
-  const [zoneId, setZoneId] = useState<string>("");
-  const [description, setDescription] = useState("");
-  const [flags, setFlags] = useState<string[]>([]);
+  const [pending, setPending] = useState<{ xPct: number; yPct: number } | null>(null);
+  const [operatives, setOperatives] = useState(1);
+  const [startTime, setStartTime] = useState(() => toLocalInput(new Date()));
+  const [finishTime, setFinishTime] = useState(() =>
+    toLocalInput(new Date(Date.now() + 8 * 3600 * 1000)),
+  );
   const [busy, setBusy] = useState(false);
 
-  const toggleFlag = (f: string) =>
-    setFlags((c) => (c.includes(f) ? c.filter((x) => x !== f) : [...c, f]));
+  const handleDrop = (coords: { xPct: number; yPct: number }) => {
+    if (!selectedDrawing) {
+      toast.error("Select a drawing first.");
+      return;
+    }
+    setPending(coords);
+  };
+
+  const closePin = async (pinId: string) => {
+    await closeFn({ data: { pinId } });
+    qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!pending || !selectedDrawing) return;
     setBusy(true);
     try {
       await createFn({
         data: {
           projectId,
-          drawingId: drawingId || undefined,
+          drawingId: selectedDrawing,
           zoneId: zoneId || undefined,
-          description,
-          highRiskFlags: flags as any,
+          tradePackage: trade || undefined,
+          operativeCount: operatives,
+          startTime: new Date(startTime).toISOString(),
+          scheduledFinish: new Date(finishTime).toISOString(),
+          xPct: pending.xPct,
+          yPct: pending.yPct,
         },
       });
-      setDescription("");
-      setFlags([]);
-      qc.invalidateQueries({ queryKey: ["activities", projectId] });
+      toast.success("Pin dropped · briefing logged.");
+      setPending(null);
+      qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to save pin.");
     } finally {
       setBusy(false);
     }
   };
 
-  const permitRequired = flags.length > 0;
-
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />
-      <div className="relative mx-auto max-w-5xl px-6 py-10">
+      <div className="relative mx-auto max-w-6xl px-6 py-10">
         <Link
           to="/projects/$projectId"
           params={{ projectId }}
@@ -103,142 +133,196 @@ function DabsPage() {
           className="mt-3 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
           style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
         >
-          DABS · Daily Activity
+          DABS · Spatial Pin Drop
         </h1>
+        <p className="mt-2 text-sm text-foreground/70">
+          Select your zone & trade, then click the drawing to drop a labor pin.
+        </p>
 
-        <form onSubmit={submit} className="glass-panel mt-8 p-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-1 block text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
-                Active Project Drawing
-              </span>
-              <select
-                value={drawingId}
-                onChange={(e) => setDrawingId(e.target.value)}
-                className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
-              >
-                <option value="">— Select drawing —</option>
-                {drawings.data?.filter((d: any) => d.is_active).map((d: any) => (
-                  <option key={d.id} value={d.id}>
-                    {d.drawing_no ?? "?"} · Rev {d.revision ?? "?"} · {d.title ?? "untitled"}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
-                Work Zone / Level
-              </span>
-              <select
-                value={zoneId}
-                onChange={(e) => setZoneId(e.target.value)}
-                className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
-              >
-                <option value="">— Select zone —</option>
-                {zones.data?.map((z: any) => (
-                  <option key={z.id} value={z.id} disabled={z.status === "closed"}>
-                    {z.name}
-                    {z.level ? ` · ${z.level}` : ""} ({z.source})
-                    {z.status === "closed" ? " — CLOSED" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <label className="mt-4 block">
-            <span className="mb-1 block text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
-              Activity Description
+        <div className="glass-panel mt-6 grid gap-4 p-5 md:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+              Work Zone / Level
             </span>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert"
-              placeholder="What are you doing on site today?"
-              required
+            <select
+              value={zoneId}
+              onChange={(e) => setZoneId(e.target.value)}
+              className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
+            >
+              <option value="">— Select zone —</option>
+              {zones.data?.map((z: any) => (
+                <option key={z.id} value={z.id} disabled={z.status === "closed"}>
+                  {z.name}
+                  {z.level ? ` · ${z.level}` : ""}
+                  {z.status === "closed" ? " — CLOSED" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+              Trade Package
+            </span>
+            <input
+              value={trade}
+              onChange={(e) => setTrade(e.target.value)}
+              placeholder="e.g. Electrical First Fix"
+              className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
             />
           </label>
+        </div>
 
-          <div className="mt-4">
-            <p className="mb-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
-              High-Risk Activities
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {RISK.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => toggleFlag(r.id)}
-                  className={`rounded-sm border px-3 py-1.5 font-mono text-[0.7rem] uppercase tracking-widest ${
-                    flags.includes(r.id)
-                      ? "border-alert bg-alert/20 text-alert"
-                      : "border-white/15 text-foreground/70 hover:border-white/40"
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        <section className="mt-6">
+          <DrawingCanvas
+            drawings={drawingRows as never}
+            selectedId={selectedDrawing}
+            onSelect={setSelectedDrawing}
+            onLockOracle={() => {}}
+            pins={(pins.data ?? []) as never}
+            pinMode="drop"
+            onDropPin={handleDrop}
+            onPinClick={(pin) => {
+              const dur = Math.round(
+                (Date.now() - new Date(pin.start_time ?? pin.scheduled_finish!).getTime()) / 60000,
+              );
+              toast(`${pin.trade_package ?? "Pin"} · ${pin.operative_count} ops · ${dur} min`, {
+                action: {
+                  label: "Close",
+                  onClick: () => closePin(pin.id),
+                },
+              });
+            }}
+          />
+        </section>
 
-          {permitRequired && (
-            <div className="mt-4 flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 p-3 text-sm text-alert">
-              <AlertTriangle size={16} />
-              <span>
-                <strong className="uppercase tracking-widest">Permit Required.</strong> Submitting this activity will flash a live alert on the Site Manager's dashboard until a permit is issued.
-              </span>
-            </div>
-          )}
-
-          <div className="mt-6 flex justify-end">
-            <button
-              type="submit"
-              disabled={busy || !description.trim()}
-              className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm uppercase tracking-wider disabled:opacity-40"
-            >
-              <ClipboardList size={14} /> {busy ? "Logging…" : "Log Activity"}
-            </button>
-          </div>
-        </form>
-
-        <section className="mt-10">
+        <section className="mt-6">
           <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
-            Recent Activities
+            Active Pins on This Sheet
           </h2>
           <ul className="mt-3 space-y-2">
-            {activities.data?.map((a: any) => (
-              <li key={a.id} className="glass-panel p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm text-foreground">{a.description}</p>
-                    <p className="mt-0.5 text-[0.65rem] uppercase tracking-widest text-foreground/50">
-                      {a.project_drawings?.drawing_no ?? "No drawing"} ·{" "}
-                      {a.work_zones?.name ?? "No zone"}
-                    </p>
-                  </div>
-                  {a.permit_status === "required" && (
-                    <span className="rounded-sm bg-alert px-2 py-1 font-mono text-[0.6rem] font-bold uppercase tracking-widest text-black">
-                      Permit Required
-                    </span>
-                  )}
-                  {a.permit_status === "active" && (
-                    <span className="rounded-sm border border-emerald-400/50 px-2 py-1 font-mono text-[0.6rem] font-bold uppercase tracking-widest text-emerald-400">
-                      Permit Active
-                    </span>
-                  )}
+            {(pins.data ?? []).map((p: any) => (
+              <li key={p.id} className="glass-panel flex items-center justify-between gap-3 p-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-foreground">
+                    {p.trade_package ?? "Untagged"} · {p.operative_count} operatives
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1 text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                    <MapPin size={10} /> {p.work_zones?.name ?? "no zone"} · finish{" "}
+                    {new Date(p.scheduled_finish).toLocaleTimeString()}
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => closePin(p.id)}
+                  className="rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-alert hover:text-alert"
+                >
+                  Clear Out
+                </button>
               </li>
             ))}
-            {activities.data && activities.data.length === 0 && (
+            {(pins.data ?? []).length === 0 && (
               <li className="glass-panel p-4 text-center text-xs text-foreground/50">
-                No activities logged yet.
+                No active pins on this sheet.
               </li>
             )}
           </ul>
         </section>
+
+        <section className="mt-10">
+          <Link
+            to="/site-manager/$projectId"
+            params={{ projectId }}
+            className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+          >
+            <ClipboardList size={14} /> Site Manager Command Tower
+          </Link>
+        </section>
       </div>
+
+      {pending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur">
+          <form
+            onSubmit={submit}
+            className="glass-panel w-full max-w-md border-2 border-alert p-6"
+          >
+            <div className="flex items-center justify-between">
+              <h3
+                className="text-xl font-extrabold uppercase tracking-wider text-alert"
+                style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              >
+                Labor Briefing
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPending(null)}
+                className="rounded-sm border border-white/15 p-1.5 text-foreground/60 hover:text-foreground"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <p className="mt-2 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/50">
+              Pin @ {(pending.xPct * 100).toFixed(1)}%, {(pending.yPct * 100).toFixed(1)}%
+            </p>
+
+            <label className="mt-4 block">
+              <span className="text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+                Operatives / Labor Count
+              </span>
+              <input
+                type="number"
+                min={1}
+                required
+                value={operatives}
+                onChange={(e) => setOperatives(Number(e.target.value))}
+                className="mt-1 w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
+              />
+            </label>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+                  Start
+                </span>
+                <input
+                  type="datetime-local"
+                  required
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-white/15 bg-black/40 px-2 py-2 font-mono text-xs text-foreground outline-none focus:border-alert"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+                  Scheduled Finish
+                </span>
+                <input
+                  type="datetime-local"
+                  required
+                  value={finishTime}
+                  onChange={(e) => setFinishTime(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-white/15 bg-black/40 px-2 py-2 font-mono text-xs text-foreground outline-none focus:border-alert"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPending(null)}
+                className="rounded-md border border-white/15 px-4 py-2 text-xs uppercase tracking-widest text-foreground/70 hover:border-white/40"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={busy}
+                className="glass-orange shimmer-btn rounded-md px-5 py-2 text-xs uppercase tracking-widest disabled:opacity-40"
+              >
+                {busy ? "Saving…" : "Confirm Briefing"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

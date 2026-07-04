@@ -36,17 +36,41 @@ type Drawing = {
 
 type DrawingLinks = { openPath: string; downloadPath: string; expiresAt: number };
 
+export type PinRecord = {
+  id: string;
+  x_pct: number;
+  y_pct: number;
+  status?: string | null;
+  subcontractor_id?: string | null;
+  trade_package?: string | null;
+  operative_count?: number | null;
+  start_time?: string | null;
+  scheduled_finish?: string | null;
+  work_zones?: { name?: string | null; level?: string | null } | null;
+};
+
 export function DrawingCanvas({
   drawings,
   selectedId,
   onSelect,
   onLockOracle,
+  pins,
+  pinMode = "none",
+  onDropPin,
+  onPinClick,
+  activePinId,
 }: {
   drawings: Drawing[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onLockOracle: (payload: { kind: "drawing"; id: string; label: string }) => void;
+  pins?: PinRecord[];
+  pinMode?: "drop" | "view" | "none";
+  onDropPin?: (coords: { xPct: number; yPct: number }) => void;
+  onPinClick?: (pin: PinRecord) => void;
+  activePinId?: string | null;
 }) {
+
   const directLinksFn = useServerFn(createDrawingDirectLinks);
   const rolesFn = useServerFn(getMyRoles);
   const deleteFn = useServerFn(deleteDrawing);
@@ -164,7 +188,13 @@ export function DrawingCanvas({
             key={selectedId}
             drawingId={selectedId}
             mimeHint={selected?.site_documents?.mime_type ?? undefined}
+            pins={pins}
+            pinMode={pinMode}
+            onDropPin={onDropPin}
+            onPinClick={onPinClick}
+            activePinId={activePinId ?? null}
           />
+
         )}
 
         {selected && (
@@ -258,7 +288,24 @@ function CompactMetadataStrip({ drawing }: { drawing: Drawing }) {
   );
 }
 
-function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: string }) {
+function InlinePreview({
+  drawingId,
+  mimeHint,
+  pins = [],
+  pinMode = "none",
+  onDropPin,
+  onPinClick,
+  activePinId,
+}: {
+  drawingId: string;
+  mimeHint?: string;
+  pins?: PinRecord[];
+  pinMode?: "drop" | "view" | "none";
+  onDropPin?: (coords: { xPct: number; yPct: number }) => void;
+  onPinClick?: (pin: PinRecord) => void;
+  activePinId?: string | null;
+}) {
+
   const getPreviewFn = useServerFn(getDrawingPreview);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -508,11 +555,27 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
             className="flex-1 touch-pan-x touch-pan-y overflow-auto rounded-md bg-black/40"
           >
             <div className="flex min-h-full items-center justify-center p-2">
-              <canvas
-                ref={canvasRef}
-                className="rounded-sm bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
-              />
+              <div className="relative inline-block">
+                <canvas
+                  ref={canvasRef}
+                  onClick={(e) => {
+                    if (pinMode !== "drop" || !onDropPin) return;
+                    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+                    const xPct = (e.clientX - rect.left) / rect.width;
+                    const yPct = (e.clientY - rect.top) / rect.height;
+                    if (xPct < 0 || xPct > 1 || yPct < 0 || yPct > 1) return;
+                    onDropPin({ xPct, yPct });
+                  }}
+                  className={`rounded-sm bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)] ${pinMode === "drop" ? "cursor-crosshair" : ""}`}
+                />
+                <PinOverlay
+                  pins={pins}
+                  activePinId={activePinId}
+                  onPinClick={onPinClick}
+                />
+              </div>
             </div>
+
           </div>
         </>
       )}
@@ -530,6 +593,56 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
           </a>
         </div>
       )}
+    </div>
+  );
+}
+
+function PinOverlay({
+  pins,
+  activePinId,
+  onPinClick,
+}: {
+  pins?: PinRecord[];
+  activePinId?: string | null;
+  onPinClick?: (pin: PinRecord) => void;
+}) {
+  if (!pins || pins.length === 0) return null;
+  const now = Date.now();
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      {pins.map((pin) => {
+        const overtime =
+          pin.scheduled_finish && new Date(pin.scheduled_finish).getTime() < now;
+        const isActive = activePinId === pin.id;
+        return (
+          <button
+            key={pin.id}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPinClick?.(pin);
+            }}
+            style={{ left: `${pin.x_pct * 100}%`, top: `${pin.y_pct * 100}%` }}
+            className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2"
+            title={pin.trade_package ?? "Pin"}
+          >
+            <span
+              className={`relative flex h-4 w-4 items-center justify-center ${isActive ? "scale-125" : ""} transition-transform`}
+            >
+              <span
+                className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
+                  overtime ? "bg-red-500" : "bg-orange-400"
+                }`}
+              />
+              <span
+                className={`relative inline-flex h-3 w-3 rounded-full border-2 border-white shadow-lg ${
+                  overtime ? "bg-red-600" : "bg-orange-500"
+                }`}
+              />
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
