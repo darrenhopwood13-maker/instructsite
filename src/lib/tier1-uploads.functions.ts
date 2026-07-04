@@ -343,7 +343,11 @@ const PageMeta = z.object({
   title: z.string(),
   level: z.string(),
   zone: z.string(),
+  zones: z
+    .array(z.object({ name: z.string(), level: z.string() }))
+    .default([]),
 });
+
 
 export const registerDrawingPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
