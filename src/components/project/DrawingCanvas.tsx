@@ -204,6 +204,81 @@ function EmptyPreview() {
   );
 }
 
+function InlinePreview({ openUrl, mime }: { openUrl: string; mime?: string }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!openUrl) return;
+    setStatus("loading");
+
+    (async () => {
+      try {
+        const res = await fetch(openUrl, { credentials: "same-origin" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const canvas = canvasRef.current;
+        if (!canvas || cancelled) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("no ctx");
+
+        const effectiveType = blob.type || mime || "";
+        if (effectiveType.startsWith("image/")) {
+          const bmp = await createImageBitmap(blob);
+          if (cancelled) return;
+          const maxW = 1600;
+          const scale = Math.min(1, maxW / bmp.width);
+          canvas.width = Math.round(bmp.width * scale);
+          canvas.height = Math.round(bmp.height * scale);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+        } else if (effectiveType.includes("pdf")) {
+          const pdfjs: any = await import("pdfjs-dist");
+          pdfjs.GlobalWorkerOptions.workerSrc = "";
+          const buf = await blob.arrayBuffer();
+          const pdf = await pdfjs.getDocument({ data: buf, disableWorker: true }).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 2 });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+        } else {
+          throw new Error(`Unsupported type ${effectiveType}`);
+        }
+        if (!cancelled) setStatus("ready");
+      } catch (e) {
+        if (!cancelled) setStatus("error");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [openUrl, mime]);
+
+  return (
+    <div className="relative z-10 m-auto flex w-full flex-1 items-center justify-center p-3">
+      {status === "loading" && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-foreground/60">
+          <Loader2 size={16} className="animate-spin" /> Rendering drawing…
+        </div>
+      )}
+      {status === "error" && (
+        <div className="absolute inset-0 z-20 m-auto flex flex-col items-center justify-center gap-2 text-center text-xs uppercase tracking-widest text-foreground/60">
+          <FileText size={22} className="text-foreground/40" />
+          Preview unavailable. Use Open or Download.
+        </div>
+      )}
+      <canvas
+        ref={canvasRef}
+        className="max-h-[34rem] w-auto max-w-full rounded-md bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
+      />
+    </div>
+  );
+}
+
 function BlueprintMetadataCard({
   drawing,
   linksLoading,
