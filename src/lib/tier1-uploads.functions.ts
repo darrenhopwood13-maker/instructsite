@@ -337,6 +337,40 @@ export const getDrawingPreview = createServerFn({ method: "GET" })
     };
   });
 
+export const createDrawingDirectLinks = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ drawingId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: drawing, error } = await supabase
+      .from("project_drawings")
+      .select("project_id")
+      .eq("id", data.drawingId)
+      .maybeSingle();
+    if (error || !drawing) throw new Error("Drawing not found");
+    await ensureProjectAccess(supabase, userId, drawing.project_id);
+
+    const { createDrawingAccessToken, getDrawingAccessSecret } = await import(
+      "./drawing-token.server"
+    );
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+    const token = createDrawingAccessToken(
+      {
+        drawingId: data.drawingId,
+        userId,
+        exp: expiresAt,
+        nonce: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`,
+      },
+      getDrawingAccessSecret(),
+    );
+    const openPath = `/api/drawing/${data.drawingId}?access=${encodeURIComponent(token)}`;
+    return {
+      openPath,
+      downloadPath: `${openPath}&download=1`,
+      expiresAt,
+    };
+  });
+
 const PageMeta = z.object({
   drawing_no: z.string(),
   revision: z.string(),
