@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Download,
   ExternalLink,
@@ -9,7 +9,10 @@ import {
   Layers3,
   Loader2,
   MapPin,
+  Maximize2,
   Sparkles,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { createDrawingDirectLinks, getDrawingPreview } from "@/lib/tier1-uploads.functions";
