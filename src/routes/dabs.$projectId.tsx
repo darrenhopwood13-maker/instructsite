@@ -2,12 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ClipboardList, MapPin, X } from "lucide-react";
+import { ArrowLeft, ClipboardList, LogOut, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { getProject } from "@/lib/projects.functions";
 import { listProjectDrawings, listProjectZones } from "@/lib/tier1-uploads.functions";
 import { createLivePin, listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
+import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 export const Route = createFileRoute("/dabs/$projectId")({
