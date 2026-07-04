@@ -243,15 +243,11 @@ function PreviewFrame({ url, mime }: { url: string; mime: string }) {
   }
   if (isPdf) {
     return (
-      <object
-        data={`${url}#toolbar=0&view=FitH`}
-        type="application/pdf"
-        className="relative h-[28rem] w-full bg-white"
-      >
-        <div className="p-6 text-center text-xs text-foreground/60">
-          Your browser can't inline this PDF. Use Download to open it locally.
-        </div>
-      </object>
+      <iframe
+        src={`${url}#toolbar=0&view=FitH`}
+        title="Drawing preview"
+        className="relative h-[28rem] w-full border-0 bg-white"
+      />
     );
   }
   return (
