@@ -180,7 +180,7 @@ function ProjectDetail() {
           </div>
         </section>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-2">
+        <div className="mt-10 space-y-6">
           <DrawingCanvas
             drawings={(drawings.data ?? []) as never}
             selectedId={selectedDrawing}
