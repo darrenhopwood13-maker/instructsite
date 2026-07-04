@@ -49,6 +49,7 @@ export function DropZone({
   const [items, setItems] = useState<Item[]>([]);
   const [dragging, setDragging] = useState(false);
   const register = useServerFn(registerTier1Document);
+  const registerPage = useServerFn(registerDrawingPage);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -56,10 +57,76 @@ export function DropZone({
       setItems((p) => [{ id, name: file.name, size: file.size, status: "uploading" }, ...p]);
       try {
         const user = await ensureOracleSession();
-        const path = `${user.id}/${projectId}/${docType}/${Date.now()}-${file.name.replace(
-          /[^\w.\-]+/g,
-          "_",
-        )}`;
+        const isPdf = /pdf/i.test(file.type) || /\.pdf$/i.test(file.name);
+        const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+
+        // === DRAWING + PDF → explode into per-page sheets ===
+        if (docType === "drawing" && isPdf) {
+          setItems((p) =>
+            p.map((i) => (i.id === id ? { ...i, status: "extracting", detail: "Slicing pack…" } : i)),
+          );
+          const pages = await splitPdfToPageImages(file);
+          if (pages.length === 0) throw new Error("PDF contained no pages");
+
+          const packId = crypto.randomUUID();
+          let done = 0;
+          let failed = 0;
+
+          for (const pg of pages) {
+            const pageName = `${safeName.replace(/\.pdf$/i, "")}_p${pg.pageNumber}.jpg`;
+            const pagePath = `${user.id}/${projectId}/drawing/pages/${packId}/page-${String(pg.pageNumber).padStart(3, "0")}.jpg`;
+            const { error: upErr } = await supabase.storage
+              .from(BUCKET)
+              .upload(pagePath, pg.blob, { contentType: "image/jpeg", upsert: false });
+            if (upErr) {
+              failed += 1;
+              continue;
+            }
+            setItems((p) =>
+              p.map((i) =>
+                i.id === id
+                  ? { ...i, detail: `Oracle reading sheet ${pg.pageNumber}/${pages.length}…` }
+                  : i,
+              ),
+            );
+            try {
+              const res = await registerPage({
+                data: {
+                  projectId,
+                  packId,
+                  packName: file.name,
+                  pageNumber: pg.pageNumber,
+                  fileName: pageName,
+                  filePath: pagePath,
+                  fileSize: pg.blob.size,
+                  mimeType: "image/jpeg",
+                },
+              });
+              if (res.extractionStatus === "failed") failed += 1;
+              else done += 1;
+              onUploaded?.();
+            } catch {
+              failed += 1;
+            }
+          }
+
+          setItems((p) =>
+            p.map((i) =>
+              i.id === id
+                ? {
+                    ...i,
+                    status: failed > 0 && done === 0 ? "error" : "done",
+                    detail: `${done}/${pages.length} sheets parsed${failed ? ` · ${failed} failed` : ""}`,
+                    error: failed > 0 && done === 0 ? "Extraction failed" : undefined,
+                  }
+                : i,
+            ),
+          );
+          return;
+        }
+
+        // === Standard single-file flow ===
+        const path = `${user.id}/${projectId}/${docType}/${Date.now()}-${safeName}`;
         const { error: upErr } = await supabase.storage
           .from(BUCKET)
           .upload(path, file, { contentType: file.type, upsert: false });
@@ -110,7 +177,7 @@ export function DropZone({
         );
       }
     },
-    [docType, extraFields, onUploaded, projectId, register],
+    [docType, extraFields, onUploaded, projectId, register, registerPage],
   );
 
   const handleFiles = (files: FileList | null) => {
