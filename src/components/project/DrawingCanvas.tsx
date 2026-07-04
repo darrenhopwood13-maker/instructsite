@@ -65,135 +65,101 @@ export function DrawingCanvas({
   const downloadUrl = absoluteUrl(links.data?.downloadPath);
 
   return (
-    <div className="glass-panel p-5">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="glass-panel flex h-full flex-col p-5">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
           Active Project Drawings
         </h3>
         <span className="font-mono text-[0.7rem] text-foreground/60">{drawings.length}</span>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-        {/* List */}
-        <ul className="max-h-[44rem] space-y-1.5 overflow-y-auto pr-1">
-          {drawings.map((d) => {
-            const active = d.id === selectedId;
-            return (
-              <li key={d.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(d.id)}
-                  className={`w-full rounded-md border p-2.5 text-left transition-colors ${
-                    active
-                      ? "border-alert bg-alert/15 shadow-[0_0_18px_rgba(255,120,0,0.25)]"
-                      : "border-white/10 bg-black/25 hover:border-white/25"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-mono text-[0.7rem] uppercase tracking-widest text-foreground/80">
-                    <FileText size={12} className={active ? "text-alert" : "text-foreground/50"} />
-                    {d.page_number != null && (
-                      <span className="rounded-sm bg-alert/25 px-1 py-px text-[0.55rem] font-bold text-alert">
-                        Sheet {d.page_number}
-                      </span>
-                    )}
-                    <span className="truncate">{d.drawing_no ?? "—"}</span>
-                    {d.revision && (
-                      <span className="rounded-sm border border-white/15 px-1 py-px text-[0.55rem] text-foreground/70">
-                        rev {d.revision}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-[0.72rem] text-foreground/70">
-                    {d.title ?? d.site_documents?.file_name ?? "Untitled"}
-                  </p>
-                  {d.pack_name && (
-                    <p className="mt-0.5 truncate font-mono text-[0.55rem] uppercase tracking-widest text-foreground/40">
-                      Pack: {d.pack_name}
-                    </p>
-                  )}
-                  {d.level && (
-                    <p className="mt-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/50">
-                      Level {d.level}
-                    </p>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-          {drawings.length === 0 && (
-            <li className="rounded-md border border-white/10 bg-black/20 p-4 text-center text-xs text-foreground/50">
-              No drawings uploaded yet.
-            </li>
-          )}
-        </ul>
+      {/* Elegant single-select dropdown for sheets */}
+      <div className="mb-3">
+        <label className="block">
+          <span className="mb-1 block font-mono text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+            Select Sheet
+          </span>
+          <select
+            value={selectedId ?? ""}
+            onChange={(e) => onSelect(e.target.value)}
+            className="w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
+          >
+            <option value="" disabled>
+              {drawings.length ? "— Choose a drawing —" : "No drawings uploaded"}
+            </option>
+            {drawings.map((d) => {
+              const title = d.title ?? d.site_documents?.file_name ?? "Untitled";
+              const rev = d.revision ? ` · Rev ${d.revision}` : "";
+              const sheet = d.page_number ? ` · Sheet ${d.page_number}` : "";
+              return (
+                <option key={d.id} value={d.id}>
+                  {(d.drawing_no ?? "DWG")}{rev}{sheet} — {title}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      </div>
 
-        {/* Preview + metadata */}
-        <div className="flex min-w-0 flex-col gap-4">
-          <div className="relative flex min-h-[36rem] flex-col overflow-hidden rounded-lg border border-white/15 bg-black/60">
-            <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,120,0,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,120,0,0.15)_1px,transparent_1px)] [background-size:32px_32px]" />
-            {!selectedId ? (
-              <EmptyPreview />
-            ) : (
-              <InlinePreview
-                key={selectedId}
-                drawingId={selectedId}
-                mimeHint={selected?.site_documents?.mime_type ?? undefined}
-              />
-            )}
+      {/* Compact metadata strip */}
+      {selected && (
+        <CompactMetadataStrip drawing={selected} />
+      )}
 
-            {selected && (
-              <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-black/70 px-3 py-2 backdrop-blur">
-                <div className="min-w-0 truncate font-mono text-[0.65rem] uppercase tracking-widest text-foreground/80">
-                  {label}
-                </div>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={openUrl || undefined}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-disabled={!openUrl}
-                    className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
-                  >
-                    <ExternalLink size={10} /> Open
-                  </a>
-                  <a
-                    href={downloadUrl || undefined}
-                    download
-                    aria-disabled={!downloadUrl}
-                    className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
-                  >
-                    <Download size={10} /> Download
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
-                    className="glass-orange inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
-                  >
-                    <Sparkles size={10} /> Lock to Oracle
-                  </button>
-                  <Link
-                    to="/oracle"
-                    search={{ drawingId: selected.id, label } as never}
-                    onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
-                    className="glass-btn inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
-                  >
-                    Ask Oracle
-                  </Link>
-                </div>
-              </div>
-            )}
+      {/* Preview */}
+      <div className="relative mt-3 flex min-h-[32rem] flex-1 flex-col overflow-hidden rounded-lg border border-white/15 bg-black/60">
+        <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,120,0,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,120,0,0.15)_1px,transparent_1px)] [background-size:32px_32px]" />
+        {!selectedId ? (
+          <EmptyPreview />
+        ) : (
+          <InlinePreview
+            key={selectedId}
+            drawingId={selectedId}
+            mimeHint={selected?.site_documents?.mime_type ?? undefined}
+          />
+        )}
+
+        {selected && (
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-black/70 px-3 py-2 backdrop-blur">
+            <div className="min-w-0 truncate font-mono text-[0.65rem] uppercase tracking-widest text-foreground/80">
+              {label}
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={openUrl || undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-disabled={!openUrl}
+                className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+              >
+                <ExternalLink size={10} /> Open
+              </a>
+              <a
+                href={downloadUrl || undefined}
+                download
+                aria-disabled={!downloadUrl}
+                className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+              >
+                <Download size={10} /> Download
+              </a>
+              <button
+                type="button"
+                onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
+                className="glass-orange inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+              >
+                <Sparkles size={10} /> Lock to Oracle
+              </button>
+              <Link
+                to="/oracle"
+                search={{ drawingId: selected.id, label } as never}
+                onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
+                className="glass-btn inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+              >
+                Ask Oracle
+              </Link>
+            </div>
           </div>
-
-          {selected && (
-            <BlueprintMetadataCard
-              drawing={selected}
-              linksLoading={links.isLoading}
-              linksError={links.isError}
-              openUrl={openUrl}
-              downloadUrl={downloadUrl}
-            />
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
@@ -208,8 +174,45 @@ function EmptyPreview() {
   );
 }
 
+function CompactMetadataStrip({ drawing }: { drawing: Drawing }) {
+  const items: Array<{ label: string; value: string; icon?: ReactNode }> = [
+    {
+      label: "Title",
+      value: drawing.title || drawing.site_documents?.file_name || "Untitled",
+      icon: <FileText size={11} />,
+    },
+    { label: "Rev", value: drawing.revision || "—" },
+    {
+      label: "Zone",
+      value: drawing.zone || drawing.level || "—",
+      icon: <MapPin size={11} />,
+    },
+    {
+      label: "Sheet",
+      value: `${drawing.page_number ? `#${drawing.page_number}` : "1"}${drawing.pack_name ? ` · ${drawing.pack_name}` : ""}`,
+      icon: <Layers3 size={11} />,
+    },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-2 rounded-md border border-alert/40 bg-gradient-to-r from-alert/10 via-black/60 to-black/70 p-2.5 sm:grid-cols-4">
+      {items.map((it) => (
+        <div key={it.label} className="min-w-0">
+          <div className="flex items-center gap-1 text-alert">
+            {it.icon ?? <FileText size={11} />}
+            <p className="font-mono text-[0.5rem] font-bold uppercase tracking-[0.25em]">{it.label}</p>
+          </div>
+          <p className="mt-0.5 truncate text-xs font-semibold text-foreground" title={it.value}>
+            {it.value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: string }) {
   const getPreviewFn = useServerFn(getDrawingPreview);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const bufferRef = useRef<ArrayBuffer | null>(null);
   const pdfDocRef = useRef<any>(null);
@@ -223,6 +226,21 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
   const [zoom, setZoom] = useState<number>(1);
   const [pageNum, setPageNum] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [containerSize, setContainerSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+
+  // Track container size for auto-fit
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const rect = el.getBoundingClientRect();
+      setContainerSize({ w: rect.width, h: rect.height });
+    });
+    ro.observe(el);
+    const rect = el.getBoundingClientRect();
+    setContainerSize({ w: rect.width, h: rect.height });
+    return () => ro.disconnect();
+  }, [status]);
 
   // Fetch + decode
   useEffect(() => {
@@ -296,24 +314,31 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
     };
   }, [drawingId, getPreviewFn, mimeHint]);
 
-  // Render on zoom/page/ready
+  // Render — auto-fit sheet to container, then apply zoom multiplier
   useEffect(() => {
     if (status !== "ready") return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    const { w: cw, h: ch } = containerSize;
+    if (cw < 20 || ch < 20) return;
 
     let cancelled = false;
 
     (async () => {
       try {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        // Reserve a little padding
+        const availW = Math.max(100, cw - 16);
+        const availH = Math.max(100, ch - 16);
+
         if (pdfDocRef.current) {
           const page = await pdfDocRef.current.getPage(pageNum);
           if (cancelled) return;
-          const dpr = Math.min(window.devicePixelRatio || 1, 2);
-          const baseScale = 1.6; // vector crispness
-          const viewport = page.getViewport({ scale: baseScale * zoom * dpr });
+          const baseVp = page.getViewport({ scale: 1 });
+          const fitScale = Math.min(availW / baseVp.width, availH / baseVp.height);
+          const viewport = page.getViewport({ scale: fitScale * zoom * dpr });
           canvas.width = Math.floor(viewport.width);
           canvas.height = Math.floor(viewport.height);
           canvas.style.width = `${Math.floor(viewport.width / dpr)}px`;
@@ -327,11 +352,10 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
           await renderTaskRef.current.promise;
         } else if (imageBitmapRef.current) {
           const bmp = imageBitmapRef.current;
-          const dpr = Math.min(window.devicePixelRatio || 1, 2);
-          const displayW = Math.min(bmp.width, 1600) * zoom;
-          const scale = (displayW / bmp.width) * dpr;
-          canvas.width = Math.round(bmp.width * scale);
-          canvas.height = Math.round(bmp.height * scale);
+          const fitScale = Math.min(availW / bmp.width, availH / bmp.height);
+          const scale = fitScale * zoom * dpr;
+          canvas.width = Math.max(1, Math.round(bmp.width * scale));
+          canvas.height = Math.max(1, Math.round(bmp.height * scale));
           canvas.style.width = `${Math.round(bmp.width * scale / dpr)}px`;
           canvas.style.height = `${Math.round(bmp.height * scale / dpr)}px`;
           ctx.fillStyle = "#ffffff";
@@ -349,7 +373,7 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
     return () => {
       cancelled = true;
     };
-  }, [status, zoom, pageNum]);
+  }, [status, zoom, pageNum, containerSize]);
 
   const zoomIn = () => setZoom((z) => Math.min(z * 1.25, 6));
   const zoomOut = () => setZoom((z) => Math.max(z / 1.25, 0.25));
@@ -400,9 +424,9 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
                 type="button"
                 onClick={resetZoom}
                 className="ml-1 inline-flex h-7 items-center justify-center gap-1 rounded-sm px-2 text-[0.6rem] uppercase tracking-widest text-foreground/80 hover:bg-white/10"
-                title="Reset view"
+                title="Fit to window"
               >
-                <Maximize2 size={12} /> Reset
+                <Maximize2 size={12} /> Fit
               </button>
             </div>
 
@@ -431,8 +455,11 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
             )}
           </div>
 
-          <div className="flex-1 overflow-auto rounded-md bg-black/40">
-            <div className="flex min-h-full items-start justify-center p-2">
+          <div
+            ref={containerRef}
+            className="flex-1 touch-pan-x touch-pan-y overflow-auto rounded-md bg-black/40"
+          >
+            <div className="flex min-h-full items-center justify-center p-2">
               <canvas
                 ref={canvasRef}
                 className="rounded-sm bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
@@ -455,115 +482,6 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
           </a>
         </div>
       )}
-    </div>
-  );
-}
-
-
-function BlueprintMetadataCard({
-  drawing,
-  linksLoading,
-  linksError,
-  openUrl,
-  downloadUrl,
-}: {
-  drawing: Drawing;
-  linksLoading: boolean;
-  linksError: boolean;
-  openUrl: string;
-  downloadUrl: string;
-}) {
-  const canLaunch = Boolean(openUrl) && !linksLoading;
-  const canDownload = Boolean(downloadUrl) && !linksLoading;
-
-  return (
-    <div className="w-full">
-      <div className="rounded-lg border border-alert/45 bg-gradient-to-br from-alert/20 via-black/80 to-black/95 p-4 shadow-[0_0_35px_rgba(255,120,0,0.22)]">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-3">
-          <div className="min-w-0 flex-1">
-            <p className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.35em] text-alert">
-              Document Metadata Card
-            </p>
-            <h4 className="mt-1.5 truncate font-mono text-lg font-black uppercase tracking-widest text-foreground">
-              {drawing.drawing_no || "Drawing Pending"}
-            </h4>
-          </div>
-          <div className="shrink-0 rounded-md border border-alert/40 bg-alert px-3 py-1.5 text-right text-black">
-            <p className="text-[0.5rem] font-black uppercase tracking-[0.25em]">Revision</p>
-            <p className="font-mono text-base font-black leading-tight">{drawing.revision || "—"}</p>
-          </div>
-        </div>
-
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <MetadataField
-            label="Sheet Title"
-            value={drawing.title || drawing.site_documents?.file_name || "Untitled sheet"}
-          />
-          <MetadataField label="Drawing Number" value={drawing.drawing_no || "Awaiting extraction"} />
-          <MetadataField label="Revision Status" value={drawing.revision || "Not stated"} />
-          <MetadataField
-            label="Associated Work Zone"
-            value={drawing.zone || drawing.level || "No zone linked"}
-            icon={<MapPin size={14} />}
-          />
-          <MetadataField
-            label="Sheet / Pack"
-            value={`${drawing.page_number ? `Sheet ${drawing.page_number}` : "Single sheet"}${
-              drawing.pack_name ? ` · ${drawing.pack_name}` : ""
-            }`}
-            icon={<Layers3 size={14} />}
-          />
-        </div>
-
-        {linksError && (
-          <div className="mt-4 rounded-md border border-alert/40 bg-alert/10 px-3 py-2 text-xs text-foreground/80">
-            Secure drawing launch link could not be prepared. Re-select the sheet and try again.
-          </div>
-        )}
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            disabled={!canLaunch}
-            onClick={() => window.open(openUrl, "_blank", "noopener,noreferrer")}
-            className="glass-orange flex min-h-16 items-center justify-center gap-2 rounded-md px-4 py-3 text-center text-xs font-black uppercase tracking-widest disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {linksLoading ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
-            Launch Blueprint in Safe Window
-          </button>
-          <a
-            href={canDownload ? downloadUrl : undefined}
-            download
-            aria-disabled={!canDownload}
-            className="flex min-h-16 items-center justify-center gap-2 rounded-md border border-foreground/70 bg-foreground px-4 py-3 text-center text-xs font-black uppercase tracking-widest text-background transition hover:bg-foreground/90 aria-disabled:pointer-events-none aria-disabled:opacity-50"
-          >
-            {linksLoading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-            Force Download Document Sheet
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MetadataField({
-  label,
-  value,
-  icon,
-  wide,
-}: {
-  label: string;
-  value: string;
-  icon?: ReactNode;
-  wide?: boolean;
-}) {
-  return (
-    <div className={`rounded-md border border-white/10 bg-black/35 p-3 ${wide ? "sm:col-span-2" : ""}`}>
-      <div className="mb-1 flex items-center gap-1.5 text-alert">
-        {icon ?? <FileText size={14} />}
-        <p className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.28em]">{label}</p>
-      </div>
-      <p className="break-words text-sm font-semibold leading-snug text-foreground">{value}</p>
     </div>
   );
 }
