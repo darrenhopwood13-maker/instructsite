@@ -2,9 +2,8 @@ import { useCallback, useState } from "react";
 import { UploadCloud, FileText, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { registerTier1Document, registerDrawingPage } from "@/lib/tier1-uploads.functions";
+import { registerTier1Document, splitAndRegisterDrawingPack } from "@/lib/tier1-uploads.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
-import { splitPdfToPageImages } from "@/lib/pdf-split";
 
 type Item = {
   id: string;
