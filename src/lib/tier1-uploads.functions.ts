@@ -308,3 +308,31 @@ export const listProjectZones = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+export const getDrawingPreview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ drawingId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: drawing, error } = await supabase
+      .from("project_drawings")
+      .select("project_id,site_documents(file_path,bucket,mime_type,file_name)")
+      .eq("id", data.drawingId)
+      .maybeSingle();
+    if (error || !drawing) throw new Error("Drawing not found");
+    await ensureProjectAccess(supabase, userId, drawing.project_id);
+    const sd = Array.isArray(drawing.site_documents)
+      ? drawing.site_documents[0]
+      : drawing.site_documents;
+    if (!sd?.file_path) throw new Error("Source file missing");
+    const { data: signed, error: sErr } = await supabase.storage
+      .from(sd.bucket ?? "project-bible")
+      .createSignedUrl(sd.file_path, 60 * 30);
+    if (sErr || !signed?.signedUrl) throw new Error(sErr?.message ?? "Signed URL failed");
+    return {
+      url: signed.signedUrl,
+      mimeType: sd.mime_type ?? "application/octet-stream",
+      fileName: sd.file_name ?? "drawing",
+    };
+  });
+
