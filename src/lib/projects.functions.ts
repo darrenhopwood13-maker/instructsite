@@ -99,7 +99,7 @@ export const getProject = createServerFn({ method: "GET" })
       if (!exists) throw new Error("Project not found or access denied");
       const { error: insertErr } = await supabaseAdmin
         .from("project_members")
-        .insert({ project_id: data.projectId, user_id: userId, role_on_project: "viewer" });
+        .insert({ project_id: data.projectId, user_id: userId, role_on_project: "subcontractor" });
       if (insertErr && !/duplicate|unique/i.test(insertErr.message ?? "")) {
         throw new Error("Project not found or access denied");
       }
