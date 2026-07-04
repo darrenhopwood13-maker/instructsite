@@ -181,7 +181,7 @@ export function DrawingCanvas({
           ) : preview.isError ? (
             <BlockedFallback onDownload={handleDownload} downloading={downloading} />
           ) : preview.data ? (
-            <PreviewFrame url={preview.data.objectUrl} mime={preview.data.mime} />
+            <PreviewFrame url={preview.data.dataUrl} mime={preview.data.mime} />
           ) : null}
 
           {selected && (
