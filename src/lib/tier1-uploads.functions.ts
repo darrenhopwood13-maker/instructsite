@@ -326,12 +326,9 @@ export const getDrawingPreview = createServerFn({ method: "GET" })
       ? drawing.site_documents[0]
       : drawing.site_documents;
     if (!sd?.file_path) throw new Error("Source file missing");
-    const { data: signed, error: sErr } = await supabase.storage
-      .from(sd.bucket ?? "project-bible")
-      .createSignedUrl(sd.file_path, 60 * 30);
-    if (sErr || !signed?.signedUrl) throw new Error(sErr?.message ?? "Signed URL failed");
     return {
-      url: signed.signedUrl,
+      bucket: sd.bucket ?? "project-bible",
+      path: sd.file_path,
       mimeType: sd.mime_type ?? "application/octet-stream",
       fileName: sd.file_name ?? "drawing",
     };
