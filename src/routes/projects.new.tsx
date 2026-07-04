@@ -1,9 +1,20 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Building2, MapPin, FileText, AlertCircle, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  MapPin,
+  FileText,
+  AlertCircle,
+  Loader2,
+  UploadCloud,
+  X,
+} from "lucide-react";
 import { createProject, getMyRoles } from "@/lib/projects.functions";
+import { registerTier1Document } from "@/lib/tier1-uploads.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/projects/new")({
   head: () => ({
@@ -17,6 +28,8 @@ function humanizeError(e: unknown): string {
   if (!raw) return "Something went wrong. Please try again.";
   if (/unauthor/i.test(raw)) return "Your session expired. Refresh the page and sign in again.";
   if (/master admin/i.test(raw)) return "You need Master Admin access to create a project.";
+  if (/storage|bucket|object/i.test(raw))
+    return "The project was created, but a document upload failed. Open the project dashboard and try that upload again.";
   if (/row-level security|permission denied|rls/i.test(raw))
     return "Database blocked the write. Your account is missing the required permissions.";
   if (/network|fetch|failed to fetch/i.test(raw))
@@ -28,6 +41,7 @@ function NewProject() {
   const nav = useNavigate();
   const create = useServerFn(createProject);
   const rolesFn = useServerFn(getMyRoles);
+  const register = useServerFn(registerTier1Document);
 
   const [ready, setReady] = useState(false);
   const [isMaster, setIsMaster] = useState<boolean | null>(null);
@@ -37,6 +51,9 @@ function NewProject() {
   const [name, setName] = useState("");
   const [siteAddress, setSiteAddress] = useState("");
   const [scopeBrief, setScopeBrief] = useState("");
+  const [drawingFiles, setDrawingFiles] = useState<File[]>([]);
+  const [logisticsFiles, setLogisticsFiles] = useState<File[]>([]);
+  const [ramsFiles, setRamsFiles] = useState<File[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -61,6 +78,7 @@ function NewProject() {
     setSaving(true);
     setErr(null);
     try {
+      const user = await ensureOracleSession();
       const { id } = await create({
         data: {
           name: name.trim(),
@@ -68,6 +86,9 @@ function NewProject() {
           scopeBrief: scopeBrief.trim(),
         },
       });
+      await uploadQueuedFiles(id, user.id, "drawing", drawingFiles, register);
+      await uploadQueuedFiles(id, user.id, "logistics", logisticsFiles, register);
+      await uploadQueuedFiles(id, user.id, "rams", ramsFiles, register);
       nav({ to: "/projects/$projectId", params: { projectId: id } });
     } catch (e) {
       setErr(humanizeError(e));
@@ -147,13 +168,42 @@ function NewProject() {
             />
           </Field>
 
+          <section>
+            <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-widest text-foreground/70">
+              Document Uploads
+            </p>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <QueuedDropZone
+                title="GA Drawings"
+                subtitle="PDF drawings / plans"
+                disabled={!isMaster || saving}
+                files={drawingFiles}
+                onFiles={setDrawingFiles}
+              />
+              <QueuedDropZone
+                title="Site Logistics"
+                subtitle="Logistics plan files"
+                disabled={!isMaster || saving}
+                files={logisticsFiles}
+                onFiles={setLogisticsFiles}
+              />
+              <QueuedDropZone
+                title="Master RAMS"
+                subtitle="RAMS documents"
+                disabled={!isMaster || saving}
+                files={ramsFiles}
+                onFiles={setRamsFiles}
+              />
+            </div>
+          </section>
+
           <div className="rounded-md border border-white/10 bg-black/30 p-4 text-xs text-foreground/60">
             <p className="font-bold uppercase tracking-widest text-foreground/80">
-              Next step (after create)
+              Create + onboard
             </p>
             <p className="mt-1">
-              You'll be taken to the project dashboard to upload GA / Drawings, Site Logistics
-              plans, and Master RAMS. Each upload is parsed by the AI extraction engine.
+              Selected documents upload immediately after the project record is created, then
+              you'll be taken to the project dashboard for parsing status and follow-up uploads.
             </p>
           </div>
 
@@ -210,5 +260,125 @@ function Field({
       </span>
       {children}
     </label>
+  );
+}
+
+type DocType = "drawing" | "logistics" | "rams";
+
+async function uploadQueuedFiles(
+  projectId: string,
+  userId: string,
+  docType: DocType,
+  files: File[],
+  register: ReturnType<typeof useServerFn<typeof registerTier1Document>>,
+) {
+  for (const file of files) {
+    const path = `${userId}/${projectId}/${docType}/${Date.now()}-${file.name.replace(
+      /[^\w.\-]+/g,
+      "_",
+    )}`;
+    const { error: uploadError } = await supabase.storage
+      .from("project-bible")
+      .upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
+    if (uploadError) throw uploadError;
+
+    await register({
+      data: {
+        projectId,
+        docType,
+        fileName: file.name,
+        filePath: path,
+        fileSize: file.size,
+        mimeType: file.type || "application/octet-stream",
+        tradePackage: docType === "rams" ? "General" : undefined,
+      },
+    });
+  }
+}
+
+function QueuedDropZone({
+  title,
+  subtitle,
+  files,
+  disabled,
+  onFiles,
+}: {
+  title: string;
+  subtitle: string;
+  files: File[];
+  disabled?: boolean;
+  onFiles: (files: File[]) => void;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const addFiles = (next: FileList | null) => {
+    if (!next) return;
+    onFiles([...files, ...Array.from(next)]);
+  };
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-black/25 p-4">
+      <label
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!disabled) setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          if (!disabled) addFiles(e.dataTransfer.files);
+        }}
+        className={`flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
+          dragging ? "border-alert bg-alert/10" : "border-alert/35 bg-black/25"
+        } ${disabled ? "cursor-not-allowed opacity-50" : "hover:border-alert"}`}
+      >
+        <UploadCloud size={24} className="text-alert" />
+        <span className="mt-3 text-sm font-extrabold uppercase tracking-wider text-foreground">
+          {title}
+        </span>
+        <span className="mt-1 text-[0.65rem] uppercase tracking-widest text-foreground/50">
+          {subtitle}
+        </span>
+        <span className="mt-2 text-[0.65rem] uppercase tracking-widest text-foreground/40">
+          Drop files or click
+        </span>
+        <input
+          type="file"
+          multiple
+          disabled={disabled}
+          accept="application/pdf,image/*"
+          className="hidden"
+          onChange={(e) => {
+            addFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
+      </label>
+
+      {files.length > 0 && (
+        <ul className="mt-3 space-y-2">
+          {files.map((file, index) => (
+            <li
+              key={`${file.name}-${file.size}-${index}`}
+              className="flex items-center gap-2 rounded-md border border-white/10 bg-black/30 px-2 py-1.5"
+            >
+              <FileText size={13} className="text-foreground/60" />
+              <span className="min-w-0 flex-1 truncate text-[0.7rem] font-mono text-foreground/80">
+                {file.name}
+              </span>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onFiles(files.filter((_, i) => i !== index))}
+                className="text-foreground/40 hover:text-alert disabled:opacity-40"
+                aria-label={`Remove ${file.name}`}
+              >
+                <X size={12} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
