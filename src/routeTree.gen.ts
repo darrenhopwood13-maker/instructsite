@@ -16,6 +16,7 @@ import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
+import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$drawingId'
 
 const OracleRoute = OracleRouteImport.update({
   id: '/oracle',
@@ -52,6 +53,11 @@ const DabsProjectIdRoute = DabsProjectIdRouteImport.update({
   path: '/dabs/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDrawingDrawingIdRoute = ApiDrawingDrawingIdRouteImport.update({
+  id: '/api/drawing/$drawingId',
+  path: '/api/drawing/$drawingId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/projects': typeof ProjectsIndexRoute
+  '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/site-manager/$projectId'
     | '/projects/'
+    | '/api/drawing/$drawingId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/site-manager/$projectId'
     | '/projects'
+    | '/api/drawing/$drawingId'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/site-manager/$projectId'
     | '/projects/'
+    | '/api/drawing/$drawingId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +131,7 @@ export interface RootRouteChildren {
   ProjectsNewRoute: typeof ProjectsNewRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  ApiDrawingDrawingIdRoute: typeof ApiDrawingDrawingIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DabsProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/drawing/$drawingId': {
+      id: '/api/drawing/$drawingId'
+      path: '/api/drawing/$drawingId'
+      fullPath: '/api/drawing/$drawingId'
+      preLoaderRoute: typeof ApiDrawingDrawingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsNewRoute: ProjectsNewRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  ApiDrawingDrawingIdRoute: ApiDrawingDrawingIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
