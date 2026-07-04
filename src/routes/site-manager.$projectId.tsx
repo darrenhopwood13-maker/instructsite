@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import { getProject } from "@/lib/projects.functions";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
 import { listLivePins, closeLivePin } from "@/lib/live-activity.functions";
+import { listArchivedToday } from "@/lib/daily-diary.functions";
 import { DrawingCanvas, type PinRecord } from "@/components/project/DrawingCanvas";
+import { QsVerificationQueue } from "@/components/project/QsVerificationQueue";
+import { IfcMeshStatus } from "@/components/project/IfcMeshStatus";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -35,6 +38,7 @@ function SiteManagerPage() {
   const drawingsFn = useServerFn(listProjectDrawings);
   const pinsFn = useServerFn(listLivePins);
   const closeFn = useServerFn(closeLivePin);
+  const archivedFn = useServerFn(listArchivedToday);
 
   const project = useQuery({
     queryKey: ["project", projectId],
@@ -61,6 +65,13 @@ function SiteManagerPage() {
     refetchInterval: 8000,
   });
 
+  const archivedToday = useQuery({
+    queryKey: ["archived-today", projectId],
+    queryFn: () => archivedFn({ data: { projectId } }),
+    enabled: ready,
+    refetchInterval: 30000,
+  });
+
   // Realtime — reactivate on any change
   useEffect(() => {
     if (!ready) return;
@@ -70,6 +81,15 @@ function SiteManagerPage() {
         "postgres_changes",
         { event: "*", schema: "public", table: "live_site_activity", filter: `project_id=eq.${projectId}` },
         () => qc.invalidateQueries({ queryKey: ["live-pins", projectId] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "daily_site_diaries", filter: `project_id=eq.${projectId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
+          qc.invalidateQueries({ queryKey: ["archived-today", projectId] });
+          qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
+        },
       )
       .subscribe();
     return () => {
@@ -153,7 +173,7 @@ function SiteManagerPage() {
           />
         </section>
 
-        <section className="mt-8 grid gap-3 sm:grid-cols-3">
+        <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Active Pins" value={String((pins.data ?? []).length)} />
           <StatCard
             label="Operatives On Site"
@@ -162,6 +182,15 @@ function SiteManagerPage() {
             )}
           />
           <StatCard label="Overtime" value={String(overtime.length)} tone={overtime.length ? "alert" : "ok"} />
+          <StatCard label="Archived Today" value={String(archivedToday.data?.count ?? 0)} />
+        </section>
+
+        <section className="mt-10">
+          <IfcMeshStatus projectId={projectId} />
+        </section>
+
+        <section className="mt-10">
+          <QsVerificationQueue projectId={projectId} />
         </section>
 
         <section className="mt-8">
