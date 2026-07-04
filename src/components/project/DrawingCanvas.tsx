@@ -74,17 +74,10 @@ export function DrawingCanvas({
     staleTime: 60_000 * 20,
     queryFn: async () => {
       const { blob, mime, fileName } = await fetchDrawingBlob(selectedId!);
-      return { objectUrl: URL.createObjectURL(blob), mime, fileName };
+      const dataUrl = await blobToDataUrl(blob);
+      return { dataUrl, mime, fileName, blob };
     },
   });
-
-  // Revoke old object URLs when they change or the component unmounts
-  useEffect(() => {
-    const url = preview.data?.objectUrl;
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [preview.data?.objectUrl]);
 
   const selected = drawings.find((d) => d.id === selectedId) ?? null;
   const label = selected
