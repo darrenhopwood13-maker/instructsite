@@ -129,6 +129,11 @@ export function DrawingCanvas({
                 >
                   <div className="flex items-center gap-2 font-mono text-[0.7rem] uppercase tracking-widest text-foreground/80">
                     <FileText size={12} className={active ? "text-alert" : "text-foreground/50"} />
+                    {d.page_number != null && (
+                      <span className="rounded-sm bg-alert/25 px-1 py-px text-[0.55rem] font-bold text-alert">
+                        Sheet {d.page_number}
+                      </span>
+                    )}
                     <span className="truncate">{d.drawing_no ?? "—"}</span>
                     {d.revision && (
                       <span className="rounded-sm border border-white/15 px-1 py-px text-[0.55rem] text-foreground/70">
@@ -139,6 +144,11 @@ export function DrawingCanvas({
                   <p className="mt-1 line-clamp-2 text-[0.72rem] text-foreground/70">
                     {d.title ?? d.site_documents?.file_name ?? "Untitled"}
                   </p>
+                  {d.pack_name && (
+                    <p className="mt-0.5 truncate font-mono text-[0.55rem] uppercase tracking-widest text-foreground/40">
+                      Pack: {d.pack_name}
+                    </p>
+                  )}
                   {d.level && (
                     <p className="mt-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/50">
                       Level {d.level}
