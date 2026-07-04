@@ -17,10 +17,20 @@ type Drawing = {
 };
 
 type PreviewBlob = {
-  objectUrl: string;
+  dataUrl: string;
   mime: string;
   fileName: string;
+  blob: Blob;
 };
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
 
 async function fetchDrawingBlob(
   drawingId: string,
