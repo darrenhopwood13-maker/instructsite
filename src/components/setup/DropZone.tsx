@@ -48,7 +48,7 @@ export function DropZone({
   const [items, setItems] = useState<Item[]>([]);
   const [dragging, setDragging] = useState(false);
   const register = useServerFn(registerTier1Document);
-  const registerPage = useServerFn(registerDrawingPage);
+  const splitPack = useServerFn(splitAndRegisterDrawingPack);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -59,70 +59,42 @@ export function DropZone({
         const isPdf = /pdf/i.test(file.type) || /\.pdf$/i.test(file.name);
         const safeName = file.name.replace(/[^\w.\-]+/g, "_");
 
-        // === DRAWING + PDF → explode into per-page sheets ===
+        // === DRAWING + PDF → server-side pdf-lib split + Gemini extraction ===
         if (docType === "drawing" && isPdf) {
+          const rawPath = `${user.id}/${projectId}/raw_incoming_packs/${Date.now()}-${safeName}`;
+          const { error: upErr } = await supabase.storage
+            .from(BUCKET)
+            .upload(rawPath, file, { contentType: "application/pdf", upsert: false });
+          if (upErr) throw upErr;
+
           setItems((p) =>
-            p.map((i) => (i.id === id ? { ...i, status: "extracting", detail: "Slicing pack…" } : i)),
+            p.map((i) =>
+              i.id === id
+                ? { ...i, status: "extracting", detail: "Oracle splitting pack & reading every sheet…" }
+                : i,
+            ),
           );
-          const pages = await splitPdfToPageImages(file);
-          if (pages.length === 0) throw new Error("PDF contained no pages");
 
-          const packId = crypto.randomUUID();
-          let done = 0;
-          let failed = 0;
-
-          for (const pg of pages) {
-            const pageName = `${safeName.replace(/\.pdf$/i, "")}_p${pg.pageNumber}.jpg`;
-            const pagePath = `${user.id}/${projectId}/drawing/pages/${packId}/page-${String(pg.pageNumber).padStart(3, "0")}.jpg`;
-            const { error: upErr } = await supabase.storage
-              .from(BUCKET)
-              .upload(pagePath, pg.blob, { contentType: "image/jpeg", upsert: false });
-            if (upErr) {
-              failed += 1;
-              continue;
-            }
-            setItems((p) =>
-              p.map((i) =>
-                i.id === id
-                  ? { ...i, detail: `Oracle reading sheet ${pg.pageNumber}/${pages.length}…` }
-                  : i,
-              ),
-            );
-            try {
-              const res = await registerPage({
-                data: {
-                  projectId,
-                  packId,
-                  packName: file.name,
-                  pageNumber: pg.pageNumber,
-                  fileName: pageName,
-                  filePath: pagePath,
-                  fileSize: pg.blob.size,
-                  mimeType: "image/jpeg",
-                },
-              });
-              if (res.extractionStatus === "failed") failed += 1;
-              else done += 1;
-              onUploaded?.();
-            } catch {
-              failed += 1;
-            }
-          }
+          const res = await splitPack({
+            data: { projectId, packName: file.name, rawFilePath: rawPath },
+          });
 
           setItems((p) =>
             p.map((i) =>
               i.id === id
                 ? {
                     ...i,
-                    status: failed > 0 && done === 0 ? "error" : "done",
-                    detail: `${done}/${pages.length} sheets parsed${failed ? ` · ${failed} failed` : ""}`,
-                    error: failed > 0 && done === 0 ? "Extraction failed" : undefined,
+                    status: res.completed === 0 && res.failed > 0 ? "error" : "done",
+                    detail: `${res.completed}/${res.totalPages} sheets parsed${res.failed ? ` · ${res.failed} failed` : ""}`,
+                    error: res.completed === 0 && res.failed > 0 ? "Extraction failed" : undefined,
                   }
                 : i,
             ),
           );
+          onUploaded?.();
           return;
         }
+
 
         // === Standard single-file flow ===
         const path = `${user.id}/${projectId}/${docType}/${Date.now()}-${safeName}`;
