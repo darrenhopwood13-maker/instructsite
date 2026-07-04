@@ -675,7 +675,7 @@ function InlinePreview({
             </div>
 
             <div className="hidden font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50 md:block">
-              Scroll to zoom · Drag to pan · Double-click to fit
+              Pinch or Ctrl+scroll to zoom · Two-finger scroll or drag to pan · Double-click to fit
             </div>
 
             {isPdf && totalPages > 1 && (
