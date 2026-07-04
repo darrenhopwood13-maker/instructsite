@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MapPin, ArrowLeft, ClipboardList, ShieldAlert } from "lucide-react";
 import {
   getProject,
@@ -10,9 +10,13 @@ import {
   listProjectDrawings,
   listProjectLogistics,
   listProjectRams,
+  listProjectZones,
 } from "@/lib/tier1-uploads.functions";
 import { DropZone } from "@/components/setup/DropZone";
+import { DrawingCanvas } from "@/components/project/DrawingCanvas";
+import { ZoneMap } from "@/components/project/ZoneMap";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+
 
 export const Route = createFileRoute("/projects/$projectId")({
   head: () => ({ meta: [{ title: "Project — Site Operations Oracle" }] }),
