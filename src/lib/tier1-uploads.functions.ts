@@ -68,8 +68,18 @@ async function ensureProjectAccess(
     _user_id: userId,
   });
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("You are not a member of this project.");
+  if (data) return;
+
+  // Oracle sessions are anonymous — auto-enroll the current session as a
+  // viewer so shared demo/preview projects remain reachable.
+  const { error: insertErr } = await supabase
+    .from("project_members")
+    .insert({ project_id: projectId, user_id: userId, role: "viewer" });
+  if (insertErr && !insertErr.message?.includes("duplicate")) {
+    throw new Error("You are not a member of this project.");
+  }
 }
+
 
 /**
  * Registers a Tier-1 operational document (drawing / logistics / RAMS)
