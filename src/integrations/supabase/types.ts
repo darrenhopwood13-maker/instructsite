@@ -75,6 +75,104 @@ export type Database = {
           },
         ]
       }
+      daily_site_diaries: {
+        Row: {
+          checkout_time: string
+          completion_pct: number
+          created_at: string
+          drawing_id: string | null
+          hours_logged: number
+          id: string
+          ifc_synced: boolean
+          live_activity_id: string | null
+          notes: string | null
+          operative_count: number
+          photo_urls: string[]
+          progress_status: string
+          project_id: string
+          qs_status: string
+          scheduled_finish: string
+          start_time: string
+          subcontractor_id: string
+          trade_package: string | null
+          updated_at: string
+          zone_id: string | null
+        }
+        Insert: {
+          checkout_time?: string
+          completion_pct: number
+          created_at?: string
+          drawing_id?: string | null
+          hours_logged: number
+          id?: string
+          ifc_synced?: boolean
+          live_activity_id?: string | null
+          notes?: string | null
+          operative_count: number
+          photo_urls?: string[]
+          progress_status: string
+          project_id: string
+          qs_status?: string
+          scheduled_finish: string
+          start_time: string
+          subcontractor_id: string
+          trade_package?: string | null
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Update: {
+          checkout_time?: string
+          completion_pct?: number
+          created_at?: string
+          drawing_id?: string | null
+          hours_logged?: number
+          id?: string
+          ifc_synced?: boolean
+          live_activity_id?: string | null
+          notes?: string | null
+          operative_count?: number
+          photo_urls?: string[]
+          progress_status?: string
+          project_id?: string
+          qs_status?: string
+          scheduled_finish?: string
+          start_time?: string
+          subcontractor_id?: string
+          trade_package?: string | null
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_site_diaries_drawing_id_fkey"
+            columns: ["drawing_id"]
+            isOneToOne: false
+            referencedRelation: "project_drawings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_site_diaries_live_activity_id_fkey"
+            columns: ["live_activity_id"]
+            isOneToOne: false
+            referencedRelation: "live_site_activity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_site_diaries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_site_diaries_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "work_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_contents: {
         Row: {
           char_count: number
