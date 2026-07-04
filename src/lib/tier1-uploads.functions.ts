@@ -258,7 +258,7 @@ export const listProjectDrawings = createServerFn({ method: "GET" })
     const { data: rows, error } = await context.supabase
       .from("project_drawings")
       .select(
-        "id,drawing_no,revision,title,scale,level,zone,is_active,extraction_status,extraction_error,created_at,site_documents(file_name)",
+        "id,drawing_no,revision,title,scale,level,zone,is_active,extraction_status,extraction_error,page_number,pack_id,pack_name,created_at,site_documents(file_name,mime_type)",
       )
       .eq("project_id", data.projectId)
       .order("created_at", { ascending: false });
