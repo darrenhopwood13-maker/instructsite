@@ -1,50 +1,78 @@
-## Goal
+## Phase 4 · End-of-Shift Checkout & Daily Diary Archive
 
-Make the PDF/image drawing viewer (`src/components/project/DrawingCanvas.tsx` → `InlinePreview`) behave like a proper CAD/PDF viewer: mouse-wheel zoom anchored on cursor, click-and-drag pan, and crisp, readable text at any zoom level. This is the only drawing viewer in the app (used by DABS and Site Manager pages), so upgrading it covers "all PDF drawing viewers".
+### 1. Data model (one migration)
 
-## Changes (single file: `src/components/project/DrawingCanvas.tsx`)
+New table `public.daily_site_diaries` — the permanent legal record:
 
-### 1. Pan/zoom interaction model
+- `id`, `project_id → projects` (cascade), `live_activity_id → live_site_activity` (nullable, set null)
+- `subcontractor_id`, `drawing_id`, `zone_id`, `trade_package`
+- `operative_count`, `start_time`, `scheduled_finish`, `checkout_time` (default now)
+- `hours_logged` numeric (computed at insert from start/checkout)
+- `progress_status` text check `('completed','partial','not_completed')`
+- `completion_pct` int 0–100
+- `notes` text (delays / variances)
+- `photo_urls` text[] (storage keys)
+- `qs_status` text check `('pending','approved','rejected')` default `'pending'` — feeds the QS queue
+- `ifc_synced` bool default false — flipped when 100% and approved
+- `created_at`, `updated_at`
 
-Replace the current `overflow-auto` scroll container + `zoom` state with a transform-based viewport:
+Grants + RLS: authenticated members can insert-own and select project rows; project admins can update `qs_status`/`ifc_synced`; service_role all.
 
-- New state: `scale` (number, default = fit) and `offset` `{x, y}` (pan, in CSS px).
-- Wrap `<canvas>` + `<PinOverlay>` in an inner div with
-  `transform: translate(${offset.x}px, ${offset.y}px) scale(${scale/fitScale})`
-  and `transform-origin: 0 0`. Outer container is `overflow-hidden`, `cursor-grab` / `cursor-grabbing`.
-- Wheel handler: `e.preventDefault()`, compute new scale (`* 1.1` per notch, clamp 0.1–12), and adjust `offset` so the point under the cursor stays fixed (standard anchored-zoom math using `getBoundingClientRect`).
-- Mouse handlers: `onMouseDown` starts drag (record start offset + client point), `onMouseMove` updates offset, `onMouseUp` / `onMouseLeave` ends it. Drag is disabled while `pinMode === "drop"` so pin drop still works; in that mode wheel still zooms.
-- Double-click resets to fit (offset 0, scale = fit).
-- Buttons (Zoom in/out/Fit) reuse the same handlers.
+Extend `live_site_activity_status_check` to allow `'archived'` (existing `'closed'` stays for manual clear-outs).
 
-### 2. High-quality rendering
+Storage bucket `diary-photos` (private) with policies: authenticated project members upload/read their project's paths, path prefix `{project_id}/{diary_id}/…`.
 
-Current code renders PDF at `fitScale * zoom * dpr` but caps `dpr` at 2 and re-renders every zoom step, which is slow and can still look blurry when zoomed. New approach:
+Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE public.daily_site_diaries;` (live_site_activity already in publication via existing site-manager subscription).
 
-- Render the PDF page once at a **high base resolution** (`fitScale * qualityMultiplier * dpr`, where `qualityMultiplier = 2` and `dpr` uncapped up to 3), producing a sharp bitmap large enough to zoom into ~2× without pixelation.
-- Apply user zoom via CSS transform (fast, no re-render).
-- When user zooms past the rendered resolution (`scale > renderedScale * 1.25`), debounce (~250 ms after wheel stops) and re-render the PDF page at the new scale, capped so the canvas pixel area stays below ~40 MP to avoid browser limits. Same treatment for images: re-draw the `ImageBitmap` into the canvas at the higher scale.
-- Keep the white background fill and the existing render-cancellation logic.
+### 2. Server functions (`src/lib/daily-diary.functions.ts`)
 
-### 3. Pin overlay
+- `submitDailyDiary` (POST, auth) — validates input, flips the matching `live_site_activity` row to `status='archived'`, computes `hours_logged`, inserts `daily_site_diaries` row, returns it. All in one call; RLS scopes to caller.
+- `listQsQueue` (GET, auth) — project-admin only; returns `qs_status='pending'` rows joined with zone/drawing names.
+- `approveDiary` (POST, auth) — project-admin only; sets `qs_status='approved'`; when `completion_pct=100` also sets `ifc_synced=true` (the IFC viewer reads this flag).
+- `rejectDiary` (POST, auth) — mirror.
 
-Pins are positioned by `%` inside the same transformed inner div, so they pan/zoom with the drawing automatically. Pin size stays visually constant by applying `transform: scale(${1/(scale/fitScale)})` to each pin marker, so markers don't grow huge at high zoom.
+### 3. Subcontractor checkout UI (`src/routes/dabs.$projectId.tsx`)
 
-Pin drop coordinates: compute `xPct`/`yPct` against the canvas's own bounding rect (already what the code does) — still correct because the canvas is the transformed element.
+Replace the small "Clear Out" link per active pin with a prominent full-width button on each pin card: **"Close Out Today's Shift / Complete Daily Diary"** (high-contrast orange). Existing pin-drop / briefing flow untouched.
 
-### 4. UI hints
+New modal component `src/components/project/CheckoutDiaryModal.tsx` opened from that button. Fields:
 
-- Toolbar gains a small hint: "Scroll to zoom · Drag to pan · Double-click to fit".
-- `cursor-grab` on the viewport, `cursor-grabbing` while dragging, `cursor-crosshair` in pin-drop mode (unchanged behaviour).
+- Task Progress Status — segmented radio: Completed / Partial / Not Completed
+- Estimated Zone Completion % — shadcn `Slider` 0–100 + numeric input, kept in sync
+- Photo Evidence — dropzone (reuse `DropZone` pattern) that also renders `<input type="file" accept="image/*" capture="environment" multiple>` so mobile opens the camera; uploads to `diary-photos` bucket via `supabase.storage`, collects returned paths
+- Notes / Delays — `Textarea` (max 2000 chars)
+- Submit → calls `submitDailyDiary`, toasts success, invalidates `live-pins` query (pin disappears from own list) and closes modal
 
-## Technical notes
+### 4. Realtime HUD cleanup (Site Manager)
 
-- No new dependencies; `pdfjs-dist` already used.
-- Only `src/components/project/DrawingCanvas.tsx` is edited. No server, RLS, or route changes.
-- Pin drop math stays as percentages of the canvas element, so DABS pin persistence is unaffected.
+`site-manager.$projectId.tsx` already subscribes to `live_site_activity` `postgres_changes` and requeries. Because `submitDailyDiary` transitions `status → 'archived'` and the list filters `activeOnly` (`status='active'`), the pin drops off in real time — no client changes needed there. Add a small "Archived today: N" line under the stat cards fed by a lightweight `daily_site_diaries` count query for the current day.
 
-## Verification
+### 5. Commercial matrix hooks
 
-- Open a drawing on `/dabs/:projectId` and `/site-manager/:projectId`: scroll-wheel zoom anchors on cursor; drag pans; text remains sharp at 200–400% zoom; double-click fits.
-- In pin-drop mode, clicks still drop pins at the correct percentage; wheel-zoom still works.
-- Existing pins render at the correct spatial location before/after zoom, and stay a constant visual size.
+Both live in the Site Manager (project-admin surface):
+
+- **QS Verification Queue** — new collapsible section listing `listQsQueue` output with Approve / Reject buttons. On approve at 100 %, backend sets `ifc_synced=true`.
+- **IFC Model color update** — the IFC 3D viewer doesn't exist yet; scaffold a `src/components/project/IfcMeshStatus.tsx` panel that reads approved diaries with `completion_pct=100` grouped by `zone_id` and renders each zone as a chip: orange = in progress, solid green = complete. When the real IFC viewer lands, it consumes the same query. Both design tokens (`--alert` orange and a new `--complete` green) added to `src/styles.css`.
+
+### 6. Files touched
+
+New:
+- `supabase/migrations/<ts>_daily_diaries.sql`
+- `src/lib/daily-diary.functions.ts`
+- `src/components/project/CheckoutDiaryModal.tsx`
+- `src/components/project/IfcMeshStatus.tsx`
+- `src/components/project/QsVerificationQueue.tsx`
+
+Edited:
+- `src/routes/dabs.$projectId.tsx` — big checkout button per pin, mount modal
+- `src/routes/site-manager.$projectId.tsx` — archived-today stat, mount QS queue + IFC status
+- `src/styles.css` — `--complete` green token
+- `src/integrations/supabase/types.ts` — regenerated after migration approves
+
+### 7. Explicit non-goals (call out, not build)
+
+- No real IFC 3D geometry viewer — only the status chip panel that will feed one later.
+- No QS-user role separation beyond project-admin; the QS queue is admin-scoped for now.
+- No PDF export of the diary — data lives structured in `daily_site_diaries` ready for later report generation.
+
+Approve to proceed and I'll ship the migration first, then wire the UI.
