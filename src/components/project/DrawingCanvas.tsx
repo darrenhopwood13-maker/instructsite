@@ -36,17 +36,41 @@ type Drawing = {
 
 type DrawingLinks = { openPath: string; downloadPath: string; expiresAt: number };
 
+export type PinRecord = {
+  id: string;
+  x_pct: number;
+  y_pct: number;
+  status?: string | null;
+  subcontractor_id?: string | null;
+  trade_package?: string | null;
+  operative_count?: number | null;
+  start_time?: string | null;
+  scheduled_finish?: string | null;
+  work_zones?: { name?: string | null; level?: string | null } | null;
+};
+
 export function DrawingCanvas({
   drawings,
   selectedId,
   onSelect,
   onLockOracle,
+  pins,
+  pinMode = "none",
+  onDropPin,
+  onPinClick,
+  activePinId,
 }: {
   drawings: Drawing[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onLockOracle: (payload: { kind: "drawing"; id: string; label: string }) => void;
+  pins?: PinRecord[];
+  pinMode?: "drop" | "view" | "none";
+  onDropPin?: (coords: { xPct: number; yPct: number }) => void;
+  onPinClick?: (pin: PinRecord) => void;
+  activePinId?: string | null;
 }) {
+
   const directLinksFn = useServerFn(createDrawingDirectLinks);
   const rolesFn = useServerFn(getMyRoles);
   const deleteFn = useServerFn(deleteDrawing);
