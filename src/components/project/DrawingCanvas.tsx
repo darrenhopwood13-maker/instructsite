@@ -188,7 +188,13 @@ export function DrawingCanvas({
             key={selectedId}
             drawingId={selectedId}
             mimeHint={selected?.site_documents?.mime_type ?? undefined}
+            pins={pins}
+            pinMode={pinMode}
+            onDropPin={onDropPin}
+            onPinClick={onPinClick}
+            activePinId={activePinId ?? null}
           />
+
         )}
 
         {selected && (
