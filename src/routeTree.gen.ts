@@ -38,14 +38,14 @@ const SiteManagerProjectIdRoute = SiteManagerProjectIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => ProjectsRoute,
+  id: '/projects/new',
+  path: '/projects/new',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
-  id: '/$projectId',
-  path: '/$projectId',
-  getParentRoute: () => ProjectsRoute,
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DabsProjectIdRoute = DabsProjectIdRouteImport.update({
   id: '/dabs/$projectId',
@@ -115,6 +115,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   OracleRoute: typeof OracleRoute
   DabsProjectIdRoute: typeof DabsProjectIdRoute
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
+  ProjectsNewRoute: typeof ProjectsNewRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
@@ -151,17 +153,17 @@ declare module '@tanstack/react-router' {
     }
     '/projects/new': {
       id: '/projects/new'
-      path: '/new'
+      path: '/projects/new'
       fullPath: '/projects/new'
       preLoaderRoute: typeof ProjectsNewRouteImport
-      parentRoute: typeof ProjectsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/projects/$projectId': {
       id: '/projects/$projectId'
-      path: '/$projectId'
+      path: '/projects/$projectId'
       fullPath: '/projects/$projectId'
       preLoaderRoute: typeof ProjectsProjectIdRouteImport
-      parentRoute: typeof ProjectsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/dabs/$projectId': {
       id: '/dabs/$projectId'
@@ -177,6 +179,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   OracleRoute: OracleRoute,
   DabsProjectIdRoute: DabsProjectIdRoute,
+  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
+  ProjectsNewRoute: ProjectsNewRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
 }
