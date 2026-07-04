@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import type { ReactNode } from "react";
 import {
   Download,
   ExternalLink,
@@ -51,7 +52,11 @@ export function DrawingCanvas({
     ? `${selected.drawing_no ?? "DWG"} · ${selected.title ?? selected.site_documents?.file_name ?? ""}`
     : "";
 
-  const absoluteUrl = (path?: string) => (path ? new URL(path, window.location.origin).href : "");
+  const absoluteUrl = (path?: string) => {
+    if (!path) return "";
+    if (typeof window === "undefined") return path;
+    return new URL(path, window.location.origin).href;
+  };
   const openUrl = absoluteUrl(links.data?.openPath);
   const downloadUrl = absoluteUrl(links.data?.downloadPath);
 
@@ -275,7 +280,7 @@ function MetadataField({
 }: {
   label: string;
   value: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   wide?: boolean;
 }) {
   return (
