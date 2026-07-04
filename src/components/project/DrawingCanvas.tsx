@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Download,
   ExternalLink,
@@ -69,9 +69,9 @@ export function DrawingCanvas({
         <span className="font-mono text-[0.7rem] text-foreground/60">{drawings.length}</span>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_1.4fr]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
         {/* List */}
-        <ul className="max-h-[28rem] space-y-1.5 overflow-y-auto pr-1">
+        <ul className="max-h-[44rem] space-y-1.5 overflow-y-auto pr-1">
           {drawings.map((d) => {
             const active = d.id === selectedId;
             return (
@@ -123,12 +123,64 @@ export function DrawingCanvas({
           )}
         </ul>
 
-        {/* Document metadata card */}
-        <div className="relative flex min-h-[24rem] flex-col overflow-hidden rounded-lg border border-white/15 bg-black/60">
-          <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,120,0,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,120,0,0.15)_1px,transparent_1px)] [background-size:32px_32px]" />
-          {!selectedId ? (
-            <EmptyPreview />
-          ) : selected ? (
+        {/* Preview + metadata */}
+        <div className="flex min-w-0 flex-col gap-4">
+          <div className="relative flex min-h-[36rem] flex-col overflow-hidden rounded-lg border border-white/15 bg-black/60">
+            <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,120,0,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,120,0,0.15)_1px,transparent_1px)] [background-size:32px_32px]" />
+            {!selectedId ? (
+              <EmptyPreview />
+            ) : (
+              <InlinePreview
+                key={selectedId}
+                openUrl={openUrl}
+                mime={selected?.site_documents?.mime_type ?? undefined}
+              />
+            )}
+
+            {selected && (
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-black/70 px-3 py-2 backdrop-blur">
+                <div className="min-w-0 truncate font-mono text-[0.65rem] uppercase tracking-widest text-foreground/80">
+                  {label}
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={openUrl || undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-disabled={!openUrl}
+                    className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                  >
+                    <ExternalLink size={10} /> Open
+                  </a>
+                  <a
+                    href={downloadUrl || undefined}
+                    download
+                    aria-disabled={!downloadUrl}
+                    className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                  >
+                    <Download size={10} /> Download
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
+                    className="glass-orange inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+                  >
+                    <Sparkles size={10} /> Lock to Oracle
+                  </button>
+                  <Link
+                    to="/oracle"
+                    search={{ drawingId: selected.id, label } as never}
+                    onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
+                    className="glass-btn inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+                  >
+                    Ask Oracle
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {selected && (
             <BlueprintMetadataCard
               drawing={selected}
               linksLoading={links.isLoading}
@@ -136,39 +188,6 @@ export function DrawingCanvas({
               openUrl={openUrl}
               downloadUrl={downloadUrl}
             />
-          ) : null}
-
-          {selected && (
-            <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-black/70 px-3 py-2 backdrop-blur">
-              <div className="min-w-0 truncate font-mono text-[0.65rem] uppercase tracking-widest text-foreground/80">
-                {label}
-              </div>
-              <div className="flex items-center gap-2">
-                <a
-                  href={downloadUrl || undefined}
-                  download
-                  aria-disabled={!downloadUrl}
-                  className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
-                >
-                  <Download size={10} /> Download
-                </a>
-                <button
-                  type="button"
-                  onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
-                  className="glass-orange inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
-                >
-                  <Sparkles size={10} /> Lock to Oracle
-                </button>
-                <Link
-                  to="/oracle"
-                  search={{ drawingId: selected.id, label } as never}
-                  onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
-                  className="glass-btn inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
-                >
-                  Ask Oracle
-                </Link>
-              </div>
-            </div>
           )}
         </div>
       </div>
@@ -181,6 +200,81 @@ function EmptyPreview() {
     <div className="relative m-auto flex flex-col items-center gap-2 text-center text-xs uppercase tracking-widest text-foreground/50">
       <FileText size={22} className="text-foreground/40" />
       <span>Select a drawing to preview</span>
+    </div>
+  );
+}
+
+function InlinePreview({ openUrl, mime }: { openUrl: string; mime?: string }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!openUrl) return;
+    setStatus("loading");
+
+    (async () => {
+      try {
+        const res = await fetch(openUrl, { credentials: "same-origin" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const canvas = canvasRef.current;
+        if (!canvas || cancelled) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("no ctx");
+
+        const effectiveType = blob.type || mime || "";
+        if (effectiveType.startsWith("image/")) {
+          const bmp = await createImageBitmap(blob);
+          if (cancelled) return;
+          const maxW = 1600;
+          const scale = Math.min(1, maxW / bmp.width);
+          canvas.width = Math.round(bmp.width * scale);
+          canvas.height = Math.round(bmp.height * scale);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+        } else if (effectiveType.includes("pdf")) {
+          const pdfjs: any = await import("pdfjs-dist");
+          pdfjs.GlobalWorkerOptions.workerSrc = "";
+          const buf = await blob.arrayBuffer();
+          const pdf = await pdfjs.getDocument({ data: buf, disableWorker: true }).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 2 });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+        } else {
+          throw new Error(`Unsupported type ${effectiveType}`);
+        }
+        if (!cancelled) setStatus("ready");
+      } catch (e) {
+        if (!cancelled) setStatus("error");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [openUrl, mime]);
+
+  return (
+    <div className="relative z-10 m-auto flex w-full flex-1 items-center justify-center p-3">
+      {status === "loading" && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-foreground/60">
+          <Loader2 size={16} className="animate-spin" /> Rendering drawing…
+        </div>
+      )}
+      {status === "error" && (
+        <div className="absolute inset-0 z-20 m-auto flex flex-col items-center justify-center gap-2 text-center text-xs uppercase tracking-widest text-foreground/60">
+          <FileText size={22} className="text-foreground/40" />
+          Preview unavailable. Use Open or Download.
+        </div>
+      )}
+      <canvas
+        ref={canvasRef}
+        className="max-h-[34rem] w-auto max-w-full rounded-md bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
+      />
     </div>
   );
 }
