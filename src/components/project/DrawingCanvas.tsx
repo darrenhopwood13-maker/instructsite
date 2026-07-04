@@ -752,6 +752,7 @@ function PinOverlay({
   pins,
   activePinId,
   onPinClick,
+  inverseScale,
 }: {
   pins?: PinRecord[];
   activePinId?: string | null;
