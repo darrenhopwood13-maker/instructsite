@@ -6,21 +6,47 @@ export const Route = createFileRoute("/api/drawing/$drawingId")({
     handlers: {
       GET: async ({ request, params }) => {
         try {
-          const auth = request.headers.get("authorization") ?? "";
-          const token = auth.replace(/^Bearer\s+/i, "");
-          if (!token) return new Response("Unauthorized", { status: 401 });
+          const url = new URL(request.url);
+          const access = url.searchParams.get("access");
+          let supabase: any;
+          let userId: string;
 
-          const supabase = createClient(
-            process.env.SUPABASE_URL!,
-            process.env.SUPABASE_PUBLISHABLE_KEY!,
-            {
-              global: { headers: { Authorization: `Bearer ${token}` } },
-              auth: { persistSession: false, autoRefreshToken: false },
-            },
-          );
+          if (access) {
+            const { getDrawingAccessSecret, verifyDrawingAccessToken } = await import(
+              "@/lib/drawing-token.server"
+            );
+            let payload;
+            try {
+              payload = verifyDrawingAccessToken(access, getDrawingAccessSecret());
+            } catch (err) {
+              return new Response(err instanceof Error ? err.message : "Unauthorized", {
+                status: 401,
+              });
+            }
+            if (payload.drawingId !== params.drawingId) {
+              return new Response("Forbidden", { status: 403 });
+            }
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            supabase = supabaseAdmin;
+            userId = payload.userId;
+          } else {
+            const auth = request.headers.get("authorization") ?? "";
+            const token = auth.replace(/^Bearer\s+/i, "");
+            if (!token) return new Response("Unauthorized", { status: 401 });
 
-          const { data: userData, error: userErr } = await supabase.auth.getUser();
-          if (userErr || !userData.user) return new Response("Unauthorized", { status: 401 });
+            supabase = createClient(
+              process.env.SUPABASE_URL!,
+              process.env.SUPABASE_PUBLISHABLE_KEY!,
+              {
+                global: { headers: { Authorization: `Bearer ${token}` } },
+                auth: { persistSession: false, autoRefreshToken: false },
+              },
+            );
+
+            const { data: userData, error: userErr } = await supabase.auth.getUser();
+            if (userErr || !userData.user) return new Response("Unauthorized", { status: 401 });
+            userId = userData.user.id;
+          }
 
           const { data: drawing, error } = await supabase
             .from("project_drawings")
@@ -39,7 +65,7 @@ export const Route = createFileRoute("/api/drawing/$drawingId")({
           // Verify project membership via RPC (RLS backstop only)
           const { data: isMember } = await supabase.rpc("is_project_member", {
             _project_id: drawing.project_id,
-            _user_id: userData.user.id,
+            _user_id: userId,
           });
           if (!isMember) return new Response("Forbidden", { status: 403 });
 
@@ -48,7 +74,7 @@ export const Route = createFileRoute("/api/drawing/$drawingId")({
             .download(sd.file_path);
           if (dlErr || !blob) return new Response("Download failed", { status: 502 });
 
-          const download = new URL(request.url).searchParams.get("download") === "1";
+          const download = url.searchParams.get("download") === "1";
           const disposition = download ? "attachment" : "inline";
           const filename = (sd.file_name ?? "drawing").replace(/"/g, "");
 

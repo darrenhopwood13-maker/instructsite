@@ -1,8 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { Download, ExternalLink, FileText, Loader2, ShieldAlert, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  Download,
+  ExternalLink,
+  FileText,
+  Layers3,
+  Loader2,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
+import { createDrawingDirectLinks } from "@/lib/tier1-uploads.functions";
 
 type Drawing = {
   id: string;
@@ -10,52 +18,14 @@ type Drawing = {
   revision?: string | null;
   title?: string | null;
   level?: string | null;
+  zone?: string | null;
   page_number?: number | null;
   pack_name?: string | null;
   extraction_status?: string;
   site_documents?: { file_name?: string; mime_type?: string } | null;
 };
 
-type PreviewBlob = {
-  dataUrl: string;
-  mime: string;
-  fileName: string;
-  blob: Blob;
-};
-
-async function blobToDataUrl(blob: Blob): Promise<string> {
-  return await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-}
-
-async function fetchDrawingBlob(
-  drawingId: string,
-  opts: { download?: boolean } = {},
-): Promise<{ blob: Blob; mime: string; fileName: string }> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Not signed in");
-
-  const url = `/api/drawing/${drawingId}${opts.download ? "?download=1" : ""}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-    credentials: "same-origin",
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || `Preview failed (${res.status})`);
-  }
-  const disp = res.headers.get("content-disposition") ?? "";
-  const match = disp.match(/filename="?([^"]+)"?/i);
-  const fileName = match?.[1] ?? "drawing";
-  const mime = res.headers.get("content-type") ?? "application/octet-stream";
-  const blob = await res.blob();
-  return { blob, mime, fileName };
-}
+type DrawingLinks = { openPath: string; downloadPath: string; expiresAt: number };
 
 export function DrawingCanvas({
   drawings,
@@ -68,15 +38,12 @@ export function DrawingCanvas({
   onSelect: (id: string) => void;
   onLockOracle: (payload: { kind: "drawing"; id: string; label: string }) => void;
 }) {
-  const preview = useQuery<PreviewBlob>({
-    queryKey: ["drawing-blob", selectedId],
+  const directLinksFn = useServerFn(createDrawingDirectLinks);
+  const links = useQuery<DrawingLinks>({
+    queryKey: ["drawing-direct-links", selectedId],
     enabled: !!selectedId,
-    staleTime: 60_000 * 20,
-    queryFn: async () => {
-      const { blob, mime, fileName } = await fetchDrawingBlob(selectedId!);
-      const dataUrl = await blobToDataUrl(blob);
-      return { dataUrl, mime, fileName, blob };
-    },
+    staleTime: 60_000 * 8,
+    queryFn: () => directLinksFn({ data: { drawingId: selectedId! } }),
   });
 
   const selected = drawings.find((d) => d.id === selectedId) ?? null;
@@ -84,26 +51,9 @@ export function DrawingCanvas({
     ? `${selected.drawing_no ?? "DWG"} · ${selected.title ?? selected.site_documents?.file_name ?? ""}`
     : "";
 
-  const [downloading, setDownloading] = useState(false);
-  const handleDownload = async () => {
-    if (!selected) return;
-    setDownloading(true);
-    try {
-      const { blob, fileName } = await fetchDrawingBlob(selected.id, { download: true });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Download failed", err);
-    } finally {
-      setDownloading(false);
-    }
-  };
+  const absoluteUrl = (path?: string) => (path ? new URL(path, window.location.origin).href : "");
+  const openUrl = absoluteUrl(links.data?.openPath);
+  const downloadUrl = absoluteUrl(links.data?.downloadPath);
 
   return (
     <div className="glass-panel p-5">
@@ -168,20 +118,19 @@ export function DrawingCanvas({
           )}
         </ul>
 
-        {/* Preview canvas */}
+        {/* Document metadata card */}
         <div className="relative flex min-h-[24rem] flex-col overflow-hidden rounded-lg border border-white/15 bg-black/60">
           <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,120,0,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,120,0,0.15)_1px,transparent_1px)] [background-size:32px_32px]" />
           {!selectedId ? (
             <EmptyPreview />
-          ) : preview.isLoading ? (
-            <div className="relative m-auto flex flex-col items-center gap-2 text-xs uppercase tracking-widest text-foreground/60">
-              <Loader2 size={18} className="animate-spin text-alert" />
-              Loading drawing…
-            </div>
-          ) : preview.isError ? (
-            <BlockedFallback onDownload={handleDownload} downloading={downloading} />
-          ) : preview.data ? (
-            <PreviewFrame url={preview.data.dataUrl} mime={preview.data.mime} blob={preview.data.blob} />
+          ) : selected ? (
+            <BlueprintMetadataCard
+              drawing={selected}
+              linksLoading={links.isLoading}
+              linksError={links.isError}
+              openUrl={openUrl}
+              downloadUrl={downloadUrl}
+            />
           ) : null}
 
           {selected && (
@@ -190,15 +139,14 @@ export function DrawingCanvas({
                 {label}
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  disabled={downloading}
-                  className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 disabled:opacity-50"
+                <a
+                  href={downloadUrl || undefined}
+                  download
+                  aria-disabled={!downloadUrl}
+                  className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
                 >
-                  {downloading ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
-                  Download
-                </button>
+                  <Download size={10} /> Download
+                </a>
                 <button
                   type="button"
                   onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
@@ -232,133 +180,111 @@ function EmptyPreview() {
   );
 }
 
-function PreviewFrame({ url, mime, blob }: { url: string; mime: string; blob: Blob }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-
-  const openInNewTab = () => {
-    const objUrl = URL.createObjectURL(blob);
-    window.open(objUrl, "_blank", "noopener,noreferrer");
-    setTimeout(() => URL.revokeObjectURL(objUrl), 60_000);
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    setStatus("loading");
-
-    const paintImage = async () => {
-      const img = new Image();
-      img.decoding = "async";
-      img.src = url;
-      try {
-        await img.decode();
-      } catch {
-        if (!cancelled) setStatus("error");
-        return;
-      }
-      if (cancelled) return;
-      const maxW = 1400;
-      const scale = Math.min(1, maxW / img.naturalWidth);
-      canvas.width = Math.round(img.naturalWidth * scale);
-      canvas.height = Math.round(img.naturalHeight * scale);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      if (!cancelled) setStatus("ready");
-    };
-
-    const paintPdf = async () => {
-      try {
-        const pdfjs = await import("pdfjs-dist");
-        // Use fake worker (main-thread) to avoid loading external worker asset.
-        (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } })
-          .GlobalWorkerOptions.workerSrc = "";
-        const buf = await blob.arrayBuffer();
-        if (cancelled) return;
-        const doc = await pdfjs.getDocument({
-          data: new Uint8Array(buf),
-          disableWorker: true,
-        } as never).promise;
-        if (cancelled) return;
-        const page = await doc.getPage(1);
-        const viewport = page.getViewport({ scale: 1.6 });
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        await page.render({ canvasContext: ctx, viewport, canvas } as never).promise;
-        if (!cancelled) setStatus("ready");
-      } catch (err) {
-        console.error("PDF paint failed", err);
-        if (!cancelled) setStatus("error");
-      }
-    };
-
-    if (/^image\//i.test(mime)) void paintImage();
-    else if (/pdf/i.test(mime)) void paintPdf();
-    else setStatus("error");
-
-    return () => {
-      cancelled = true;
-    };
-  }, [url, mime, blob]);
+function BlueprintMetadataCard({
+  drawing,
+  linksLoading,
+  linksError,
+  openUrl,
+  downloadUrl,
+}: {
+  drawing: Drawing;
+  linksLoading: boolean;
+  linksError: boolean;
+  openUrl: string;
+  downloadUrl: string;
+}) {
+  const canLaunch = Boolean(openUrl) && !linksLoading;
+  const canDownload = Boolean(downloadUrl) && !linksLoading;
 
   return (
-    <div className="relative m-auto flex w-full flex-col items-center gap-2 p-3">
-      <canvas
-        ref={canvasRef}
-        id="drawingCanvas"
-        className="max-h-[26rem] w-auto max-w-full rounded-sm bg-white shadow-lg"
-      />
-      {status === "loading" && (
-        <div className="absolute inset-0 m-auto flex items-center justify-center text-[0.65rem] uppercase tracking-widest text-foreground/60">
-          <Loader2 size={14} className="mr-2 animate-spin text-alert" /> Painting canvas…
+    <div className="relative z-10 m-auto w-full max-w-2xl p-5">
+      <div className="rounded-lg border border-alert/45 bg-gradient-to-br from-alert/20 via-black/80 to-black/95 p-5 shadow-[0_0_35px_rgba(255,120,0,0.22)]">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-4">
+          <div>
+            <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.35em] text-alert">
+              Document Metadata Card
+            </p>
+            <h4 className="mt-2 font-mono text-2xl font-black uppercase tracking-widest text-foreground">
+              {drawing.drawing_no || "Drawing Pending"}
+            </h4>
+          </div>
+          <div className="rounded-md border border-alert/40 bg-alert px-3 py-2 text-right text-black">
+            <p className="text-[0.55rem] font-black uppercase tracking-[0.25em]">Revision</p>
+            <p className="font-mono text-xl font-black">{drawing.revision || "—"}</p>
+          </div>
         </div>
-      )}
-      {status === "error" && (
-        <div className="text-[0.7rem] text-foreground/70">
-          Could not paint preview. Use the link below.
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <MetadataField
+            label="Sheet Title"
+            value={drawing.title || drawing.site_documents?.file_name || "Untitled sheet"}
+            wide
+          />
+          <MetadataField label="Drawing Number" value={drawing.drawing_no || "Awaiting extraction"} />
+          <MetadataField label="Revision Status" value={drawing.revision || "Not stated"} />
+          <MetadataField
+            label="Associated Work Zone"
+            value={drawing.zone || drawing.level || "No zone linked"}
+            icon={<MapPin size={14} />}
+          />
+          <MetadataField
+            label="Sheet / Pack"
+            value={`${drawing.page_number ? `Sheet ${drawing.page_number}` : "Single sheet"}${
+              drawing.pack_name ? ` · ${drawing.pack_name}` : ""
+            }`}
+            icon={<Layers3 size={14} />}
+          />
         </div>
-      )}
-      <button
-        type="button"
-        onClick={openInNewTab}
-        className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/80 hover:border-white/40"
-      >
-        <ExternalLink size={10} /> Open Original Drawing File in New Tab
-      </button>
+
+        {linksError && (
+          <div className="mt-4 rounded-md border border-alert/40 bg-alert/10 px-3 py-2 text-xs text-foreground/80">
+            Secure drawing launch link could not be prepared. Re-select the sheet and try again.
+          </div>
+        )}
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            disabled={!canLaunch}
+            onClick={() => window.open(openUrl, "_blank", "noopener,noreferrer")}
+            className="glass-orange flex min-h-16 items-center justify-center gap-2 rounded-md px-4 py-3 text-center text-xs font-black uppercase tracking-widest disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {linksLoading ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
+            Launch Blueprint in Safe Window
+          </button>
+          <a
+            href={canDownload ? downloadUrl : undefined}
+            download
+            aria-disabled={!canDownload}
+            className="flex min-h-16 items-center justify-center gap-2 rounded-md border border-foreground/70 bg-foreground px-4 py-3 text-center text-xs font-black uppercase tracking-widest text-background transition hover:bg-foreground/90 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+          >
+            {linksLoading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            Force Download Document Sheet
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
 
-function BlockedFallback({
-  onDownload,
-  downloading,
+function MetadataField({
+  label,
+  value,
+  icon,
+  wide,
 }: {
-  onDownload: () => void;
-  downloading: boolean;
+  label: string;
+  value: string;
+  icon?: React.ReactNode;
+  wide?: boolean;
 }) {
   return (
-    <div className="relative m-auto flex max-w-sm flex-col items-center gap-3 rounded-lg border border-alert/40 bg-alert/10 p-5 text-center">
-      <ShieldAlert size={22} className="text-alert" />
-      <p className="text-xs leading-relaxed text-foreground/85">
-        Browser security is restricting the preview wrapper. Click below to download and view the
-        drawing directly.
-      </p>
-      <button
-        type="button"
-        onClick={onDownload}
-        disabled={downloading}
-        className="glass-orange inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[0.65rem] uppercase tracking-widest disabled:opacity-50"
-      >
-        {downloading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-        Download drawing
-      </button>
+    <div className={`rounded-md border border-white/10 bg-black/35 p-3 ${wide ? "sm:col-span-2" : ""}`}>
+      <div className="mb-1 flex items-center gap-1.5 text-alert">
+        {icon ?? <FileText size={14} />}
+        <p className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.28em]">{label}</p>
+      </div>
+      <p className="break-words text-sm font-semibold leading-snug text-foreground">{value}</p>
     </div>
   );
 }
