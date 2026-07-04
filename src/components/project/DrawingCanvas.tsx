@@ -695,38 +695,39 @@ function InlinePreview({
             onDoubleClick={resetView}
             className={`relative flex-1 overflow-hidden rounded-md bg-black/40 select-none ${cursorClass}`}
           >
-            {sheetSize && (
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  width: fittedW,
-                  height: fittedH,
-                  transform: `translate(${(cw - fittedW) / 2 + offset.x}px, ${(ch - fittedH) / 2 + offset.y}px) scale(${zoom})`,
-                  transformOrigin: "0 0",
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                width: sheetSize ? fittedW : "auto",
+                height: sheetSize ? fittedH : "auto",
+                transform: sheetSize
+                  ? `translate(${(cw - fittedW) / 2 + offset.x}px, ${(ch - fittedH) / 2 + offset.y}px) scale(${zoom})`
+                  : "translate(0,0)",
+                transformOrigin: "0 0",
+                visibility: sheetSize ? "visible" : "hidden",
+              }}
+            >
+              <canvas
+                ref={canvasRef}
+                onClick={(e) => {
+                  if (pinMode !== "drop" || !onDropPin) return;
+                  const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
+                  const xPct = (e.clientX - rect.left) / rect.width;
+                  const yPct = (e.clientY - rect.top) / rect.height;
+                  if (xPct < 0 || xPct > 1 || yPct < 0 || yPct > 1) return;
+                  onDropPin({ xPct, yPct });
                 }}
-              >
-                <canvas
-                  ref={canvasRef}
-                  onClick={(e) => {
-                    if (pinMode !== "drop" || !onDropPin) return;
-                    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-                    const xPct = (e.clientX - rect.left) / rect.width;
-                    const yPct = (e.clientY - rect.top) / rect.height;
-                    if (xPct < 0 || xPct > 1 || yPct < 0 || yPct > 1) return;
-                    onDropPin({ xPct, yPct });
-                  }}
-                  className="block rounded-sm bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
-                />
-                <PinOverlay
-                  pins={pins}
-                  activePinId={activePinId}
-                  onPinClick={onPinClick}
-                  inverseScale={1 / zoom}
-                />
-              </div>
-            )}
+                className="block rounded-sm bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
+              />
+              <PinOverlay
+                pins={pins}
+                activePinId={activePinId}
+                onPinClick={onPinClick}
+                inverseScale={1 / zoom}
+              />
+            </div>
           </div>
         </>
       )}
