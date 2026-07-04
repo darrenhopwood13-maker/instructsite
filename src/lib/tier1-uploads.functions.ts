@@ -71,14 +71,16 @@ async function ensureProjectAccess(
   if (data) return;
 
   // Oracle sessions are anonymous — auto-enroll the current session as a
-  // viewer so shared demo/preview projects remain reachable.
-  const { error: insertErr } = await supabase
+  // viewer via the service-role client (project_members RLS blocks self-insert).
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error: insertErr } = await supabaseAdmin
     .from("project_members")
-    .insert({ project_id: projectId, user_id: userId, role: "viewer" });
-  if (insertErr && !insertErr.message?.includes("duplicate")) {
+    .insert({ project_id: projectId, user_id: userId, role_on_project: "viewer" });
+  if (insertErr && !/duplicate|unique/i.test(insertErr.message ?? "")) {
     throw new Error("You are not a member of this project.");
   }
 }
+
 
 
 /**
