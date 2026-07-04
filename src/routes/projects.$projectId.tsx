@@ -180,64 +180,37 @@ function ProjectDetail() {
           </div>
         </section>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-3">
-          <ListPanel title="Active Project Drawings" count={drawings.data?.length ?? 0}>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-left text-[0.65rem] uppercase tracking-widest text-foreground/50">
-                  <th className="py-2">Dwg No</th>
-                  <th>Rev</th>
-                  <th>Title</th>
-                  <th>Level</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody className="font-mono text-foreground/85">
-                {drawings.data?.map((d: any) => (
-                  <tr key={d.id} className="border-t border-white/8">
-                    <td className="py-2">{d.drawing_no ?? "—"}</td>
-                    <td>{d.revision ?? "—"}</td>
-                    <td className="max-w-[10rem] truncate">
-                      {d.title ?? d.site_documents?.file_name}
-                    </td>
-                    <td>{d.level ?? "—"}</td>
-                    <td>
-                      <StatusPill status={d.extraction_status} />
-                    </td>
-                  </tr>
-                ))}
-                {drawings.data && drawings.data.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-4 text-center text-foreground/50">
-                      No drawings yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </ListPanel>
+        <div className="mt-10 grid gap-6 lg:grid-cols-2">
+          <DrawingCanvas
+            drawings={(drawings.data ?? []) as never}
+            selectedId={selectedDrawing}
+            onSelect={setSelectedDrawing}
+            onLockOracle={lockOracle}
+          />
 
-          <ListPanel title="Logistics Zones" count={logistics.data?.length ?? 0}>
+          <ZoneMap
+            zones={(zones.data ?? []) as never}
+            selectedId={selectedZone}
+            onSelect={setSelectedZone}
+            onLockOracle={lockOracle}
+          />
+        </div>
+
+        {/* Logistics source docs summary + RAMS */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <ListPanel title="Logistics Source Plans" count={logistics.data?.length ?? 0}>
             {logistics.data?.map((l: any) => (
               <div key={l.id} className="border-t border-white/8 py-2 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-foreground/85">
+                  <span className="truncate font-mono text-foreground/85">
                     {l.site_documents?.file_name}
                   </span>
                   <StatusPill status={l.extraction_status} />
                 </div>
                 {Array.isArray(l.extracted_zones) && l.extracted_zones.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {l.extracted_zones.slice(0, 12).map((z: any, i: number) => (
-                      <span
-                        key={i}
-                        className="rounded-sm border border-alert/30 bg-alert/10 px-1.5 py-0.5 font-mono text-[0.65rem] uppercase text-alert"
-                      >
-                        {z.name}
-                        {z.level ? ` · ${z.level}` : ""}
-                      </span>
-                    ))}
-                  </div>
+                  <p className="mt-1 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                    {l.extracted_zones.length} zone{l.extracted_zones.length === 1 ? "" : "s"} extracted
+                  </p>
                 )}
               </div>
             ))}
@@ -245,6 +218,7 @@ function ProjectDetail() {
               <p className="py-4 text-center text-xs text-foreground/50">No logistics plans.</p>
             )}
           </ListPanel>
+
 
           <ListPanel title="Master RAMS" count={rams.data?.length ?? 0}>
             {rams.data?.map((r: any) => (
