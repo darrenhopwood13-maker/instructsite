@@ -258,10 +258,11 @@ export const listProjectDrawings = createServerFn({ method: "GET" })
     const { data: rows, error } = await context.supabase
       .from("project_drawings")
       .select(
-        "id,drawing_no,revision,title,scale,level,zone,is_active,extraction_status,extraction_error,created_at,site_documents(file_name)",
+        "id,drawing_no,revision,title,scale,level,zone,is_active,extraction_status,extraction_error,page_number,pack_id,pack_name,created_at,site_documents(file_name,mime_type)",
       )
       .eq("project_id", data.projectId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("page_number", { ascending: true, nullsFirst: false });
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
@@ -334,5 +335,152 @@ export const getDrawingPreview = createServerFn({ method: "GET" })
       mimeType: sd.mime_type ?? "application/octet-stream",
       fileName: sd.file_name ?? "drawing",
     };
+  });
+
+const PageMeta = z.object({
+  drawing_no: z.string(),
+  revision: z.string(),
+  title: z.string(),
+  level: z.string(),
+  zone: z.string(),
+});
+
+export const registerDrawingPage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        projectId: z.string().uuid(),
+        packId: z.string().uuid(),
+        packName: z.string().min(1),
+        pageNumber: z.number().int().positive(),
+        fileName: z.string().min(1),
+        filePath: z.string().min(1),
+        fileSize: z.number().nonnegative(),
+        mimeType: z.string().min(1),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureProjectAccess(supabase, userId, data.projectId);
+    if (!data.filePath.startsWith(`${userId}/`)) {
+      throw new Error("Upload path must be under the signed-in user's folder.");
+    }
+
+    // 1) site_documents row for the page image
+    const { data: sd, error: sdErr } = await supabase
+      .from("site_documents")
+      .insert({
+        file_name: data.fileName,
+        file_path: data.filePath,
+        file_size: data.fileSize,
+        mime_type: data.mimeType,
+        bucket: "project-bible",
+        uploaded_by: userId,
+        extraction_status: "processing",
+      })
+      .select("id")
+      .single();
+    if (sdErr) throw new Error(sdErr.message);
+
+    // 2) project_drawings row for this sheet
+    const { data: pd, error: pdErr } = await supabase
+      .from("project_drawings")
+      .insert({
+        project_id: data.projectId,
+        site_document_id: sd.id,
+        page_number: data.pageNumber,
+        pack_id: data.packId,
+        pack_name: data.packName,
+        extraction_status: "processing",
+      })
+      .select("id")
+      .single();
+    if (pdErr) throw new Error(pdErr.message);
+
+    // 3) multimodal extraction on the page image
+    let status: "complete" | "failed" = "complete";
+    let errMsg: string | null = null;
+    try {
+      const apiKey = process.env.LOVABLE_API_KEY;
+      if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
+
+      const { data: blob, error: dlErr } = await supabase.storage
+        .from("project-bible")
+        .download(data.filePath);
+      if (dlErr || !blob) throw new Error(dlErr?.message ?? "Page download failed");
+      const buf = new Uint8Array(await blob.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+      const base64 = btoa(bin);
+      const dataUrl = `data:${data.mimeType};base64,${base64}`;
+
+      const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
+      const { generateText, Output, NoObjectGeneratedError } = await import("ai");
+      const gateway = createLovableAiGatewayProvider(apiKey);
+
+      const prompt =
+        `You are the InstructBrain Oracle inspecting ONE isolated construction drawing sheet (page ${data.pageNumber} of pack "${data.packName}"). ` +
+        "Read the title block and any revision block. Return these fields as strings — use an empty string when a value is not visible. Never invent. " +
+        "drawing_no (e.g. MCL-MFE-ZZ-XX-DR-A-0100), revision (e.g. P1), title (e.g. Level 01 General Arrangement Plan), level (e.g. Level 1), zone (e.g. West Wing).";
+
+      let meta: z.infer<typeof PageMeta> | null = null;
+      try {
+        const { output } = await generateText({
+          model: gateway("google/gemini-2.5-pro"),
+          output: Output.object({ schema: PageMeta }),
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "image", image: dataUrl },
+              ],
+            },
+          ],
+        });
+        meta = output;
+      } catch (err) {
+        if (NoObjectGeneratedError.isInstance(err)) {
+          try {
+            meta = PageMeta.parse(JSON.parse(err.text ?? "{}"));
+          } catch {
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
+
+      await supabase
+        .from("project_drawings")
+        .update({
+          drawing_no: meta?.drawing_no || null,
+          revision: meta?.revision || null,
+          title: meta?.title || null,
+          level: meta?.level || null,
+          zone: meta?.zone || null,
+          extraction_status: "complete",
+        })
+        .eq("id", pd.id);
+      await supabase
+        .from("site_documents")
+        .update({ extraction_status: "complete" })
+        .eq("id", sd.id);
+    } catch (err) {
+      status = "failed";
+      errMsg = err instanceof Error ? err.message : "Extraction failed";
+      await supabase
+        .from("project_drawings")
+        .update({ extraction_status: "failed", extraction_error: errMsg })
+        .eq("id", pd.id);
+      await supabase
+        .from("site_documents")
+        .update({ extraction_status: "failed", extraction_error: errMsg })
+        .eq("id", sd.id);
+    }
+
+    return { drawingId: pd.id, siteDocumentId: sd.id, extractionStatus: status, extractionError: errMsg };
   });
 

@@ -230,6 +230,9 @@ export type Database = {
           id: string
           is_active: boolean
           level: string | null
+          pack_id: string | null
+          pack_name: string | null
+          page_number: number | null
           project_id: string
           revision: string | null
           scale: string | null
@@ -246,6 +249,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           level?: string | null
+          pack_id?: string | null
+          pack_name?: string | null
+          page_number?: number | null
           project_id: string
           revision?: string | null
           scale?: string | null
@@ -262,6 +268,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           level?: string | null
+          pack_id?: string | null
+          pack_name?: string | null
+          page_number?: number | null
           project_id?: string
           revision?: string | null
           scale?: string | null
