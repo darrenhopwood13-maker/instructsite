@@ -34,6 +34,7 @@ function ProjectDetail() {
   const drawingsFn = useServerFn(listProjectDrawings);
   const logisticsFn = useServerFn(listProjectLogistics);
   const ramsFn = useServerFn(listProjectRams);
+  const zonesFn = useServerFn(listProjectZones);
 
   const project = useQuery({
     queryKey: ["project", projectId],
@@ -58,12 +59,43 @@ function ProjectDetail() {
     enabled: ready,
     refetchInterval: 5000,
   });
+  const zones = useQuery({
+    queryKey: ["zones", projectId],
+    queryFn: () => zonesFn({ data: { projectId } }),
+    enabled: ready,
+    refetchInterval: 5000,
+  });
+
+  const [selectedDrawing, setSelectedDrawing] = useState<string | null>(null);
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
+
+  const drawingRows = useMemo(() => drawings.data ?? [], [drawings.data]);
+  useEffect(() => {
+    if (!selectedDrawing && drawingRows.length) setSelectedDrawing(drawingRows[0].id);
+  }, [drawingRows, selectedDrawing]);
+
+  const lockOracle = (payload: {
+    kind: "drawing" | "zone";
+    id: string;
+    label: string;
+  }) => {
+    try {
+      sessionStorage.setItem(
+        "oracle:context",
+        JSON.stringify({ ...payload, projectId, lockedAt: Date.now() }),
+      );
+    } catch {
+      // ignore storage failures
+    }
+  };
 
   const refresh = () => {
     drawings.refetch();
     logistics.refetch();
     rams.refetch();
+    zones.refetch();
   };
+
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
