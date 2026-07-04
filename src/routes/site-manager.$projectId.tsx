@@ -82,6 +82,15 @@ function SiteManagerPage() {
         { event: "*", schema: "public", table: "live_site_activity", filter: `project_id=eq.${projectId}` },
         () => qc.invalidateQueries({ queryKey: ["live-pins", projectId] }),
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "daily_site_diaries", filter: `project_id=eq.${projectId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
+          qc.invalidateQueries({ queryKey: ["archived-today", projectId] });
+          qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
