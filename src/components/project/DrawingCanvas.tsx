@@ -449,7 +449,7 @@ function InlinePreview({
     (async () => {
       try {
         const dpr = Math.min(window.devicePixelRatio || 1, 3);
-        const MAX_PIXELS = 40_000_000; // ~40 MP cap
+        const MAX_PIXELS = 80_000_000; // ~80 MP cap for crisper text on large sheets
 
         if (pdfDocRef.current) {
           const page = await pdfDocRef.current.getPage(pageNum);
