@@ -173,7 +173,7 @@ function SiteManagerPage() {
           />
         </section>
 
-        <section className="mt-8 grid gap-3 sm:grid-cols-3">
+        <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Active Pins" value={String((pins.data ?? []).length)} />
           <StatCard
             label="Operatives On Site"
@@ -182,6 +182,15 @@ function SiteManagerPage() {
             )}
           />
           <StatCard label="Overtime" value={String(overtime.length)} tone={overtime.length ? "alert" : "ok"} />
+          <StatCard label="Archived Today" value={String(archivedToday.data?.count ?? 0)} />
+        </section>
+
+        <section className="mt-10">
+          <IfcMeshStatus projectId={projectId} />
+        </section>
+
+        <section className="mt-10">
+          <QsVerificationQueue projectId={projectId} />
         </section>
 
         <section className="mt-8">
