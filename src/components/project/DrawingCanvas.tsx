@@ -1,8 +1,8 @@
-import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { FileText, Loader2, Sparkles, ExternalLink, AlertCircle } from "lucide-react";
-import { getDrawingPreview } from "@/lib/tier1-uploads.functions";
+import { useEffect, useState } from "react";
+import { Download, FileText, Loader2, ShieldAlert, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 type Drawing = {
   id: string;
@@ -13,6 +13,37 @@ type Drawing = {
   extraction_status?: string;
   site_documents?: { file_name?: string } | null;
 };
+
+type PreviewBlob = {
+  objectUrl: string;
+  mime: string;
+  fileName: string;
+};
+
+async function fetchDrawingBlob(
+  drawingId: string,
+  opts: { download?: boolean } = {},
+): Promise<{ blob: Blob; mime: string; fileName: string }> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Not signed in");
+
+  const url = `/api/drawing/${drawingId}${opts.download ? "?download=1" : ""}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    credentials: "same-origin",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Preview failed (${res.status})`);
+  }
+  const disp = res.headers.get("content-disposition") ?? "";
+  const match = disp.match(/filename="?([^"]+)"?/i);
+  const fileName = match?.[1] ?? "drawing";
+  const mime = res.headers.get("content-type") ?? "application/octet-stream";
+  const blob = await res.blob();
+  return { blob, mime, fileName };
+}
 
 export function DrawingCanvas({
   drawings,
@@ -25,18 +56,49 @@ export function DrawingCanvas({
   onSelect: (id: string) => void;
   onLockOracle: (payload: { kind: "drawing"; id: string; label: string }) => void;
 }) {
-  const previewFn = useServerFn(getDrawingPreview);
-  const preview = useQuery({
-    queryKey: ["drawing-preview", selectedId],
-    queryFn: () => previewFn({ data: { drawingId: selectedId! } }),
+  const preview = useQuery<PreviewBlob>({
+    queryKey: ["drawing-blob", selectedId],
     enabled: !!selectedId,
     staleTime: 60_000 * 20,
+    queryFn: async () => {
+      const { blob, mime, fileName } = await fetchDrawingBlob(selectedId!);
+      return { objectUrl: URL.createObjectURL(blob), mime, fileName };
+    },
   });
+
+  // Revoke old object URLs when they change or the component unmounts
+  useEffect(() => {
+    const url = preview.data?.objectUrl;
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [preview.data?.objectUrl]);
 
   const selected = drawings.find((d) => d.id === selectedId) ?? null;
   const label = selected
     ? `${selected.drawing_no ?? "DWG"} · ${selected.title ?? selected.site_documents?.file_name ?? ""}`
     : "";
+
+  const [downloading, setDownloading] = useState(false);
+  const handleDownload = async () => {
+    if (!selected) return;
+    setDownloading(true);
+    try {
+      const { blob, fileName } = await fetchDrawingBlob(selected.id, { download: true });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download failed", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="glass-panel p-5">
@@ -93,7 +155,7 @@ export function DrawingCanvas({
 
         {/* Preview canvas */}
         <div className="relative flex min-h-[24rem] flex-col overflow-hidden rounded-lg border border-white/15 bg-black/60">
-          <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,120,0,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,120,0,0.15)_1px,transparent_1px)] [background-size:32px_32px]" />
+          <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,120,0,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,120,0,0.15)_1px,transparent_1px)] [background-size:32px_32px]" />
           {!selectedId ? (
             <EmptyPreview />
           ) : preview.isLoading ? (
@@ -102,30 +164,26 @@ export function DrawingCanvas({
               Loading drawing…
             </div>
           ) : preview.isError ? (
-            <div className="relative m-auto flex max-w-xs items-start gap-2 rounded-md border border-alert/40 bg-alert/10 p-3 text-xs text-foreground">
-              <AlertCircle size={14} className="mt-0.5 shrink-0 text-alert" />
-              <span>Couldn't load preview. Re-upload the file or try again.</span>
-            </div>
+            <BlockedFallback onDownload={handleDownload} downloading={downloading} />
           ) : preview.data ? (
-            <PreviewFrame url={preview.data.url} mime={preview.data.mimeType} />
+            <PreviewFrame url={preview.data.objectUrl} mime={preview.data.mime} />
           ) : null}
 
           {selected && (
-            <div className="relative z-10 flex items-center justify-between gap-2 border-t border-white/10 bg-black/70 px-3 py-2 backdrop-blur">
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-black/70 px-3 py-2 backdrop-blur">
               <div className="min-w-0 truncate font-mono text-[0.65rem] uppercase tracking-widest text-foreground/80">
                 {label}
               </div>
               <div className="flex items-center gap-2">
-                {preview.data?.url && (
-                  <a
-                    href={preview.data.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40"
-                  >
-                    <ExternalLink size={10} /> Open
-                  </a>
-                )}
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 disabled:opacity-50"
+                >
+                  {downloading ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
+                  Download
+                </button>
                 <button
                   type="button"
                   onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
@@ -173,16 +231,47 @@ function PreviewFrame({ url, mime }: { url: string; mime: string }) {
   }
   if (isPdf) {
     return (
-      <iframe
-        src={`${url}#toolbar=0&view=FitH`}
-        title="Drawing preview"
+      <object
+        data={`${url}#toolbar=0&view=FitH`}
+        type="application/pdf"
         className="relative h-[28rem] w-full bg-white"
-      />
+      >
+        <div className="p-6 text-center text-xs text-foreground/60">
+          Your browser can't inline this PDF. Use Download to open it locally.
+        </div>
+      </object>
     );
   }
   return (
     <div className="relative m-auto p-4 text-center text-xs text-foreground/60">
-      Unsupported file type — <a className="underline" href={url} target="_blank" rel="noreferrer">open externally</a>.
+      Unsupported file type. Use Download to open it locally.
+    </div>
+  );
+}
+
+function BlockedFallback({
+  onDownload,
+  downloading,
+}: {
+  onDownload: () => void;
+  downloading: boolean;
+}) {
+  return (
+    <div className="relative m-auto flex max-w-sm flex-col items-center gap-3 rounded-lg border border-alert/40 bg-alert/10 p-5 text-center">
+      <ShieldAlert size={22} className="text-alert" />
+      <p className="text-xs leading-relaxed text-foreground/85">
+        Browser security is restricting the preview wrapper. Click below to download and view the
+        drawing directly.
+      </p>
+      <button
+        type="button"
+        onClick={onDownload}
+        disabled={downloading}
+        className="glass-orange inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[0.65rem] uppercase tracking-widest disabled:opacity-50"
+      >
+        {downloading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+        Download drawing
+      </button>
     </div>
   );
 }
