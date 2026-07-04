@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Download, FileText, Loader2, ShieldAlert, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,10 +17,20 @@ type Drawing = {
 };
 
 type PreviewBlob = {
-  objectUrl: string;
+  dataUrl: string;
   mime: string;
   fileName: string;
+  blob: Blob;
 };
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
 
 async function fetchDrawingBlob(
   drawingId: string,
@@ -64,17 +74,10 @@ export function DrawingCanvas({
     staleTime: 60_000 * 20,
     queryFn: async () => {
       const { blob, mime, fileName } = await fetchDrawingBlob(selectedId!);
-      return { objectUrl: URL.createObjectURL(blob), mime, fileName };
+      const dataUrl = await blobToDataUrl(blob);
+      return { dataUrl, mime, fileName, blob };
     },
   });
-
-  // Revoke old object URLs when they change or the component unmounts
-  useEffect(() => {
-    const url = preview.data?.objectUrl;
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [preview.data?.objectUrl]);
 
   const selected = drawings.find((d) => d.id === selectedId) ?? null;
   const label = selected
@@ -178,7 +181,7 @@ export function DrawingCanvas({
           ) : preview.isError ? (
             <BlockedFallback onDownload={handleDownload} downloading={downloading} />
           ) : preview.data ? (
-            <PreviewFrame url={preview.data.objectUrl} mime={preview.data.mime} />
+            <PreviewFrame url={preview.data.dataUrl} mime={preview.data.mime} />
           ) : null}
 
           {selected && (
