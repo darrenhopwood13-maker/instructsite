@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -11,11 +11,15 @@ import {
   MapPin,
   Maximize2,
   Sparkles,
+  Trash2,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { createDrawingDirectLinks, getDrawingPreview } from "@/lib/tier1-uploads.functions";
+import { deleteDrawing } from "@/lib/admin.functions";
+import { getMyRoles } from "@/lib/projects.functions";
 
 type Drawing = {
   id: string;
