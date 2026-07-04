@@ -596,3 +596,53 @@ function InlinePreview({
     </div>
   );
 }
+
+function PinOverlay({
+  pins,
+  activePinId,
+  onPinClick,
+}: {
+  pins?: PinRecord[];
+  activePinId?: string | null;
+  onPinClick?: (pin: PinRecord) => void;
+}) {
+  if (!pins || pins.length === 0) return null;
+  const now = Date.now();
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      {pins.map((pin) => {
+        const overtime =
+          pin.scheduled_finish && new Date(pin.scheduled_finish).getTime() < now;
+        const isActive = activePinId === pin.id;
+        return (
+          <button
+            key={pin.id}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPinClick?.(pin);
+            }}
+            style={{ left: `${pin.x_pct * 100}%`, top: `${pin.y_pct * 100}%` }}
+            className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2"
+            title={pin.trade_package ?? "Pin"}
+          >
+            <span
+              className={`relative flex h-4 w-4 items-center justify-center ${isActive ? "scale-125" : ""} transition-transform`}
+            >
+              <span
+                className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
+                  overtime ? "bg-red-500" : "bg-orange-400"
+                }`}
+              />
+              <span
+                className={`relative inline-flex h-3 w-3 rounded-full border-2 border-white shadow-lg ${
+                  overtime ? "bg-red-600" : "bg-orange-500"
+                }`}
+              />
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
