@@ -210,16 +210,28 @@ function EmptyPreview() {
 
 function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: string }) {
   const getPreviewFn = useServerFn(getDrawingPreview);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const bufferRef = useRef<ArrayBuffer | null>(null);
+  const pdfDocRef = useRef<any>(null);
+  const imageBitmapRef = useRef<ImageBitmap | null>(null);
+  const objectUrlRef = useRef<string>("");
+  const renderTaskRef = useRef<any>(null);
+
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [errMsg, setErrMsg] = useState<string>("");
-  const [objectUrl, setObjectUrl] = useState<string>("");
   const [mime, setMime] = useState<string>(mimeHint ?? "");
+  const [zoom, setZoom] = useState<number>(1);
+  const [pageNum, setPageNum] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
 
+  // Fetch + decode
   useEffect(() => {
     let cancelled = false;
-    let createdUrl = "";
     setStatus("loading");
     setErrMsg("");
+    setZoom(1);
+    setPageNum(1);
+    setTotalPages(1);
 
     (async () => {
       try {
@@ -230,10 +242,37 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
           .download(meta.path);
         if (error || !data) throw new Error(error?.message ?? "Download failed");
         if (cancelled) return;
-        createdUrl = URL.createObjectURL(data);
-        setObjectUrl(createdUrl);
-        setMime(data.type || meta.mimeType || mimeHint || "");
-        setStatus("ready");
+
+        const effectiveMime = data.type || meta.mimeType || mimeHint || "";
+        setMime(effectiveMime);
+        const buf = await data.arrayBuffer();
+        if (cancelled) return;
+        bufferRef.current = buf;
+
+        if (effectiveMime.includes("pdf")) {
+          const pdfjs: any = await import("pdfjs-dist");
+          const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+          pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+          const doc = await pdfjs.getDocument({ data: buf.slice(0) }).promise;
+          if (cancelled) {
+            doc.destroy();
+            return;
+          }
+          pdfDocRef.current = doc;
+          setTotalPages(doc.numPages);
+        } else if (effectiveMime.startsWith("image/")) {
+          const bmp = await createImageBitmap(data);
+          if (cancelled) {
+            bmp.close?.();
+            return;
+          }
+          imageBitmapRef.current = bmp;
+          objectUrlRef.current = URL.createObjectURL(data);
+        } else {
+          objectUrlRef.current = URL.createObjectURL(data);
+        }
+
+        if (!cancelled) setStatus("ready");
       } catch (e: any) {
         if (!cancelled) {
           setErrMsg(e?.message ?? "Preview failed");
@@ -244,17 +283,86 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
 
     return () => {
       cancelled = true;
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
+      try {
+        renderTaskRef.current?.cancel?.();
+      } catch {}
+      pdfDocRef.current?.destroy?.();
+      pdfDocRef.current = null;
+      imageBitmapRef.current?.close?.();
+      imageBitmapRef.current = null;
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = "";
+      bufferRef.current = null;
     };
   }, [drawingId, getPreviewFn, mimeHint]);
 
+  // Render on zoom/page/ready
+  useEffect(() => {
+    if (status !== "ready") return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        if (pdfDocRef.current) {
+          const page = await pdfDocRef.current.getPage(pageNum);
+          if (cancelled) return;
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const baseScale = 1.6; // vector crispness
+          const viewport = page.getViewport({ scale: baseScale * zoom * dpr });
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          canvas.style.width = `${Math.floor(viewport.width / dpr)}px`;
+          canvas.style.height = `${Math.floor(viewport.height / dpr)}px`;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          try {
+            renderTaskRef.current?.cancel?.();
+          } catch {}
+          renderTaskRef.current = page.render({ canvasContext: ctx, viewport, canvas });
+          await renderTaskRef.current.promise;
+        } else if (imageBitmapRef.current) {
+          const bmp = imageBitmapRef.current;
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const displayW = Math.min(bmp.width, 1600) * zoom;
+          const scale = (displayW / bmp.width) * dpr;
+          canvas.width = Math.round(bmp.width * scale);
+          canvas.height = Math.round(bmp.height * scale);
+          canvas.style.width = `${Math.round(bmp.width * scale / dpr)}px`;
+          canvas.style.height = `${Math.round(bmp.height * scale / dpr)}px`;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+        }
+      } catch (e: any) {
+        if (!cancelled && e?.name !== "RenderingCancelledException") {
+          setErrMsg(e?.message ?? "Render failed");
+          setStatus("error");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status, zoom, pageNum]);
+
+  const zoomIn = () => setZoom((z) => Math.min(z * 1.25, 6));
+  const zoomOut = () => setZoom((z) => Math.max(z / 1.25, 0.25));
+  const resetZoom = () => setZoom(1);
+
   const isPdf = mime.includes("pdf");
   const isImage = mime.startsWith("image/");
+  const isCanvasable = isPdf || isImage;
 
   return (
-    <div className="relative z-10 flex w-full flex-1 items-center justify-center p-3">
+    <div className="relative z-10 flex w-full flex-1 flex-col p-3">
       {status === "loading" && (
-        <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-foreground/60">
+        <div className="m-auto flex items-center gap-2 text-xs uppercase tracking-widest text-foreground/60">
           <Loader2 size={16} className="animate-spin" /> Streaming drawing…
         </div>
       )}
@@ -264,24 +372,85 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
           Preview unavailable{errMsg ? `: ${errMsg}` : ""}.
         </div>
       )}
-      {status === "ready" && objectUrl && isImage && (
-        <img
-          src={objectUrl}
-          alt="Drawing preview"
-          className="max-h-[34rem] w-auto max-w-full rounded-md bg-white object-contain shadow-[0_0_25px_rgba(255,120,0,0.15)]"
-        />
+
+      {status === "ready" && isCanvasable && (
+        <>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1 rounded-md border border-white/15 bg-black/60 p-1">
+              <button
+                type="button"
+                onClick={zoomOut}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-foreground/80 hover:bg-white/10"
+                title="Zoom out"
+              >
+                <ZoomOut size={14} />
+              </button>
+              <span className="min-w-[3rem] text-center font-mono text-[0.65rem] uppercase tracking-widest text-foreground/70">
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={zoomIn}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-foreground/80 hover:bg-white/10"
+                title="Zoom in"
+              >
+                <ZoomIn size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={resetZoom}
+                className="ml-1 inline-flex h-7 items-center justify-center gap-1 rounded-sm px-2 text-[0.6rem] uppercase tracking-widest text-foreground/80 hover:bg-white/10"
+                title="Reset view"
+              >
+                <Maximize2 size={12} /> Reset
+              </button>
+            </div>
+
+            {isPdf && totalPages > 1 && (
+              <div className="flex items-center gap-1 rounded-md border border-white/15 bg-black/60 p-1 text-[0.65rem] font-mono uppercase tracking-widest text-foreground/70">
+                <button
+                  type="button"
+                  onClick={() => setPageNum((p) => Math.max(1, p - 1))}
+                  disabled={pageNum <= 1}
+                  className="rounded-sm px-2 py-1 hover:bg-white/10 disabled:opacity-40"
+                >
+                  Prev
+                </button>
+                <span className="px-2">
+                  {pageNum} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPageNum((p) => Math.min(totalPages, p + 1))}
+                  disabled={pageNum >= totalPages}
+                  className="rounded-sm px-2 py-1 hover:bg-white/10 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-auto rounded-md bg-black/40">
+            <div className="flex min-h-full items-start justify-center p-2">
+              <canvas
+                ref={canvasRef}
+                className="rounded-sm bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
+              />
+            </div>
+          </div>
+        </>
       )}
-      {status === "ready" && objectUrl && isPdf && (
-        <iframe
-          src={objectUrl}
-          title="Drawing preview"
-          className="h-[34rem] w-full rounded-md border-0 bg-white shadow-[0_0_25px_rgba(255,120,0,0.15)]"
-        />
-      )}
-      {status === "ready" && objectUrl && !isImage && !isPdf && (
-        <div className="flex flex-col items-center gap-2 text-xs uppercase tracking-widest text-foreground/60">
+
+      {status === "ready" && !isCanvasable && objectUrlRef.current && (
+        <div className="m-auto flex flex-col items-center gap-2 text-xs uppercase tracking-widest text-foreground/60">
           <FileText size={22} className="text-foreground/40" />
-          <a href={objectUrl} target="_blank" rel="noopener noreferrer" className="underline">
+          <a
+            href={objectUrlRef.current}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
             Open file
           </a>
         </div>
@@ -289,6 +458,7 @@ function InlinePreview({ drawingId, mimeHint }: { drawingId: string; mimeHint?: 
     </div>
   );
 }
+
 
 function BlueprintMetadataCard({
   drawing,
