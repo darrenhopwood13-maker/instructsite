@@ -38,6 +38,7 @@ function SiteManagerPage() {
   const drawingsFn = useServerFn(listProjectDrawings);
   const pinsFn = useServerFn(listLivePins);
   const closeFn = useServerFn(closeLivePin);
+  const archivedFn = useServerFn(listArchivedToday);
 
   const project = useQuery({
     queryKey: ["project", projectId],
