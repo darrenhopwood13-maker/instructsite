@@ -343,7 +343,11 @@ const PageMeta = z.object({
   title: z.string(),
   level: z.string(),
   zone: z.string(),
+  zones: z
+    .array(z.object({ name: z.string(), level: z.string() }))
+    .default([]),
 });
+
 
 export const registerDrawingPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -507,8 +511,10 @@ async function extractSheetMeta(
 
   const prompt =
     `You are the InstructBrain Oracle inspecting ONE isolated construction drawing sheet (page ${pageNumber} of pack "${packName}"). ` +
-    "Read the title block and any revision block. Return these fields as strings — use an empty string when a value is not visible. Never invent. " +
-    "drawing_no (e.g. MCL-MFE-ZZ-XX-DR-A-0100), revision (e.g. P1), title (e.g. Level 01 General Arrangement Plan), level (e.g. Level 1), zone (e.g. West Wing).";
+    "Read the title block, revision block AND the drawing content itself. Return these fields — use an empty string / empty array when a value is not visible. Never invent. " +
+    "drawing_no (e.g. MCL-MFE-ZZ-XX-DR-A-0100), revision (e.g. P1), title (e.g. Level 01 General Arrangement Plan), level (e.g. Level 1 / Ground Floor / Roof), zone (primary work zone shown, e.g. West Wing / Zone A), " +
+    "zones = array of every distinct work zone / grid area / room block / underpinning sequence labelled ON the drawing itself (objects with 'name' and optional 'level'). If the sheet shows an underpinning or work sequence with numbered stages (A, B, C or 1, 2, 3), include each stage as a zone.";
+
 
   const isPdf = /pdf/i.test(mime);
   const content: Array<
@@ -660,7 +666,27 @@ export const splitAndRegisterDrawingPack = createServerFn({ method: "POST" })
             .from("site_documents")
             .update({ extraction_status: "complete" })
             .eq("id", sd.id);
+
+          // Upsert every zone the Oracle spotted on this sheet.
+          const zoneCandidates: { name: string; level: string | null }[] = [];
+          if (meta.zone) zoneCandidates.push({ name: meta.zone, level: meta.level || null });
+          for (const z of meta.zones ?? []) {
+            if (z?.name) zoneCandidates.push({ name: z.name, level: z.level || meta.level || null });
+          }
+          for (const z of zoneCandidates) {
+            await supabase.from("work_zones").upsert(
+              {
+                project_id: data.projectId,
+                name: z.name,
+                level: z.level,
+                source: "drawing",
+              },
+              { onConflict: "project_id,name,level", ignoreDuplicates: true },
+            );
+          }
+
           results.push({ pageNumber, drawingId: pd.id, status: "complete" });
+
         } catch (aiErr) {
           const msg = aiErr instanceof Error ? aiErr.message : "AI extraction failed";
           await supabase
