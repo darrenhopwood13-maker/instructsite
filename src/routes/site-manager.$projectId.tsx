@@ -65,6 +65,13 @@ function SiteManagerPage() {
     refetchInterval: 8000,
   });
 
+  const archivedToday = useQuery({
+    queryKey: ["archived-today", projectId],
+    queryFn: () => archivedFn({ data: { projectId } }),
+    enabled: ready,
+    refetchInterval: 30000,
+  });
+
   // Realtime — reactivate on any change
   useEffect(() => {
     if (!ready) return;
