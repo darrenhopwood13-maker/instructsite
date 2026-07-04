@@ -261,7 +261,8 @@ export const listProjectDrawings = createServerFn({ method: "GET" })
         "id,drawing_no,revision,title,scale,level,zone,is_active,extraction_status,extraction_error,page_number,pack_id,pack_name,created_at,site_documents(file_name,mime_type)",
       )
       .eq("project_id", data.projectId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("page_number", { ascending: true, nullsFirst: false });
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
