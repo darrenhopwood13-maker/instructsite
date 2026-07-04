@@ -484,3 +484,215 @@ export const registerDrawingPage = createServerFn({ method: "POST" })
     return { drawingId: pd.id, siteDocumentId: sd.id, extractionStatus: status, extractionError: errMsg };
   });
 
+/**
+ * Extract sheet metadata from a single-page PDF (or image) using Gemini 2.5 Pro.
+ */
+async function extractSheetMeta(
+  bytes: Uint8Array,
+  mime: string,
+  fileName: string,
+  pageNumber: number,
+  packName: string,
+): Promise<z.infer<typeof PageMeta>> {
+  const apiKey = process.env.LOVABLE_API_KEY;
+  if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
+  const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
+  const { generateText, Output, NoObjectGeneratedError } = await import("ai");
+  const gateway = createLovableAiGatewayProvider(apiKey);
+
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  const base64 = btoa(bin);
+  const dataUrl = `data:${mime};base64,${base64}`;
+
+  const prompt =
+    `You are the InstructBrain Oracle inspecting ONE isolated construction drawing sheet (page ${pageNumber} of pack "${packName}"). ` +
+    "Read the title block and any revision block. Return these fields as strings — use an empty string when a value is not visible. Never invent. " +
+    "drawing_no (e.g. MCL-MFE-ZZ-XX-DR-A-0100), revision (e.g. P1), title (e.g. Level 01 General Arrangement Plan), level (e.g. Level 1), zone (e.g. West Wing).";
+
+  const isPdf = /pdf/i.test(mime);
+  const content: Array<
+    | { type: "text"; text: string }
+    | { type: "file"; data: string; mediaType: string; filename?: string }
+    | { type: "image"; image: string }
+  > = [
+    { type: "text", text: prompt },
+    isPdf
+      ? { type: "file", data: dataUrl, mediaType: mime, filename: fileName }
+      : { type: "image", image: dataUrl },
+  ];
+
+  try {
+    const { output } = await generateText({
+      model: gateway("google/gemini-2.5-pro"),
+      output: Output.object({ schema: PageMeta }),
+      messages: [{ role: "user", content }],
+    });
+    return output;
+  } catch (err) {
+    if (NoObjectGeneratedError.isInstance(err)) {
+      try {
+        return PageMeta.parse(JSON.parse(err.text ?? "{}"));
+      } catch {
+        throw err;
+      }
+    }
+    throw err;
+  }
+}
+
+/**
+ * Server-side splitter: takes a multi-page PDF that has been uploaded to the
+ * `project-bible` bucket, splits it into single-page PDFs with pdf-lib,
+ * uploads each page back to storage, creates a project_drawings row per page,
+ * and runs Gemini 2.5 Pro against each individual sheet.
+ */
+export const splitAndRegisterDrawingPack = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        projectId: z.string().uuid(),
+        packName: z.string().min(1),
+        rawFilePath: z.string().min(1),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureProjectAccess(supabase, userId, data.projectId);
+    if (!data.rawFilePath.startsWith(`${userId}/`)) {
+      throw new Error("Upload path must be under the signed-in user's folder.");
+    }
+
+    // 1) Download the raw pack.
+    const { data: packBlob, error: dlErr } = await supabase.storage
+      .from("project-bible")
+      .download(data.rawFilePath);
+    if (dlErr || !packBlob) throw new Error(dlErr?.message ?? "Pack download failed");
+    const packBytes = new Uint8Array(await packBlob.arrayBuffer());
+
+    // 2) Split with pdf-lib.
+    const { PDFDocument } = await import("pdf-lib");
+    const src = await PDFDocument.load(packBytes, { ignoreEncryption: true });
+    const pageCount = src.getPageCount();
+    if (pageCount === 0) throw new Error("PDF contained no pages");
+
+    const packId = crypto.randomUUID();
+    const results: Array<{
+      pageNumber: number;
+      drawingId?: string;
+      status: "complete" | "failed";
+      error?: string | null;
+    }> = [];
+
+    for (let idx = 0; idx < pageCount; idx++) {
+      const pageNumber = idx + 1;
+      try {
+        // Build a single-page PDF.
+        const single = await PDFDocument.create();
+        const [copied] = await single.copyPages(src, [idx]);
+        single.addPage(copied);
+        const singleBytes = await single.save();
+        const pageFileName = `${data.packName.replace(/\.pdf$/i, "")}_p${pageNumber}.pdf`;
+        const pagePath = `${userId}/${data.projectId}/drawing/pages/${packId}/page-${String(pageNumber).padStart(3, "0")}.pdf`;
+
+        // Upload the single-page PDF (Uint8Array works with storage.upload).
+        const { error: upErr } = await supabase.storage
+          .from("project-bible")
+          .upload(pagePath, singleBytes, {
+            contentType: "application/pdf",
+            upsert: false,
+          });
+        if (upErr) throw new Error(upErr.message);
+
+        // site_documents + project_drawings rows.
+        const { data: sd, error: sdErr } = await supabase
+          .from("site_documents")
+          .insert({
+            file_name: pageFileName,
+            file_path: pagePath,
+            file_size: singleBytes.byteLength,
+            mime_type: "application/pdf",
+            bucket: "project-bible",
+            uploaded_by: userId,
+            extraction_status: "processing",
+          })
+          .select("id")
+          .single();
+        if (sdErr) throw new Error(sdErr.message);
+
+        const { data: pd, error: pdErr } = await supabase
+          .from("project_drawings")
+          .insert({
+            project_id: data.projectId,
+            site_document_id: sd.id,
+            page_number: pageNumber,
+            pack_id: packId,
+            pack_name: data.packName,
+            extraction_status: "processing",
+          })
+          .select("id")
+          .single();
+        if (pdErr) throw new Error(pdErr.message);
+
+        // AI extraction on this single-page PDF.
+        try {
+          const meta = await extractSheetMeta(
+            singleBytes,
+            "application/pdf",
+            pageFileName,
+            pageNumber,
+            data.packName,
+          );
+          await supabase
+            .from("project_drawings")
+            .update({
+              drawing_no: meta.drawing_no || null,
+              revision: meta.revision || null,
+              title: meta.title || null,
+              level: meta.level || null,
+              zone: meta.zone || null,
+              extraction_status: "complete",
+            })
+            .eq("id", pd.id);
+          await supabase
+            .from("site_documents")
+            .update({ extraction_status: "complete" })
+            .eq("id", sd.id);
+          results.push({ pageNumber, drawingId: pd.id, status: "complete" });
+        } catch (aiErr) {
+          const msg = aiErr instanceof Error ? aiErr.message : "AI extraction failed";
+          await supabase
+            .from("project_drawings")
+            .update({ extraction_status: "failed", extraction_error: msg })
+            .eq("id", pd.id);
+          await supabase
+            .from("site_documents")
+            .update({ extraction_status: "failed", extraction_error: msg })
+            .eq("id", sd.id);
+          results.push({ pageNumber, drawingId: pd.id, status: "failed", error: msg });
+        }
+      } catch (err) {
+        results.push({
+          pageNumber,
+          status: "failed",
+          error: err instanceof Error ? err.message : "Split failed",
+        });
+      }
+    }
+
+    // 3) Best-effort cleanup of the raw pack (we no longer need it).
+    await supabase.storage.from("project-bible").remove([data.rawFilePath]);
+
+    return {
+      packId,
+      packName: data.packName,
+      totalPages: pageCount,
+      completed: results.filter((r) => r.status === "complete").length,
+      failed: results.filter((r) => r.status === "failed").length,
+      results,
+    };
+  });
+
+
