@@ -597,6 +597,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_admin_site_document: {
+        Args: { _document_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_view_site_document: {
+        Args: { _document_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -611,6 +619,10 @@ export type Database = {
       is_project_member: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
+      }
+      site_document_project_ids: {
+        Args: { _document_id: string }
+        Returns: string[]
       }
     }
     Enums: {
