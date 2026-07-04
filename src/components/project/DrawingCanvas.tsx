@@ -359,7 +359,7 @@ function InlinePreview({
     setPageNum(1);
     setTotalPages(1);
     setSheetSize(null);
-    setRenderedQuality(2);
+    setRenderedQuality(3);
 
     (async () => {
       try {
