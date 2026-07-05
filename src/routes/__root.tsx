@@ -6,11 +6,15 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  redirect,
+  isRedirect,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { getGateStatus } from "../lib/gate.functions";
+
 
 function NotFoundComponent() {
   return (
@@ -73,6 +77,23 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  beforeLoad: async ({ location }) => {
+    // Site-wide preview password gate. Only /unlock is exempt.
+    if (location.pathname === "/unlock") return;
+    try {
+      const status = await getGateStatus();
+      if (!status.siteUnlocked) {
+        throw redirect({
+          to: "/unlock",
+          search: { redirect: location.href, scope: "site" as const },
+        });
+      }
+    } catch (err: any) {
+      if (isRedirect(err)) throw err;
+      // Ignore transient failures so the app doesn't hard-fail on network hiccups.
+    }
+  },
+
   head: () => ({
     meta: [
       { charSet: "utf-8" },

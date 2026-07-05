@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnlockRouteImport } from './routes/unlock'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -23,6 +24,11 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
 import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$drawingId'
 
+const UnlockRoute = UnlockRouteImport.update({
+  id: '/unlock',
+  path: '/unlock',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OracleRoute = OracleRouteImport.update({
   id: '/oracle',
   path: '/oracle',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/oracle': typeof OracleRoute
+  '/unlock': typeof UnlockRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/oracle': typeof OracleRoute
+  '/unlock': typeof UnlockRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/oracle': typeof OracleRoute
+  '/unlock': typeof UnlockRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/oracle'
+    | '/unlock'
     | '/dabs/$projectId'
     | '/invite/$token'
     | '/projects/$projectId'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/oracle'
+    | '/unlock'
     | '/dabs/$projectId'
     | '/invite/$token'
     | '/projects/$projectId'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/oracle'
+    | '/unlock'
     | '/dabs/$projectId'
     | '/invite/$token'
     | '/projects/$projectId'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
   OracleRoute: typeof OracleRoute
+  UnlockRoute: typeof UnlockRoute
   DabsProjectIdRoute: typeof DabsProjectIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
@@ -201,6 +214,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unlock': {
+      id: '/unlock'
+      path: '/unlock'
+      fullPath: '/unlock'
+      preLoaderRoute: typeof UnlockRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/oracle': {
       id: '/oracle'
       path: '/oracle'
@@ -300,6 +320,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
   OracleRoute: OracleRoute,
+  UnlockRoute: UnlockRoute,
   DabsProjectIdRoute: DabsProjectIdRoute,
   InviteTokenRoute: InviteTokenRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
