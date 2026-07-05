@@ -159,10 +159,11 @@ function DashboardPage() {
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#F4F5F6] text-neutral-900">
-      <div className="mx-auto max-w-7xl px-6 py-10">{children}</div>
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">{children}</div>
     </div>
   );
 }
+
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
