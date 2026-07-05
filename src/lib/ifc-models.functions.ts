@@ -127,13 +127,9 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => projectIdInput.parse(i))
   .handler(async ({ data, context }) => {
-    const [zonesRes, diariesRes, liveRes] = await Promise.all([
+    const [zonesRes, progressRes, liveRes] = await Promise.all([
       context.supabase.from("work_zones").select("id, name, level").eq("project_id", data.projectId),
-      context.supabase
-        .from("daily_site_diaries")
-        .select("zone_id, ifc_synced")
-        .eq("project_id", data.projectId)
-        .eq("ifc_synced", true),
+      context.supabase.rpc("zone_approved_completion", { _project_id: data.projectId }),
       context.supabase
         .from("live_site_activity")
         .select("zone_id")
@@ -141,27 +137,38 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
         .eq("status", "active"),
     ]);
     if (zonesRes.error) throw new Error(zonesRes.error.message);
-    if (diariesRes.error) throw new Error(diariesRes.error.message);
+    if (progressRes.error) throw new Error(progressRes.error.message);
     if (liveRes.error) throw new Error(liveRes.error.message);
 
-    const complete = new Set(
-      (diariesRes.data ?? []).map((r) => r.zone_id).filter(Boolean) as string[],
-    );
+    const progressByZone = new Map<string, number>();
+    for (const row of (progressRes.data ?? []) as Array<{
+      zone_id: string;
+      total_pct: number | string;
+    }>) {
+      progressByZone.set(row.zone_id, Number(row.total_pct) || 0);
+    }
     const live = new Set(
       (liveRes.data ?? []).map((r) => r.zone_id).filter(Boolean) as string[],
     );
 
-    return (zonesRes.data ?? []).map((z) => ({
-      zone_id: z.id,
-      name: z.name,
-      level: z.level,
-      state: complete.has(z.id)
-        ? ("complete" as const)
-        : live.has(z.id)
-          ? ("live" as const)
-          : ("unstarted" as const),
-    }));
+    return (zonesRes.data ?? []).map((z) => {
+      const progress_pct = Math.min(100, Math.round(progressByZone.get(z.id) ?? 0));
+      const state: "complete" | "live" | "unstarted" =
+        progress_pct >= 100
+          ? "complete"
+          : live.has(z.id)
+            ? "live"
+            : "unstarted";
+      return {
+        zone_id: z.id,
+        name: z.name,
+        level: z.level,
+        state,
+        progress_pct,
+      };
+    });
   });
+
 
 export const listProjectZones = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
