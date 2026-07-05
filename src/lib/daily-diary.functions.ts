@@ -163,3 +163,30 @@ export const listZoneCompletion = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+export const signDiaryPhotos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        paths: z.array(z.string().trim().min(1).max(500)).max(20),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    if (data.paths.length === 0) return [] as Array<{ path: string; url: string | null }>;
+    // Normalize: if a path is a full public URL, extract the key after the bucket segment.
+    const norm = data.paths.map((p) => {
+      const idx = p.indexOf("/diary-photos/");
+      if (idx >= 0) return p.slice(idx + "/diary-photos/".length);
+      return p.replace(/^\/+/, "");
+    });
+    const { data: signed, error } = await context.supabase.storage
+      .from("diary-photos")
+      .createSignedUrls(norm, 3600);
+    if (error) throw new Error(error.message);
+    return (signed ?? []).map((s, i) => ({
+      path: data.paths[i],
+      url: s.error ? null : s.signedUrl,
+    }));
+  });
