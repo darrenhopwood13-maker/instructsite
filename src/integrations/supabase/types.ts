@@ -733,6 +733,56 @@ export type Database = {
         }
         Relationships: []
       }
+      subcontractor_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          company_name: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          project_id: string
+          revoked_at: string | null
+          token_hash: string
+          trade_packages: string[]
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          company_name: string
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          project_id: string
+          revoked_at?: string | null
+          token_hash: string
+          trade_packages?: string[]
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          company_name?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          project_id?: string
+          revoked_at?: string | null
+          token_hash?: string
+          trade_packages?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcontractor_invites_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -797,6 +847,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_subcontractor_invite: {
+        Args: { _token_hash: string }
+        Returns: {
+          project_id: string
+          trade_packages: string[]
+        }[]
+      }
       can_admin_site_document: {
         Args: { _document_id: string; _user_id: string }
         Returns: boolean
