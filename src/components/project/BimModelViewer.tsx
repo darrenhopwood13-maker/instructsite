@@ -560,6 +560,39 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
 
       <div className="relative" style={{ height: 520 }}>
         <div ref={containerRef} className="absolute inset-0" />
+
+        {/* Zone Isolation Dropdown — top-left overlay */}
+        {status === "ready" && (zonesQ.data ?? []).length > 0 && (
+          <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-md border-2 border-black bg-white/95 px-2 py-1.5 shadow-[3px_3px_0_0_#000]">
+            <Focus size={14} className="text-[#ff7a00]" />
+            <label className="text-[0.6rem] font-black uppercase tracking-widest text-black">
+              Isolate Zone
+            </label>
+            <select
+              value={isolatedZoneId}
+              onChange={(e) => setIsolatedZoneId(e.target.value)}
+              className="rounded-sm border-2 border-black bg-white px-2 py-1 text-xs font-bold text-black focus:outline-none"
+            >
+              <option value="">— Show all —</option>
+              {(zonesQ.data ?? []).map((z) => (
+                <option key={z.id} value={z.id}>
+                  {z.name}
+                  {z.level ? ` · ${z.level}` : ""}
+                </option>
+              ))}
+            </select>
+            {isolatedZoneId && (
+              <button
+                type="button"
+                onClick={() => setIsolatedZoneId("")}
+                className="inline-flex items-center gap-1 rounded-sm border-2 border-black bg-[#ff7a00] px-1.5 py-1 text-[0.55rem] font-black uppercase tracking-widest text-black hover:bg-[#ff9440]"
+                title="Clear isolation"
+              >
+                <X size={10} />
+              </button>
+            )}
+          </div>
+        )}
         {status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div className="flex items-center gap-2 text-sm text-foreground/80">
