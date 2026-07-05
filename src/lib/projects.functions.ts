@@ -93,8 +93,9 @@ export const getProject = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
     let { data: p, error } = await supabase
+
       .from("projects")
       .select("id,name,site_address,scope_brief,master_admin_id,project_admin_id,created_at")
       .eq("id", data.projectId)
