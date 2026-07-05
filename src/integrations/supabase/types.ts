@@ -81,12 +81,10 @@ export type Database = {
           completion_pct: number
           created_at: string
           drawing_id: string | null
-          force_closed_by: string | null
           hours_logged: number
           id: string
           ifc_synced: boolean
           live_activity_id: string | null
-          manager_force_closed: boolean
           notes: string | null
           operative_count: number
           photo_urls: string[]
@@ -105,12 +103,10 @@ export type Database = {
           completion_pct: number
           created_at?: string
           drawing_id?: string | null
-          force_closed_by?: string | null
           hours_logged: number
           id?: string
           ifc_synced?: boolean
           live_activity_id?: string | null
-          manager_force_closed?: boolean
           notes?: string | null
           operative_count: number
           photo_urls?: string[]
@@ -129,12 +125,10 @@ export type Database = {
           completion_pct?: number
           created_at?: string
           drawing_id?: string | null
-          force_closed_by?: string | null
           hours_logged?: number
           id?: string
           ifc_synced?: boolean
           live_activity_id?: string | null
-          manager_force_closed?: boolean
           notes?: string | null
           operative_count?: number
           photo_urls?: string[]
@@ -886,10 +880,6 @@ export type Database = {
       }
       issue_pin_permit: {
         Args: { _pin_id: string; _valid_hours?: number }
-        Returns: string
-      }
-      manager_force_checkout: {
-        Args: { _completion_pct: number; _notes: string; _pin_id: string }
         Returns: string
       }
       site_document_project_ids: {
