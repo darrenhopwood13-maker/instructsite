@@ -94,14 +94,29 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-4 rounded-lg border border-alert/50 bg-black/60 p-3">
-      <div className="flex items-center gap-2">
+      <div className="mt-3 flex items-center gap-2">
         <HardHat className="text-alert" size={14} />
         <p className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.28em] text-alert">
           Project Trade Directory
         </p>
       </div>
 
+      <Link
+        to="/subcontractors/new"
+        search={{ projectId } as any}
+        className="mt-2 flex items-center justify-between gap-2 rounded-md border border-alert/60 bg-alert/10 px-3 py-2 text-alert transition hover:bg-alert/20"
+      >
+        <span className="inline-flex items-center gap-2 font-mono text-[0.65rem] font-bold uppercase tracking-[0.25em]">
+          <Building2 size={12} /> Full Registry — Company, PM & Supervisor
+        </span>
+        <ArrowRight size={12} />
+      </Link>
+      <p className="mt-1 px-1 text-[0.65rem] text-foreground/50">
+        Use the Full Registry to enter registered address, office phone, corporate email, and PM/Site Supervisor contact details before issuing the QR access token.
+      </p>
+
       <form onSubmit={submit} className="mt-3 grid gap-2">
+
         <input
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
