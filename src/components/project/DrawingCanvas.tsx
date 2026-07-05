@@ -354,6 +354,8 @@ function InlinePreview({
     return () => ro.disconnect();
   }, [status]);
 
+  const [signedUrl, setSignedUrl] = useState<string>("");
+
   // Fetch + decode
   useEffect(() => {
     let cancelled = false;
@@ -365,20 +367,41 @@ function InlinePreview({
     setTotalPages(1);
     setSheetSize(null);
     setRenderedQuality(3);
+    setSignedUrl("");
 
     (async () => {
       try {
         const meta = await getPreviewFn({ data: { drawingId } });
         if (cancelled) return;
-        const { data, error } = await supabase.storage
-          .from(meta.bucket)
-          .download(meta.path);
-        if (error || !data) throw new Error(error?.message ?? "Download failed");
+        if (meta.signedUrl) setSignedUrl(meta.signedUrl);
+
+        // Prefer signed URL fetch (works across CORS + no session dependency);
+        // fall back to storage.download when signed URL is unavailable.
+        let blob: Blob | null = null;
+        if (meta.signedUrl) {
+          try {
+            const res = await fetch(meta.signedUrl, {
+              mode: "cors",
+              credentials: "omit",
+              cache: "no-store",
+            });
+            if (res.ok) blob = await res.blob();
+          } catch {
+            /* fall through to storage download */
+          }
+        }
+        if (!blob) {
+          const { data, error } = await supabase.storage
+            .from(meta.bucket)
+            .download(meta.path);
+          if (error || !data) throw new Error(error?.message ?? "Download failed");
+          blob = data;
+        }
         if (cancelled) return;
 
-        const effectiveMime = data.type || meta.mimeType || mimeHint || "";
+        const effectiveMime = blob.type || meta.mimeType || mimeHint || "";
         setMime(effectiveMime);
-        const buf = await data.arrayBuffer();
+        const buf = await blob.arrayBuffer();
         if (cancelled) return;
         bufferRef.current = buf;
 
@@ -394,15 +417,15 @@ function InlinePreview({
           pdfDocRef.current = doc;
           setTotalPages(doc.numPages);
         } else if (effectiveMime.startsWith("image/")) {
-          const bmp = await createImageBitmap(data);
+          const bmp = await createImageBitmap(blob);
           if (cancelled) {
             bmp.close?.();
             return;
           }
           imageBitmapRef.current = bmp;
-          objectUrlRef.current = URL.createObjectURL(data);
+          objectUrlRef.current = URL.createObjectURL(blob);
         } else {
-          objectUrlRef.current = URL.createObjectURL(data);
+          objectUrlRef.current = URL.createObjectURL(blob);
         }
 
         if (!cancelled) setStatus("ready");
@@ -413,6 +436,7 @@ function InlinePreview({
         }
       }
     })();
+
 
     return () => {
       cancelled = true;
@@ -640,11 +664,36 @@ function InlinePreview({
         </div>
       )}
       {status === "error" && (
-        <div className="m-auto flex flex-col items-center justify-center gap-2 text-center text-xs uppercase tracking-widest text-foreground/60">
-          <FileText size={22} className="text-foreground/40" />
-          Preview unavailable{errMsg ? `: ${errMsg}` : ""}.
+        <div className="m-auto flex flex-col items-center justify-center gap-3 p-4 text-center">
+          {signedUrl ? (
+            <div className="w-full max-w-4xl overflow-hidden rounded-md border-2 border-white/15 bg-white shadow-2xl">
+              <iframe
+                src={signedUrl}
+                title="Drawing preview"
+                className="h-[70vh] w-full"
+              />
+            </div>
+          ) : (
+            <>
+              <FileText size={22} className="text-foreground/40" />
+              <p className="text-xs uppercase tracking-widest text-foreground/60">
+                Preview unavailable{errMsg ? `: ${errMsg}` : ""}.
+              </p>
+            </>
+          )}
+          {signedUrl && (
+            <a
+              href={signedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-foreground/80 hover:border-alert hover:text-alert"
+            >
+              <ExternalLink size={12} /> Open PDF in new tab
+            </a>
+          )}
         </div>
       )}
+
 
       {status === "ready" && isCanvasable && (
         <>
