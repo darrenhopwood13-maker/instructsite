@@ -41,14 +41,14 @@ function ProjectsPage() {
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />
-      <div className="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:py-14">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-          <div className="min-w-0">
+      <div className="relative mx-auto max-w-6xl px-6 py-14">
+        <div className="flex items-end justify-between gap-4">
+          <div>
             <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
               Portfolio
             </p>
             <h1
-              className="mt-2 text-2xl font-extrabold uppercase tracking-tight text-foreground sm:text-3xl md:text-5xl"
+              className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
               style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
             >
               Active Projects
@@ -57,13 +57,12 @@ function ProjectsPage() {
           {isMaster && (
             <Link
               to="/projects/new"
-              className="glass-orange shimmer-btn inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider sm:w-auto"
+              className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
             >
               <Plus size={16} /> New Project
             </Link>
           )}
         </div>
-
 
         {ready && roles.data && (
           <div className="mt-4">

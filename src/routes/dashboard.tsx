@@ -90,12 +90,11 @@ function DashboardPage() {
           Director Portfolio
         </p>
         <h1
-          className="mt-2 text-3xl font-black tracking-tight text-neutral-900 sm:text-4xl md:text-5xl"
+          className="mt-2 text-4xl font-black tracking-tight text-neutral-900 md:text-5xl"
           style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
         >
           Command Center
         </h1>
-
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-neutral-600">
           Cross-project intelligence — live manpower, pending valuations,
           active permits, and a real-time safety alert stream across the entire
@@ -160,11 +159,10 @@ function DashboardPage() {
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#F4F5F6] text-neutral-900">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">{children}</div>
+      <div className="mx-auto max-w-7xl px-6 py-10">{children}</div>
     </div>
   );
 }
-
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
@@ -268,11 +266,10 @@ function ProjectCard({ p }: { p: any }) {
       <Link
         to="/site-manager/$projectId"
         params={{ projectId: p.id }}
-        className="mt-5 inline-flex items-center justify-center gap-2 rounded-md border-2 border-[#14321f] bg-[#14321f] px-4 py-2.5 text-[0.65rem] font-extrabold uppercase tracking-[0.24em] text-white shadow-[3px_3px_0_0_rgba(15,23,42,0.25)] transition hover:brightness-110"
+        className="mt-5 inline-flex items-center justify-center gap-2 rounded-md border-2 border-[#1d3f8a] bg-[#1d3f8a] px-4 py-2.5 text-[0.65rem] font-extrabold uppercase tracking-[0.24em] text-white shadow-[3px_3px_0_0_rgba(15,23,42,0.25)] transition hover:brightness-110"
       >
         Enter Command Tower <ArrowRight size={12} />
       </Link>
-
     </div>
   );
 }

@@ -157,7 +157,7 @@ function SiteManagerPage() {
         </div>
       )}
 
-      <div className="relative mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
+      <div className="relative mx-auto max-w-6xl px-6 py-10">
         <Link
           to="/projects/$projectId"
           params={{ projectId }}
@@ -167,7 +167,7 @@ function SiteManagerPage() {
         </Link>
 
         <h1
-          className="mt-3 text-2xl font-extrabold uppercase tracking-tight text-foreground sm:text-3xl md:text-5xl"
+          className="mt-3 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
           style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
         >
           Command Tower · Live
@@ -175,7 +175,6 @@ function SiteManagerPage() {
         <p className="mt-2 text-sm text-foreground/70">
           Realtime spatial overlay of active site labor · click any pin for the HUD popover.
         </p>
-
 
         <section className="mt-6">
           <DrawingCanvas

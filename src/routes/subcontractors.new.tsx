@@ -294,7 +294,7 @@ function RegisterPartnerPage() {
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex items-center gap-2 rounded-md border-2 border-[#14321f] bg-[#14321f] px-6 py-3 text-[0.7rem] font-extrabold uppercase tracking-[0.28em] text-white shadow-[4px_4px_0_0_rgba(15,23,42,0.35)] transition hover:brightness-110 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-md border-2 border-[#1d3f8a] bg-[#1d3f8a] px-6 py-3 text-[0.7rem] font-extrabold uppercase tracking-[0.28em] text-white shadow-[4px_4px_0_0_rgba(15,23,42,0.35)] transition hover:brightness-110 disabled:opacity-50"
               >
                 <QrCode size={14} />
                 {busy ? "Saving…" : "Save Partner & Generate Access Tokens"}
@@ -516,7 +516,7 @@ function SuccessPane({
           </button>
           <Link
             to="/projects"
-            className="rounded-md border-2 border-[#14321f] bg-[#14321f] px-5 py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.28em] text-white shadow-[3px_3px_0_0_rgba(15,23,42,0.25)] hover:brightness-110"
+            className="rounded-md border-2 border-[#1d3f8a] bg-[#1d3f8a] px-5 py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.28em] text-white shadow-[3px_3px_0_0_rgba(15,23,42,0.25)] hover:brightness-110"
           >
             Back to Projects
           </Link>

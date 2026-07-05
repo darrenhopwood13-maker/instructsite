@@ -6,16 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "instructSite — The Oracle for the Construction Ecosystem" },
+      { title: "Site Operations Oracle" },
       {
         name: "description",
         content:
-          "instructSite: the AI command surface for construction — DABS, live IFC, QS-verified progress, safety and sequences, all in one Oracle.",
+          "Premium AI command surface for construction site operations — DABS, live IFC, QS-verified progress.",
       },
-      { property: "og:title", content: "instructSite — The Oracle for the Construction Ecosystem" },
+      { property: "og:title", content: "Site Operations Oracle" },
       {
         property: "og:description",
-        content: "The Oracle for the Construction Ecosystem. Premium AI tooling for site operations.",
+        content: "Premium AI tooling for site operations.",
       },
     ],
   }),
@@ -34,20 +34,20 @@ function Index() {
       <div className="aurora-bg" />
       <div className="grain-overlay" />
 
-      <div className="relative mx-auto grid max-w-6xl grid-cols-12 gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:py-24">
+      <div className="relative mx-auto grid max-w-6xl grid-cols-12 gap-8 px-6 py-24">
         <div className="col-span-12 lg:col-span-8">
           <p className="text-[0.7rem] font-bold uppercase tracking-[0.5em] text-alert">
-            instructSite · AI Construction Oracle
+            AI · Site Operations
           </p>
           <h1
-            className="mt-6 text-4xl font-extrabold leading-[0.95] tracking-tight text-foreground sm:text-5xl md:text-6xl"
+            className="mt-6 text-6xl font-extrabold leading-[0.95] tracking-tight text-foreground md:text-7xl"
             style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
           >
-            The Oracle for
+            The command
             <br />
-            the Construction
+            surface for
             <br />
-            Ecosystem.
+            site operations.
           </h1>
           <div className="mt-8 h-px w-32 bg-alert" />
           <p className="mt-8 max-w-xl text-base leading-relaxed text-foreground/75">
