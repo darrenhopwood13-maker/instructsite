@@ -30,7 +30,14 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
     queryFn: () => zonesFn({ data: { projectId } }),
   });
 
-  const [globalIds, setGlobalIds] = useState<string[]>([]);
+  type ElementMeta = {
+    globalId: string;
+    name: string;
+    objectType: string | null;
+    longName: string | null;
+    ifcType: string;
+  };
+  const [elements, setElements] = useState<ElementMeta[]>([]);
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [scanning, setScanning] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -56,34 +63,52 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
       await api.Init();
       const buf = new Uint8Array(await (await fetch(activeQ.data.url)).arrayBuffer());
       const modelID = api.OpenModel(buf, {});
-      const ids: string[] = [];
-      const types = [
-        WebIFC.IFCWALL, WebIFC.IFCWALLSTANDARDCASE, WebIFC.IFCSLAB, WebIFC.IFCCOLUMN,
-        WebIFC.IFCBEAM, WebIFC.IFCDOOR, WebIFC.IFCWINDOW, WebIFC.IFCROOF, WebIFC.IFCSTAIR,
-        WebIFC.IFCSPACE, WebIFC.IFCBUILDINGELEMENTPROXY,
-      ].filter(Boolean);
-      for (const t of types) {
+      const found: ElementMeta[] = [];
+      const typeMap: Array<[number, string]> = [
+        [WebIFC.IFCWALL, "Wall"],
+        [WebIFC.IFCWALLSTANDARDCASE, "Wall"],
+        [WebIFC.IFCSLAB, "Slab"],
+        [WebIFC.IFCCOLUMN, "Column"],
+        [WebIFC.IFCBEAM, "Beam"],
+        [WebIFC.IFCDOOR, "Door"],
+        [WebIFC.IFCWINDOW, "Window"],
+        [WebIFC.IFCROOF, "Roof"],
+        [WebIFC.IFCSTAIR, "Stair"],
+        [WebIFC.IFCSPACE, "Space"],
+        [WebIFC.IFCBUILDINGELEMENTPROXY, "Element"],
+      ].filter(([t]) => !!t) as Array<[number, string]>;
+      const seen = new Set<string>();
+      for (const [t, pretty] of typeMap) {
         const lines = api.GetLineIDsWithType(modelID, t);
         for (let i = 0; i < lines.size(); i++) {
           const eid = lines.get(i);
           try {
             const line = api.GetLine(modelID, eid);
-            if (line?.GlobalId?.value) ids.push(String(line.GlobalId.value));
+            const gid = line?.GlobalId?.value ? String(line.GlobalId.value) : null;
+            if (!gid || seen.has(gid)) continue;
+            seen.add(gid);
+            found.push({
+              globalId: gid,
+              name: line?.Name?.value ? String(line.Name.value) : `Unnamed ${pretty}`,
+              objectType: line?.ObjectType?.value ? String(line.ObjectType.value) : null,
+              longName: line?.LongName?.value ? String(line.LongName.value) : null,
+              ifcType: pretty,
+            });
           } catch {
             /* skip */
           }
         }
       }
       api.CloseModel(modelID);
-      const unique = Array.from(new Set(ids));
-      setGlobalIds(unique);
-      toast.success(`Discovered ${unique.length} IFC elements`);
+      setElements(found);
+      toast.success(`Discovered ${found.length} IFC elements`);
     } catch (e: any) {
       toast.error("Scan failed", { description: e?.message ?? String(e) });
     } finally {
       setScanning(false);
     }
   };
+
 
   const save = async () => {
     if (!activeQ.data?.model) return;
