@@ -298,6 +298,13 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     };
   }, [projectId, qc]);
 
+  const zoneProgress = (stateQ.data ?? []).slice().sort((a, b) => {
+    // complete → live → unstarted, then desc by progress
+    const rank: Record<string, number> = { complete: 0, live: 1, unstarted: 2 };
+    const r = rank[a.state] - rank[b.state];
+    return r !== 0 ? r : (b.progress_pct ?? 0) - (a.progress_pct ?? 0);
+  });
+
   return (
     <div className="glass-panel overflow-hidden">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
@@ -345,6 +352,49 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
           </div>
         )}
       </div>
+
+      {zoneProgress.length > 0 && (
+        <div className="border-t border-white/10 px-4 py-3">
+          <p className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.35em] text-foreground/50">
+            Cumulative approved progress
+          </p>
+          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+            {zoneProgress.map((z) => {
+              const barColor =
+                z.state === "complete"
+                  ? "bg-[#22c55e]"
+                  : z.state === "live"
+                    ? "bg-[#ff7a00]"
+                    : "bg-[#7a7a7a]";
+              return (
+                <div
+                  key={z.zone_id}
+                  className="flex items-center gap-2 rounded-md border border-white/5 bg-black/30 px-2 py-1.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs text-foreground/80">
+                      {z.name}
+                      {z.level ? (
+                        <span className="text-foreground/40"> · {z.level}</span>
+                      ) : null}
+                    </p>
+                    <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-white/5">
+                      <div
+                        className={`h-full ${barColor} transition-all`}
+                        style={{ width: `${z.progress_pct}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="w-9 text-right font-mono text-[0.7rem] text-foreground/70">
+                    {z.progress_pct}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
