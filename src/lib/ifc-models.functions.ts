@@ -4,6 +4,78 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const projectIdInput = z.object({ projectId: z.string().uuid() });
 
+// Randall AI semantic zone patterns
+const ZONE_PATTERNS: Array<{ match: RegExp; keys: string[] }> = [
+  { match: /\b(kit|kitch|kitchen|sink|cabinet|appliance|worktop|hob|oven)\b/i, keys: ["kitchen"] },
+  { match: /\b(bath|bathroom|wc|shower|toilet|basin|ensuite|en[- ]?suite|lavatory)\b/i, keys: ["bathroom", "bath", "wc"] },
+  { match: /\b(beam|column|uc\d*|ub\d*|baseplate|steelwork|rsj|purlin|structural steel)\b/i, keys: ["structural steel", "steel", "structure"] },
+];
+
+export const autoAllocateModelElements = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        projectId: z.string().uuid(),
+        elements: z
+          .array(
+            z.object({
+              globalId: z.string().min(1).max(64),
+              text: z.string().max(1000),
+            }),
+          )
+          .max(20000),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: model, error: mErr } = await context.supabase
+      .from("project_ifc_models")
+      .select("id")
+      .eq("project_id", data.projectId)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (mErr) throw new Error(mErr.message);
+    if (!model) throw new Error("No active IFC model for this project");
+
+    const { data: zones, error: zErr } = await context.supabase
+      .from("work_zones")
+      .select("id, name")
+      .eq("project_id", data.projectId);
+    if (zErr) throw new Error(zErr.message);
+    if (!zones || zones.length === 0) {
+      return { ok: false as const, count: 0, reason: "No work zones defined" };
+    }
+
+    const findZone = (candidates: string[]) => {
+      for (const c of candidates) {
+        const z = zones.find((z) => z.name.toLowerCase().includes(c.toLowerCase()));
+        if (z) return z.id;
+      }
+      return null;
+    };
+
+    const rows: Array<{ model_id: string; global_id: string; zone_id: string }> = [];
+    for (const el of data.elements) {
+      for (const pat of ZONE_PATTERNS) {
+        if (pat.match.test(el.text)) {
+          const zoneId = findZone(pat.keys);
+          if (zoneId) rows.push({ model_id: model.id, global_id: el.globalId, zone_id: zoneId });
+          break;
+        }
+      }
+    }
+
+    if (rows.length === 0) {
+      return { ok: true as const, count: 0, reason: "No semantic matches found" };
+    }
+    const { error } = await context.supabase
+      .from("ifc_element_mappings")
+      .upsert(rows, { onConflict: "model_id,global_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true as const, count: rows.length };
+  });
+
 export const listIfcModels = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => projectIdInput.parse(i))

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Box, Loader2, AlertTriangle, Link2 } from "lucide-react";
+import { Box, Loader2, AlertTriangle, Link2, Focus, X } from "lucide-react";
 import { toast } from "sonner";
 import * as THREE from "three";
 import {
@@ -137,12 +137,14 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
   const meshesRef = useRef<MeshEntry[]>([]);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<any>(null);
   const selectedRef = useRef<MeshEntry | null>(null);
   const [status, setStatus] = useState<
     "idle" | "loading" | "ready" | "empty" | "error"
   >("idle");
   const [error, setError] = useState<string | null>(null);
   const [pulseT, setPulseT] = useState(0);
+  const [isolatedZoneId, setIsolatedZoneId] = useState<string>("");
   const [selected, setSelected] = useState<{
     globalId: string;
     expressID: number;
@@ -274,6 +276,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.08;
+        controlsRef.current = controls;
 
         const { meshes, box } = await loadIfcMeshes(activeQ.data.url!, scene);
         if (disposed) return;
@@ -336,29 +339,57 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
       meshesRef.current = [];
       rendererRef.current = null;
       cameraRef.current = null;
+      controlsRef.current = null;
       selectedRef.current = null;
     };
   }, [activeQ.data]);
 
-  // Recolour meshes when mappings / state / pulse changes
+  // Recolour meshes when mappings / state / pulse / isolation changes
   useEffect(() => {
     const meshes = meshesRef.current;
     if (meshes.length === 0) return;
     const mappings = mapQ.data ?? [];
     const stateByZone = new Map<string, ZoneState>();
     for (const s of stateQ.data ?? []) stateByZone.set(s.zone_id, s.state);
+    const zoneByGid = new Map<string, string>();
     const stateByGid = new Map<string, ZoneState>();
     for (const m of mappings) {
-      const zs = stateByZone.get(m.zone_id) ?? "unstarted";
-      stateByGid.set(m.global_id, zs);
+      zoneByGid.set(m.global_id, m.zone_id);
+      stateByGid.set(m.global_id, stateByZone.get(m.zone_id) ?? "unstarted");
     }
 
     const pulse = 0.5 + 0.5 * Math.sin(pulseT * 3);
+    const ISO_HIGHLIGHT = new THREE.Color("#ff7a00");
 
     for (const entry of meshes) {
+      const zoneId = zoneByGid.get(entry.globalId);
+      const inIsolation = isolatedZoneId && zoneId === isolatedZoneId;
+      const isGhost = isolatedZoneId && !inIsolation;
+
+      if (isGhost) {
+        // Ghost / X-ray non-matching elements
+        entry.baseMaterial.transparent = true;
+        entry.baseMaterial.opacity = 0.08;
+        entry.baseMaterial.emissive.setHex(0x000000);
+        entry.baseMaterial.depthWrite = false;
+        entry.baseMaterial.needsUpdate = true;
+        continue;
+      }
+      entry.baseMaterial.depthWrite = true;
+
+      if (inIsolation) {
+        // Bright highlight for isolated zone
+        entry.baseMaterial.color.copy(ISO_HIGHLIGHT);
+        entry.baseMaterial.transparent = false;
+        entry.baseMaterial.opacity = 1;
+        entry.baseMaterial.emissive.copy(ISO_HIGHLIGHT);
+        entry.baseMaterial.emissiveIntensity = 0.4 + pulse * 0.5;
+        entry.baseMaterial.needsUpdate = true;
+        continue;
+      }
+
       const zs = stateByGid.get(entry.globalId);
       if (!zs) {
-        // Unmapped mesh = keep original IFC color, dim it
         entry.baseMaterial.transparent = true;
         entry.baseMaterial.opacity = 0.25;
         entry.baseMaterial.emissive.setHex(0x000000);
@@ -383,7 +414,60 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
       }
       entry.baseMaterial.needsUpdate = true;
     }
-  }, [mapQ.data, stateQ.data, pulseT]);
+  }, [mapQ.data, stateQ.data, pulseT, isolatedZoneId]);
+
+  // Smart camera fly-to when zone is isolated
+  useEffect(() => {
+    if (!isolatedZoneId) return;
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (!camera || !controls) return;
+    const mappings = mapQ.data ?? [];
+    const gidsInZone = new Set(
+      mappings.filter((m) => m.zone_id === isolatedZoneId).map((m) => m.global_id),
+    );
+    if (gidsInZone.size === 0) {
+      toast.info("No elements mapped to this zone yet");
+      return;
+    }
+    const box = new THREE.Box3();
+    let matched = 0;
+    for (const entry of meshesRef.current) {
+      if (gidsInZone.has(entry.globalId)) {
+        box.expandByObject(entry.mesh);
+        matched++;
+      }
+    }
+    if (matched === 0 || box.isEmpty()) {
+      toast.info("Mapped elements aren't in the current model");
+      return;
+    }
+
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z, 1);
+    const fov = (camera.fov * Math.PI) / 180;
+    const distance = (maxDim / (2 * Math.tan(fov / 2))) * 1.6;
+    const dir = new THREE.Vector3(1, 0.7, 1).normalize();
+    const targetPos = center.clone().add(dir.multiplyScalar(distance));
+    const startPos = camera.position.clone();
+    const startTarget = controls.target.clone();
+
+    const duration = 900;
+    const t0 = performance.now();
+    let raf = 0;
+    const ease = (x: number) => 1 - Math.pow(1 - x, 3);
+    const step = () => {
+      const t = Math.min(1, (performance.now() - t0) / duration);
+      const k = ease(t);
+      camera.position.lerpVectors(startPos, targetPos, k);
+      controls.target.lerpVectors(startTarget, center, k);
+      controls.update();
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    step();
+    return () => cancelAnimationFrame(raf);
+  }, [isolatedZoneId, mapQ.data]);
 
   // Give parent a way to refresh (invoked from realtime elsewhere)
   useEffect(() => {
@@ -476,6 +560,39 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
 
       <div className="relative" style={{ height: 520 }}>
         <div ref={containerRef} className="absolute inset-0" />
+
+        {/* Zone Isolation Dropdown — top-left overlay */}
+        {status === "ready" && (zonesQ.data ?? []).length > 0 && (
+          <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-md border-2 border-black bg-white/95 px-2 py-1.5 shadow-[3px_3px_0_0_#000]">
+            <Focus size={14} className="text-[#ff7a00]" />
+            <label className="text-[0.6rem] font-black uppercase tracking-widest text-black">
+              Isolate Zone
+            </label>
+            <select
+              value={isolatedZoneId}
+              onChange={(e) => setIsolatedZoneId(e.target.value)}
+              className="rounded-sm border-2 border-black bg-white px-2 py-1 text-xs font-bold text-black focus:outline-none"
+            >
+              <option value="">— Show all —</option>
+              {(zonesQ.data ?? []).map((z) => (
+                <option key={z.id} value={z.id}>
+                  {z.name}
+                  {z.level ? ` · ${z.level}` : ""}
+                </option>
+              ))}
+            </select>
+            {isolatedZoneId && (
+              <button
+                type="button"
+                onClick={() => setIsolatedZoneId("")}
+                className="inline-flex items-center gap-1 rounded-sm border-2 border-black bg-[#ff7a00] px-1.5 py-1 text-[0.55rem] font-black uppercase tracking-widest text-black hover:bg-[#ff9440]"
+                title="Clear isolation"
+              >
+                <X size={10} />
+              </button>
+            )}
+          </div>
+        )}
         {status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div className="flex items-center gap-2 text-sm text-foreground/80">

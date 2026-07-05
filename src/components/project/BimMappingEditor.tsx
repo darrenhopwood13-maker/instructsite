@@ -4,17 +4,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  autoAllocateModelElements,
   getActiveIfcSignedUrl,
   listElementMappings,
   listProjectZones,
   upsertElementMappings,
 } from "@/lib/ifc-models.functions";
+import { Sparkles } from "lucide-react";
 
 export function BimMappingEditor({ projectId }: { projectId: string }) {
   const activeFn = useServerFn(getActiveIfcSignedUrl);
   const mapFn = useServerFn(listElementMappings);
   const zonesFn = useServerFn(listProjectZones);
   const saveFn = useServerFn(upsertElementMappings);
+  const autoFn = useServerFn(autoAllocateModelElements);
   const qc = useQueryClient();
 
   const activeQ = useQuery({
@@ -41,6 +44,36 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [scanning, setScanning] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoRunning, setAutoRunning] = useState(false);
+
+  const runRandallAutoAllocate = async () => {
+    if (elements.length === 0) {
+      toast.error("Scan the model first so Randall has elements to sort");
+      return;
+    }
+    setAutoRunning(true);
+    try {
+      const payload = elements.map((el) => ({
+        globalId: el.globalId,
+        text: [el.name, el.objectType, el.longName, el.ifcType].filter(Boolean).join(" | "),
+      }));
+      const res = await autoFn({ data: { projectId, elements: payload } });
+      if (!res.ok) {
+        toast.error("Randall couldn't allocate", { description: res.reason });
+      } else if (res.count === 0) {
+        toast.info("Randall found no semantic matches", {
+          description: res.reason ?? "Try naming zones like 'Kitchen', 'Bathroom', 'Structural Steel'",
+        });
+      } else {
+        toast.success(`✨ Randall auto-allocated ${res.count} elements`);
+        qc.invalidateQueries({ queryKey: ["ifc-mappings", projectId] });
+      }
+    } catch (e: any) {
+      toast.error("Auto-allocate failed", { description: e?.message ?? String(e) });
+    } finally {
+      setAutoRunning(false);
+    }
+  };
 
   // Seed assignments from server on load
   useEffect(() => {
@@ -176,6 +209,23 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
           </button>
           <button
             type="button"
+            onClick={runRandallAutoAllocate}
+            disabled={autoRunning || elements.length === 0}
+            className="inline-flex items-center gap-1.5 rounded-md border-2 border-black bg-[#ff7a00] px-3 py-1.5 text-[0.65rem] font-black uppercase tracking-widest text-black shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_#000] disabled:cursor-not-allowed disabled:opacity-40"
+            title="Randall AI groups elements into zones by semantic name matching"
+          >
+            {autoRunning ? (
+              <>
+                <Loader2 size={10} className="animate-spin" /> Randall thinking…
+              </>
+            ) : (
+              <>
+                <Sparkles size={12} /> Let Randall Auto-Allocate
+              </>
+            )}
+          </button>
+          <button
+            type="button"
             onClick={save}
             disabled={saving}
             className="inline-flex items-center gap-1.5 rounded-md border border-alert bg-alert/10 px-3 py-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-alert hover:bg-alert/20 disabled:opacity-50"
@@ -184,6 +234,13 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
           </button>
         </div>
       </div>
+
+      {autoRunning && (
+        <div className="mt-3 flex items-center gap-2 rounded-md border-2 border-black bg-white/95 px-3 py-2 text-xs font-bold text-black shadow-[3px_3px_0_0_#000]">
+          <Loader2 size={14} className="animate-spin text-[#ff7a00]" />
+          Randall is scanning element names and grouping them into work zones…
+        </div>
+      )}
 
       {displayRows.length === 0 ? (
         <p className="mt-3 text-xs text-foreground/50">
