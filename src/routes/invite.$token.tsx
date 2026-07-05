@@ -1,16 +1,28 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { acceptSubcontractorInvite } from "@/lib/subcontractors.functions";
+import { getGateStatus } from "@/lib/gate.functions";
 
 export const Route = createFileRoute("/invite/$token")({
+  beforeLoad: async ({ location }) => {
+    // Extra password layer on invite links (on top of the site-wide gate).
+    const status = await getGateStatus();
+    if (!status.inviteUnlocked) {
+      throw redirect({
+        to: "/unlock",
+        search: { redirect: location.href, scope: "invite" as const },
+      });
+    }
+  },
   head: () => ({
     meta: [{ title: "Join Project — Subcontractor Access" }],
   }),
   component: InviteAccept,
 });
+
 
 function InviteAccept() {
   const { token } = Route.useParams();
