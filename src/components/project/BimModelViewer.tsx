@@ -154,6 +154,10 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
   const activeFn = useServerFn(getActiveIfcSignedUrl);
   const mapFn = useServerFn(listElementMappings);
   const stateFn = useServerFn(listZoneRuntimeState);
+  const zonesFn = useServerFn(listProjectZones);
+  const saveFn = useServerFn(upsertElementMappings);
+  const [assignZone, setAssignZone] = useState<string>("");
+  const [locking, setLocking] = useState(false);
 
   const activeQ = useQuery({
     queryKey: ["ifc-active", projectId],
@@ -168,6 +172,11 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     queryFn: () => stateFn({ data: { projectId } }),
     refetchInterval: 10_000,
   });
+  const zonesQ = useQuery({
+    queryKey: ["project-zones", projectId],
+    queryFn: () => zonesFn({ data: { projectId } }),
+  });
+
 
   // Init three + load IFC when signed URL arrives
   useEffect(() => {
