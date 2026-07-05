@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Link2, PlusCircle, Trash2, HardHat, Check, X } from "lucide-react";
+import { Copy, Link2, PlusCircle, Trash2, HardHat, Check, X, Building2, ArrowRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   createSubcontractorInvite,
