@@ -14,7 +14,9 @@ import { DropZone } from "@/components/setup/DropZone";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { ZoneMap } from "@/components/project/ZoneMap";
 import { MasterAdminHUD } from "@/components/admin/MasterAdminHUD";
+import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+
 
 export const Route = createFileRoute("/projects/$projectId")({
   head: () => ({ meta: [{ title: "Project — Site Operations Oracle" }] }),
@@ -94,7 +96,12 @@ function ProjectDetail() {
     zones.refetch();
   };
 
+  if (project.isError) {
+    return <AccessDeniedScreen message={(project.error as Error)?.message} />;
+  }
+
   return (
+
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />

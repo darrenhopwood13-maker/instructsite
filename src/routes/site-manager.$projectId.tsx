@@ -14,7 +14,9 @@ import { BimModelViewer } from "@/components/project/BimModelViewer";
 import { BimModelUploader } from "@/components/project/BimModelUploader";
 import { BimMappingEditor } from "@/components/project/BimMappingEditor";
 import { ClientOnly } from "@tanstack/react-router";
+import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+
 
 
 import { supabase } from "@/integrations/supabase/client";
@@ -134,7 +136,12 @@ function SiteManagerPage() {
     qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
   };
 
+  if (project.isError) {
+    return <AccessDeniedScreen message={(project.error as Error)?.message} />;
+  }
+
   return (
+
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />

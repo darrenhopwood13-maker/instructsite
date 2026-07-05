@@ -9,7 +9,9 @@ import { listProjectDrawings, listProjectZones } from "@/lib/tier1-uploads.funct
 import { createLivePin, listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
+import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+
 
 export const Route = createFileRoute("/dabs/$projectId")({
   head: () => ({ meta: [{ title: "DABS — Spatial Labor Tracker" }] }),
@@ -118,7 +120,12 @@ function DabsPage() {
     }
   };
 
+  if (project.isError) {
+    return <AccessDeniedScreen message={(project.error as Error)?.message} />;
+  }
+
   return (
+
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />
