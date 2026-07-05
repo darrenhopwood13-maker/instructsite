@@ -6,6 +6,27 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    optimizeDeps: {
+      needsInterop: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+      ],
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "@tanstack/react-query",
+        "@tanstack/react-router",
+        "@tanstack/router-core",
+        "@tanstack/router-core/ssr/client",
+        "@tanstack/history",
+      ],
+    },
     plugins: [mcpPlugin()],
   },
 });

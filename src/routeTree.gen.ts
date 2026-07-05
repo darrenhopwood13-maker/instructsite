@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnlockRouteImport } from './routes/unlock'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -32,6 +33,11 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 const UnlockRoute = UnlockRouteImport.update({
   id: '/unlock',
   path: '/unlock',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OracleRoute = OracleRouteImport.update({
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/unlock': typeof UnlockRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/unlock': typeof UnlockRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/unlock': typeof UnlockRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/mcp'
     | '/oracle'
+    | '/reset-password'
     | '/unlock'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/mcp'
     | '/oracle'
+    | '/reset-password'
     | '/unlock'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/mcp'
     | '/oracle'
+    | '/reset-password'
     | '/unlock'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -264,6 +276,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   McpRoute: typeof McpRoute
   OracleRoute: typeof OracleRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   UnlockRoute: typeof UnlockRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -287,6 +300,13 @@ declare module '@tanstack/react-router' {
       path: '/unlock'
       fullPath: '/unlock'
       preLoaderRoute: typeof UnlockRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oracle': {
@@ -424,6 +444,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   McpRoute: McpRoute,
   OracleRoute: OracleRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   UnlockRoute: UnlockRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:

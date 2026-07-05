@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyRoles } from "@/lib/projects.functions";
 import { routeForRoles } from "@/lib/ensure-oracle-session";
-import { Loader2, ShieldAlert, ArrowRight } from "lucide-react";
+import { Loader2, ShieldAlert, ArrowRight, Eye, EyeOff, MailCheck } from "lucide-react";
 import { z } from "zod";
 
 const searchSchema = z.object({
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-type Mode = "signin" | "signup";
+type Mode = "signin" | "signup" | "forgot";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -29,9 +29,11 @@ function AuthPage() {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // If already signed in, route by role
   useEffect(() => {
@@ -55,8 +57,18 @@ function AuthPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setBusy(true);
     try {
+      if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setNotice("Password reset email sent. Open the link in that email, then set a new password.");
+        return;
+      }
+
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -135,21 +147,23 @@ function AuthPage() {
         <div className="mx-auto w-full max-w-md">
           <div className="glass-panel border border-white/10 p-8">
             <div className="flex items-center gap-2 text-alert">
-              <ShieldAlert size={16} />
+              {mode === "forgot" ? <MailCheck size={16} /> : <ShieldAlert size={16} />}
               <span className="text-[0.65rem] font-bold uppercase tracking-[0.4em]">
-                {mode === "signin" ? "Secure Sign In" : "Create Access"}
+                {mode === "signin" ? "Secure Sign In" : mode === "signup" ? "Create Access" : "Password Recovery"}
               </span>
             </div>
             <h2
               className="mt-4 text-3xl font-extrabold tracking-tight text-foreground"
               style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
             >
-              {mode === "signin" ? "Enter the portal" : "Request access"}
+              {mode === "signin" ? "Enter the portal" : mode === "signup" ? "Request access" : "Reset password"}
             </h2>
             <p className="mt-2 text-sm text-foreground/60">
               {mode === "signin"
                 ? "Sign in with your workspace credentials to route into your role."
-                : "New workspace account. Existing invites will be redeemed automatically."}
+                : mode === "signup"
+                  ? "New workspace account. Existing invites will be redeemed automatically."
+                  : "Enter your email and we’ll send a secure link to choose a new password."}
             </p>
 
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
@@ -182,24 +196,42 @@ function AuthPage() {
                 />
               </label>
 
-              <label className="block">
-                <span className="text-[0.6rem] font-bold uppercase tracking-[0.3em] text-foreground/60">
-                  Password
-                </span>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                  className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
-                />
-              </label>
+              {mode !== "forgot" && (
+                <label className="block">
+                  <span className="text-[0.6rem] font-bold uppercase tracking-[0.3em] text-foreground/60">
+                    Password
+                  </span>
+                  <div className="relative mt-1.5">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={8}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                      className="w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 pr-11 font-mono text-sm text-foreground outline-none focus:border-alert"
+                    />
+                    <button
+                      type="button"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowPassword((value) => !value)}
+                      className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-foreground/55 hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </label>
+              )}
 
               {error && (
                 <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive-foreground">
                   {error}
+                </div>
+              )}
+
+              {notice && (
+                <div className="rounded-md border border-alert/45 bg-alert/10 px-3 py-2 text-xs text-foreground">
+                  {notice}
                 </div>
               )}
 
@@ -209,21 +241,38 @@ function AuthPage() {
                 className="glass-orange shimmer-btn inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider disabled:opacity-50"
               >
                 {busy ? <Loader2 className="animate-spin" size={14} /> : <ArrowRight size={14} />}
-                {mode === "signin" ? "Sign in" : "Create account"}
+                {mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset email"}
               </button>
             </form>
+
+            {mode === "signin" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("forgot");
+                  setError(null);
+                  setNotice(null);
+                }}
+                className="mt-4 w-full text-center text-[0.65rem] font-bold uppercase tracking-[0.3em] text-alert hover:text-foreground"
+              >
+                Forgot password?
+              </button>
+            )}
 
             <button
               type="button"
               onClick={() => {
                 setMode(mode === "signin" ? "signup" : "signin");
                 setError(null);
+                setNotice(null);
               }}
               className="mt-6 w-full text-center text-[0.65rem] font-bold uppercase tracking-[0.3em] text-foreground/60 hover:text-foreground"
             >
               {mode === "signin"
                 ? "No account? Request access →"
-                : "Already registered? Sign in →"}
+                : mode === "signup"
+                  ? "Already registered? Sign in →"
+                  : "Back to sign in →"}
             </button>
           </div>
 
