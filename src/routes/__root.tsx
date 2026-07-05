@@ -76,6 +76,24 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  beforeLoad: async ({ location }) => {
+    // Site-wide preview password gate. Only /unlock is exempt.
+    if (location.pathname === "/unlock") return;
+    try {
+      const status = await getGateStatus();
+      if (!status.siteUnlocked) {
+        throw redirect({
+          to: "/unlock",
+          search: { redirect: location.href, scope: "site" as const },
+        });
+      }
+    } catch (err: any) {
+      // Re-throw redirects; ignore transient failures so the app doesn't hard-fail.
+      if (err && typeof err === "object" && "isRedirect" in err) throw err;
+      if (err?.status === 307 || err?.status === 308) throw err;
+    }
+  },
+
   head: () => ({
     meta: [
       { charSet: "utf-8" },
