@@ -197,7 +197,7 @@ function AuthNav() {
           <button
             type="button"
             onClick={signOut}
-            className="rounded-lg border border-white/15 px-3 py-2 text-xs uppercase tracking-widest text-foreground/70 hover:border-white/40 hover:text-foreground"
+            className="rounded-lg border border-white/25 px-3 py-2 text-xs uppercase tracking-widest text-white/85 hover:border-white/60 hover:text-white"
           >
             Sign out
           </button>
