@@ -93,6 +93,25 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
+    // Server-side role gate: only site_manager, project_admin, or master_admin
+    // may set QS status. Subcontractors are hard-blocked.
+    const roles: Array<"master_admin" | "project_admin" | "site_manager"> = [
+      "master_admin",
+      "project_admin",
+      "site_manager",
+    ];
+    const checks = await Promise.all(
+      roles.map((r) =>
+        context.supabase.rpc("has_role", { _user_id: context.userId, _role: r }),
+      ),
+    );
+    const authorised = checks.some((c) => c.data === true);
+    if (!authorised) {
+      throw new Error(
+        "Forbidden: QS approval requires site_manager, project_admin, or master_admin role.",
+      );
+    }
+
     const { data: diary, error: fetchErr } = await context.supabase
       .from("daily_site_diaries")
       .select("id, completion_pct")
@@ -100,20 +119,16 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
       .single();
     if (fetchErr || !diary) throw new Error("Diary not found.");
 
-    const patch: { qs_status: "approved" | "rejected"; ifc_synced?: boolean } = {
-      qs_status: data.status,
-    };
-    if (data.status === "approved" && diary.completion_pct === 100) {
-      patch.ifc_synced = true;
-    }
-
+    // Just set qs_status — the DB trigger `trg_sync_zone_ifc` re-tallies the
+    // zone's approved completion and flips ifc_synced when cumulative >= 100.
     const { error } = await context.supabase
       .from("daily_site_diaries")
-      .update(patch)
+      .update({ qs_status: data.status })
       .eq("id", data.diaryId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const listArchivedToday = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

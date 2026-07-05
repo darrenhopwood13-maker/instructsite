@@ -16,22 +16,34 @@ export const listMyProjects = createServerFn({ method: "GET" })
 export const getMyRoles = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    let { data, error } = await context.supabase
+    const { data, error } = await context.supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", context.userId);
     if (error) throw new Error(error.message);
 
-    // Dev fallback: self-promote to master_admin if user has no roles yet
-    if (!data || data.length === 0) {
-      const { error: insErr } = await context.supabase
+    let roles = (data ?? []).map((r: any) => r.role as string);
+
+    // Bootstrap the very first master admin. If no master_admin exists anywhere
+    // in the system, promote the currently signed-in user. Every subsequent
+    // user gets no role until an admin explicitly grants one.
+    if (roles.length === 0) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { count, error: countErr } = await supabaseAdmin
         .from("user_roles")
-        .insert({ user_id: context.userId, role: "master_admin" as any });
-      if (!insErr) data = [{ role: "master_admin" }] as any;
+        .select("user_id", { count: "exact", head: true })
+        .eq("role", "master_admin");
+      if (!countErr && (count ?? 0) === 0) {
+        const { error: insErr } = await supabaseAdmin
+          .from("user_roles")
+          .insert({ user_id: context.userId, role: "master_admin" as any });
+        if (!insErr) roles = ["master_admin"];
+      }
     }
 
-    return { userId: context.userId, roles: (data ?? []).map((r: any) => r.role as string) };
+    return { userId: context.userId, roles };
   });
+
 
 export const createProject = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -89,28 +101,9 @@ export const getProject = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!p) {
-      // Anonymous / non-member session: auto-enroll then retry (Oracle demo access).
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: exists } = await supabaseAdmin
-        .from("projects")
-        .select("id")
-        .eq("id", data.projectId)
-        .maybeSingle();
-      if (!exists) throw new Error("Project not found or access denied");
-      const { error: insertErr } = await supabaseAdmin
-        .from("project_members")
-        .insert({ project_id: data.projectId, user_id: userId, role_on_project: "subcontractor" });
-      if (insertErr && !/duplicate|unique/i.test(insertErr.message ?? "")) {
-        throw new Error("Project not found or access denied");
-      }
-      const retry = await supabase
-        .from("projects")
-        .select("id,name,site_address,scope_brief,master_admin_id,project_admin_id,created_at")
-        .eq("id", data.projectId)
-        .maybeSingle();
-      if (retry.error || !retry.data) throw new Error("Project not found or access denied");
-      p = retry.data;
+      throw new Error("Access denied — you are not a member of this project.");
     }
     return p;
   });
+
 
