@@ -276,6 +276,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.08;
+        controlsRef.current = controls;
 
         const { meshes, box } = await loadIfcMeshes(activeQ.data.url!, scene);
         if (disposed) return;
