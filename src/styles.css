@@ -396,3 +396,23 @@
   background-size: 200% 100%;
   animation: oracle-bar-shimmer 1.6s linear infinite;
 }
+
+/* Global 3D mesh wave — sits behind every page */
+@keyframes mesh-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-2%, -1%, 0) scale(1.04); }
+}
+@utility mesh-bg {
+  position: fixed;
+  inset: -10%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 45% at 85% 10%, rgba(56,189,248,0.28) 0%, transparent 65%),
+    radial-gradient(55% 40% at 10% 90%, rgba(59,130,246,0.22) 0%, transparent 70%),
+    radial-gradient(40% 30% at 50% 55%, rgba(147,197,253,0.18) 0%, transparent 70%),
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 42px),
+    repeating-linear-gradient(25deg,  rgba(255,255,255,0.04) 0 1px, transparent 1px 42px);
+  filter: blur(0.4px);
+  animation: mesh-drift 22s ease-in-out infinite;
+}
