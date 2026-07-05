@@ -37,17 +37,17 @@ function Index() {
       <div className="relative mx-auto grid max-w-6xl grid-cols-12 gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:py-24">
         <div className="col-span-12 lg:col-span-8">
           <p className="text-[0.7rem] font-bold uppercase tracking-[0.5em] text-alert">
-            AI · Site Operations
+            instructSite · AI Construction Oracle
           </p>
           <h1
-            className="mt-6 text-4xl font-extrabold leading-[0.95] tracking-tight text-foreground sm:text-5xl md:text-7xl"
+            className="mt-6 text-4xl font-extrabold leading-[0.95] tracking-tight text-foreground sm:text-5xl md:text-6xl"
             style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
           >
-            The command
+            The Oracle for
             <br />
-            surface for
+            the Construction
             <br />
-            site operations.
+            Ecosystem.
           </h1>
           <div className="mt-8 h-px w-32 bg-alert" />
           <p className="mt-8 max-w-xl text-base leading-relaxed text-foreground/75">
