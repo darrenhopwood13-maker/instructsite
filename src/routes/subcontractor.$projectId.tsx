@@ -124,10 +124,9 @@ function SubcontractorCockpit() {
     refetchInterval: 5000,
   });
   const myActivePin = useMemo(() => {
-    const uid = (ctx.data as any)?.userId;
-    // fallback: pick most recent pin (the API doesn't return subcontractor identity separately)
-    return (myPins.data ?? [])[0] ?? null;
-    void uid;
+    const rows = (myPins.data ?? []) as any[];
+    // Best-effort: prefer pins created most recently (list is ordered desc).
+    return rows[0] ?? null;
   }, [myPins.data]);
 
   // -------- Briefing form
