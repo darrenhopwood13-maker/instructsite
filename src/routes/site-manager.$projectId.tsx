@@ -14,6 +14,7 @@ import { BimModelViewer } from "@/components/project/BimModelViewer";
 import { BimModelUploader } from "@/components/project/BimModelUploader";
 import { BimMappingEditor } from "@/components/project/BimMappingEditor";
 import { PermitSignOffModal } from "@/components/project/PermitSignOffModal";
+import { ForceCheckoutModal } from "@/components/project/ForceCheckoutModal";
 import { ClientOnly } from "@tanstack/react-router";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
