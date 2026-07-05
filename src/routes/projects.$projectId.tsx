@@ -16,6 +16,8 @@ import { ZoneMap } from "@/components/project/ZoneMap";
 import { MasterAdminHUD } from "@/components/admin/MasterAdminHUD";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ZoneMatrixBoard } from "@/components/project/ZoneMatrixBoard";
+import { TradeDirectoryPanel } from "@/components/admin/TradeDirectoryPanel";
+import { getMyRoles } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 
