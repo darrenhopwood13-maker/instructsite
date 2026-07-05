@@ -14,6 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getGateStatus } from "../lib/gate.functions";
+import { MeshBackground } from "../components/MeshBackground";
 
 
 function NotFoundComponent() {
