@@ -313,6 +313,7 @@ export const runOracleCommand = createServerFn({ method: "POST" })
     const userPrompt = [
       `## Task`,
       `Provide the ${prompt.title} briefing. ${prompt.focus}`,
+      lockLine,
       ``,
       `## Project Bible Context`,
       contextBlock,
