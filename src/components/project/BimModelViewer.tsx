@@ -344,25 +344,52 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     };
   }, [activeQ.data]);
 
-  // Recolour meshes when mappings / state / pulse changes
+  // Recolour meshes when mappings / state / pulse / isolation changes
   useEffect(() => {
     const meshes = meshesRef.current;
     if (meshes.length === 0) return;
     const mappings = mapQ.data ?? [];
     const stateByZone = new Map<string, ZoneState>();
     for (const s of stateQ.data ?? []) stateByZone.set(s.zone_id, s.state);
+    const zoneByGid = new Map<string, string>();
     const stateByGid = new Map<string, ZoneState>();
     for (const m of mappings) {
-      const zs = stateByZone.get(m.zone_id) ?? "unstarted";
-      stateByGid.set(m.global_id, zs);
+      zoneByGid.set(m.global_id, m.zone_id);
+      stateByGid.set(m.global_id, stateByZone.get(m.zone_id) ?? "unstarted");
     }
 
     const pulse = 0.5 + 0.5 * Math.sin(pulseT * 3);
+    const ISO_HIGHLIGHT = new THREE.Color("#ff7a00");
 
     for (const entry of meshes) {
+      const zoneId = zoneByGid.get(entry.globalId);
+      const inIsolation = isolatedZoneId && zoneId === isolatedZoneId;
+      const isGhost = isolatedZoneId && !inIsolation;
+
+      if (isGhost) {
+        // Ghost / X-ray non-matching elements
+        entry.baseMaterial.transparent = true;
+        entry.baseMaterial.opacity = 0.08;
+        entry.baseMaterial.emissive.setHex(0x000000);
+        entry.baseMaterial.depthWrite = false;
+        entry.baseMaterial.needsUpdate = true;
+        continue;
+      }
+      entry.baseMaterial.depthWrite = true;
+
+      if (inIsolation) {
+        // Bright highlight for isolated zone
+        entry.baseMaterial.color.copy(ISO_HIGHLIGHT);
+        entry.baseMaterial.transparent = false;
+        entry.baseMaterial.opacity = 1;
+        entry.baseMaterial.emissive.copy(ISO_HIGHLIGHT);
+        entry.baseMaterial.emissiveIntensity = 0.4 + pulse * 0.5;
+        entry.baseMaterial.needsUpdate = true;
+        continue;
+      }
+
       const zs = stateByGid.get(entry.globalId);
       if (!zs) {
-        // Unmapped mesh = keep original IFC color, dim it
         entry.baseMaterial.transparent = true;
         entry.baseMaterial.opacity = 0.25;
         entry.baseMaterial.emissive.setHex(0x000000);
@@ -387,7 +414,60 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
       }
       entry.baseMaterial.needsUpdate = true;
     }
-  }, [mapQ.data, stateQ.data, pulseT]);
+  }, [mapQ.data, stateQ.data, pulseT, isolatedZoneId]);
+
+  // Smart camera fly-to when zone is isolated
+  useEffect(() => {
+    if (!isolatedZoneId) return;
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (!camera || !controls) return;
+    const mappings = mapQ.data ?? [];
+    const gidsInZone = new Set(
+      mappings.filter((m) => m.zone_id === isolatedZoneId).map((m) => m.global_id),
+    );
+    if (gidsInZone.size === 0) {
+      toast.info("No elements mapped to this zone yet");
+      return;
+    }
+    const box = new THREE.Box3();
+    let matched = 0;
+    for (const entry of meshesRef.current) {
+      if (gidsInZone.has(entry.globalId)) {
+        box.expandByObject(entry.mesh);
+        matched++;
+      }
+    }
+    if (matched === 0 || box.isEmpty()) {
+      toast.info("Mapped elements aren't in the current model");
+      return;
+    }
+
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z, 1);
+    const fov = (camera.fov * Math.PI) / 180;
+    const distance = (maxDim / (2 * Math.tan(fov / 2))) * 1.6;
+    const dir = new THREE.Vector3(1, 0.7, 1).normalize();
+    const targetPos = center.clone().add(dir.multiplyScalar(distance));
+    const startPos = camera.position.clone();
+    const startTarget = controls.target.clone();
+
+    const duration = 900;
+    const t0 = performance.now();
+    let raf = 0;
+    const ease = (x: number) => 1 - Math.pow(1 - x, 3);
+    const step = () => {
+      const t = Math.min(1, (performance.now() - t0) / duration);
+      const k = ease(t);
+      camera.position.lerpVectors(startPos, targetPos, k);
+      controls.target.lerpVectors(startTarget, center, k);
+      controls.update();
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    step();
+    return () => cancelAnimationFrame(raf);
+  }, [isolatedZoneId, mapQ.data]);
 
   // Give parent a way to refresh (invoked from realtime elsewhere)
   useEffect(() => {
