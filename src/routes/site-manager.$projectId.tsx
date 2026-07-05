@@ -325,8 +325,15 @@ function SiteManagerPage() {
           )}
           <button
             type="button"
+            onClick={() => setForcePin(activePin)}
+            className="mt-3 w-full rounded-md border-2 border-alert bg-alert/10 px-3 py-2 text-[0.65rem] font-extrabold uppercase tracking-widest text-alert shadow-[3px_3px_0_0_rgba(0,0,0,0.4)] hover:bg-alert hover:text-black"
+          >
+            Force Checkout & Close Daily Diary
+          </button>
+          <button
+            type="button"
             onClick={() => closePin(activePin.id)}
-            className="mt-3 w-full rounded-md border border-white/15 px-3 py-1.5 text-[0.65rem] uppercase tracking-widest text-foreground/70 hover:border-alert hover:text-alert"
+            className="mt-2 w-full rounded-md border border-white/15 px-3 py-1.5 text-[0.65rem] uppercase tracking-widest text-foreground/70 hover:border-alert hover:text-alert"
           >
             Clear Crew Out
           </button>
@@ -343,6 +350,20 @@ function SiteManagerPage() {
           }}
         />
       )}
+
+      {forcePin && (
+        <ForceCheckoutModal
+          pin={forcePin}
+          onClose={() => setForcePin(null)}
+          onDone={() => {
+            setForcePin(null);
+            setActivePin(null);
+            qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+            qc.invalidateQueries({ queryKey: ["archived-today", projectId] });
+          }}
+        />
+      )}
+
     </div>
   );
 }
