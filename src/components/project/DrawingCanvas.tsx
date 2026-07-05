@@ -46,6 +46,11 @@ export type PinRecord = {
   operative_count?: number | null;
   start_time?: string | null;
   scheduled_finish?: string | null;
+  permit_required?: boolean | null;
+  permit_status?: string | null;
+  high_risk_flags?: string[] | null;
+  notes?: string | null;
+  activity_id?: string | null;
   work_zones?: { name?: string | null; level?: string | null } | null;
 };
 
