@@ -44,6 +44,36 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [scanning, setScanning] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoRunning, setAutoRunning] = useState(false);
+
+  const runRandallAutoAllocate = async () => {
+    if (elements.length === 0) {
+      toast.error("Scan the model first so Randall has elements to sort");
+      return;
+    }
+    setAutoRunning(true);
+    try {
+      const payload = elements.map((el) => ({
+        globalId: el.globalId,
+        text: [el.name, el.objectType, el.longName, el.ifcType].filter(Boolean).join(" | "),
+      }));
+      const res = await autoFn({ data: { projectId, elements: payload } });
+      if (!res.ok) {
+        toast.error("Randall couldn't allocate", { description: res.reason });
+      } else if (res.count === 0) {
+        toast.info("Randall found no semantic matches", {
+          description: res.reason ?? "Try naming zones like 'Kitchen', 'Bathroom', 'Structural Steel'",
+        });
+      } else {
+        toast.success(`✨ Randall auto-allocated ${res.count} elements`);
+        qc.invalidateQueries({ queryKey: ["ifc-mappings", projectId] });
+      }
+    } catch (e: any) {
+      toast.error("Auto-allocate failed", { description: e?.message ?? String(e) });
+    } finally {
+      setAutoRunning(false);
+    }
+  };
 
   // Seed assignments from server on load
   useEffect(() => {
