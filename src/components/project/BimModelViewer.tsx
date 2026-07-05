@@ -1,13 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Box, Loader2, AlertTriangle } from "lucide-react";
+import { Box, Loader2, AlertTriangle, Link2 } from "lucide-react";
+import { toast } from "sonner";
 import * as THREE from "three";
 import {
   getActiveIfcSignedUrl,
   listElementMappings,
+  listProjectZones,
   listZoneRuntimeState,
+  upsertElementMappings,
 } from "@/lib/ifc-models.functions";
+
 
 type ZoneState = "unstarted" | "live" | "complete";
 
