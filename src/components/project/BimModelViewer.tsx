@@ -339,6 +339,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
       meshesRef.current = [];
       rendererRef.current = null;
       cameraRef.current = null;
+      controlsRef.current = null;
       selectedRef.current = null;
     };
   }, [activeQ.data]);
