@@ -510,14 +510,19 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
         >
           {selected && (
             <div className="flex h-full flex-col">
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-                <div>
+              <div className="flex items-start justify-between gap-2 border-b border-white/10 px-4 py-3">
+                <div className="min-w-0">
                   <p className="text-[0.55rem] font-bold uppercase tracking-[0.35em] text-alert">
-                    BIM Element
+                    Selected · {humanLabel?.prettyType ?? "Element"}
                   </p>
-                  <h3 className="mt-0.5 font-mono text-[0.7rem] font-bold uppercase tracking-widest text-foreground">
-                    Property Inspector
+                  <h3 className="mt-1 truncate text-base font-extrabold leading-tight text-foreground">
+                    {humanLabel?.primary ?? "Unnamed element"}
                   </h3>
+                  {humanLabel?.secondary && (
+                    <p className="mt-0.5 truncate text-xs text-foreground/70">
+                      {humanLabel.secondary}
+                    </p>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -528,29 +533,67 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
                     }
                     setSelected(null);
                   }}
-                  className="rounded-md border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40"
+                  className="shrink-0 rounded-md border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40"
                 >
                   Close
                 </button>
               </div>
-              <div className="border-b border-white/10 px-4 py-3">
-                <p className="font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
-                  IFC Type
+
+              {/* Zone assignment — primary action */}
+              <div className="border-b border-white/10 bg-black/40 px-4 py-3">
+                <p className="mb-1.5 text-[0.55rem] font-bold uppercase tracking-[0.35em] text-foreground/60">
+                  Assign to Work Zone
                 </p>
-                <p className="mt-0.5 font-mono text-sm text-alert">{selected.ifcType}</p>
-                <p className="mt-3 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
-                  Global ID
-                </p>
-                <p className="mt-0.5 truncate font-mono text-[0.65rem] text-foreground/80">
-                  {selected.globalId}
-                </p>
-                <p className="mt-3 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
-                  Express ID
-                </p>
-                <p className="mt-0.5 font-mono text-[0.65rem] text-foreground/80">
-                  #{selected.expressID}
-                </p>
+                <select
+                  value={assignZone}
+                  onChange={(e) => setAssignZone(e.target.value)}
+                  className="w-full rounded-md border border-white/15 bg-background px-2 py-2 text-xs text-foreground focus:border-alert focus:outline-none"
+                >
+                  <option value="">— unmapped —</option>
+                  {(zonesQ.data ?? []).map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.name}
+                      {z.level ? ` · ${z.level}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={lockToZone}
+                  disabled={!assignZone || locking || assignZone === existingZoneId}
+                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-alert bg-alert/15 px-3 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-alert transition hover:bg-alert/25 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {locking ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Link2 size={12} />
+                  )}
+                  {existingZoneId
+                    ? assignZone === existingZoneId
+                      ? "Locked"
+                      : "Re-lock to Zone"
+                    : "Lock Element to Zone"}
+                </button>
+                {existingZoneId && assignZone === existingZoneId && (
+                  <p className="mt-1.5 text-[0.6rem] text-emerald-400/80">
+                    ✓ Currently mapped to{" "}
+                    {(zonesQ.data ?? []).find((z) => z.id === existingZoneId)?.name}
+                  </p>
+                )}
               </div>
+
+              {/* Technical details — collapsed / muted */}
+              <details className="border-b border-white/10 px-4 py-2 text-[0.6rem]">
+                <summary className="cursor-pointer font-mono uppercase tracking-widest text-foreground/40 hover:text-foreground/70">
+                  Technical IDs
+                </summary>
+                <div className="mt-2 space-y-1 font-mono text-foreground/50">
+                  <p>IFC Type: <span className="text-foreground/70">{selected.ifcType}</span></p>
+                  <p className="truncate">GlobalId: <span className="text-foreground/70">{selected.globalId}</span></p>
+                  <p>Express #: <span className="text-foreground/70">{selected.expressID}</span></p>
+                </div>
+              </details>
+
               <div className="flex-1 overflow-y-auto px-4 py-3">
                 <p className="mb-2 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
                   Attributes
