@@ -101,7 +101,7 @@ function DabsPage() {
     if (!pending || !selectedDrawing) return;
     setBusy(true);
     try {
-      await createFn({
+      const result = await createFn({
         data: {
           projectId,
           drawingId: selectedDrawing,
@@ -112,10 +112,18 @@ function DabsPage() {
           scheduledFinish: new Date(finishTime).toISOString(),
           xPct: pending.xPct,
           yPct: pending.yPct,
+          notes: taskNotes.trim() || undefined,
         },
       });
-      toast.success("Pin dropped · briefing logged.");
+      if ((result as any)?.permit_required) {
+        toast.warning("Permit required · site manager must approve before start.", {
+          description: "Pin flagged amber pending sign-off.",
+        });
+      } else {
+        toast.success("Pin dropped · briefing logged.");
+      }
       setPending(null);
+      setTaskNotes("");
       qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to save pin.");
