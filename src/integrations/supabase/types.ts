@@ -805,6 +805,13 @@ export type Database = {
         Args: { _document_id: string }
         Returns: string[]
       }
+      zone_approved_completion: {
+        Args: { _project_id: string }
+        Returns: {
+          total_pct: number
+          zone_id: string
+        }[]
+      }
     }
     Enums: {
       app_role:
