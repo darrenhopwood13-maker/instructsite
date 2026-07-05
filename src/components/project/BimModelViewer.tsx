@@ -95,9 +95,11 @@ async function loadIfcMeshes(
       scene.add(mesh);
       box.expandByObject(mesh);
       meshes.push({ mesh, baseMaterial: mat, globalId });
+      geom.delete?.();
     }
-    geom.delete?.();
   });
+
+
 
   ifcApi.CloseModel(modelID);
   return { meshes, box };
