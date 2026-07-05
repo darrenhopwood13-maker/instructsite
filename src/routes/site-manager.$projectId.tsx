@@ -10,8 +10,11 @@ import { listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { listArchivedToday } from "@/lib/daily-diary.functions";
 import { DrawingCanvas, type PinRecord } from "@/components/project/DrawingCanvas";
 import { QsVerificationQueue } from "@/components/project/QsVerificationQueue";
-import { IfcMeshStatus } from "@/components/project/IfcMeshStatus";
-import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { BimModelViewer } from "@/components/project/BimModelViewer";
+import { BimModelUploader } from "@/components/project/BimModelUploader";
+import { BimMappingEditor } from "@/components/project/BimMappingEditor";
+import { ClientOnly } from "@tanstack/react-router";
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/site-manager/$projectId")({
