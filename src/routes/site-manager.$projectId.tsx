@@ -132,6 +132,7 @@ function SiteManagerPage() {
 
   const [activePin, setActivePin] = useState<PinRecord | null>(null);
   const [permitPin, setPermitPin] = useState<PinRecord | null>(null);
+  const [forcePin, setForcePin] = useState<PinRecord | null>(null);
 
   const closePin = async (pinId: string) => {
     await closeFn({ data: { pinId } });
