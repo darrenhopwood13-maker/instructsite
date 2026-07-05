@@ -217,6 +217,48 @@ export type Database = {
           },
         ]
       }
+      ifc_element_mappings: {
+        Row: {
+          created_at: string
+          global_id: string
+          id: string
+          model_id: string
+          updated_at: string
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          global_id: string
+          id?: string
+          model_id: string
+          updated_at?: string
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          global_id?: string
+          id?: string
+          model_id?: string
+          updated_at?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ifc_element_mappings_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "project_ifc_models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ifc_element_mappings_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "work_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_site_activity: {
         Row: {
           created_at: string
@@ -466,6 +508,47 @@ export type Database = {
             columns: ["site_document_id"]
             isOneToOne: true
             referencedRelation: "site_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_ifc_models: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          original_filename: string
+          project_id: string
+          storage_path: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          original_filename: string
+          project_id: string
+          storage_path: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          original_filename?: string
+          project_id?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_ifc_models_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
