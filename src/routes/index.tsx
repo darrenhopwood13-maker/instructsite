@@ -40,7 +40,7 @@ function Index() {
             AI · Site Operations
           </p>
           <h1
-            className="mt-6 text-6xl font-extrabold leading-[0.95] tracking-tight text-foreground md:text-7xl"
+            className="mt-6 text-4xl font-extrabold leading-[0.95] tracking-tight text-foreground sm:text-5xl md:text-7xl"
             style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
           >
             The command
