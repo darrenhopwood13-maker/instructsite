@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OracleRouteImport } from './routes/oracle'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
@@ -22,6 +23,11 @@ import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$d
 const OracleRoute = OracleRouteImport.update({
   id: '/oracle',
   path: '/oracle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -67,6 +73,7 @@ const ApiDrawingDrawingIdRoute = ApiDrawingDrawingIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/oracle': typeof OracleRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/oracle': typeof OracleRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -90,6 +98,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/oracle': typeof OracleRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/oracle'
     | '/dabs/$projectId'
     | '/invite/$token'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/oracle'
     | '/dabs/$projectId'
     | '/invite/$token'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/oracle'
     | '/dabs/$projectId'
     | '/invite/$token'
@@ -137,6 +149,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   OracleRoute: typeof OracleRoute
   DabsProjectIdRoute: typeof DabsProjectIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -154,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/oracle'
       fullPath: '/oracle'
       preLoaderRoute: typeof OracleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -217,6 +237,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   OracleRoute: OracleRoute,
   DabsProjectIdRoute: DabsProjectIdRoute,
   InviteTokenRoute: InviteTokenRoute,
