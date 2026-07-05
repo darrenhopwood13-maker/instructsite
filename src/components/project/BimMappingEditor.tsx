@@ -17,6 +17,7 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
   const mapFn = useServerFn(listElementMappings);
   const zonesFn = useServerFn(listProjectZones);
   const saveFn = useServerFn(upsertElementMappings);
+  const autoFn = useServerFn(autoAllocateModelElements);
   const qc = useQueryClient();
 
   const activeQ = useQuery({
