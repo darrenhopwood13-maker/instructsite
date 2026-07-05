@@ -336,6 +336,25 @@ function DabsPage() {
               </label>
             </div>
 
+            <label className="mt-3 block">
+              <span className="text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+                Specific Task Description
+              </span>
+              <textarea
+                rows={3}
+                value={taskNotes}
+                onChange={(e) => setTaskNotes(e.target.value)}
+                placeholder="e.g. Welding steel brackets on Level 3 scaffold near riser shaft."
+                className="mt-1 w-full rounded-md border border-white/15 bg-black/40 px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-alert"
+              />
+            </label>
+            {willFlagPermit && (
+              <p className="mt-2 flex items-center gap-1.5 rounded-md border-2 border-amber-400 bg-amber-400/10 px-2.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300">
+                <ShieldAlert size={12} /> High-risk task detected · site manager must issue permit
+              </p>
+            )}
+
+
             <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
