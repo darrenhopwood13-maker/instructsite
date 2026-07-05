@@ -7,7 +7,7 @@ export const claimMasterAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: result, error } = await context.supabase.rpc(
       "dev_claim_master_admin",
-      { _project_id: data.projectId ?? null },
+      data.projectId ? { _project_id: data.projectId } : {},
     );
     if (error) throw new Error(error.message);
     return result;
