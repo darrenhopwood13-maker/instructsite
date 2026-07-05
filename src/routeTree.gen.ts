@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnlockRouteImport } from './routes/unlock'
+import { Route as TrialEndedRouteImport } from './routes/trial-ended'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as McpRouteImport } from './routes/mcp'
@@ -33,6 +34,11 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 const UnlockRoute = UnlockRouteImport.update({
   id: '/unlock',
   path: '/unlock',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrialEndedRoute = TrialEndedRouteImport.update({
+  id: '/trial-ended',
+  path: '/trial-ended',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/oracle'
     | '/reset-password'
+    | '/trial-ended'
     | '/unlock'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/oracle'
     | '/reset-password'
+    | '/trial-ended'
     | '/unlock'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/oracle'
     | '/reset-password'
+    | '/trial-ended'
     | '/unlock'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
@@ -277,6 +289,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   OracleRoute: typeof OracleRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  TrialEndedRoute: typeof TrialEndedRoute
   UnlockRoute: typeof UnlockRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
@@ -300,6 +313,13 @@ declare module '@tanstack/react-router' {
       path: '/unlock'
       fullPath: '/unlock'
       preLoaderRoute: typeof UnlockRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trial-ended': {
+      id: '/trial-ended'
+      path: '/trial-ended'
+      fullPath: '/trial-ended'
+      preLoaderRoute: typeof TrialEndedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -445,6 +465,7 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   OracleRoute: OracleRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  TrialEndedRoute: TrialEndedRoute,
   UnlockRoute: UnlockRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:

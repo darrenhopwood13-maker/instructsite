@@ -28,10 +28,10 @@ export async function ensureOracleSession() {
  * - subcontractor                 → /projects (their DABS is invite-scoped)
  */
 export function routeForRoles(roles: string[]): string {
-  if (roles.includes("master_admin") || roles.includes("project_admin")) {
-    return "/projects";
-  }
+  if (roles.includes("master_admin") || roles.includes("project_admin")) return "/projects";
   if (roles.includes("site_manager")) return "/projects";
+  if (roles.includes("qs")) return "/projects";
   if (roles.includes("subcontractor")) return "/projects";
+  if (roles.includes("apprentice")) return "/projects";
   return "/projects";
 }
