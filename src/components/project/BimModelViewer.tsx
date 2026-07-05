@@ -403,6 +403,58 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     return r !== 0 ? r : (b.progress_pct ?? 0) - (a.progress_pct ?? 0);
   });
 
+  // Human-readable label derivation from raw IFC attributes
+  const humanLabel = useMemo(() => {
+    if (!selected) return null;
+    const p = selected.properties;
+    const pick = (k: string) => {
+      const v = p[k];
+      return typeof v === "string" && v.trim() ? v.trim() : null;
+    };
+    const name = pick("Name");
+    const objectType = pick("ObjectType");
+    const longName = pick("LongName");
+    const tag = pick("Tag");
+    const prettyType = selected.ifcType
+      .replace(/^Ifc/i, "")
+      .replace(/([a-z])([A-Z])/g, "$1 $2");
+    const primary = name || longName || prettyType;
+    const secondary = objectType || (name && longName && longName !== name ? longName : null) || tag;
+    return { primary, secondary, prettyType };
+  }, [selected]);
+
+  // Existing mapping for selected element
+  const existingZoneId = useMemo(() => {
+    if (!selected) return "";
+    const found = (mapQ.data ?? []).find((r) => r.global_id === selected.globalId);
+    return found?.zone_id ?? "";
+  }, [selected, mapQ.data]);
+
+  useEffect(() => {
+    setAssignZone(existingZoneId);
+  }, [existingZoneId, selected?.globalId]);
+
+  const lockToZone = async () => {
+    if (!selected || !activeQ.data?.model || !assignZone) return;
+    setLocking(true);
+    try {
+      await saveFn({
+        data: {
+          modelId: activeQ.data.model.id,
+          rows: [{ global_id: selected.globalId, zone_id: assignZone }],
+        },
+      });
+      const zoneName = (zonesQ.data ?? []).find((z) => z.id === assignZone)?.name ?? "zone";
+      toast.success(`Locked ${humanLabel?.primary ?? "element"} → ${zoneName}`);
+      qc.invalidateQueries({ queryKey: ["ifc-mappings", projectId] });
+    } catch (e: any) {
+      toast.error("Lock failed", { description: e?.message ?? String(e) });
+    } finally {
+      setLocking(false);
+    }
+  };
+
+
   return (
     <div className="glass-panel overflow-hidden">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
