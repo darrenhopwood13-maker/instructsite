@@ -13,7 +13,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — Site Operations Oracle" },
+      { title: "Sign in — instructSite" },
       { name: "description", content: "Secure access to the Oracle command portal." },
     ],
   }),
@@ -177,7 +177,7 @@ function AuthPage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     autoComplete="name"
-                    className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
+                    className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 text-sm text-foreground outline-none focus:border-alert"
                   />
                 </label>
               )}
@@ -192,7 +192,7 @@ function AuthPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
-                  className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
+                  className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 text-sm text-foreground outline-none focus:border-alert"
                 />
               </label>
 
@@ -209,7 +209,7 @@ function AuthPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                      className="w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 pr-11 font-mono text-sm text-foreground outline-none focus:border-alert"
+                      className="w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 pr-11 text-sm text-foreground outline-none focus:border-alert"
                     />
                     <button
                       type="button"

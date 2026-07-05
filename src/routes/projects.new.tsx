@@ -22,7 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/projects/new")({
   head: () => ({
-    meta: [{ title: "New Project — Site Operations Oracle" }],
+    meta: [{ title: "New Project — instructSite" }],
   }),
   component: NewProject,
 });
