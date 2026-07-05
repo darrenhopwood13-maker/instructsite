@@ -77,22 +77,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  beforeLoad: async ({ location }) => {
-    // Site-wide preview password gate. Only /unlock is exempt.
-    if (location.pathname === "/unlock") return;
-    try {
-      const status = await getGateStatus();
-      if (!status.siteUnlocked) {
-        throw redirect({
-          to: "/unlock",
-          search: { redirect: location.href, scope: "site" as const },
-        });
-      }
-    } catch (err: any) {
-      if (isRedirect(err)) throw err;
-      // Ignore transient failures so the app doesn't hard-fail on network hiccups.
-    }
-  },
+  // Preview password gate temporarily disabled — cookie persistence in preview
+  // iframe was locking users out even after a successful unlock. Re-enable
+  // once the session cookie is proven to round-trip.
+
 
   head: () => ({
     meta: [
