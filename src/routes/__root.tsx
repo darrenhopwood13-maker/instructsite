@@ -89,9 +89,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         });
       }
     } catch (err: any) {
-      // Re-throw redirects; ignore transient failures so the app doesn't hard-fail.
-      if (err && typeof err === "object" && "isRedirect" in err) throw err;
-      if (err?.status === 307 || err?.status === 308) throw err;
+      if (isRedirect(err)) throw err;
+      // Ignore transient failures so the app doesn't hard-fail on network hiccups.
     }
   },
 
