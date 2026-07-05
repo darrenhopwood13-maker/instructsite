@@ -14,7 +14,7 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — instructSite" },
-      { name: "description", content: "Secure access to the Oracle command portal." },
+      { name: "description", content: "Secure access to the instructSite command portal." },
     ],
   }),
   validateSearch: (s) => searchSchema.parse(s),
@@ -114,11 +114,7 @@ function AuthPage() {
               className="mt-6 text-6xl font-extrabold leading-[0.95] tracking-tight text-foreground"
               style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
             >
-              Site
-              <br />
-              Operations
-              <br />
-              Oracle.
+              instruct<span style={{color:'#ff7a00'}}>Site</span>
             </h1>
             <div className="mt-8 h-px w-24 bg-alert" />
             <p className="mt-6 max-w-md text-sm leading-relaxed text-foreground/70">
