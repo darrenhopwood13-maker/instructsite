@@ -116,6 +116,41 @@
   html, body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
   body { background-color: var(--color-background); color: var(--color-foreground); }
   h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+  /* Legibility inserts — crisp white reading pods with blocky black borders */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+  textarea,
+  select {
+    background-color: #ffffff;
+    color: #0b1220;
+    border: 2px solid #0b1220;
+    border-radius: 0.375rem;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #64748b;
+    opacity: 1;
+  }
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: #ff7a00;
+    box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.35);
+  }
+}
+
+@utility readable-input {
+  background-color: #ffffff !important;
+  color: #0b1220 !important;
+  border: 2px solid #0b1220 !important;
+  border-radius: 0.375rem;
+  &::placeholder { color: #64748b; }
+  &:focus {
+    outline: none;
+    border-color: #ff7a00 !important;
+    box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.35);
+  }
 }
 
 @keyframes shimmer-diagonal {
