@@ -7,6 +7,7 @@ import {
   HeadContent,
   Scripts,
   redirect,
+  isRedirect,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 
