@@ -137,12 +137,14 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
   const meshesRef = useRef<MeshEntry[]>([]);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<any>(null);
   const selectedRef = useRef<MeshEntry | null>(null);
   const [status, setStatus] = useState<
     "idle" | "loading" | "ready" | "empty" | "error"
   >("idle");
   const [error, setError] = useState<string | null>(null);
   const [pulseT, setPulseT] = useState(0);
+  const [isolatedZoneId, setIsolatedZoneId] = useState<string>("");
   const [selected, setSelected] = useState<{
     globalId: string;
     expressID: number;
