@@ -862,6 +862,7 @@ export type Database = {
         Args: { _document_id: string; _user_id: string }
         Returns: boolean
       }
+      dev_claim_master_admin: { Args: { _project_id?: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
