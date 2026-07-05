@@ -137,20 +137,21 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <header className="border-b border-hairline/20 bg-background">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-          <Link
-            to="/"
-            className="font-display text-lg font-extrabold uppercase tracking-widest text-foreground"
-          >
-            Oracle
-          </Link>
-          <AuthNav />
-        </nav>
-      </header>
-      <main>
-        <Outlet />
-      </main>
+      <div className="mesh-bg" aria-hidden />
+      <div className="relative z-10">
+        <header className="border-b border-white/10 bg-background/70 backdrop-blur">
+          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
+            <Link to="/" className="flex items-baseline gap-0.5 text-lg font-extrabold tracking-tight">
+              <span style={{ color: "#ff7a00" }}>instruct</span>
+              <span className="text-white">Site</span>
+            </Link>
+            <AuthNav />
+          </nav>
+        </header>
+        <main>
+          <Outlet />
+        </main>
+      </div>
     </QueryClientProvider>
   );
 }
@@ -189,7 +190,7 @@ function AuthNav() {
             Projects
           </Link>
           <Link to="/oracle" className="glass-orange rounded-lg px-4 py-2 text-sm">
-            Oracle Tooling
+            AI Tooling
           </Link>
           <button
             type="button"
@@ -207,3 +208,4 @@ function AuthNav() {
     </div>
   );
 }
+
