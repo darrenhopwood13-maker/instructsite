@@ -176,7 +176,30 @@ function ProjectDetail() {
           onZonesChanged={() => zones.refetch()}
         />
 
+        {isAdmin && (
+          <section className="mt-8">
+            <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
+              Project Administration
+            </p>
+            <h2
+              className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground"
+              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            >
+              Subcontractor & Trade Directory
+            </h2>
+            <p className="mt-1.5 max-w-2xl text-xs text-foreground/60">
+              Register trade companies, generate one-time secure invite tokens, and
+              distribute QR codes for on-site onboarding.
+            </p>
+            <div className="mt-5">
+              <TradeDirectoryPanel projectId={projectId} />
+            </div>
+          </section>
+        )}
+
         <ZoneMatrixBoard projectId={projectId} />
+
+
 
 
 
