@@ -162,6 +162,9 @@ function ProjectDetail() {
           onZonesChanged={() => zones.refetch()}
         />
 
+        <ZoneMatrixBoard projectId={projectId} />
+
+
 
 
         {/* Upload engine row — symmetric 2-col */}
