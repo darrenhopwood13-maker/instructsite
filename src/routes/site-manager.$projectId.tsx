@@ -14,6 +14,7 @@ import { BimModelViewer } from "@/components/project/BimModelViewer";
 import { BimModelUploader } from "@/components/project/BimModelUploader";
 import { BimMappingEditor } from "@/components/project/BimMappingEditor";
 import { PermitSignOffModal } from "@/components/project/PermitSignOffModal";
+import { ForceCheckoutModal } from "@/components/project/ForceCheckoutModal";
 import { ClientOnly } from "@tanstack/react-router";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
@@ -131,6 +132,7 @@ function SiteManagerPage() {
 
   const [activePin, setActivePin] = useState<PinRecord | null>(null);
   const [permitPin, setPermitPin] = useState<PinRecord | null>(null);
+  const [forcePin, setForcePin] = useState<PinRecord | null>(null);
 
   const closePin = async (pinId: string) => {
     await closeFn({ data: { pinId } });
@@ -323,10 +325,17 @@ function SiteManagerPage() {
           )}
           <button
             type="button"
-            onClick={() => closePin(activePin.id)}
-            className="mt-3 w-full rounded-md border border-white/15 px-3 py-1.5 text-[0.65rem] uppercase tracking-widest text-foreground/70 hover:border-alert hover:text-alert"
+            onClick={() => setForcePin(activePin)}
+            className="mt-3 w-full rounded-md bg-alert px-3 py-2 text-[0.65rem] font-extrabold uppercase tracking-widest text-alert-foreground shadow hover:bg-alert/90"
           >
-            Clear Crew Out
+            Force Checkout & Close Daily Diary
+          </button>
+          <button
+            type="button"
+            onClick={() => closePin(activePin.id)}
+            className="mt-2 w-full rounded-md border border-white/15 px-3 py-1.5 text-[0.65rem] uppercase tracking-widest text-foreground/70 hover:border-alert hover:text-alert"
+          >
+            Clear Crew Out (no diary)
           </button>
         </div>
       )}
@@ -338,6 +347,18 @@ function SiteManagerPage() {
           onClose={() => {
             setPermitPin(null);
             qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+          }}
+        />
+      )}
+
+      {forcePin && (
+        <ForceCheckoutModal
+          pinId={forcePin.id}
+          projectId={projectId}
+          tradeLabel={forcePin.trade_package}
+          onClose={() => {
+            setForcePin(null);
+            setActivePin(null);
           }}
         />
       )}
