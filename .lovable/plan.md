@@ -1,99 +1,182 @@
-# Phase 5 · Real 3D IFC Viewer
+# Sprint: P0 security hardening + progress math + docs
 
-Swap the text-chip `IfcMeshStatus` panel for a live Three.js canvas that loads an actual `.ifc` file, parses it in the browser, and recolours meshes from `daily_site_diaries` + `live_site_activity` state.
+Consolidated build plan. Ships in one go.
 
-## 1 · Storage & schema (one migration + one bucket call)
+---
 
-**Bucket** — `project-bim-models`, **private** (IFC files are commercially sensitive; we serve them via short-lived signed URLs, not public links). If you specifically want it public I'll flip it, but private is the right default.
+## 1 · P0 Security fixes (server-only edits)
 
-**Tables** (public schema, RLS + GRANTs):
+### 1a · Kill dev master-admin auto-promotion
 
-- `project_ifc_models` — `id`, `project_id → projects(cascade)`, `storage_path text`, `original_filename text`, `uploaded_by → auth.users`, `is_active bool default true`, timestamps. Only one `is_active=true` per project (partial unique index).
-- `ifc_element_mappings` — `id`, `model_id → project_ifc_models(cascade)`, `global_id text` (the IFC `GlobalId`), `zone_id → work_zones(cascade)`, unique `(model_id, global_id)`.
+**File:** `src/lib/projects.functions.ts` — `getMyRoles` (lines 16-33).
 
-RLS: project members read; project admins insert/update/delete. `service_role` full.
+Delete the fallback that inserts `master_admin` when a user has no roles. Replace with a plain read.
 
-## 2 · Libraries
+**Bootstrap rule:** the very first user in `auth.users` (chronologically) becomes `master_admin` once, via DB trigger. All subsequent users get **no role** until an admin grants one. Migration:
 
-Install:
-- `web-ifc` — WASM IFC parser
-- `three` + `@types/three`
-- `@thatopen/components` + `@thatopen/fragments` — camera, grid, highlighter, IFC loader wrapper on top of `web-ifc`
+```sql
+CREATE OR REPLACE FUNCTION public.bootstrap_first_master_admin()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.user_roles WHERE role = 'master_admin') THEN
+    INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'master_admin')
+    ON CONFLICT DO NOTHING;
+  END IF;
+  RETURN NEW;
+END $$;
 
-Copy the `web-ifc` WASM into `public/wasm/` at install time so the viewer can point `IfcAPI.SetWasmPath("/wasm/")` — otherwise `web-ifc.wasm` 404s in production.
+DROP TRIGGER IF EXISTS on_auth_user_created_bootstrap ON auth.users;
+CREATE TRIGGER on_auth_user_created_bootstrap
+AFTER INSERT ON auth.users FOR EACH ROW
+EXECUTE FUNCTION public.bootstrap_first_master_admin();
+```
 
-The viewer is client-only. Mounted with `<ClientOnly>` and dynamic import inside `useEffect`; no SSR pass.
+(The `bootstrap_first_master_admin` function already exists per db-functions listing — I'll add the trigger on `auth.users` if it's missing and no-op if present.)
 
-## 3 · Server functions (`src/lib/ifc-models.functions.ts`)
+### 1b · Server-side role check on QS approval
 
-- `listIfcModels({ projectId })` — member-scoped list.
-- `getActiveIfcSignedUrl({ projectId })` — returns `{ url, model }` using `storage.createSignedUrl(path, 3600)`. Called from the viewer on mount.
-- `uploadIfcModel` — accepts `{ projectId, storagePath, filename }` after client-side upload to `project-bim-models/{projectId}/{uuid}.ifc`; inserts row, sets it active, deactivates prior models. Admin-only.
-- `listElementMappings({ projectId })` — returns `[{ global_id, zone_id }]` for the active model.
-- `upsertElementMappings({ modelId, rows })` — admin bulk mapping upsert.
-- `listZoneRuntimeState({ projectId })` — returns `[{ zone_id, state: 'unstarted' | 'live' | 'complete' }]` derived server-side:
-  - `complete` if any `daily_site_diaries` row for that zone has `ifc_synced = true`
-  - else `live` if a `live_site_activity` row with `status='active'` exists for that zone
-  - else `unstarted`
+**File:** `src/lib/daily-diary.functions.ts` — `setDiaryQsStatus` (lines 85-116).
 
-## 4 · New components
+At the top of the handler, add:
 
-### `src/components/project/BimModelViewer.tsx`
-- Client-only. Sets up `THREE.Scene`, `PerspectiveCamera`, `OrbitControls` (rotate / pan / zoom), grid, ambient + directional light.
-- Uses `@thatopen/components` `IfcLoader` to stream-parse the signed URL.
-- After load, walks the fragments map keeping `globalId → THREE.Mesh[]` so we can recolour by GlobalId.
-- Subscribes to a `useQuery(['zone-runtime', projectId], listZoneRuntimeState, { refetchInterval: 10_000 })` plus the existing realtime channel invalidation for `daily_site_diaries` and `live_site_activity`.
-- Colour function per mesh:
-  - `unstarted` → `#7a7a7a`, `transparent: true`, `opacity: 0.35`
-  - `live` → `#ff7a00`, pulsing (emissive intensity oscillates in `requestAnimationFrame`)
-  - `complete` → `#22c55e` solid
-- Empty state: if no active model, render a dashed drop panel: **Upload .ifc model** (admin only).
+```ts
+const { data: allowed } = await context.supabase.rpc("has_role", {
+  _user_id: context.userId, _role: "master_admin",
+});
+const { data: pAdmin } = await context.supabase.rpc("has_role", {
+  _user_id: context.userId, _role: "project_admin",
+});
+const { data: sMgr } = await context.supabase.rpc("has_role", {
+  _user_id: context.userId, _role: "site_manager",
+});
+if (!allowed && !pAdmin && !sMgr) {
+  throw new Error("Forbidden: QS approval requires site_manager, project_admin, or master_admin");
+}
+```
 
-### `src/components/project/BimModelUploader.tsx`
-- Admin-only dropzone. Uploads to `project-bim-models` via `supabase.storage.from(...).upload()` with progress, then calls `uploadIfcModel`.
+Client toast on failure already surfaces the message.
 
-### `src/components/project/BimMappingEditor.tsx` (collapsible)
-- Lists parsed GlobalIds from the loaded model with a zone `<Select>` per row. Save calls `upsertElementMappings`. Without mappings the viewer still renders but every mesh is grey — this editor is how the admin ties structure → zones.
+### 1c · Kill project self-enrolment
 
-## 5 · Site Manager wiring
+**File:** `src/lib/projects.functions.ts` — `getProject` (lines 80-115).
 
-`src/routes/site-manager.$projectId.tsx`:
-- Delete the `<IfcMeshStatus />` block and the section around it.
-- Insert `<ClientOnly><BimModelViewer projectId={projectId} /></ClientOnly>` in the same slot, full-width, min-height 520px, dark canvas that matches the panel aesthetic.
-- Below it, collapsible **Model & Mapping** section with `<BimModelUploader />` + `<BimMappingEditor />` for admins only.
+Delete the `supabaseAdmin`-backed auto-insert-as-subcontractor block. If the project row doesn't come back through the authenticated `context.supabase` (RLS-gated), throw `Error("Access denied — you are not a member of this project")`.
 
-`IfcMeshStatus.tsx` is deleted.
+**File:** `src/routes/projects.$projectId.tsx` — wrap the `useQuery` error state with an "Access denied" screen (title + short body + link back to `/projects`). Same for `dabs.$projectId.tsx` and `site-manager.$projectId.tsx`.
 
-## 6 · Realtime
+---
 
-`daily_site_diaries` and `live_site_activity` are already in the Site Manager realtime channel. Extend the existing subscription in `site-manager.$projectId.tsx` to also invalidate `['zone-runtime', projectId]` — the viewer re-queries and repaints without a manual refresh.
+## 2 · Progress math — cumulative approved completion
 
-## 7 · Files touched
+### 2a · New RPC to aggregate approved completion per zone
+
+Migration adds a SECURITY DEFINER function callable from server functions:
+
+```sql
+CREATE OR REPLACE FUNCTION public.zone_approved_completion(_project_id uuid)
+RETURNS TABLE (zone_id uuid, total_pct numeric)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT zone_id, LEAST(100, COALESCE(SUM(completion_pct), 0))::numeric AS total_pct
+  FROM public.daily_site_diaries
+  WHERE project_id = _project_id
+    AND qs_status = 'approved'
+    AND zone_id IS NOT NULL
+  GROUP BY zone_id
+$$;
+
+GRANT EXECUTE ON FUNCTION public.zone_approved_completion(uuid) TO authenticated, service_role;
+```
+
+Cap at 100 so a zone with over-approved diaries still reports `100`, not `140`.
+
+### 2b · Auto-flip `ifc_synced` when cumulative reaches 100
+
+Migration adds a trigger on `daily_site_diaries`:
+
+```sql
+CREATE OR REPLACE FUNCTION public.sync_zone_ifc_on_approval()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_total numeric;
+BEGIN
+  IF NEW.zone_id IS NULL THEN RETURN NEW; END IF;
+
+  SELECT COALESCE(SUM(completion_pct), 0) INTO v_total
+  FROM public.daily_site_diaries
+  WHERE project_id = NEW.project_id
+    AND zone_id = NEW.zone_id
+    AND qs_status = 'approved';
+
+  IF v_total >= 100 THEN
+    UPDATE public.daily_site_diaries
+    SET ifc_synced = true
+    WHERE project_id = NEW.project_id
+      AND zone_id = NEW.zone_id
+      AND qs_status = 'approved'
+      AND ifc_synced = false;
+  END IF;
+
+  RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_sync_zone_ifc ON public.daily_site_diaries;
+CREATE TRIGGER trg_sync_zone_ifc
+AFTER INSERT OR UPDATE OF qs_status, completion_pct ON public.daily_site_diaries
+FOR EACH ROW EXECUTE FUNCTION public.sync_zone_ifc_on_approval();
+```
+
+This means: every time a diary is approved OR its `completion_pct` changes, the trigger re-tallies the zone. Once cumulative ≥ 100, **all approved diaries for that zone flip `ifc_synced=true`** so the 3D mesh goes green regardless of which specific diary the viewer keys off.
+
+### 2c · Update `listZoneRuntimeState` to use cumulative completion
+
+**File:** `src/lib/ifc-models.functions.ts` — `listZoneRuntimeState` (lines 126-164).
+
+Change the `complete` calculation from "any diary with ifc_synced=true" to "cumulative approved ≥ 100 via `zone_approved_completion` RPC". Return shape gains `progress_pct` per zone so the UI can show a progress bar. Order of colour precedence stays: `complete > live > unstarted`.
+
+### 2d · Show progress bar in BIM viewer legend
+
+**File:** `src/components/project/BimModelViewer.tsx` — legend chip block. Add a small `{zoneName}: {progress_pct}%` list under the legend so QS/PM see live cumulative progress per zone at a glance. No new components.
+
+---
+
+## 3 · Documentation (three new files in `docs/`)
+
+Ship exactly the content from the previous plan:
+
+- `docs/APP_WORKFLOW.md` — Part 1 walkthrough, one section per workflow (auth → project → drawings → Oracle → zones → DABS → site manager → diary → QS → IFC → HUD). Plain English, no jargon, with a "what to check in the DB" note per section.
+- `docs/QA_TEST_SCRIPT.md` — 11 tests as a printable checklist with expected results and DB verification queries.
+- `docs/IMPROVEMENT_ROADMAP.md` — P0/P1/P2/P3 list. Mark P0 items 1a/1b/1c and progress math as **DONE in this sprint**; the rest stay as future work.
+
+---
+
+## 4 · Files touched
 
 **New**
-- `supabase/migrations/<ts>_ifc_models.sql`
-- `src/lib/ifc-models.functions.ts`
-- `src/components/project/BimModelViewer.tsx`
-- `src/components/project/BimModelUploader.tsx`
-- `src/components/project/BimMappingEditor.tsx`
-- `public/wasm/web-ifc.wasm` (copied at install)
+- `supabase/migrations/<ts>_p0_security_and_progress_math.sql` — bootstrap trigger (if missing), `zone_approved_completion` RPC, `sync_zone_ifc_on_approval` trigger.
+- `docs/APP_WORKFLOW.md`
+- `docs/QA_TEST_SCRIPT.md`
+- `docs/IMPROVEMENT_ROADMAP.md`
 
 **Edited**
-- `src/routes/site-manager.$projectId.tsx` (remove chips, mount viewer + admin tools, extend realtime invalidations)
-- `package.json` (deps)
+- `src/lib/projects.functions.ts` — remove auto-promote fallback, remove self-enrol block.
+- `src/lib/daily-diary.functions.ts` — role check in `setDiaryQsStatus`.
+- `src/lib/ifc-models.functions.ts` — cumulative-completion logic in `listZoneRuntimeState`, return `progress_pct`.
+- `src/components/project/BimModelViewer.tsx` — show per-zone progress in legend.
+- `src/routes/projects.$projectId.tsx`, `src/routes/dabs.$projectId.tsx`, `src/routes/site-manager.$projectId.tsx` — friendly "Access denied" state when `getProject` throws.
 
-**Deleted**
-- `src/components/project/IfcMeshStatus.tsx`
+**Not touched**
+- No changes to `activities` / `permits` / `high_risk_flags` — that's P1 in a later sprint, per your instruction to stay focused on P0 + progress math.
+- No changes to Oracle scoping — P1.
+- No auth UI added (login page, sign-out). The app still runs anonymously; once you invite real users we'll wire in the login flow. Flag me if you want that in this sprint too.
 
-## 8 · Explicit non-goals
+---
 
-- No server-side IFC parsing. Parsing runs in the browser with the WASM binary; the server only serves the file and mappings.
-- No automatic GlobalId → zone inference. The `BimMappingEditor` is manual for now (later phase can add naming-convention heuristics).
-- No IFC diff/versioning UI. Uploading a new model marks it active and older rows go inactive; historical mappings stay tied to their model_id.
+## 5 · What you'll test after this ships
 
-## 9 · Two things I need you to confirm before I ship
+1. As a fresh user (second user in the DB), you should have **no roles** and see "New Project" hidden. Only the first-ever user is master admin.
+2. Try approving a diary while signed in as a subcontractor → toast: "Forbidden: QS approval requires…".
+3. Try visiting `/projects/<some-other-project-id>` while not a member → "Access denied" screen, no auto-enrol.
+4. Submit two diaries for the same zone: 60% approved, then 50% approved. After the second approval, the zone's mesh flips to solid green (cumulative = 100, capped) and both diaries have `ifc_synced=true`.
+5. Repeat with 40% + 30% approved — mesh stays orange/grey; legend shows 70%.
 
-1. **Bucket privacy** — I'm defaulting `project-bim-models` to **private** with signed URLs. The brief said "public"; confirm you actually want public (anyone with the URL can download the IFC) or accept private.
-2. **First mapping** — once the viewer is live, meshes stay grey until you (or an admin) fill in `ifc_element_mappings`. That's the manual step. OK to ship the editor and let you map post-upload, rather than blocking on an auto-mapper?
-
-Approve and I'll ship the migration first, then the viewer.
+Approve and I'll ship the migration first (needs your DB approval), then all code + doc edits in one batch.
