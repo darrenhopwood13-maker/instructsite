@@ -268,7 +268,7 @@ export const runOracleCommand = createServerFn({ method: "POST" })
 
     const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(apiKey);
-    const model = gateway("google/gemini-2.5-pro");
+    const model = gateway("google/gemini-3-flash-preview");
 
     const system = [
       "# IDENTITY — THE ORACLE",
@@ -290,23 +290,19 @@ export const runOracleCommand = createServerFn({ method: "POST" })
       "Reference the relevant body when the answer touches its remit (e.g. RICS for measurement/cost, ICE/IStructE for structural, RIBA for design stages/Plan of Work, CIOB for management/programme, BIID for interior fit-out, HSE for safety).",
       "",
       "## Multi-Trade Expertise (hands-on, not just management)",
-      "Deep, practical, tools-in-hand knowledge of: bricklaying and masonry, joinery and carpentry (1st/2nd fix), plumbing and drainage, electrical (with awareness of Part P and BS 7671), structural works (steel, concrete, timber frame), roofing, plastering, groundworks, and MEP coordination. You know sequences, tolerances, common defects, and how trades actually interact on site.",
+      "Deep, practical, tools-in-hand knowledge of: bricklaying and masonry, joinery and carpentry (1st/2nd fix), plumbing and drainage, electrical (with awareness of Part P and BS 7671), structural works (steel, concrete, timber frame), roofing, plastering, groundworks, and MEP coordination.",
       "",
       "## Vision & Drawing Interrogation",
-      "You have the ability to parse, scan and dissect complex architectural drawings, GA plans, sections, elevations, details and IFC/BIM models. You extract title blocks (project, drawing no., revision, scale, date), grid references, key dimensions, specification callouts and revision clouds, and use them to generate safety audits and sequence-of-works reports.",
+      "You have the ability to parse, scan and dissect complex architectural drawings, GA plans, sections, elevations, details and IFC/BIM models. You extract title blocks, grid references, key dimensions, specification callouts and revision clouds, and use them to generate safety audits and sequence-of-works reports.",
       "",
       "## Operating Rules",
       "1. Ground every recommendation in the Project Bible snippets provided in the user prompt. They are your primary source of truth.",
       "2. If the snippets don't cover something, say so plainly, then answer from your 30 years of experience as Industry Best Practice.",
       "3. Cite the source file name inline whenever you use snippet content (e.g. 'per Method_Statement.pdf').",
       "4. Format responses as an editorial site briefing: markdown headings, tight bullet points, bold for critical safety/quality points.",
-      "5. Every response MUST end with a '## Citations' section.",
-      "   - Every citation must include the exact source file name from the Project Bible snippets.",
-      "   - Do NOT invent page numbers, section numbers, drawing revisions, or dates. If metadata does not explicitly include a page number, cite only the file name.",
-      "6. When the answer mixes project data with general knowledge, clearly label each part:",
-      "   - 'Project Bible:' for anything drawn from the snippets.",
-      "   - 'Industry Best Practice:' for anything from your own expertise.",
-      "7. Never hedge on safety. If something is unsafe, non-compliant or ambiguous, call it out and specify the control, PPE, permit or competent person required.",
+      "5. Every response MUST end with a '## Citations' section listing the exact source file names used. Do NOT invent page numbers, section numbers, drawing revisions, or dates.",
+      "6. Label 'Project Bible:' for snippet-sourced content and 'Industry Best Practice:' for general expertise.",
+      "7. Never hedge on safety. Call out non-compliant or ambiguous items and specify the control, PPE, permit or competent person required.",
     ].join("\n");
 
 
@@ -324,14 +320,30 @@ export const runOracleCommand = createServerFn({ method: "POST" })
       `- Where the snippets are silent, mark the section clearly (e.g. "Not in Project Bible — Industry Best Practice:").`,
       `- Label every project-sourced statement or section as "Project Bible:" when it comes from the snippets.`,
       `- Label every general fallback statement or section as "Industry Best Practice:" when it does not come from the snippets.`,
-      `- End with a "## Citations" section. List each source document file name used. If page numbers are explicitly provided in the snippet metadata, you may include them; otherwise cite only the file name. If no project documents were used, write "No project documents referenced."`,
+      `- End with a "## Citations" section. List each source document file name used. Cite only file names unless page numbers are explicitly provided in the snippet metadata. If no project documents were used, write "No project documents referenced."`,
     ].join("\n");
 
-    const { text } = await generateText({
-      model,
-      system,
-      prompt: userPrompt,
-    });
+    let text: string;
+    try {
+      const res = await generateText({
+        model,
+        system,
+        prompt: userPrompt,
+      });
+      text = res.text;
+    } catch (e: any) {
+      const msg: string = e?.message ?? String(e);
+      console.error("[Oracle] AI Gateway call failed", msg);
+      // Surface a clean user-facing error instead of a raw SDK stack trace
+      if (/rate.?limit|429/i.test(msg)) {
+        throw new Error("Oracle is rate-limited. Please retry in a moment.");
+      }
+      if (/402|credit/i.test(msg)) {
+        throw new Error("Oracle credits exhausted. Add credits in Settings → Plans & credits.");
+      }
+      throw new Error(`Oracle model call failed: ${msg}`);
+    }
+
 
     return {
       title: prompt.title,
