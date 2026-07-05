@@ -13,8 +13,8 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — Site Operations Oracle" },
-      { name: "description", content: "Secure access to the Oracle command portal." },
+      { title: "Sign in — instructSite" },
+      { name: "description", content: "Secure access to the instructSite command portal." },
     ],
   }),
   validateSearch: (s) => searchSchema.parse(s),
@@ -114,11 +114,7 @@ function AuthPage() {
               className="mt-6 text-6xl font-extrabold leading-[0.95] tracking-tight text-foreground"
               style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
             >
-              Site
-              <br />
-              Operations
-              <br />
-              Oracle.
+              instruct<span style={{color:'#ff7a00'}}>Site</span>
             </h1>
             <div className="mt-8 h-px w-24 bg-alert" />
             <p className="mt-6 max-w-md text-sm leading-relaxed text-foreground/70">
@@ -177,7 +173,7 @@ function AuthPage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     autoComplete="name"
-                    className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
+                    className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 text-sm text-foreground outline-none focus:border-alert"
                   />
                 </label>
               )}
@@ -192,7 +188,7 @@ function AuthPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
-                  className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
+                  className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 text-sm text-foreground outline-none focus:border-alert"
                 />
               </label>
 
@@ -209,7 +205,7 @@ function AuthPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                      className="w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 pr-11 font-mono text-sm text-foreground outline-none focus:border-alert"
+                      className="w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 pr-11 text-sm text-foreground outline-none focus:border-alert"
                     />
                     <button
                       type="button"

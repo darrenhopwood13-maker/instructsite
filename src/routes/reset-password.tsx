@@ -1,13 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Reset password — Site Operations Oracle" },
-      { name: "description", content: "Choose a new password for your secure Oracle account." },
+      { title: "Reset password — instructSite" },
+      { name: "description", content: "Choose a new password for your instructSite account." },
     ],
   }),
   component: ResetPasswordPage,
@@ -21,13 +21,37 @@ function ResetPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [complete, setComplete] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  // Supabase auto-processes the recovery hash on load and creates a temporary session.
+  // Poll for session presence rather than gating on hash tokens (PKCE flows omit them).
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted && data.session) setReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      if (event === "PASSWORD_RECOVERY" || session) setReady(true);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   const hasRecoveryLink = useMemo(() => {
     if (typeof window === "undefined") return false;
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const searchParams = new URLSearchParams(window.location.search);
-    return hashParams.get("type") === "recovery" || searchParams.get("type") === "recovery";
-  }, []);
+    return (
+      hashParams.get("type") === "recovery" ||
+      searchParams.get("type") === "recovery" ||
+      !!searchParams.get("code") ||
+      ready
+    );
+  }, [ready]);
+
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -178,7 +202,7 @@ function PasswordInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         autoComplete={autoComplete}
-        className="w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 pr-11 font-mono text-sm text-foreground outline-none focus:border-alert"
+        className="w-full rounded-md border border-white/15 bg-black/50 px-3 py-2.5 pr-11 text-sm text-foreground outline-none focus:border-alert"
       />
       <button
         type="button"

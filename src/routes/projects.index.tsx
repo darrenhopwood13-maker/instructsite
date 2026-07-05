@@ -9,7 +9,7 @@ import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 export const Route = createFileRoute("/projects/")({
   head: () => ({
     meta: [
-      { title: "Projects — Site Operations Oracle" },
+      { title: "Projects — instructSite" },
       { name: "description", content: "Manage active construction projects and onboarding." },
     ],
   }),

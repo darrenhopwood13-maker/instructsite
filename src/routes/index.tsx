@@ -6,13 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Site Operations Oracle" },
+      { title: "instructSite" },
       {
         name: "description",
         content:
           "Premium AI command surface for construction site operations — DABS, live IFC, QS-verified progress.",
       },
-      { property: "og:title", content: "Site Operations Oracle" },
+      { property: "og:title", content: "instructSite" },
       {
         property: "og:description",
         content: "Premium AI tooling for site operations.",
@@ -30,32 +30,30 @@ function Index() {
   }, []);
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
+    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
       <div className="aurora-bg" />
       <div className="grain-overlay" />
 
-      <div className="relative mx-auto grid max-w-6xl grid-cols-12 gap-8 px-6 py-24">
-        <div className="col-span-12 lg:col-span-8">
+      <div className="relative mx-auto max-w-6xl px-6 py-24">
+        <div className="text-center">
           <p className="text-[0.7rem] font-bold uppercase tracking-[0.5em] text-alert">
             AI · Site Operations
           </p>
           <h1
-            className="mt-6 text-6xl font-extrabold leading-[0.95] tracking-tight text-foreground md:text-7xl"
+            className="mt-6 text-7xl font-extrabold leading-none tracking-tight md:text-8xl lg:text-9xl"
             style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
           >
-            The command
-            <br />
-            surface for
-            <br />
-            site operations.
+            <span style={{ color: "#ff7a00" }}>instruct</span>
+            <span className="text-white">Site</span>
           </h1>
-          <div className="mt-8 h-px w-32 bg-alert" />
-          <p className="mt-8 max-w-xl text-base leading-relaxed text-foreground/75">
-            Upload the drawing pack. Watch zones light up as trades complete work.
-            DABS as single source of truth. QS-verified progress. Live IFC model. Every
-            action audited, every role scoped.
+          <p className="mt-6 text-lg md:text-xl font-medium text-white/85">
+            Turn complex 2D drawings into instant, plain-English sequences.
           </p>
-          <div className="mt-10 flex flex-wrap gap-3">
+          <p className="mt-2 text-sm md:text-base text-white/60">
+            Whether you have 30 years of experience or 30 days — get the edge in seconds.
+          </p>
+          <div className="mt-10 h-px w-32 mx-auto bg-alert" />
+          <div className="mt-10 flex flex-wrap justify-center gap-3">
             {signedIn ? (
               <button
                 onClick={() => navigate({ to: "/projects" })}
@@ -83,7 +81,7 @@ function Index() {
           </div>
         </div>
 
-        <aside className="col-span-12 space-y-3 lg:col-span-4">
+        <div className="mt-20 grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
             { k: "DABS", d: "Daily briefings as the single source of truth." },
             { k: "IFC", d: "Live 3D model — zones flip green on QS approval." },
@@ -97,8 +95,9 @@ function Index() {
               <p className="mt-2 text-sm text-foreground/80">{f.d}</p>
             </div>
           ))}
-        </aside>
+        </div>
       </div>
     </div>
   );
 }
+

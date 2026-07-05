@@ -22,7 +22,7 @@ import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 
 export const Route = createFileRoute("/projects/$projectId")({
-  head: () => ({ meta: [{ title: "Project — Site Operations Oracle" }] }),
+  head: () => ({ meta: [{ title: "Project — instructSite" }] }),
   component: ProjectDetail,
 });
 
