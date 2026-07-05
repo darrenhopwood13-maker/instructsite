@@ -4,11 +4,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link2, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  autoAllocateModelElements,
   getActiveIfcSignedUrl,
   listElementMappings,
   listProjectZones,
   upsertElementMappings,
 } from "@/lib/ifc-models.functions";
+import { Sparkles } from "lucide-react";
 
 export function BimMappingEditor({ projectId }: { projectId: string }) {
   const activeFn = useServerFn(getActiveIfcSignedUrl);
