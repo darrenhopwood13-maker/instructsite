@@ -436,26 +436,23 @@
     radial-gradient(60% 45% at 10% 96%, rgba(59,130,246,0.55) 0%, transparent 65%),
     radial-gradient(50% 40% at 55% 55%, rgba(147,197,253,0.32) 0%, transparent 70%),
     radial-gradient(35% 30% at 30% 25%, rgba(255,180,80,0.28) 0%, transparent 70%);
-  animation: mesh-float 12s ease-in-out infinite, mesh-orb-pulse 6s ease-in-out infinite;
+  animation: mesh-float 32s ease-in-out infinite, mesh-orb-pulse 18s ease-in-out infinite;
 }
 .mesh-bg::before {
   content: "";
   position: absolute;
   inset: -25%;
   background-image:
-    repeating-linear-gradient(0deg,   rgba(255,255,255,0.30) 0 1.5px, transparent 1.5px 42px),
-    repeating-linear-gradient(90deg,  rgba(255,255,255,0.30) 0 1.5px, transparent 1.5px 42px),
-    repeating-linear-gradient(0deg,   rgba(255,140,30,0.45)  0 2px,   transparent 2px 168px),
-    repeating-linear-gradient(90deg,  rgba(255,140,30,0.45)  0 2px,   transparent 2px 168px);
+    repeating-linear-gradient(0deg,   rgba(255,255,255,0.28) 0 1.2px, transparent 1.2px 44px),
+    repeating-linear-gradient(90deg,  rgba(255,255,255,0.28) 0 1.2px, transparent 1.2px 44px);
   transform-origin: 50% 55%;
   transform: rotateX(62deg) scale(1.7);
   filter:
-    drop-shadow(0 0 6px rgba(255,255,255,0.4))
-    drop-shadow(0 0 18px rgba(255,122,0,0.6))
-    drop-shadow(0 0 32px rgba(59,130,246,0.4));
+    drop-shadow(0 0 6px rgba(255,255,255,0.35))
+    drop-shadow(0 0 20px rgba(59,130,246,0.35));
   -webkit-mask-image: radial-gradient(ellipse 85% 65% at 50% 40%, black 45%, transparent 88%);
           mask-image: radial-gradient(ellipse 85% 65% at 50% 40%, black 45%, transparent 88%);
-  animation: mesh-wave 14s ease-in-out infinite;
+  animation: mesh-wave 42s ease-in-out infinite;
   pointer-events: none;
   will-change: transform, background-position;
 }
@@ -466,35 +463,35 @@
   width: 55%;
   background: linear-gradient(100deg,
     transparent 15%,
-    rgba(255,255,255,0.22) 42%,
-    rgba(255,255,255,0.60) 50%,
-    rgba(255,220,180,0.40) 55%,
-    rgba(255,255,255,0.22) 60%,
+    rgba(255,255,255,0.14) 42%,
+    rgba(255,255,255,0.40) 50%,
+    rgba(255,220,180,0.22) 55%,
+    rgba(255,255,255,0.14) 60%,
     transparent 85%);
-  filter: blur(4px);
-  animation: mesh-shine 7s ease-in-out infinite;
+  filter: blur(5px);
+  animation: mesh-shine 22s ease-in-out infinite;
   mix-blend-mode: screen;
   pointer-events: none;
 }
 
-/* Technical isometric building sketch embedded in the mesh */
-@keyframes mesh-building-drift {
-  0%,100% { transform: translate(-50%, -46%) rotateX(6deg) rotateY(-8deg) scale(1); }
-  50%     { transform: translate(-50%, -48%) rotateX(4deg) rotateY(-10deg) scale(1.02); }
+/* 2D technical blueprint embedded in the mesh */
+@keyframes mesh-blueprint-drift {
+  0%,100% { transform: translate(-50%, -50%) rotateX(60deg) scale(1.05); }
+  50%     { transform: translate(-50%, -51%) rotateX(60deg) scale(1.07); }
 }
-.mesh-building {
+.mesh-blueprint {
   position: absolute;
   left: 50%;
-  top: 46%;
-  width: min(1100px, 92vw);
+  top: 52%;
+  width: min(1500px, 108vw);
   height: auto;
-  transform: translate(-50%, -46%) rotateX(6deg) rotateY(-8deg);
-  transform-style: preserve-3d;
-  opacity: 0.75;
-  filter:
-    drop-shadow(0 0 12px rgba(255,140,30,0.35))
-    drop-shadow(0 0 28px rgba(59,130,246,0.30));
-  animation: mesh-building-drift 22s ease-in-out infinite;
+  transform-origin: 50% 55%;
+  transform: translate(-50%, -50%) rotateX(60deg) scale(1.05);
+  opacity: 0.55;
+  filter: drop-shadow(0 0 8px rgba(147,197,253,0.35));
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 45%, black 40%, transparent 88%);
+          mask-image: radial-gradient(ellipse 80% 60% at 50% 45%, black 40%, transparent 88%);
+  animation: mesh-blueprint-drift 60s ease-in-out infinite;
   pointer-events: none;
 }
 
