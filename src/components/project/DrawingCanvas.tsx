@@ -664,11 +664,36 @@ function InlinePreview({
         </div>
       )}
       {status === "error" && (
-        <div className="m-auto flex flex-col items-center justify-center gap-2 text-center text-xs uppercase tracking-widest text-foreground/60">
-          <FileText size={22} className="text-foreground/40" />
-          Preview unavailable{errMsg ? `: ${errMsg}` : ""}.
+        <div className="m-auto flex flex-col items-center justify-center gap-3 p-4 text-center">
+          {signedUrl ? (
+            <div className="w-full max-w-4xl overflow-hidden rounded-md border-2 border-white/15 bg-white shadow-2xl">
+              <iframe
+                src={signedUrl}
+                title="Drawing preview"
+                className="h-[70vh] w-full"
+              />
+            </div>
+          ) : (
+            <>
+              <FileText size={22} className="text-foreground/40" />
+              <p className="text-xs uppercase tracking-widest text-foreground/60">
+                Preview unavailable{errMsg ? `: ${errMsg}` : ""}.
+              </p>
+            </>
+          )}
+          {signedUrl && (
+            <a
+              href={signedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-sm border border-white/15 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-foreground/80 hover:border-alert hover:text-alert"
+            >
+              <ExternalLink size={12} /> Open PDF in new tab
+            </a>
+          )}
         </div>
       )}
+
 
       {status === "ready" && isCanvasable && (
         <>
