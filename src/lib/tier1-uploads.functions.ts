@@ -339,13 +339,19 @@ export const getDrawingPreview = createServerFn({ method: "GET" })
       ? drawing.site_documents[0]
       : drawing.site_documents;
     if (!sd?.file_path) throw new Error("Source file missing");
+    const bucket = sd.bucket ?? "project-bible";
+    const { data: signed } = await supabaseAdmin.storage
+      .from(bucket)
+      .createSignedUrl(sd.file_path, 60 * 60);
     return {
-      bucket: sd.bucket ?? "project-bible",
+      bucket,
       path: sd.file_path,
       mimeType: sd.mime_type ?? "application/octet-stream",
       fileName: sd.file_name ?? "drawing",
+      signedUrl: signed?.signedUrl ?? null,
     };
   });
+
 
 
 export const createDrawingDirectLinks = createServerFn({ method: "POST" })
