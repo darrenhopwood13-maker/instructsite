@@ -46,9 +46,26 @@ async function loadIfcMeshes(
   ifcApi.StreamAllMeshes(modelID, (flatMesh: any) => {
     const expressID = flatMesh.expressID;
     let globalId = String(expressID);
+    let ifcType = "IFCELEMENT";
+    const properties: Record<string, string | number | null> = {};
     try {
       const line = ifcApi.GetLine(modelID, expressID);
-      if (line?.GlobalId?.value) globalId = String(line.GlobalId.value);
+      if (line) {
+        if (line.GlobalId?.value) globalId = String(line.GlobalId.value);
+        if (line.constructor?.name) ifcType = line.constructor.name;
+        else if (line.type) ifcType = String(line.type);
+        for (const [k, v] of Object.entries(line)) {
+          if (k === "expressID" || k === "type") continue;
+          if (v && typeof v === "object" && "value" in (v as any)) {
+            const val = (v as any).value;
+            if (val !== null && val !== undefined && typeof val !== "object") {
+              properties[k] = val as string | number;
+            }
+          } else if (typeof v === "string" || typeof v === "number") {
+            properties[k] = v;
+          }
+        }
+      }
     } catch {
       /* keep expressID fallback */
     }
