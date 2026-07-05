@@ -114,9 +114,10 @@ async function loadIfcMeshes(
       const mesh = new THREE.Mesh(bufferGeom, mat);
       mesh.applyMatrix4(matrix);
       mesh.userData.globalId = globalId;
+      mesh.userData.expressID = expressID;
       scene.add(mesh);
       box.expandByObject(mesh);
-      meshes.push({ mesh, baseMaterial: mat, globalId });
+      meshes.push({ mesh, baseMaterial: mat, globalId, expressID, ifcType, properties });
       geom.delete?.();
     }
   });
