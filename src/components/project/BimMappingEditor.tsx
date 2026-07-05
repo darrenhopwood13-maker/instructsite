@@ -127,11 +127,23 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
     }
   };
 
-  const displayIds = useMemo(() => {
-    const set = new Set(globalIds);
-    for (const k of Object.keys(assignments)) set.add(k);
-    return Array.from(set);
-  }, [globalIds, assignments]);
+  const displayRows = useMemo(() => {
+    const byId = new Map<string, ElementMeta>();
+    for (const el of elements) byId.set(el.globalId, el);
+    // Include any server-mapped elements not in the scan (unknown label fallback)
+    for (const gid of Object.keys(assignments)) {
+      if (!byId.has(gid)) {
+        byId.set(gid, {
+          globalId: gid,
+          name: "Mapped element",
+          objectType: null,
+          longName: null,
+          ifcType: "Element",
+        });
+      }
+    }
+    return Array.from(byId.values());
+  }, [elements, assignments]);
 
   if (!activeQ.data?.model) {
     return (
@@ -173,29 +185,39 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      {displayIds.length === 0 ? (
+      {displayRows.length === 0 ? (
         <p className="mt-3 text-xs text-foreground/50">
-          Click <strong>Scan Model</strong> to discover IFC GlobalIds, then assign each to a work
-          zone.
+          Click <strong>Scan Model</strong> to discover structural elements, then assign each to a
+          work zone.
         </p>
       ) : (
-        <div className="mt-3 max-h-80 overflow-y-auto rounded-md border border-white/10">
+        <div className="mt-3 max-h-96 overflow-y-auto rounded-md border border-white/10">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-background/95 text-[0.6rem] uppercase tracking-widest text-foreground/50">
               <tr>
-                <th className="px-3 py-2 text-left">GlobalId</th>
-                <th className="px-3 py-2 text-left">Zone</th>
+                <th className="px-3 py-2 text-left">Element</th>
+                <th className="w-48 px-3 py-2 text-left">Work Zone</th>
               </tr>
             </thead>
             <tbody>
-              {displayIds.map((gid) => (
-                <tr key={gid} className="border-t border-white/5">
-                  <td className="px-3 py-2 font-mono text-[0.65rem] text-foreground/70">{gid}</td>
+              {displayRows.map((el) => (
+                <tr key={el.globalId} className="border-t border-white/5">
+                  <td className="px-3 py-2">
+                    <div className="font-bold text-foreground">{el.name}</div>
+                    {(el.objectType || el.longName) && (
+                      <div className="mt-0.5 text-[0.65rem] text-foreground/70">
+                        {el.objectType ?? el.longName}
+                      </div>
+                    )}
+                    <div className="mt-0.5 text-[0.55rem] uppercase tracking-widest text-foreground/40">
+                      {el.ifcType} · <span className="font-mono normal-case tracking-normal">{el.globalId.slice(0, 8)}…</span>
+                    </div>
+                  </td>
                   <td className="px-3 py-2">
                     <select
-                      value={assignments[gid] ?? ""}
+                      value={assignments[el.globalId] ?? ""}
                       onChange={(e) =>
-                        setAssignments((a) => ({ ...a, [gid]: e.target.value }))
+                        setAssignments((a) => ({ ...a, [el.globalId]: e.target.value }))
                       }
                       className="w-full rounded-sm border border-white/10 bg-background px-2 py-1 text-xs text-foreground"
                     >
@@ -213,6 +235,7 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
             </tbody>
           </table>
         </div>
+
       )}
     </div>
   );
