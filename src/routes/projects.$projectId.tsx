@@ -15,6 +15,7 @@ import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { ZoneMap } from "@/components/project/ZoneMap";
 import { MasterAdminHUD } from "@/components/admin/MasterAdminHUD";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
+import { ZoneMatrixBoard } from "@/components/project/ZoneMatrixBoard";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 
