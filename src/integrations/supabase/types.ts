@@ -744,12 +744,21 @@ export type Database = {
           accepted_at: string | null
           accepted_by: string | null
           company_name: string
+          corporate_email: string | null
           created_at: string
           created_by: string
           expires_at: string
           id: string
+          office_phone: string | null
+          pm_email: string | null
+          pm_mobile: string | null
+          pm_name: string | null
           project_id: string
+          registered_address: string | null
           revoked_at: string | null
+          supervisor_email: string | null
+          supervisor_mobile: string | null
+          supervisor_name: string | null
           token_hash: string
           trade_packages: string[]
         }
@@ -757,12 +766,21 @@ export type Database = {
           accepted_at?: string | null
           accepted_by?: string | null
           company_name: string
+          corporate_email?: string | null
           created_at?: string
           created_by: string
           expires_at?: string
           id?: string
+          office_phone?: string | null
+          pm_email?: string | null
+          pm_mobile?: string | null
+          pm_name?: string | null
           project_id: string
+          registered_address?: string | null
           revoked_at?: string | null
+          supervisor_email?: string | null
+          supervisor_mobile?: string | null
+          supervisor_name?: string | null
           token_hash: string
           trade_packages?: string[]
         }
@@ -770,12 +788,21 @@ export type Database = {
           accepted_at?: string | null
           accepted_by?: string | null
           company_name?: string
+          corporate_email?: string | null
           created_at?: string
           created_by?: string
           expires_at?: string
           id?: string
+          office_phone?: string | null
+          pm_email?: string | null
+          pm_mobile?: string | null
+          pm_name?: string | null
           project_id?: string
+          registered_address?: string | null
           revoked_at?: string | null
+          supervisor_email?: string | null
+          supervisor_mobile?: string | null
+          supervisor_name?: string | null
           token_hash?: string
           trade_packages?: string[]
         }
