@@ -26,8 +26,8 @@ function InviteAccept() {
         await ensureOracleSession();
         const res = await acceptFn({ data: { token } });
         if (cancelled) return;
-        setProjectName("Redirecting to your DABS…");
-        navigate({ to: "/dabs/$projectId", params: { projectId: res.projectId } });
+        setProjectName("Redirecting to your cockpit…");
+        navigate({ to: "/subcontractor/$projectId", params: { projectId: res.projectId } });
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Invite could not be redeemed.");
       }

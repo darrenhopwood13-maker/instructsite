@@ -109,3 +109,30 @@ export const acceptSubcontractorInvite = createServerFn({ method: "POST" })
       tradePackages: (first.trade_packages ?? []) as string[],
     };
   });
+
+export const getMyProjectContext = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const email = (context.claims as any)?.email as string | undefined;
+    const { data: inv } = await context.supabase
+      .from("subcontractor_invites")
+      .select("company_name, trade_packages, accepted_at")
+      .eq("project_id", data.projectId)
+      .eq("accepted_by", context.userId)
+      .order("accepted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { data: proj } = await context.supabase
+      .from("projects")
+      .select("name")
+      .eq("id", data.projectId)
+      .maybeSingle();
+    return {
+      email: email ?? null,
+      projectName: proj?.name ?? null,
+      companyName: inv?.company_name ?? null,
+      tradePackages: (inv?.trade_packages ?? []) as string[],
+    };
+  });
+

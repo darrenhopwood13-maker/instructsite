@@ -351,3 +351,82 @@ export const runOracleCommand = createServerFn({ method: "POST" })
       documentsUsed: Array.from(new Set(snippets.map((s) => s.fileName))),
     };
   });
+
+// Free-form Q&A: subcontractor mobile Oracle chat. Project-scoped, optional drawing lock.
+function extractKeywords(q: string): string[] {
+  const stop = new Set([
+    "the","a","an","of","for","in","on","at","to","and","or","is","are","be",
+    "this","that","what","which","how","when","where","do","does","with","from",
+    "my","your","our","it","its","as","by","not",
+  ]);
+  const words = q.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").split(/\s+/).filter(Boolean);
+  const kw = words.filter((w) => w.length >= 3 && !stop.has(w));
+  return Array.from(new Set(kw)).slice(0, 20);
+}
+
+export const askProjectOracle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        question: z.string().trim().min(2).max(1000),
+        projectId: z.string().uuid(),
+        drawingId: z.string().uuid().optional(),
+        drawingLabel: z.string().max(200).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
+
+    const keywords = extractKeywords(data.question);
+    const { snippets, docs } = await retrieveSnippets(
+      context.supabase,
+      keywords.length ? keywords : ["project", "drawing", "spec"],
+      data.projectId,
+    );
+    const contextBlock = formatContext(snippets, docs);
+    const lockLine = data.drawingId
+      ? `\n### Locked Drawing\nUser has selected drawing: **${data.drawingLabel ?? data.drawingId}** (id ${data.drawingId}). Prioritize this drawing's specification, dimensions and notes.\n`
+      : "";
+
+    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
+    const gateway = createLovableAiGatewayProvider(apiKey);
+    const model = gateway("google/gemini-3-flash-preview");
+
+    const system = [
+      "You are The Oracle — a decorated 30-year senior construction & HSE advisor.",
+      "Answer the site subcontractor's question crisply.",
+      "Ground every claim in the Project Bible snippets when present; cite source file names inline.",
+      "If the snippets do not cover it, say 'Not in Project Bible — Industry Best Practice:' and answer from expertise.",
+      "Never hedge on safety. Be direct, short, and specific to what the operative needs on site right now.",
+      "End with a short 'Sources' line listing file names used, or 'Sources: none'.",
+    ].join("\n");
+
+    const userPrompt = [
+      "## Question",
+      data.question,
+      lockLine,
+      "",
+      "## Project Bible Context",
+      contextBlock,
+    ].join("\n");
+
+    let text: string;
+    try {
+      const res = await generateText({ model, system, prompt: userPrompt });
+      text = res.text;
+    } catch (e: any) {
+      const msg: string = e?.message ?? String(e);
+      if (/rate.?limit|429/i.test(msg)) throw new Error("Oracle is rate-limited. Please retry in a moment.");
+      if (/402|credit/i.test(msg)) throw new Error("Oracle credits exhausted. Add credits in Settings → Plans & credits.");
+      throw new Error(`Oracle model call failed: ${msg}`);
+    }
+
+    return {
+      answer: text,
+      documentsUsed: Array.from(new Set(snippets.map((s) => s.fileName))),
+    };
+  });
+
