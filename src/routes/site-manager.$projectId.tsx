@@ -14,6 +14,8 @@ import { BimModelViewer } from "@/components/project/BimModelViewer";
 import { BimModelUploader } from "@/components/project/BimModelUploader";
 import { BimMappingEditor } from "@/components/project/BimMappingEditor";
 import { ClientOnly } from "@tanstack/react-router";
+import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+
 
 import { supabase } from "@/integrations/supabase/client";
 
