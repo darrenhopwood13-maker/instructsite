@@ -90,11 +90,12 @@ function DashboardPage() {
           Director Portfolio
         </p>
         <h1
-          className="mt-2 text-4xl font-black tracking-tight text-neutral-900 md:text-5xl"
+          className="mt-2 text-3xl font-black tracking-tight text-neutral-900 sm:text-4xl md:text-5xl"
           style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
         >
           Command Center
         </h1>
+
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-neutral-600">
           Cross-project intelligence — live manpower, pending valuations,
           active permits, and a real-time safety alert stream across the entire
