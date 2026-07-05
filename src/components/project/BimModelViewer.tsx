@@ -191,6 +191,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     renderer.setSize(width, height);
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+    cameraRef.current = camera;
 
     const ambient = new THREE.AmbientLight(0xffffff, 0.65);
     const dir = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -199,6 +200,55 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
 
     const grid = new THREE.GridHelper(200, 40, 0x333344, 0x1c1c26);
     scene.add(grid);
+
+    // ---- Raycasting: click-to-inspect ----
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let downX = 0;
+    let downY = 0;
+    const onPointerDown = (e: PointerEvent) => {
+      downX = e.clientX;
+      downY = e.clientY;
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      // Ignore drags (orbit control moves)
+      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 4) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const meshList = meshesRef.current.map((m) => m.mesh);
+      const hits = raycaster.intersectObjects(meshList, false);
+      if (hits.length === 0) {
+        // Clear selection
+        if (selectedRef.current) {
+          selectedRef.current.baseMaterial.emissive.setHex(0x000000);
+          selectedRef.current = null;
+        }
+        setSelected(null);
+        return;
+      }
+      const hitMesh = hits[0].object as THREE.Mesh;
+      const entry = meshesRef.current.find((m) => m.mesh === hitMesh);
+      if (!entry) return;
+      // Clear previous highlight
+      if (selectedRef.current && selectedRef.current !== entry) {
+        selectedRef.current.baseMaterial.emissive.setHex(0x000000);
+      }
+      selectedRef.current = entry;
+      entry.baseMaterial.emissive.copy(HIGHLIGHT_COLOR);
+      entry.baseMaterial.emissiveIntensity = 0.55;
+      entry.baseMaterial.needsUpdate = true;
+      setSelected({
+        globalId: entry.globalId,
+        expressID: entry.expressID,
+        ifcType: entry.ifcType,
+        properties: entry.properties,
+      });
+    };
+    renderer.domElement.addEventListener("pointerdown", onPointerDown);
+    renderer.domElement.addEventListener("pointerup", onPointerUp);
+
 
     let disposed = false;
     let controls: any = null;
