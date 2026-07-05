@@ -16,6 +16,8 @@ import { ZoneMap } from "@/components/project/ZoneMap";
 import { MasterAdminHUD } from "@/components/admin/MasterAdminHUD";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ZoneMatrixBoard } from "@/components/project/ZoneMatrixBoard";
+import { TradeDirectoryPanel } from "@/components/admin/TradeDirectoryPanel";
+import { getMyRoles } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 
@@ -32,10 +34,22 @@ function ProjectDetail() {
   }, []);
 
   const getP = useServerFn(getProject);
+  const rolesFn = useServerFn(getMyRoles);
   const drawingsFn = useServerFn(listProjectDrawings);
   const logisticsFn = useServerFn(listProjectLogistics);
   const ramsFn = useServerFn(listProjectRams);
   const zonesFn = useServerFn(listProjectZones);
+
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    enabled: ready,
+    staleTime: 60_000,
+  });
+  const isAdmin =
+    rolesQ.data?.roles?.includes("master_admin") ||
+    rolesQ.data?.roles?.includes("project_admin");
+
 
   const project = useQuery({
     queryKey: ["project", projectId],
@@ -162,7 +176,30 @@ function ProjectDetail() {
           onZonesChanged={() => zones.refetch()}
         />
 
+        {isAdmin && (
+          <section className="mt-8">
+            <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
+              Project Administration
+            </p>
+            <h2
+              className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground"
+              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            >
+              Subcontractor & Trade Directory
+            </h2>
+            <p className="mt-1.5 max-w-2xl text-xs text-foreground/60">
+              Register trade companies, generate one-time secure invite tokens, and
+              distribute QR codes for on-site onboarding.
+            </p>
+            <div className="mt-5">
+              <TradeDirectoryPanel projectId={projectId} />
+            </div>
+          </section>
+        )}
+
         <ZoneMatrixBoard projectId={projectId} />
+
+
 
 
 

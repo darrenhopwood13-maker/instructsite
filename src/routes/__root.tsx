@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -132,22 +132,65 @@ function RootComponent() {
           >
             Oracle
           </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/projects"
-              className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
-            >
-              Projects
-            </Link>
-            <Link to="/oracle" className="glass-orange rounded-lg px-4 py-2 text-sm">
-              Oracle Tooling
-            </Link>
-          </div>
+          <AuthNav />
         </nav>
       </header>
       <main>
         <Outlet />
       </main>
     </QueryClientProvider>
+  );
+}
+
+function AuthNav() {
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    let unsub: (() => void) | undefined;
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.auth.getUser().then(({ data }) => {
+        if (mounted) setSignedIn(!!data?.user?.id);
+      });
+      const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+        if (mounted) setSignedIn(!!session?.user?.id);
+      });
+      unsub = () => sub.subscription.unsubscribe();
+    });
+    return () => {
+      mounted = false;
+      unsub?.();
+    };
+  }, []);
+
+  const signOut = async () => {
+    const { supabase } = await import("@/integrations/supabase/client");
+    await supabase.auth.signOut();
+    window.location.assign("/");
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      {signedIn ? (
+        <>
+          <Link to="/projects" className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
+            Projects
+          </Link>
+          <Link to="/oracle" className="glass-orange rounded-lg px-4 py-2 text-sm">
+            Oracle Tooling
+          </Link>
+          <button
+            type="button"
+            onClick={signOut}
+            className="rounded-lg border border-white/15 px-3 py-2 text-xs uppercase tracking-widest text-foreground/70 hover:border-white/40 hover:text-foreground"
+          >
+            Sign out
+          </button>
+        </>
+      ) : (
+        <Link to="/auth" className="glass-orange rounded-lg px-4 py-2 text-sm uppercase tracking-widest">
+          Sign in
+        </Link>
+      )}
+    </div>
   );
 }

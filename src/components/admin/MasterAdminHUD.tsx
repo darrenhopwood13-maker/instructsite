@@ -10,7 +10,7 @@ import {
   setWorkZoneStatus,
 } from "@/lib/admin.functions";
 import { toast } from "sonner";
-import { TradeDirectoryPanel } from "@/components/admin/TradeDirectoryPanel";
+
 
 type Zone = { id: string; name: string; level?: string | null; source?: string; status?: string };
 
@@ -209,7 +209,8 @@ export function MasterAdminHUD({
         </div>
       )}
 
-      {expanded && <TradeDirectoryPanel projectId={projectId} />}
+
+
 
 
       {confirmOpen && (

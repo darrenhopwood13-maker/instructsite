@@ -15,6 +15,9 @@ interface MeshEntry {
   mesh: THREE.Mesh;
   baseMaterial: THREE.MeshStandardMaterial;
   globalId: string;
+  expressID: number;
+  ifcType: string;
+  properties: Record<string, string | number | null>;
 }
 
 const COLORS: Record<ZoneState, THREE.Color> = {
@@ -22,6 +25,8 @@ const COLORS: Record<ZoneState, THREE.Color> = {
   live: new THREE.Color("#ff7a00"),
   complete: new THREE.Color("#22c55e"),
 };
+
+const HIGHLIGHT_COLOR = new THREE.Color("#ffffff");
 
 async function loadIfcMeshes(
   url: string,
@@ -41,9 +46,26 @@ async function loadIfcMeshes(
   ifcApi.StreamAllMeshes(modelID, (flatMesh: any) => {
     const expressID = flatMesh.expressID;
     let globalId = String(expressID);
+    let ifcType = "IFCELEMENT";
+    const properties: Record<string, string | number | null> = {};
     try {
       const line = ifcApi.GetLine(modelID, expressID);
-      if (line?.GlobalId?.value) globalId = String(line.GlobalId.value);
+      if (line) {
+        if (line.GlobalId?.value) globalId = String(line.GlobalId.value);
+        if (line.constructor?.name) ifcType = line.constructor.name;
+        else if (line.type) ifcType = String(line.type);
+        for (const [k, v] of Object.entries(line)) {
+          if (k === "expressID" || k === "type") continue;
+          if (v && typeof v === "object" && "value" in (v as any)) {
+            const val = (v as any).value;
+            if (val !== null && val !== undefined && typeof val !== "object") {
+              properties[k] = val as string | number;
+            }
+          } else if (typeof v === "string" || typeof v === "number") {
+            properties[k] = v;
+          }
+        }
+      }
     } catch {
       /* keep expressID fallback */
     }
@@ -92,9 +114,10 @@ async function loadIfcMeshes(
       const mesh = new THREE.Mesh(bufferGeom, mat);
       mesh.applyMatrix4(matrix);
       mesh.userData.globalId = globalId;
+      mesh.userData.expressID = expressID;
       scene.add(mesh);
       box.expandByObject(mesh);
-      meshes.push({ mesh, baseMaterial: mat, globalId });
+      meshes.push({ mesh, baseMaterial: mat, globalId, expressID, ifcType, properties });
       geom.delete?.();
     }
   });
@@ -109,11 +132,19 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const meshesRef = useRef<MeshEntry[]>([]);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const selectedRef = useRef<MeshEntry | null>(null);
   const [status, setStatus] = useState<
     "idle" | "loading" | "ready" | "empty" | "error"
   >("idle");
   const [error, setError] = useState<string | null>(null);
   const [pulseT, setPulseT] = useState(0);
+  const [selected, setSelected] = useState<{
+    globalId: string;
+    expressID: number;
+    ifcType: string;
+    properties: Record<string, string | number | null>;
+  } | null>(null);
   const qc = useQueryClient();
 
   const activeFn = useServerFn(getActiveIfcSignedUrl);
@@ -160,6 +191,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     renderer.setSize(width, height);
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
+    cameraRef.current = camera;
 
     const ambient = new THREE.AmbientLight(0xffffff, 0.65);
     const dir = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -168,6 +200,55 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
 
     const grid = new THREE.GridHelper(200, 40, 0x333344, 0x1c1c26);
     scene.add(grid);
+
+    // ---- Raycasting: click-to-inspect ----
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let downX = 0;
+    let downY = 0;
+    const onPointerDown = (e: PointerEvent) => {
+      downX = e.clientX;
+      downY = e.clientY;
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      // Ignore drags (orbit control moves)
+      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 4) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const meshList = meshesRef.current.map((m) => m.mesh);
+      const hits = raycaster.intersectObjects(meshList, false);
+      if (hits.length === 0) {
+        // Clear selection
+        if (selectedRef.current) {
+          selectedRef.current.baseMaterial.emissive.setHex(0x000000);
+          selectedRef.current = null;
+        }
+        setSelected(null);
+        return;
+      }
+      const hitMesh = hits[0].object as THREE.Mesh;
+      const entry = meshesRef.current.find((m) => m.mesh === hitMesh);
+      if (!entry) return;
+      // Clear previous highlight
+      if (selectedRef.current && selectedRef.current !== entry) {
+        selectedRef.current.baseMaterial.emissive.setHex(0x000000);
+      }
+      selectedRef.current = entry;
+      entry.baseMaterial.emissive.copy(HIGHLIGHT_COLOR);
+      entry.baseMaterial.emissiveIntensity = 0.55;
+      entry.baseMaterial.needsUpdate = true;
+      setSelected({
+        globalId: entry.globalId,
+        expressID: entry.expressID,
+        ifcType: entry.ifcType,
+        properties: entry.properties,
+      });
+    };
+    renderer.domElement.addEventListener("pointerdown", onPointerDown);
+    renderer.domElement.addEventListener("pointerup", onPointerUp);
+
 
     let disposed = false;
     let controls: any = null;
@@ -228,6 +309,8 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
       disposed = true;
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("pointerup", onPointerUp);
       renderer.dispose();
       controls?.dispose?.();
       if (renderer.domElement.parentElement === container) {
@@ -239,6 +322,8 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
       });
       meshesRef.current = [];
       rendererRef.current = null;
+      cameraRef.current = null;
+      selectedRef.current = null;
     };
   }, [activeQ.data]);
 
@@ -351,6 +436,88 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
             </div>
           </div>
         )}
+
+        {/* BIM Element Property Inspector — slide-out */}
+        <div
+          className={`absolute right-0 top-0 h-full w-80 max-w-[85%] transform border-l border-white/15 bg-black/95 backdrop-blur-md transition-transform duration-300 ${
+            selected ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          {selected && (
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                <div>
+                  <p className="text-[0.55rem] font-bold uppercase tracking-[0.35em] text-alert">
+                    BIM Element
+                  </p>
+                  <h3 className="mt-0.5 font-mono text-[0.7rem] font-bold uppercase tracking-widest text-foreground">
+                    Property Inspector
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedRef.current) {
+                      selectedRef.current.baseMaterial.emissive.setHex(0x000000);
+                      selectedRef.current = null;
+                    }
+                    setSelected(null);
+                  }}
+                  className="rounded-md border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="border-b border-white/10 px-4 py-3">
+                <p className="font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                  IFC Type
+                </p>
+                <p className="mt-0.5 font-mono text-sm text-alert">{selected.ifcType}</p>
+                <p className="mt-3 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                  Global ID
+                </p>
+                <p className="mt-0.5 truncate font-mono text-[0.65rem] text-foreground/80">
+                  {selected.globalId}
+                </p>
+                <p className="mt-3 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                  Express ID
+                </p>
+                <p className="mt-0.5 font-mono text-[0.65rem] text-foreground/80">
+                  #{selected.expressID}
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                <p className="mb-2 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                  Attributes
+                </p>
+                <table className="w-full text-left">
+                  <tbody>
+                    {Object.entries(selected.properties).length === 0 && (
+                      <tr>
+                        <td className="py-2 text-xs text-foreground/50">
+                          No inline attributes on this entity.
+                        </td>
+                      </tr>
+                    )}
+                    {Object.entries(selected.properties).map(([k, v]) => (
+                      <tr key={k} className="border-b border-white/5">
+                        <td className="py-1.5 pr-3 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                          {k}
+                        </td>
+                        <td className="py-1.5 font-mono text-[0.65rem] text-foreground/90">
+                          {String(v)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="border-t border-white/10 px-4 py-2 text-[0.55rem] uppercase tracking-widest text-foreground/40">
+                Click any 3D element to inspect · Click empty space to clear
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {zoneProgress.length > 0 && (
