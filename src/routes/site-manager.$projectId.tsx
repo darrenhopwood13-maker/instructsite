@@ -191,8 +191,16 @@ function SiteManagerPage() {
         </section>
 
         <section className="mt-10">
-          <IfcMeshStatus projectId={projectId} />
+          <ClientOnly fallback={<div className="glass-panel h-[560px] animate-pulse" />}>
+            <BimModelViewer projectId={projectId} />
+          </ClientOnly>
         </section>
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-2">
+          <BimModelUploader projectId={projectId} />
+          <BimMappingEditor projectId={projectId} />
+        </section>
+
 
         <section className="mt-10">
           <QsVerificationQueue projectId={projectId} />
