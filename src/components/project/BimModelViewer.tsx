@@ -15,6 +15,9 @@ interface MeshEntry {
   mesh: THREE.Mesh;
   baseMaterial: THREE.MeshStandardMaterial;
   globalId: string;
+  expressID: number;
+  ifcType: string;
+  properties: Record<string, string | number | null>;
 }
 
 const COLORS: Record<ZoneState, THREE.Color> = {
@@ -22,6 +25,8 @@ const COLORS: Record<ZoneState, THREE.Color> = {
   live: new THREE.Color("#ff7a00"),
   complete: new THREE.Color("#22c55e"),
 };
+
+const HIGHLIGHT_COLOR = new THREE.Color("#ffffff");
 
 async function loadIfcMeshes(
   url: string,
