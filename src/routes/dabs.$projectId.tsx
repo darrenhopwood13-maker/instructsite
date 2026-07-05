@@ -73,11 +73,15 @@ function DabsPage() {
   const [pending, setPending] = useState<{ xPct: number; yPct: number } | null>(null);
   const [checkoutPin, setCheckoutPin] = useState<any | null>(null);
   const [operatives, setOperatives] = useState(1);
+  const [taskNotes, setTaskNotes] = useState("");
   const [startTime, setStartTime] = useState(() => toLocalInput(new Date()));
   const [finishTime, setFinishTime] = useState(() =>
     toLocalInput(new Date(Date.now() + 8 * 3600 * 1000)),
   );
   const [busy, setBusy] = useState(false);
+
+  const HIGH_RISK_KEYWORDS = /(hot\s*work|welding|cutting torch|grinding|brazing|soldering|confined\s*space|tank entry|manhole|work(ing)?\s*at\s*height|scaffold|roof|mewp|cherry\s*picker|ladder work|excavation|dig(ging)?|trench|groundworks)/i;
+  const willFlagPermit = HIGH_RISK_KEYWORDS.test(`${trade} ${taskNotes}`);
 
   const handleDrop = (coords: { xPct: number; yPct: number }) => {
     if (!selectedDrawing) {
