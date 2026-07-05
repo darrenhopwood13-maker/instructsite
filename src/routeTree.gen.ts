@@ -15,6 +15,7 @@ import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
 import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$drawingId'
 
@@ -48,6 +49,11 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
   path: '/projects/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DabsProjectIdRoute = DabsProjectIdRouteImport.update({
   id: '/dabs/$projectId',
   path: '/dabs/$projectId',
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/oracle': typeof OracleRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/oracle': typeof OracleRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/oracle': typeof OracleRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/oracle'
     | '/dabs/$projectId'
+    | '/invite/$token'
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/oracle'
     | '/dabs/$projectId'
+    | '/invite/$token'
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/oracle'
     | '/dabs/$projectId'
+    | '/invite/$token'
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   OracleRoute: typeof OracleRoute
   DabsProjectIdRoute: typeof DabsProjectIdRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dabs/$projectId': {
       id: '/dabs/$projectId'
       path: '/dabs/$projectId'
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   OracleRoute: OracleRoute,
   DabsProjectIdRoute: DabsProjectIdRoute,
+  InviteTokenRoute: InviteTokenRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
