@@ -34,7 +34,7 @@ function Index() {
       <div className="aurora-bg" />
       <div className="grain-overlay" />
 
-      <div className="relative mx-auto grid max-w-6xl grid-cols-12 gap-8 px-6 py-24">
+      <div className="relative mx-auto grid max-w-6xl grid-cols-12 gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:py-24">
         <div className="col-span-12 lg:col-span-8">
           <p className="text-[0.7rem] font-bold uppercase tracking-[0.5em] text-alert">
             AI · Site Operations
