@@ -309,6 +309,8 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
       disposed = true;
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("pointerup", onPointerUp);
       renderer.dispose();
       controls?.dispose?.();
       if (renderer.domElement.parentElement === container) {
@@ -320,6 +322,8 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
       });
       meshesRef.current = [];
       rendererRef.current = null;
+      cameraRef.current = null;
+      selectedRef.current = null;
     };
   }, [activeQ.data]);
 
