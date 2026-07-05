@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Box, Loader2, AlertTriangle, Link2 } from "lucide-react";
+import { Box, Loader2, AlertTriangle, Link2, Focus, X } from "lucide-react";
 import { toast } from "sonner";
 import * as THREE from "three";
 import {
