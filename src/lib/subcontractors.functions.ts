@@ -36,6 +36,15 @@ export const createSubcontractorInvite = createServerFn({ method: "POST" })
         projectId: z.string().uuid(),
         companyName: z.string().trim().min(1).max(200),
         tradePackages: z.array(z.string().trim().min(1).max(80)).min(1).max(20),
+        registeredAddress: z.string().trim().max(500).optional().nullable(),
+        officePhone: z.string().trim().max(40).optional().nullable(),
+        corporateEmail: z.string().trim().email().max(200).optional().nullable().or(z.literal("")),
+        pmName: z.string().trim().max(120).optional().nullable(),
+        pmMobile: z.string().trim().max(40).optional().nullable(),
+        pmEmail: z.string().trim().email().max(200).optional().nullable().or(z.literal("")),
+        supervisorName: z.string().trim().max(120).optional().nullable(),
+        supervisorMobile: z.string().trim().max(40).optional().nullable(),
+        supervisorEmail: z.string().trim().email().max(200).optional().nullable().or(z.literal("")),
       })
       .parse(i),
   )
@@ -43,6 +52,7 @@ export const createSubcontractorInvite = createServerFn({ method: "POST" })
     await assertProjectAdmin(context.supabase, data.projectId, context.userId);
     const token = randomToken();
     const tokenHash = await sha256Hex(token);
+    const emptyToNull = (v?: string | null) => (v && v.trim() ? v.trim() : null);
     const { data: row, error } = await context.supabase
       .from("subcontractor_invites")
       .insert({
@@ -51,12 +61,22 @@ export const createSubcontractorInvite = createServerFn({ method: "POST" })
         trade_packages: data.tradePackages,
         token_hash: tokenHash,
         created_by: context.userId,
+        registered_address: emptyToNull(data.registeredAddress),
+        office_phone: emptyToNull(data.officePhone),
+        corporate_email: emptyToNull(data.corporateEmail),
+        pm_name: emptyToNull(data.pmName),
+        pm_mobile: emptyToNull(data.pmMobile),
+        pm_email: emptyToNull(data.pmEmail),
+        supervisor_name: emptyToNull(data.supervisorName),
+        supervisor_mobile: emptyToNull(data.supervisorMobile),
+        supervisor_email: emptyToNull(data.supervisorEmail),
       })
       .select("id, expires_at")
       .single();
     if (error) throw new Error(error.message);
     return { id: row.id, token, expiresAt: row.expires_at };
   });
+
 
 export const listSubcontractorInvites = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
