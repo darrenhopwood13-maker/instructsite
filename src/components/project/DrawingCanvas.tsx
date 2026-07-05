@@ -46,6 +46,11 @@ export type PinRecord = {
   operative_count?: number | null;
   start_time?: string | null;
   scheduled_finish?: string | null;
+  permit_required?: boolean | null;
+  permit_status?: string | null;
+  high_risk_flags?: string[] | null;
+  notes?: string | null;
+  activity_id?: string | null;
   work_zones?: { name?: string | null; level?: string | null } | null;
 };
 
@@ -786,6 +791,8 @@ function PinOverlay({
         const overtime =
           pin.scheduled_finish && new Date(pin.scheduled_finish).getTime() < now;
         const isActive = activePinId === pin.id;
+        const needsPermit =
+          !!pin.permit_required && pin.permit_status !== "active";
         return (
           <button
             key={pin.id}
@@ -801,22 +808,40 @@ function PinOverlay({
               transformOrigin: "center",
             }}
             className="pointer-events-auto absolute"
-            title={pin.trade_package ?? "Pin"}
+            title={
+              needsPermit
+                ? `PERMIT REQUIRED · ${pin.trade_package ?? "Pin"}`
+                : (pin.trade_package ?? "Pin")
+            }
           >
-            <span
-              className={`relative flex h-4 w-4 items-center justify-center ${isActive ? "scale-125" : ""} transition-transform`}
-            >
+            {needsPermit ? (
+              <span className="relative flex items-center justify-center">
+                <span className="absolute inline-flex h-6 w-6 animate-ping rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex h-5 w-5 items-center justify-center rounded-sm border-2 border-black bg-amber-400 text-black shadow-[0_0_10px_rgba(251,191,36,0.9)]">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2 1 21h22L12 2Zm0 6 7.53 12H4.47L12 8Zm-1 4v4h2v-4h-2Zm0 5v2h2v-2h-2Z" />
+                  </svg>
+                </span>
+                <span className="pointer-events-none absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-amber-400 px-1.5 py-[1px] font-mono text-[0.5rem] font-bold uppercase tracking-widest text-black shadow">
+                  Permit
+                </span>
+              </span>
+            ) : (
               <span
-                className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
-                  overtime ? "bg-red-500" : "bg-orange-400"
-                }`}
-              />
-              <span
-                className={`relative inline-flex h-3 w-3 rounded-full border-2 border-white shadow-lg ${
-                  overtime ? "bg-red-600" : "bg-orange-500"
-                }`}
-              />
-            </span>
+                className={`relative flex h-4 w-4 items-center justify-center ${isActive ? "scale-125" : ""} transition-transform`}
+              >
+                <span
+                  className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
+                    overtime ? "bg-red-500" : "bg-orange-400"
+                  }`}
+                />
+                <span
+                  className={`relative inline-flex h-3 w-3 rounded-full border-2 border-white shadow-lg ${
+                    overtime ? "bg-red-600" : "bg-orange-500"
+                  }`}
+                />
+              </span>
+            )}
           </button>
         );
       })}

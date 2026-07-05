@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ClipboardList, LogOut, MapPin, X } from "lucide-react";
+import { ArrowLeft, ClipboardList, LogOut, MapPin, ShieldAlert, X } from "lucide-react";
 import { toast } from "sonner";
 import { getProject } from "@/lib/projects.functions";
 import { listProjectDrawings, listProjectZones } from "@/lib/tier1-uploads.functions";
@@ -73,11 +73,15 @@ function DabsPage() {
   const [pending, setPending] = useState<{ xPct: number; yPct: number } | null>(null);
   const [checkoutPin, setCheckoutPin] = useState<any | null>(null);
   const [operatives, setOperatives] = useState(1);
+  const [taskNotes, setTaskNotes] = useState("");
   const [startTime, setStartTime] = useState(() => toLocalInput(new Date()));
   const [finishTime, setFinishTime] = useState(() =>
     toLocalInput(new Date(Date.now() + 8 * 3600 * 1000)),
   );
   const [busy, setBusy] = useState(false);
+
+  const HIGH_RISK_KEYWORDS = /(hot\s*work|welding|cutting torch|grinding|brazing|soldering|confined\s*space|tank entry|manhole|work(ing)?\s*at\s*height|scaffold|roof|mewp|cherry\s*picker|ladder work|excavation|dig(ging)?|trench|groundworks)/i;
+  const willFlagPermit = HIGH_RISK_KEYWORDS.test(`${trade} ${taskNotes}`);
 
   const handleDrop = (coords: { xPct: number; yPct: number }) => {
     if (!selectedDrawing) {
@@ -97,7 +101,7 @@ function DabsPage() {
     if (!pending || !selectedDrawing) return;
     setBusy(true);
     try {
-      await createFn({
+      const result = await createFn({
         data: {
           projectId,
           drawingId: selectedDrawing,
@@ -108,10 +112,18 @@ function DabsPage() {
           scheduledFinish: new Date(finishTime).toISOString(),
           xPct: pending.xPct,
           yPct: pending.yPct,
+          notes: taskNotes.trim() || undefined,
         },
       });
-      toast.success("Pin dropped · briefing logged.");
+      if ((result as any)?.permit_required) {
+        toast.warning("Permit required · site manager must approve before start.", {
+          description: "Pin flagged amber pending sign-off.",
+        });
+      } else {
+        toast.success("Pin dropped · briefing logged.");
+      }
       setPending(null);
+      setTaskNotes("");
       qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to save pin.");
@@ -323,6 +335,25 @@ function DabsPage() {
                 />
               </label>
             </div>
+
+            <label className="mt-3 block">
+              <span className="text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+                Specific Task Description
+              </span>
+              <textarea
+                rows={3}
+                value={taskNotes}
+                onChange={(e) => setTaskNotes(e.target.value)}
+                placeholder="e.g. Welding steel brackets on Level 3 scaffold near riser shaft."
+                className="mt-1 w-full rounded-md border border-white/15 bg-black/40 px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-alert"
+              />
+            </label>
+            {willFlagPermit && (
+              <p className="mt-2 flex items-center gap-1.5 rounded-md border-2 border-amber-400 bg-amber-400/10 px-2.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300">
+                <ShieldAlert size={12} /> High-risk task detected · site manager must issue permit
+              </p>
+            )}
+
 
             <div className="mt-6 flex justify-end gap-2">
               <button

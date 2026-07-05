@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle, Clock, Users, X } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Clock, Users, X, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { getProject } from "@/lib/projects.functions";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
@@ -13,6 +13,7 @@ import { QsVerificationQueue } from "@/components/project/QsVerificationQueue";
 import { BimModelViewer } from "@/components/project/BimModelViewer";
 import { BimModelUploader } from "@/components/project/BimModelUploader";
 import { BimMappingEditor } from "@/components/project/BimMappingEditor";
+import { PermitSignOffModal } from "@/components/project/PermitSignOffModal";
 import { ClientOnly } from "@tanstack/react-router";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
@@ -129,6 +130,7 @@ function SiteManagerPage() {
   }, [overtime]);
 
   const [activePin, setActivePin] = useState<PinRecord | null>(null);
+  const [permitPin, setPermitPin] = useState<PinRecord | null>(null);
 
   const closePin = async (pinId: string) => {
     await closeFn({ data: { pinId } });
@@ -295,6 +297,30 @@ function SiteManagerPage() {
                 </p>
               )}
           </div>
+          {activePin.permit_required && activePin.permit_status !== "active" && (
+            <div className="mt-3 rounded-md border-2 border-amber-400 bg-amber-400/10 p-2.5">
+              <p className="flex items-center gap-1.5 font-mono text-[0.6rem] font-bold uppercase tracking-widest text-amber-300">
+                <ShieldAlert size={12} /> Permit Required
+              </p>
+              {activePin.high_risk_flags && activePin.high_risk_flags.length > 0 && (
+                <p className="mt-1 text-[0.6rem] uppercase tracking-widest text-amber-200/80">
+                  {activePin.high_risk_flags.map((f) => f.replace(/_/g, " ")).join(" · ")}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => setPermitPin(activePin)}
+                className="mt-2 w-full rounded-md bg-amber-400 px-3 py-2 text-[0.65rem] font-extrabold uppercase tracking-widest text-black shadow hover:bg-amber-300"
+              >
+                Review & Issue Permit to Work
+              </button>
+            </div>
+          )}
+          {activePin.permit_status === "active" && (
+            <p className="mt-3 rounded-sm border border-emerald-500/50 bg-emerald-500/10 px-2 py-1 text-center font-mono text-[0.6rem] font-bold uppercase tracking-widest text-emerald-400">
+              Permit Active
+            </p>
+          )}
           <button
             type="button"
             onClick={() => closePin(activePin.id)}
@@ -303,6 +329,17 @@ function SiteManagerPage() {
             Clear Crew Out
           </button>
         </div>
+      )}
+
+      {permitPin && (
+        <PermitSignOffModal
+          pin={permitPin}
+          projectId={projectId}
+          onClose={() => {
+            setPermitPin(null);
+            qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+          }}
+        />
       )}
     </div>
   );

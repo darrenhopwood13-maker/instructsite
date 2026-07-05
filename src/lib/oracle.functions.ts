@@ -121,17 +121,46 @@ function scoreChunk(chunk: string, keywords: string[]): number {
   return score;
 }
 
+async function scopedDocumentIds(
+  supabase: any,
+  projectId: string,
+): Promise<string[]> {
+  const ids = new Set<string>();
+  const tables = ["project_drawings", "logistics_plans", "rams_documents"] as const;
+  for (const t of tables) {
+    const { data, error } = await supabase
+      .from(t)
+      .select("site_document_id")
+      .eq("project_id", projectId);
+    if (error) continue;
+    for (const row of data ?? []) {
+      if (row?.site_document_id) ids.add(row.site_document_id as string);
+    }
+  }
+  return Array.from(ids);
+}
+
 async function retrieveSnippets(
   supabase: any,
   keywords: string[],
+  projectId: string | null,
 ): Promise<{ snippets: Snippet[]; docs: SiteDocument[] }> {
-  const { data: rows, error } = await supabase
+  let query = supabase
     .from("site_documents")
     .select(
       "id,file_name,file_path,mime_type,bucket,created_at,extraction_status,extraction_error,document_contents(content,char_count,extraction_status,extraction_error)",
     )
-    .order("created_at", { ascending: false })
-    .limit(MAX_DOCS);
+    .order("created_at", { ascending: false });
+
+  if (projectId) {
+    const ids = await scopedDocumentIds(supabase, projectId);
+    if (ids.length === 0) return { snippets: [], docs: [] };
+    query = query.in("id", ids).limit(MAX_DOCS * 3);
+  } else {
+    query = query.limit(MAX_DOCS);
+  }
+
+  const { data: rows, error } = await query;
   if (error) throw new Error(error.message);
 
   const docs = (rows as (SiteDocument & {
@@ -157,7 +186,7 @@ async function retrieveSnippets(
   }
 
   scored.sort((a, b) => b.score - a.score);
-  return { snippets: scored.slice(0, MAX_SNIPPETS), docs };
+  return { snippets: scored.slice(0, MAX_SNIPPETS), docs: docs.slice(0, MAX_DOCS) };
 }
 
 
@@ -201,7 +230,19 @@ function formatContext(snippets: Snippet[], docs: SiteDocument[]): string {
 export const runOracleCommand = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ key: z.string().min(1) }).parse(input),
+    z
+      .object({
+        key: z.string().min(1),
+        projectId: z.string().uuid().optional(),
+        lockedContext: z
+          .object({
+            kind: z.enum(["drawing", "zone"]),
+            id: z.string(),
+            label: z.string(),
+          })
+          .optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const prompt = COMMAND_PROMPTS[data.key];
@@ -214,8 +255,16 @@ export const runOracleCommand = createServerFn({ method: "POST" })
       throw new Error("Missing LOVABLE_API_KEY");
     }
 
-    const { snippets, docs } = await retrieveSnippets(context.supabase, prompt.keywords);
+    const { snippets, docs } = await retrieveSnippets(
+      context.supabase,
+      prompt.keywords,
+      data.projectId ?? null,
+    );
     const contextBlock = formatContext(snippets, docs);
+    const lockLine = data.lockedContext
+      ? `\n### Locked Focus\nThe user has locked this session to ${data.lockedContext.kind.toUpperCase()}: **${data.lockedContext.label}** (id ${data.lockedContext.id}). Prioritize this element above all else.\n`
+      : "";
+
 
     const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(apiKey);
@@ -264,6 +313,7 @@ export const runOracleCommand = createServerFn({ method: "POST" })
     const userPrompt = [
       `## Task`,
       `Provide the ${prompt.title} briefing. ${prompt.focus}`,
+      lockLine,
       ``,
       `## Project Bible Context`,
       contextBlock,

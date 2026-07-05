@@ -30,9 +30,36 @@ const OraclePage = () => {
     setActiveLabel(cmd.label);
     setDialogOpen(true);
 
+    // Read locked oracle context from session (set by "Lock to Oracle" button)
+    let projectId: string | undefined;
+    let lockedContext:
+      | { kind: "drawing" | "zone"; id: string; label: string }
+      | undefined;
+    try {
+      const raw =
+        typeof window !== "undefined"
+          ? sessionStorage.getItem("oracle:context")
+          : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.projectId) projectId = parsed.projectId;
+        if (parsed?.kind && parsed?.id && parsed?.label) {
+          lockedContext = {
+            kind: parsed.kind,
+            id: parsed.id,
+            label: parsed.label,
+          };
+        }
+      }
+    } catch {
+      // ignore malformed context
+    }
+
     try {
       await ensureOracleSession();
-      const result = await invokeOracle({ data: { key: cmd.key } });
+      const result = await invokeOracle({
+        data: { key: cmd.key, projectId, lockedContext },
+      });
       setAnswer(result?.answer ?? "No response returned.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reach the Oracle.");

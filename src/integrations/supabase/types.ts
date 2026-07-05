@@ -261,11 +261,15 @@ export type Database = {
       }
       live_site_activity: {
         Row: {
+          activity_id: string | null
           created_at: string
           drawing_id: string | null
+          high_risk_flags: string[]
           id: string
           notes: string | null
           operative_count: number
+          permit_required: boolean
+          permit_status: string
           project_id: string
           scheduled_finish: string
           start_time: string
@@ -278,11 +282,15 @@ export type Database = {
           zone_id: string | null
         }
         Insert: {
+          activity_id?: string | null
           created_at?: string
           drawing_id?: string | null
+          high_risk_flags?: string[]
           id?: string
           notes?: string | null
           operative_count?: number
+          permit_required?: boolean
+          permit_status?: string
           project_id: string
           scheduled_finish: string
           start_time?: string
@@ -295,11 +303,15 @@ export type Database = {
           zone_id?: string | null
         }
         Update: {
+          activity_id?: string | null
           created_at?: string
           drawing_id?: string | null
+          high_risk_flags?: string[]
           id?: string
           notes?: string | null
           operative_count?: number
+          permit_required?: boolean
+          permit_status?: string
           project_id?: string
           scheduled_finish?: string
           start_time?: string
@@ -312,6 +324,13 @@ export type Database = {
           zone_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "live_site_activity_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "live_site_activity_drawing_id_fkey"
             columns: ["drawing_id"]
@@ -800,6 +819,10 @@ export type Database = {
       is_project_member: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
+      }
+      issue_pin_permit: {
+        Args: { _pin_id: string; _valid_hours?: number }
+        Returns: string
       }
       site_document_project_ids: {
         Args: { _document_id: string }
