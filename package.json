@@ -46,6 +46,7 @@
     "@tanstack/react-router": "^1.170.16",
     "@tanstack/react-start": "^1.168.26",
     "@tanstack/router-plugin": "^1.168.18",
+    "@types/three": "^0.185.0",
     "ai": "^7.0.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -68,10 +69,12 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
+    "three": "^0.185.1",
     "tw-animate-css": "^1.3.4",
     "unpdf": "^1.6.2",
     "vaul": "^1.1.2",
     "vite-tsconfig-paths": "^6.0.2",
+    "web-ifc": "^0.0.77",
     "zod": "^4.4.3"
   },
   "devDependencies": {
