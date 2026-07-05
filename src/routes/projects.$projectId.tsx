@@ -34,10 +34,22 @@ function ProjectDetail() {
   }, []);
 
   const getP = useServerFn(getProject);
+  const rolesFn = useServerFn(getMyRoles);
   const drawingsFn = useServerFn(listProjectDrawings);
   const logisticsFn = useServerFn(listProjectLogistics);
   const ramsFn = useServerFn(listProjectRams);
   const zonesFn = useServerFn(listProjectZones);
+
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    enabled: ready,
+    staleTime: 60_000,
+  });
+  const isAdmin =
+    rolesQ.data?.roles?.includes("master_admin") ||
+    rolesQ.data?.roles?.includes("project_admin");
+
 
   const project = useQuery({
     queryKey: ["project", projectId],
