@@ -6,16 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Site Operations Oracle" },
+      { title: "instructSite — The Oracle for the Construction Ecosystem" },
       {
         name: "description",
         content:
-          "Premium AI command surface for construction site operations — DABS, live IFC, QS-verified progress.",
+          "instructSite: the AI command surface for construction — DABS, live IFC, QS-verified progress, safety and sequences, all in one Oracle.",
       },
-      { property: "og:title", content: "Site Operations Oracle" },
+      { property: "og:title", content: "instructSite — The Oracle for the Construction Ecosystem" },
       {
         property: "og:description",
-        content: "Premium AI tooling for site operations.",
+        content: "The Oracle for the Construction Ecosystem. Premium AI tooling for site operations.",
       },
     ],
   }),
