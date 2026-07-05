@@ -209,6 +209,9 @@ export function MasterAdminHUD({
         </div>
       )}
 
+      {expanded && <TradeDirectoryPanel projectId={projectId} />}
+
+
       {confirmOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur"
