@@ -1,78 +1,99 @@
-## Phase 4 · End-of-Shift Checkout & Daily Diary Archive
+# Phase 5 · Real 3D IFC Viewer
 
-### 1. Data model (one migration)
+Swap the text-chip `IfcMeshStatus` panel for a live Three.js canvas that loads an actual `.ifc` file, parses it in the browser, and recolours meshes from `daily_site_diaries` + `live_site_activity` state.
 
-New table `public.daily_site_diaries` — the permanent legal record:
+## 1 · Storage & schema (one migration + one bucket call)
 
-- `id`, `project_id → projects` (cascade), `live_activity_id → live_site_activity` (nullable, set null)
-- `subcontractor_id`, `drawing_id`, `zone_id`, `trade_package`
-- `operative_count`, `start_time`, `scheduled_finish`, `checkout_time` (default now)
-- `hours_logged` numeric (computed at insert from start/checkout)
-- `progress_status` text check `('completed','partial','not_completed')`
-- `completion_pct` int 0–100
-- `notes` text (delays / variances)
-- `photo_urls` text[] (storage keys)
-- `qs_status` text check `('pending','approved','rejected')` default `'pending'` — feeds the QS queue
-- `ifc_synced` bool default false — flipped when 100% and approved
-- `created_at`, `updated_at`
+**Bucket** — `project-bim-models`, **private** (IFC files are commercially sensitive; we serve them via short-lived signed URLs, not public links). If you specifically want it public I'll flip it, but private is the right default.
 
-Grants + RLS: authenticated members can insert-own and select project rows; project admins can update `qs_status`/`ifc_synced`; service_role all.
+**Tables** (public schema, RLS + GRANTs):
 
-Extend `live_site_activity_status_check` to allow `'archived'` (existing `'closed'` stays for manual clear-outs).
+- `project_ifc_models` — `id`, `project_id → projects(cascade)`, `storage_path text`, `original_filename text`, `uploaded_by → auth.users`, `is_active bool default true`, timestamps. Only one `is_active=true` per project (partial unique index).
+- `ifc_element_mappings` — `id`, `model_id → project_ifc_models(cascade)`, `global_id text` (the IFC `GlobalId`), `zone_id → work_zones(cascade)`, unique `(model_id, global_id)`.
 
-Storage bucket `diary-photos` (private) with policies: authenticated project members upload/read their project's paths, path prefix `{project_id}/{diary_id}/…`.
+RLS: project members read; project admins insert/update/delete. `service_role` full.
 
-Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE public.daily_site_diaries;` (live_site_activity already in publication via existing site-manager subscription).
+## 2 · Libraries
 
-### 2. Server functions (`src/lib/daily-diary.functions.ts`)
+Install:
+- `web-ifc` — WASM IFC parser
+- `three` + `@types/three`
+- `@thatopen/components` + `@thatopen/fragments` — camera, grid, highlighter, IFC loader wrapper on top of `web-ifc`
 
-- `submitDailyDiary` (POST, auth) — validates input, flips the matching `live_site_activity` row to `status='archived'`, computes `hours_logged`, inserts `daily_site_diaries` row, returns it. All in one call; RLS scopes to caller.
-- `listQsQueue` (GET, auth) — project-admin only; returns `qs_status='pending'` rows joined with zone/drawing names.
-- `approveDiary` (POST, auth) — project-admin only; sets `qs_status='approved'`; when `completion_pct=100` also sets `ifc_synced=true` (the IFC viewer reads this flag).
-- `rejectDiary` (POST, auth) — mirror.
+Copy the `web-ifc` WASM into `public/wasm/` at install time so the viewer can point `IfcAPI.SetWasmPath("/wasm/")` — otherwise `web-ifc.wasm` 404s in production.
 
-### 3. Subcontractor checkout UI (`src/routes/dabs.$projectId.tsx`)
+The viewer is client-only. Mounted with `<ClientOnly>` and dynamic import inside `useEffect`; no SSR pass.
 
-Replace the small "Clear Out" link per active pin with a prominent full-width button on each pin card: **"Close Out Today's Shift / Complete Daily Diary"** (high-contrast orange). Existing pin-drop / briefing flow untouched.
+## 3 · Server functions (`src/lib/ifc-models.functions.ts`)
 
-New modal component `src/components/project/CheckoutDiaryModal.tsx` opened from that button. Fields:
+- `listIfcModels({ projectId })` — member-scoped list.
+- `getActiveIfcSignedUrl({ projectId })` — returns `{ url, model }` using `storage.createSignedUrl(path, 3600)`. Called from the viewer on mount.
+- `uploadIfcModel` — accepts `{ projectId, storagePath, filename }` after client-side upload to `project-bim-models/{projectId}/{uuid}.ifc`; inserts row, sets it active, deactivates prior models. Admin-only.
+- `listElementMappings({ projectId })` — returns `[{ global_id, zone_id }]` for the active model.
+- `upsertElementMappings({ modelId, rows })` — admin bulk mapping upsert.
+- `listZoneRuntimeState({ projectId })` — returns `[{ zone_id, state: 'unstarted' | 'live' | 'complete' }]` derived server-side:
+  - `complete` if any `daily_site_diaries` row for that zone has `ifc_synced = true`
+  - else `live` if a `live_site_activity` row with `status='active'` exists for that zone
+  - else `unstarted`
 
-- Task Progress Status — segmented radio: Completed / Partial / Not Completed
-- Estimated Zone Completion % — shadcn `Slider` 0–100 + numeric input, kept in sync
-- Photo Evidence — dropzone (reuse `DropZone` pattern) that also renders `<input type="file" accept="image/*" capture="environment" multiple>` so mobile opens the camera; uploads to `diary-photos` bucket via `supabase.storage`, collects returned paths
-- Notes / Delays — `Textarea` (max 2000 chars)
-- Submit → calls `submitDailyDiary`, toasts success, invalidates `live-pins` query (pin disappears from own list) and closes modal
+## 4 · New components
 
-### 4. Realtime HUD cleanup (Site Manager)
+### `src/components/project/BimModelViewer.tsx`
+- Client-only. Sets up `THREE.Scene`, `PerspectiveCamera`, `OrbitControls` (rotate / pan / zoom), grid, ambient + directional light.
+- Uses `@thatopen/components` `IfcLoader` to stream-parse the signed URL.
+- After load, walks the fragments map keeping `globalId → THREE.Mesh[]` so we can recolour by GlobalId.
+- Subscribes to a `useQuery(['zone-runtime', projectId], listZoneRuntimeState, { refetchInterval: 10_000 })` plus the existing realtime channel invalidation for `daily_site_diaries` and `live_site_activity`.
+- Colour function per mesh:
+  - `unstarted` → `#7a7a7a`, `transparent: true`, `opacity: 0.35`
+  - `live` → `#ff7a00`, pulsing (emissive intensity oscillates in `requestAnimationFrame`)
+  - `complete` → `#22c55e` solid
+- Empty state: if no active model, render a dashed drop panel: **Upload .ifc model** (admin only).
 
-`site-manager.$projectId.tsx` already subscribes to `live_site_activity` `postgres_changes` and requeries. Because `submitDailyDiary` transitions `status → 'archived'` and the list filters `activeOnly` (`status='active'`), the pin drops off in real time — no client changes needed there. Add a small "Archived today: N" line under the stat cards fed by a lightweight `daily_site_diaries` count query for the current day.
+### `src/components/project/BimModelUploader.tsx`
+- Admin-only dropzone. Uploads to `project-bim-models` via `supabase.storage.from(...).upload()` with progress, then calls `uploadIfcModel`.
 
-### 5. Commercial matrix hooks
+### `src/components/project/BimMappingEditor.tsx` (collapsible)
+- Lists parsed GlobalIds from the loaded model with a zone `<Select>` per row. Save calls `upsertElementMappings`. Without mappings the viewer still renders but every mesh is grey — this editor is how the admin ties structure → zones.
 
-Both live in the Site Manager (project-admin surface):
+## 5 · Site Manager wiring
 
-- **QS Verification Queue** — new collapsible section listing `listQsQueue` output with Approve / Reject buttons. On approve at 100 %, backend sets `ifc_synced=true`.
-- **IFC Model color update** — the IFC 3D viewer doesn't exist yet; scaffold a `src/components/project/IfcMeshStatus.tsx` panel that reads approved diaries with `completion_pct=100` grouped by `zone_id` and renders each zone as a chip: orange = in progress, solid green = complete. When the real IFC viewer lands, it consumes the same query. Both design tokens (`--alert` orange and a new `--complete` green) added to `src/styles.css`.
+`src/routes/site-manager.$projectId.tsx`:
+- Delete the `<IfcMeshStatus />` block and the section around it.
+- Insert `<ClientOnly><BimModelViewer projectId={projectId} /></ClientOnly>` in the same slot, full-width, min-height 520px, dark canvas that matches the panel aesthetic.
+- Below it, collapsible **Model & Mapping** section with `<BimModelUploader />` + `<BimMappingEditor />` for admins only.
 
-### 6. Files touched
+`IfcMeshStatus.tsx` is deleted.
 
-New:
-- `supabase/migrations/<ts>_daily_diaries.sql`
-- `src/lib/daily-diary.functions.ts`
-- `src/components/project/CheckoutDiaryModal.tsx`
+## 6 · Realtime
+
+`daily_site_diaries` and `live_site_activity` are already in the Site Manager realtime channel. Extend the existing subscription in `site-manager.$projectId.tsx` to also invalidate `['zone-runtime', projectId]` — the viewer re-queries and repaints without a manual refresh.
+
+## 7 · Files touched
+
+**New**
+- `supabase/migrations/<ts>_ifc_models.sql`
+- `src/lib/ifc-models.functions.ts`
+- `src/components/project/BimModelViewer.tsx`
+- `src/components/project/BimModelUploader.tsx`
+- `src/components/project/BimMappingEditor.tsx`
+- `public/wasm/web-ifc.wasm` (copied at install)
+
+**Edited**
+- `src/routes/site-manager.$projectId.tsx` (remove chips, mount viewer + admin tools, extend realtime invalidations)
+- `package.json` (deps)
+
+**Deleted**
 - `src/components/project/IfcMeshStatus.tsx`
-- `src/components/project/QsVerificationQueue.tsx`
 
-Edited:
-- `src/routes/dabs.$projectId.tsx` — big checkout button per pin, mount modal
-- `src/routes/site-manager.$projectId.tsx` — archived-today stat, mount QS queue + IFC status
-- `src/styles.css` — `--complete` green token
-- `src/integrations/supabase/types.ts` — regenerated after migration approves
+## 8 · Explicit non-goals
 
-### 7. Explicit non-goals (call out, not build)
+- No server-side IFC parsing. Parsing runs in the browser with the WASM binary; the server only serves the file and mappings.
+- No automatic GlobalId → zone inference. The `BimMappingEditor` is manual for now (later phase can add naming-convention heuristics).
+- No IFC diff/versioning UI. Uploading a new model marks it active and older rows go inactive; historical mappings stay tied to their model_id.
 
-- No real IFC 3D geometry viewer — only the status chip panel that will feed one later.
-- No QS-user role separation beyond project-admin; the QS queue is admin-scoped for now.
-- No PDF export of the diary — data lives structured in `daily_site_diaries` ready for later report generation.
+## 9 · Two things I need you to confirm before I ship
 
-Approve to proceed and I'll ship the migration first, then wire the UI.
+1. **Bucket privacy** — I'm defaulting `project-bim-models` to **private** with signed URLs. The brief said "public"; confirm you actually want public (anyone with the URL can download the IFC) or accept private.
+2. **First mapping** — once the viewer is live, meshes stay grey until you (or an admin) fill in `ifc_element_mappings`. That's the manual step. OK to ship the editor and let you map post-upload, rather than blocking on an auto-mapper?
+
+Approve and I'll ship the migration first, then the viewer.

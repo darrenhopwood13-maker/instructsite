@@ -10,8 +10,13 @@ import { listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { listArchivedToday } from "@/lib/daily-diary.functions";
 import { DrawingCanvas, type PinRecord } from "@/components/project/DrawingCanvas";
 import { QsVerificationQueue } from "@/components/project/QsVerificationQueue";
-import { IfcMeshStatus } from "@/components/project/IfcMeshStatus";
+import { BimModelViewer } from "@/components/project/BimModelViewer";
+import { BimModelUploader } from "@/components/project/BimModelUploader";
+import { BimMappingEditor } from "@/components/project/BimMappingEditor";
+import { ClientOnly } from "@tanstack/react-router";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/site-manager/$projectId")({
@@ -186,8 +191,16 @@ function SiteManagerPage() {
         </section>
 
         <section className="mt-10">
-          <IfcMeshStatus projectId={projectId} />
+          <ClientOnly fallback={<div className="glass-panel h-[560px] animate-pulse" />}>
+            <BimModelViewer projectId={projectId} />
+          </ClientOnly>
         </section>
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-2">
+          <BimModelUploader projectId={projectId} />
+          <BimMappingEditor projectId={projectId} />
+        </section>
+
 
         <section className="mt-10">
           <QsVerificationQueue projectId={projectId} />
