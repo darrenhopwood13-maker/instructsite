@@ -462,6 +462,33 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          selected_role: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          selected_role?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          selected_role?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       project_drawings: {
         Row: {
           created_at: string
@@ -937,6 +964,8 @@ export type Database = {
         | "project_admin"
         | "site_manager"
         | "subcontractor"
+        | "apprentice"
+        | "qs"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1069,6 +1098,8 @@ export const Constants = {
         "project_admin",
         "site_manager",
         "subcontractor",
+        "apprentice",
+        "qs",
       ],
     },
   },
