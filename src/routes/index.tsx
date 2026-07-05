@@ -34,13 +34,13 @@ function Index() {
       <div className="aurora-bg" />
       <div className="grain-overlay" />
 
-      <div className="relative mx-auto grid max-w-6xl grid-cols-12 gap-8 px-6 py-24">
+      <div className="relative mx-auto grid max-w-6xl grid-cols-12 gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:py-24">
         <div className="col-span-12 lg:col-span-8">
           <p className="text-[0.7rem] font-bold uppercase tracking-[0.5em] text-alert">
             AI · Site Operations
           </p>
           <h1
-            className="mt-6 text-6xl font-extrabold leading-[0.95] tracking-tight text-foreground md:text-7xl"
+            className="mt-6 text-4xl font-extrabold leading-[0.95] tracking-tight text-foreground sm:text-5xl md:text-7xl"
             style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
           >
             The command

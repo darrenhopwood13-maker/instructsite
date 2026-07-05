@@ -120,7 +120,7 @@ function ProjectDetail() {
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />
-      <div className="relative mx-auto max-w-6xl px-6 py-10">
+      <div className="relative mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
         <Link
           to="/projects"
           className="inline-flex items-center gap-1.5 text-xs uppercase tracking-widest text-foreground/60 hover:text-foreground"
@@ -128,24 +128,25 @@ function ProjectDetail() {
           <ArrowLeft size={12} /> All Projects
         </Link>
 
-        <div className="mt-4 flex items-start justify-between gap-4">
-          <div>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+          <div className="min-w-0">
             <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
               Project
             </p>
             <h1
-              className="mt-1 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
+              className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground sm:text-3xl md:text-5xl"
               style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
             >
               {project.data?.name ?? "…"}
             </h1>
             {project.data?.site_address && (
               <p className="mt-2 flex items-center gap-1.5 text-sm text-foreground/70">
-                <MapPin size={14} /> {project.data.site_address}
+                <MapPin size={14} className="shrink-0" /> <span className="truncate">{project.data.site_address}</span>
               </p>
             )}
           </div>
-          <div className="flex flex-col gap-2 md:flex-row">
+          <div className="flex flex-wrap gap-2 sm:flex-col md:flex-row">
+
             <Link
               to="/dabs/$projectId"
               params={{ projectId }}

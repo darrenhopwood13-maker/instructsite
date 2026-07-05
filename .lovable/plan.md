@@ -1,182 +1,87 @@
-# Sprint: P0 security hardening + progress math + docs
+## Goal
 
-Consolidated build plan. Ships in one go.
+Two changes, done together:
 
----
+1. Swap the current navy + orange palette for the **forest-green InstructSite theme**.
+2. Make every screen work cleanly on **phone, tablet, and laptop/desktop**.
 
-## 1 · P0 Security fixes (server-only edits)
-
-### 1a · Kill dev master-admin auto-promotion
-
-**File:** `src/lib/projects.functions.ts` — `getMyRoles` (lines 16-33).
-
-Delete the fallback that inserts `master_admin` when a user has no roles. Replace with a plain read.
-
-**Bootstrap rule:** the very first user in `auth.users` (chronologically) becomes `master_admin` once, via DB trigger. All subsequent users get **no role** until an admin grants one. Migration:
-
-```sql
-CREATE OR REPLACE FUNCTION public.bootstrap_first_master_admin()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public.user_roles WHERE role = 'master_admin') THEN
-    INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'master_admin')
-    ON CONFLICT DO NOTHING;
-  END IF;
-  RETURN NEW;
-END $$;
-
-DROP TRIGGER IF EXISTS on_auth_user_created_bootstrap ON auth.users;
-CREATE TRIGGER on_auth_user_created_bootstrap
-AFTER INSERT ON auth.users FOR EACH ROW
-EXECUTE FUNCTION public.bootstrap_first_master_admin();
-```
-
-(The `bootstrap_first_master_admin` function already exists per db-functions listing — I'll add the trigger on `auth.users` if it's missing and no-op if present.)
-
-### 1b · Server-side role check on QS approval
-
-**File:** `src/lib/daily-diary.functions.ts` — `setDiaryQsStatus` (lines 85-116).
-
-At the top of the handler, add:
-
-```ts
-const { data: allowed } = await context.supabase.rpc("has_role", {
-  _user_id: context.userId, _role: "master_admin",
-});
-const { data: pAdmin } = await context.supabase.rpc("has_role", {
-  _user_id: context.userId, _role: "project_admin",
-});
-const { data: sMgr } = await context.supabase.rpc("has_role", {
-  _user_id: context.userId, _role: "site_manager",
-});
-if (!allowed && !pAdmin && !sMgr) {
-  throw new Error("Forbidden: QS approval requires site_manager, project_admin, or master_admin");
-}
-```
-
-Client toast on failure already surfaces the message.
-
-### 1c · Kill project self-enrolment
-
-**File:** `src/lib/projects.functions.ts` — `getProject` (lines 80-115).
-
-Delete the `supabaseAdmin`-backed auto-insert-as-subcontractor block. If the project row doesn't come back through the authenticated `context.supabase` (RLS-gated), throw `Error("Access denied — you are not a member of this project")`.
-
-**File:** `src/routes/projects.$projectId.tsx` — wrap the `useQuery` error state with an "Access denied" screen (title + short body + link back to `/projects`). Same for `dabs.$projectId.tsx` and `site-manager.$projectId.tsx`.
+No feature/business-logic changes — visual + layout only.
 
 ---
 
-## 2 · Progress math — cumulative approved completion
+## Part 1 — Forest Green Theme
 
-### 2a · New RPC to aggregate approved completion per zone
+### Where the colors live
+All colors are semantic tokens in **`src/styles.css`** (`:root` + `.dark` + `@theme inline`). Components use `bg-primary`, `text-foreground`, `bg-navy`, `glass-orange`, etc. — so re-skinning is 95% a single-file edit.
 
-Migration adds a SECURITY DEFINER function callable from server functions:
+### Token remap
 
-```sql
-CREATE OR REPLACE FUNCTION public.zone_approved_completion(_project_id uuid)
-RETURNS TABLE (zone_id uuid, total_pct numeric)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT zone_id, LEAST(100, COALESCE(SUM(completion_pct), 0))::numeric AS total_pct
-  FROM public.daily_site_diaries
-  WHERE project_id = _project_id
-    AND qs_status = 'approved'
-    AND zone_id IS NOT NULL
-  GROUP BY zone_id
-$$;
+| Token | Now (navy/orange) | New (forest green) |
+|---|---|---|
+| `--background` | deep navy | deep forest `oklch(0.16 0.03 155)` |
+| `--primary` | navy | forest green `oklch(0.35 0.09 155)` |
+| `--navy` | navy | deep pine `oklch(0.22 0.06 155)` |
+| `--accent` / `--ring` / `--alert` | orange `oklch(0.7 0.19 47)` | moss/gold accent `oklch(0.68 0.14 130)` (or warm amber `oklch(0.72 0.14 85)` — see question below) |
+| `--sidebar` | dark navy | dark forest |
+| `--destructive` | red | unchanged |
+| `.dark` variants | navy-tinted | forest-tinted equivalents |
 
-GRANT EXECUTE ON FUNCTION public.zone_approved_completion(uuid) TO authenticated, service_role;
-```
+### Utility classes to re-tint
+The custom `@utility` blocks in `src/styles.css` hard-code orange/navy rgba values and must be updated to match:
+- `glass-accent`, `glass-btn`, `glass-navy`, `glass-orange` → rename kept, swap `rgba(249,115,22,…)` (orange) → new accent, `rgba(11,30,63,…)` (navy) → forest green.
+- `aurora-bg`, `permit-flash`, `scan-sweep`, `oracle-pulse` → same rgba swap.
 
-Cap at 100 so a zone with over-approved diaries still reports `100`, not `140`.
+### Component audit (hard-coded colors to remove)
+Grep pass for `text-white`, `bg-black`, `bg-[#`, `text-[#`, `#0b1e3f`, `#f97316`, `rgba(249,115,22`, `rgba(11,30,63` across `src/components/**` and `src/routes/**`, and replace with semantic tokens (`bg-primary`, `text-primary-foreground`, `bg-navy`, `text-accent`).
 
-### 2b · Auto-flip `ifc_synced` when cumulative reaches 100
-
-Migration adds a trigger on `daily_site_diaries`:
-
-```sql
-CREATE OR REPLACE FUNCTION public.sync_zone_ifc_on_approval()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  v_total numeric;
-BEGIN
-  IF NEW.zone_id IS NULL THEN RETURN NEW; END IF;
-
-  SELECT COALESCE(SUM(completion_pct), 0) INTO v_total
-  FROM public.daily_site_diaries
-  WHERE project_id = NEW.project_id
-    AND zone_id = NEW.zone_id
-    AND qs_status = 'approved';
-
-  IF v_total >= 100 THEN
-    UPDATE public.daily_site_diaries
-    SET ifc_synced = true
-    WHERE project_id = NEW.project_id
-      AND zone_id = NEW.zone_id
-      AND qs_status = 'approved'
-      AND ifc_synced = false;
-  END IF;
-
-  RETURN NEW;
-END $$;
-
-DROP TRIGGER IF EXISTS trg_sync_zone_ifc ON public.daily_site_diaries;
-CREATE TRIGGER trg_sync_zone_ifc
-AFTER INSERT OR UPDATE OF qs_status, completion_pct ON public.daily_site_diaries
-FOR EACH ROW EXECUTE FUNCTION public.sync_zone_ifc_on_approval();
-```
-
-This means: every time a diary is approved OR its `completion_pct` changes, the trigger re-tallies the zone. Once cumulative ≥ 100, **all approved diaries for that zone flip `ifc_synced=true`** so the 3D mesh goes green regardless of which specific diary the viewer keys off.
-
-### 2c · Update `listZoneRuntimeState` to use cumulative completion
-
-**File:** `src/lib/ifc-models.functions.ts` — `listZoneRuntimeState` (lines 126-164).
-
-Change the `complete` calculation from "any diary with ifc_synced=true" to "cumulative approved ≥ 100 via `zone_approved_completion` RPC". Return shape gains `progress_pct` per zone so the UI can show a progress bar. Order of colour precedence stays: `complete > live > unstarted`.
-
-### 2d · Show progress bar in BIM viewer legend
-
-**File:** `src/components/project/BimModelViewer.tsx` — legend chip block. Add a small `{zoneName}: {progress_pct}%` list under the legend so QS/PM see live cumulative progress per zone at a glance. No new components.
+Expected hotspots based on file list:
+- `MasterAdminHUD.tsx`, `TradeDirectoryPanel.tsx`
+- `DrawingCanvas.tsx`, `ZoneMap.tsx`, `ZoneMatrixBoard.tsx`, `BimModelViewer.tsx`
+- `dashboard.tsx`, `site-manager.$projectId.tsx`, `subcontractor.$projectId.tsx`, `oracle.tsx`, `unlock.tsx`, `auth.tsx`
 
 ---
 
-## 3 · Documentation (three new files in `docs/`)
+## Part 2 — Responsive Sweep (phone / tablet / laptop)
 
-Ship exactly the content from the previous plan:
+### Approach
+Tailwind breakpoints: **default = mobile**, `sm:` ≥640, `md:` ≥768 (iPad portrait), `lg:` ≥1024 (iPad landscape / small laptop), `xl:` ≥1280.
 
-- `docs/APP_WORKFLOW.md` — Part 1 walkthrough, one section per workflow (auth → project → drawings → Oracle → zones → DABS → site manager → diary → QS → IFC → HUD). Plain English, no jargon, with a "what to check in the DB" note per section.
-- `docs/QA_TEST_SCRIPT.md` — 11 tests as a printable checklist with expected results and DB verification queries.
-- `docs/IMPROVEMENT_ROADMAP.md` — P0/P1/P2/P3 list. Mark P0 items 1a/1b/1c and progress math as **DONE in this sprint**; the rest stay as future work.
+Pass through each route + heavy component and fix these recurring patterns:
 
----
+1. **Header rows** with title + widgets → convert to
+   `grid grid-cols-[minmax(0,1fr)_auto] gap-4 sm:flex sm:flex-wrap sm:justify-between`
+   with `min-w-0` on text container, `shrink-0` on icons, `truncate` on headings.
+2. **Multi-column dashboards** (`grid-cols-3`, `grid-cols-4`) → start at `grid-cols-1`, promote at `md:grid-cols-2 lg:grid-cols-3`.
+3. **Fixed widths / large paddings** → responsive: `p-4 md:p-6 lg:p-8`, `text-2xl md:text-3xl lg:text-4xl`.
+4. **Side-by-side split screens** (site manager cockpit, portfolio dashboard) → stack vertically on mobile, split at `lg:`.
+5. **Modals & sheets** → `w-full max-w-md` on mobile, larger at `sm:`.
+6. **Tables** (QS queue, trade directory) → horizontal scroll wrapper `overflow-x-auto` + `min-w-[640px]` on `<table>` for phone.
+7. **PDF/BIM canvases** → `aspect-video` or fluid height with `max-h-[70svh]` so they don't overflow on phones.
+8. **Touch targets** — buttons min-height `h-10` on mobile (`h-9 md:h-8`).
+9. **Sidebar** → collapse to `Sheet`/drawer on `<lg` (shadcn sidebar already supports this — verify wiring).
 
-## 4 · Files touched
+### Route-by-route pass
+`index`, `auth`, `unlock`, `dashboard`, `projects.index`, `projects.$projectId`, `projects.new`, `site-manager.$projectId`, `subcontractor.$projectId`, `dabs.$projectId`, `oracle`, `invite.$token`, `subcontractors.new`.
 
-**New**
-- `supabase/migrations/<ts>_p0_security_and_progress_math.sql` — bootstrap trigger (if missing), `zone_approved_completion` RPC, `sync_zone_ifc_on_approval` trigger.
-- `docs/APP_WORKFLOW.md`
-- `docs/QA_TEST_SCRIPT.md`
-- `docs/IMPROVEMENT_ROADMAP.md`
-
-**Edited**
-- `src/lib/projects.functions.ts` — remove auto-promote fallback, remove self-enrol block.
-- `src/lib/daily-diary.functions.ts` — role check in `setDiaryQsStatus`.
-- `src/lib/ifc-models.functions.ts` — cumulative-completion logic in `listZoneRuntimeState`, return `progress_pct`.
-- `src/components/project/BimModelViewer.tsx` — show per-zone progress in legend.
-- `src/routes/projects.$projectId.tsx`, `src/routes/dabs.$projectId.tsx`, `src/routes/site-manager.$projectId.tsx` — friendly "Access denied" state when `getProject` throws.
-
-**Not touched**
-- No changes to `activities` / `permits` / `high_risk_flags` — that's P1 in a later sprint, per your instruction to stay focused on P0 + progress math.
-- No changes to Oracle scoping — P1.
-- No auth UI added (login page, sign-out). The app still runs anonymously; once you invite real users we'll wire in the login flow. Flag me if you want that in this sprint too.
+### Verification
+After edits, drive Playwright headless at three viewports (390×844 iPhone, 820×1180 iPad, 1440×900 laptop), screenshot each key route, view the images, fix anything visibly broken.
 
 ---
 
-## 5 · What you'll test after this ships
+## Deliverables
+- Updated `src/styles.css` (tokens + `@utility` blocks) — forest green.
+- Component sweep replacing hard-coded colors with tokens.
+- Responsive class additions across routes/components (no logic changes).
+- Playwright screenshot proof at 3 viewports for the main routes.
 
-1. As a fresh user (second user in the DB), you should have **no roles** and see "New Project" hidden. Only the first-ever user is master admin.
-2. Try approving a diary while signed in as a subcontractor → toast: "Forbidden: QS approval requires…".
-3. Try visiting `/projects/<some-other-project-id>` while not a member → "Access denied" screen, no auto-enrol.
-4. Submit two diaries for the same zone: 60% approved, then 50% approved. After the second approval, the zone's mesh flips to solid green (cumulative = 100, capped) and both diaries have `ifc_synced=true`.
-5. Repeat with 40% + 30% approved — mesh stays orange/grey; legend shows 70%.
+## Effort
+Not hard. Palette swap is ~1 file. The responsive sweep is the bulk of the work — mechanical but touches ~20 files. Realistically one focused build turn.
 
-Approve and I'll ship the migration first (needs your DB approval), then all code + doc edits in one batch.
+---
+
+## One question before I build
+
+**Accent color** — the current app uses orange as the "action / alert" accent against navy. For forest green, which accent do you want?
+- **Warm amber / gold** (classic forest+gold, high contrast, keeps the "alert / CTA" energy)
+- **Moss / lime** (all-green, calmer, more monochrome)
+- **Match the other InstructSite app exactly** — if so, paste a screenshot or the hex values and I'll mirror them.
