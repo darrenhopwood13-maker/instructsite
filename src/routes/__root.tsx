@@ -14,6 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getGateStatus } from "../lib/gate.functions";
+import { MeshBackground } from "../components/MeshBackground";
 
 
 function NotFoundComponent() {
@@ -137,13 +138,15 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <header className="border-b border-hairline/20 bg-background">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
+      <header className="hero-emerald relative border-b border-white/10">
+        <MeshBackground />
+        <nav className="relative z-10 mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
           <Link
             to="/"
-            className="font-display text-lg font-extrabold uppercase tracking-widest text-foreground"
+            className="text-xl font-black tracking-tight text-white drop-shadow-[0_2px_8px_rgba(4,61,47,0.6)]"
+            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif", letterSpacing: "0.02em" }}
           >
-            Oracle
+            instruct<span className="text-emerald-200">Site</span>
           </Link>
           <AuthNav />
         </nav>
@@ -194,7 +197,7 @@ function AuthNav() {
           <button
             type="button"
             onClick={signOut}
-            className="rounded-lg border border-white/15 px-3 py-2 text-xs uppercase tracking-widest text-foreground/70 hover:border-white/40 hover:text-foreground"
+            className="rounded-lg border border-white/25 px-3 py-2 text-xs uppercase tracking-widest text-white/85 hover:border-white/60 hover:text-white"
           >
             Sign out
           </button>
