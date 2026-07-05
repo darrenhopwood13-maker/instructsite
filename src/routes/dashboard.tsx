@@ -268,10 +268,11 @@ function ProjectCard({ p }: { p: any }) {
       <Link
         to="/site-manager/$projectId"
         params={{ projectId: p.id }}
-        className="mt-5 inline-flex items-center justify-center gap-2 rounded-md border-2 border-[#1d3f8a] bg-[#1d3f8a] px-4 py-2.5 text-[0.65rem] font-extrabold uppercase tracking-[0.24em] text-white shadow-[3px_3px_0_0_rgba(15,23,42,0.25)] transition hover:brightness-110"
+        className="mt-5 inline-flex items-center justify-center gap-2 rounded-md border-2 border-[#14321f] bg-[#14321f] px-4 py-2.5 text-[0.65rem] font-extrabold uppercase tracking-[0.24em] text-white shadow-[3px_3px_0_0_rgba(15,23,42,0.25)] transition hover:brightness-110"
       >
         Enter Command Tower <ArrowRight size={12} />
       </Link>
+
     </div>
   );
 }
