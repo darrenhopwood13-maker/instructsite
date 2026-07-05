@@ -209,7 +209,8 @@ export function MasterAdminHUD({
         </div>
       )}
 
-      {expanded && <TradeDirectoryPanel projectId={projectId} />}
+
+
 
 
       {confirmOpen && (
