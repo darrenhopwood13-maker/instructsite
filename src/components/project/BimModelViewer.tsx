@@ -436,6 +436,88 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
             </div>
           </div>
         )}
+
+        {/* BIM Element Property Inspector — slide-out */}
+        <div
+          className={`absolute right-0 top-0 h-full w-80 max-w-[85%] transform border-l border-white/15 bg-black/95 backdrop-blur-md transition-transform duration-300 ${
+            selected ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          {selected && (
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                <div>
+                  <p className="text-[0.55rem] font-bold uppercase tracking-[0.35em] text-alert">
+                    BIM Element
+                  </p>
+                  <h3 className="mt-0.5 font-mono text-[0.7rem] font-bold uppercase tracking-widest text-foreground">
+                    Property Inspector
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedRef.current) {
+                      selectedRef.current.baseMaterial.emissive.setHex(0x000000);
+                      selectedRef.current = null;
+                    }
+                    setSelected(null);
+                  }}
+                  className="rounded-md border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="border-b border-white/10 px-4 py-3">
+                <p className="font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                  IFC Type
+                </p>
+                <p className="mt-0.5 font-mono text-sm text-alert">{selected.ifcType}</p>
+                <p className="mt-3 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                  Global ID
+                </p>
+                <p className="mt-0.5 truncate font-mono text-[0.65rem] text-foreground/80">
+                  {selected.globalId}
+                </p>
+                <p className="mt-3 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                  Express ID
+                </p>
+                <p className="mt-0.5 font-mono text-[0.65rem] text-foreground/80">
+                  #{selected.expressID}
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto px-4 py-3">
+                <p className="mb-2 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                  Attributes
+                </p>
+                <table className="w-full text-left">
+                  <tbody>
+                    {Object.entries(selected.properties).length === 0 && (
+                      <tr>
+                        <td className="py-2 text-xs text-foreground/50">
+                          No inline attributes on this entity.
+                        </td>
+                      </tr>
+                    )}
+                    {Object.entries(selected.properties).map(([k, v]) => (
+                      <tr key={k} className="border-b border-white/5">
+                        <td className="py-1.5 pr-3 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                          {k}
+                        </td>
+                        <td className="py-1.5 font-mono text-[0.65rem] text-foreground/90">
+                          {String(v)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="border-t border-white/10 px-4 py-2 text-[0.55rem] uppercase tracking-widest text-foreground/40">
+                Click any 3D element to inspect · Click empty space to clear
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {zoneProgress.length > 0 && (
