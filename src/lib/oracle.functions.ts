@@ -230,7 +230,19 @@ function formatContext(snippets: Snippet[], docs: SiteDocument[]): string {
 export const runOracleCommand = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ key: z.string().min(1) }).parse(input),
+    z
+      .object({
+        key: z.string().min(1),
+        projectId: z.string().uuid().optional(),
+        lockedContext: z
+          .object({
+            kind: z.enum(["drawing", "zone"]),
+            id: z.string(),
+            label: z.string(),
+          })
+          .optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const prompt = COMMAND_PROMPTS[data.key];
@@ -243,8 +255,16 @@ export const runOracleCommand = createServerFn({ method: "POST" })
       throw new Error("Missing LOVABLE_API_KEY");
     }
 
-    const { snippets, docs } = await retrieveSnippets(context.supabase, prompt.keywords);
+    const { snippets, docs } = await retrieveSnippets(
+      context.supabase,
+      prompt.keywords,
+      data.projectId ?? null,
+    );
     const contextBlock = formatContext(snippets, docs);
+    const lockLine = data.lockedContext
+      ? `\n### Locked Focus\nThe user has locked this session to ${data.lockedContext.kind.toUpperCase()}: **${data.lockedContext.label}** (id ${data.lockedContext.id}). Prioritize this element above all else.\n`
+      : "";
+
 
     const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
     const gateway = createLovableAiGatewayProvider(apiKey);
