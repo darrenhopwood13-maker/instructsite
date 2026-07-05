@@ -13,6 +13,7 @@ import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
+import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontractor.$projectId'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
@@ -38,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubcontractorProjectIdRoute = SubcontractorProjectIdRouteImport.update({
+  id: '/subcontractor/$projectId',
+  path: '/subcontractor/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SiteManagerProjectIdRoute = SiteManagerProjectIdRouteImport.update({
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
+  '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/projects/': typeof ProjectsIndexRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
+  '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/projects': typeof ProjectsIndexRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
+  '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/projects/': typeof ProjectsIndexRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
 }
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
+    | '/subcontractor/$projectId'
     | '/projects/'
     | '/api/drawing/$drawingId'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
+    | '/subcontractor/$projectId'
     | '/projects'
     | '/api/drawing/$drawingId'
   id:
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
+    | '/subcontractor/$projectId'
     | '/projects/'
     | '/api/drawing/$drawingId'
   fileRoutesById: FileRoutesById
@@ -156,6 +168,7 @@ export interface RootRouteChildren {
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
+  SubcontractorProjectIdRoute: typeof SubcontractorProjectIdRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   ApiDrawingDrawingIdRoute: typeof ApiDrawingDrawingIdRoute
 }
@@ -188,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/subcontractor/$projectId': {
+      id: '/subcontractor/$projectId'
+      path: '/subcontractor/$projectId'
+      fullPath: '/subcontractor/$projectId'
+      preLoaderRoute: typeof SubcontractorProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/site-manager/$projectId': {
@@ -244,6 +264,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
+  SubcontractorProjectIdRoute: SubcontractorProjectIdRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   ApiDrawingDrawingIdRoute: ApiDrawingDrawingIdRoute,
 }
