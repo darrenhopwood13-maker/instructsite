@@ -186,7 +186,7 @@ export const upsertManagerNote = createServerFn({ method: "POST" })
     const { data: prof } = await supabase
       .from("profiles")
       .select("full_name")
-      .eq("id", userId)
+      .eq("user_id", userId)
       .maybeSingle();
     const authorName = (prof?.full_name as string | undefined) ?? null;
 
