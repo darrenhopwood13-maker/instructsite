@@ -7,6 +7,8 @@ export default defineConfig({
   },
   vite: {
     optimizeDeps: {
+      noDiscovery: true,
+      holdUntilCrawlEnd: false,
       needsInterop: [
         "react",
         "react-dom",
@@ -25,6 +27,9 @@ export default defineConfig({
         "@tanstack/router-core",
         "@tanstack/router-core/ssr/client",
         "@tanstack/history",
+        "@supabase/supabase-js",
+        "zod",
+        "lucide-react",
       ],
     },
     plugins: [mcpPlugin()],
