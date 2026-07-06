@@ -21,6 +21,7 @@ import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as SubcontractorsNewRouteImport } from './routes/subcontractors.new'
 import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontractor.$projectId'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
+import { Route as RandallProjectIdRouteImport } from './routes/randall.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
@@ -91,6 +92,11 @@ const SiteManagerProjectIdRoute = SiteManagerProjectIdRouteImport.update({
   path: '/site-manager/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RandallProjectIdRoute = RandallProjectIdRouteImport.update({
+  id: '/randall/$projectId',
+  path: '/randall/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
   id: '/projects/new',
   path: '/projects/new',
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/invite/$token': typeof InviteTokenRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/randall/$projectId': typeof RandallProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/invite/$token': typeof InviteTokenRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/randall/$projectId': typeof RandallProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
@@ -202,6 +210,7 @@ export interface FileRoutesById {
   '/invite/$token': typeof InviteTokenRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/randall/$projectId': typeof RandallProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/randall/$projectId'
     | '/site-manager/$projectId'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/randall/$projectId'
     | '/site-manager/$projectId'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/randall/$projectId'
     | '/site-manager/$projectId'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
@@ -297,6 +309,7 @@ export interface RootRouteChildren {
   InviteTokenRoute: typeof InviteTokenRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
+  RandallProjectIdRoute: typeof RandallProjectIdRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
   SubcontractorProjectIdRoute: typeof SubcontractorProjectIdRoute
   SubcontractorsNewRoute: typeof SubcontractorsNewRoute
@@ -392,6 +405,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SiteManagerProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/randall/$projectId': {
+      id: '/randall/$projectId'
+      path: '/randall/$projectId'
+      fullPath: '/randall/$projectId'
+      preLoaderRoute: typeof RandallProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/new': {
       id: '/projects/new'
       path: '/projects/new'
@@ -474,6 +494,7 @@ const rootRouteChildren: RootRouteChildren = {
   InviteTokenRoute: InviteTokenRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
+  RandallProjectIdRoute: RandallProjectIdRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
   SubcontractorProjectIdRoute: SubcontractorProjectIdRoute,
   SubcontractorsNewRoute: SubcontractorsNewRoute,
