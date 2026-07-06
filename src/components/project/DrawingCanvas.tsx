@@ -189,6 +189,28 @@ export function DrawingCanvas({
                 );
               })}
             </select>
+            {isAdmin && selected && (
+              <button
+                type="button"
+                onClick={handleToggleDabs}
+                disabled={togglingDabs}
+                title={selected.in_dabs ? "Remove from DABS" : "Add this drawing to DABS pin-drop selector"}
+                className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-md border px-3 text-[0.6rem] font-bold uppercase tracking-widest transition disabled:opacity-40 ${
+                  selected.in_dabs
+                    ? "border-emerald-400/60 bg-emerald-400/15 text-emerald-300 hover:bg-emerald-400/25"
+                    : "border-alert bg-alert/15 text-alert hover:bg-alert/30"
+                }`}
+              >
+                {togglingDabs ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : selected.in_dabs ? (
+                  <Check size={12} />
+                ) : (
+                  <Plus size={12} />
+                )}
+                {selected.in_dabs ? "In DABS" : "Add to DABS"}
+              </button>
+            )}
             {isMaster && selected && (
               <button
                 type="button"
@@ -200,6 +222,7 @@ export function DrawingCanvas({
                 {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               </button>
             )}
+
           </div>
         </label>
 
