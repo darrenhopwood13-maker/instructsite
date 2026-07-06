@@ -1,0 +1,2 @@
+ALTER TABLE public.project_drawings ADD COLUMN IF NOT EXISTS in_dabs BOOLEAN NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_project_drawings_in_dabs ON public.project_drawings(project_id) WHERE in_dabs = true;

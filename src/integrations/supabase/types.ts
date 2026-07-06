@@ -496,6 +496,7 @@ export type Database = {
           extraction_error: string | null
           extraction_status: string
           id: string
+          in_dabs: boolean
           is_active: boolean
           level: string | null
           pack_id: string | null
@@ -515,6 +516,7 @@ export type Database = {
           extraction_error?: string | null
           extraction_status?: string
           id?: string
+          in_dabs?: boolean
           is_active?: boolean
           level?: string | null
           pack_id?: string | null
@@ -534,6 +536,7 @@ export type Database = {
           extraction_error?: string | null
           extraction_status?: string
           id?: string
+          in_dabs?: boolean
           is_active?: boolean
           level?: string | null
           pack_id?: string | null

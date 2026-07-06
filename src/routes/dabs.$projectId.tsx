@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ClipboardList, LogOut, MapPin, ShieldAlert, X } from "lucide-react";
 import { toast } from "sonner";
 import { getProject } from "@/lib/projects.functions";
-import { listProjectDrawings, listProjectZones } from "@/lib/tier1-uploads.functions";
+import { listDabsDrawings, listProjectZones } from "@/lib/tier1-uploads.functions";
 import { createLivePin, listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
@@ -32,7 +32,7 @@ function DabsPage() {
 
   const qc = useQueryClient();
   const getP = useServerFn(getProject);
-  const drawingsFn = useServerFn(listProjectDrawings);
+  const drawingsFn = useServerFn(listDabsDrawings);
   const zonesFn = useServerFn(listProjectZones);
   const pinsFn = useServerFn(listLivePins);
   const createFn = useServerFn(createLivePin);
@@ -44,7 +44,7 @@ function DabsPage() {
     enabled: ready,
   });
   const drawings = useQuery({
-    queryKey: ["drawings", projectId],
+    queryKey: ["dabs-drawings", projectId],
     queryFn: () => drawingsFn({ data: { projectId } }),
     enabled: ready,
   });

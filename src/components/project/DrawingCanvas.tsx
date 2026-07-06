@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  Check,
   Download,
   ExternalLink,
   FileText,
@@ -10,6 +11,7 @@ import {
   Loader2,
   MapPin,
   Maximize2,
+  Plus,
   Sparkles,
   Trash2,
   ZoomIn,
@@ -17,7 +19,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { createDrawingDirectLinks, getDrawingPreview } from "@/lib/tier1-uploads.functions";
+import {
+  createDrawingDirectLinks,
+  getDrawingPreview,
+  setDrawingInDabs,
+} from "@/lib/tier1-uploads.functions";
 import { deleteDrawing } from "@/lib/admin.functions";
 import { getMyRoles } from "@/lib/projects.functions";
 
@@ -30,6 +36,7 @@ type Drawing = {
   zone?: string | null;
   page_number?: number | null;
   pack_name?: string | null;
+  in_dabs?: boolean | null;
   extraction_status?: string;
   site_documents?: { file_name?: string; mime_type?: string } | null;
 };
@@ -79,6 +86,7 @@ export function DrawingCanvas({
   const directLinksFn = useServerFn(createDrawingDirectLinks);
   const rolesFn = useServerFn(getMyRoles);
   const deleteFn = useServerFn(deleteDrawing);
+  const setDabsFn = useServerFn(setDrawingInDabs);
   const qc = useQueryClient();
   const roles = useQuery({
     queryKey: ["my-roles"],
@@ -86,6 +94,25 @@ export function DrawingCanvas({
     staleTime: 60_000,
   });
   const isMaster = roles.data?.roles?.includes("master_admin");
+  const isAdmin =
+    isMaster || roles.data?.roles?.includes("project_admin");
+  const [togglingDabs, setTogglingDabs] = useState(false);
+  const handleToggleDabs = async () => {
+    if (!selected) return;
+    setTogglingDabs(true);
+    try {
+      const next = !selected.in_dabs;
+      await setDabsFn({ data: { drawingId: selected.id, inDabs: next } });
+      toast.success(next ? "Added to DABS." : "Removed from DABS.");
+      qc.invalidateQueries({ queryKey: ["drawings"] });
+      qc.invalidateQueries({ queryKey: ["dabs-drawings"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to update DABS availability.");
+    } finally {
+      setTogglingDabs(false);
+    }
+  };
+
 
   const links = useQuery<DrawingLinks>({
     queryKey: ["drawing-direct-links", selectedId],
@@ -162,6 +189,28 @@ export function DrawingCanvas({
                 );
               })}
             </select>
+            {isAdmin && selected && (
+              <button
+                type="button"
+                onClick={handleToggleDabs}
+                disabled={togglingDabs}
+                title={selected.in_dabs ? "Remove from DABS" : "Add this drawing to DABS pin-drop selector"}
+                className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-md border px-3 text-[0.6rem] font-bold uppercase tracking-widest transition disabled:opacity-40 ${
+                  selected.in_dabs
+                    ? "border-emerald-400/60 bg-emerald-400/15 text-emerald-300 hover:bg-emerald-400/25"
+                    : "border-alert bg-alert/15 text-alert hover:bg-alert/30"
+                }`}
+              >
+                {togglingDabs ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : selected.in_dabs ? (
+                  <Check size={12} />
+                ) : (
+                  <Plus size={12} />
+                )}
+                {selected.in_dabs ? "In DABS" : "Add to DABS"}
+              </button>
+            )}
             {isMaster && selected && (
               <button
                 type="button"
@@ -173,6 +222,7 @@ export function DrawingCanvas({
                 {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               </button>
             )}
+
           </div>
         </label>
 

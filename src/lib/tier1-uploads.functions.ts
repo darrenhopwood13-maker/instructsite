@@ -270,7 +270,7 @@ export const listProjectDrawings = createServerFn({ method: "GET" })
     const { data: rows, error } = await context.supabase
       .from("project_drawings")
       .select(
-        "id,drawing_no,revision,title,scale,level,zone,is_active,extraction_status,extraction_error,page_number,pack_id,pack_name,created_at,site_documents(file_name,mime_type)",
+        "id,drawing_no,revision,title,scale,level,zone,is_active,in_dabs,extraction_status,extraction_error,page_number,pack_id,pack_name,created_at,site_documents(file_name,mime_type)",
       )
       .eq("project_id", data.projectId)
       .order("created_at", { ascending: false })
@@ -278,6 +278,54 @@ export const listProjectDrawings = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+export const listDabsDrawings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("project_drawings")
+      .select(
+        "id,drawing_no,revision,title,scale,level,zone,is_active,in_dabs,extraction_status,extraction_error,page_number,pack_id,pack_name,created_at,site_documents(file_name,mime_type)",
+      )
+      .eq("project_id", data.projectId)
+      .eq("in_dabs", true)
+      .order("created_at", { ascending: false })
+      .order("page_number", { ascending: true, nullsFirst: false });
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+export const setDrawingInDabs = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ drawingId: z.string().uuid(), inDabs: z.boolean() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: dwg, error: dErr } = await supabase
+      .from("project_drawings")
+      .select("id,project_id")
+      .eq("id", data.drawingId)
+      .maybeSingle();
+    if (dErr) throw new Error(dErr.message);
+    if (!dwg) throw new Error("Drawing not found");
+
+    const { data: isAdmin, error: rErr } = await supabase.rpc("is_project_admin", {
+      _project_id: dwg.project_id,
+      _user_id: userId,
+    });
+    if (rErr) throw new Error(rErr.message);
+    if (!isAdmin) throw new Error("Only project admins can change DABS availability.");
+
+    const { error: uErr } = await supabase
+      .from("project_drawings")
+      .update({ in_dabs: data.inDabs })
+      .eq("id", data.drawingId);
+    if (uErr) throw new Error(uErr.message);
+    return { ok: true, inDabs: data.inDabs };
+  });
+
 
 export const listProjectLogistics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
