@@ -489,6 +489,142 @@ export type Database = {
         }
         Relationships: []
       }
+      programme_manager_notes: {
+        Row: {
+          author_id: string
+          author_name: string | null
+          body: string
+          created_at: string
+          id: string
+          note_date: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          author_name?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          note_date: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          note_date?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_manager_notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programme_reference_tasks: {
+        Row: {
+          allowed_days: number | null
+          created_at: string
+          end_date: string
+          id: string
+          location: string | null
+          plain_english: string
+          programme_upload_id: string
+          project_id: string
+          start_date: string
+          task_name: string
+          trade: string | null
+        }
+        Insert: {
+          allowed_days?: number | null
+          created_at?: string
+          end_date: string
+          id?: string
+          location?: string | null
+          plain_english: string
+          programme_upload_id: string
+          project_id: string
+          start_date: string
+          task_name: string
+          trade?: string | null
+        }
+        Update: {
+          allowed_days?: number | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          location?: string | null
+          plain_english?: string
+          programme_upload_id?: string
+          project_id?: string
+          start_date?: string
+          task_name?: string
+          trade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_reference_tasks_programme_upload_id_fkey"
+            columns: ["programme_upload_id"]
+            isOneToOne: false
+            referencedRelation: "programme_uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_reference_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programme_uploads: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          project_id: string
+          task_count: number
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          project_id: string
+          task_count?: number
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          project_id?: string
+          task_count?: number
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_uploads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_drawings: {
         Row: {
           created_at: string
