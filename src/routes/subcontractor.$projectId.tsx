@@ -238,7 +238,7 @@ function SubcontractorCockpit() {
   const welcome = ctx.data?.companyName || ctx.data?.email?.split("@")[0] || "Operative";
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-background">
+    <div className="relative min-h-[100dvh] bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />
       <div className="relative mx-auto max-w-lg px-3 pb-24 pt-4 sm:px-4 sm:pt-6">
