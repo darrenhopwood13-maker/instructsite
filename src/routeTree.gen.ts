@@ -23,6 +23,7 @@ import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontract
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
+import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -101,6 +102,11 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
   path: '/projects/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProgrammeProjectIdRoute = ProgrammeProjectIdRouteImport.update({
+  id: '/programme/$projectId',
+  path: '/programme/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
@@ -153,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
@@ -200,6 +208,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dabs/$projectId'
     | '/invite/$token'
+    | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dabs/$projectId'
     | '/invite/$token'
+    | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
@@ -271,6 +282,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dabs/$projectId'
     | '/invite/$token'
+    | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
@@ -295,6 +307,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DabsProjectIdRoute: typeof DabsProjectIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  ProgrammeProjectIdRoute: typeof ProgrammeProjectIdRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
@@ -406,6 +419,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/programme/$projectId': {
+      id: '/programme/$projectId'
+      path: '/programme/$projectId'
+      fullPath: '/programme/$projectId'
+      preLoaderRoute: typeof ProgrammeProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/invite/$token': {
       id: '/invite/$token'
       path: '/invite/$token'
@@ -472,6 +492,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DabsProjectIdRoute: DabsProjectIdRoute,
   InviteTokenRoute: InviteTokenRoute,
+  ProgrammeProjectIdRoute: ProgrammeProjectIdRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
