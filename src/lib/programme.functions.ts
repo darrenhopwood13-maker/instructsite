@@ -304,15 +304,12 @@ export const addManagerNote = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("display_name, full_name, email")
-      .eq("id", context.userId)
+      .select("full_name")
+      .eq("user_id", context.userId)
       .maybeSingle();
     const authorName =
-      (profile as { display_name?: string; full_name?: string; email?: string } | null)
-        ?.display_name ??
-      (profile as { full_name?: string } | null)?.full_name ??
-      (profile as { email?: string } | null)?.email ??
-      "Site Manager";
+      (profile as { full_name?: string } | null)?.full_name ?? "Site Manager";
+
 
     const { data: row, error } = await context.supabase
       .from("programme_manager_notes")
