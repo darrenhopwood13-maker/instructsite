@@ -86,6 +86,7 @@ export function DrawingCanvas({
   const directLinksFn = useServerFn(createDrawingDirectLinks);
   const rolesFn = useServerFn(getMyRoles);
   const deleteFn = useServerFn(deleteDrawing);
+  const setDabsFn = useServerFn(setDrawingInDabs);
   const qc = useQueryClient();
   const roles = useQuery({
     queryKey: ["my-roles"],
@@ -93,6 +94,25 @@ export function DrawingCanvas({
     staleTime: 60_000,
   });
   const isMaster = roles.data?.roles?.includes("master_admin");
+  const isAdmin =
+    isMaster || roles.data?.roles?.includes("project_admin");
+  const [togglingDabs, setTogglingDabs] = useState(false);
+  const handleToggleDabs = async () => {
+    if (!selected) return;
+    setTogglingDabs(true);
+    try {
+      const next = !selected.in_dabs;
+      await setDabsFn({ data: { drawingId: selected.id, inDabs: next } });
+      toast.success(next ? "Added to DABS." : "Removed from DABS.");
+      qc.invalidateQueries({ queryKey: ["drawings"] });
+      qc.invalidateQueries({ queryKey: ["dabs-drawings"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to update DABS availability.");
+    } finally {
+      setTogglingDabs(false);
+    }
+  };
+
 
   const links = useQuery<DrawingLinks>({
     queryKey: ["drawing-direct-links", selectedId],
