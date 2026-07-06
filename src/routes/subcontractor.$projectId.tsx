@@ -241,15 +241,16 @@ function SubcontractorCockpit() {
     <div className="relative min-h-[calc(100vh-4rem)] bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />
-      <div className="relative mx-auto max-w-lg px-4 pb-24 pt-6">
+      <div className="relative mx-auto max-w-lg px-3 pb-24 pt-4 sm:px-4 sm:pt-6">
         {/* ---- Welcome header ---- */}
         <header className="glass-panel p-4">
           <p className="text-[0.6rem] font-bold uppercase tracking-[0.32em] text-alert">
             Subcontractor Cockpit
           </p>
           <h1
-            className="mt-1 text-2xl font-black uppercase leading-tight text-foreground"
+            className="mt-1 truncate text-xl font-black uppercase leading-tight text-foreground sm:text-2xl"
             style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            title={`Welcome, ${welcome}`}
           >
             Welcome, {welcome}
           </h1>
@@ -269,6 +270,7 @@ function SubcontractorCockpit() {
             </div>
           ) : null}
         </header>
+
 
         {/* ---- Oracle card ---- */}
         <button
