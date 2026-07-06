@@ -79,24 +79,41 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
     };
 
     const rows: Array<{ model_id: string; global_id: string; zone_id: string }> = [];
+    const missedLabels = new Set<string>();
+    let inspected = 0;
+    let matchedPattern = 0;
     for (const el of data.elements) {
+      inspected++;
       for (const pat of ZONE_PATTERNS) {
         if (pat.match.test(el.text)) {
+          matchedPattern++;
           const zoneId = findZone(pat.keys);
-          if (zoneId) rows.push({ model_id: model.id, global_id: el.globalId, zone_id: zoneId });
+          if (zoneId) {
+            rows.push({ model_id: model.id, global_id: el.globalId, zone_id: zoneId });
+          } else {
+            missedLabels.add(pat.label);
+          }
           break;
         }
       }
     }
 
     if (rows.length === 0) {
-      return { ok: true as const, count: 0, reason: "No semantic matches found" };
+      const reason =
+        matchedPattern === 0
+          ? `No semantic matches in ${inspected} elements. Element names don't hint at rooms/trades.`
+          : `Matched ${matchedPattern} elements (${Array.from(missedLabels).join(", ")}) but no zone names contain those keywords. Rename zones e.g. "Kitchen", "Bathroom", "Structural Steel".`;
+      return { ok: true as const, count: 0, reason };
     }
     const { error } = await context.supabase
       .from("ifc_element_mappings")
       .upsert(rows, { onConflict: "model_id,global_id" });
     if (error) throw new Error(error.message);
-    return { ok: true as const, count: rows.length };
+    const suffix = missedLabels.size > 0
+      ? ` (skipped: ${Array.from(missedLabels).join(", ")} — no matching zone)`
+      : "";
+    return { ok: true as const, count: rows.length, reason: `Allocated ${rows.length} of ${inspected}${suffix}` };
+  });
   });
 
 export const listIfcModels = createServerFn({ method: "GET" })
