@@ -203,17 +203,20 @@ export function DrawingCanvas({
         )}
 
         {selected && (
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-black/70 px-3 py-2 backdrop-blur">
-            <div className="min-w-0 truncate font-mono text-[0.65rem] uppercase tracking-widest text-foreground/80">
+          <div className="relative z-10 grid gap-2 border-t border-white/10 bg-black/70 px-3 py-2 backdrop-blur sm:flex sm:flex-wrap sm:items-center sm:justify-between">
+            <div
+              className="min-w-0 truncate font-mono text-[0.65rem] uppercase tracking-widest text-foreground/80"
+              title={label}
+            >
               {label}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <a
                 href={openUrl || undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-disabled={!openUrl}
-                className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                className="inline-flex shrink-0 items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
               >
                 <ExternalLink size={10} /> Open
               </a>
@@ -221,14 +224,14 @@ export function DrawingCanvas({
                 href={downloadUrl || undefined}
                 download
                 aria-disabled={!downloadUrl}
-                className="inline-flex items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                className="inline-flex shrink-0 items-center gap-1 rounded-sm border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/70 hover:border-white/40 aria-disabled:pointer-events-none aria-disabled:opacity-50"
               >
                 <Download size={10} /> Download
               </a>
               <button
                 type="button"
                 onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
-                className="glass-orange inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+                className="glass-orange inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
               >
                 <Sparkles size={10} /> Lock to Oracle
               </button>
@@ -236,13 +239,14 @@ export function DrawingCanvas({
                 to="/oracle"
                 search={{ drawingId: selected.id, label } as never}
                 onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
-                className="glass-btn inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+                className="glass-btn inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
               >
                 Ask Oracle
               </Link>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

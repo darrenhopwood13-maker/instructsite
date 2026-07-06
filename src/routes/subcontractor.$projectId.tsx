@@ -238,18 +238,19 @@ function SubcontractorCockpit() {
   const welcome = ctx.data?.companyName || ctx.data?.email?.split("@")[0] || "Operative";
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] bg-background">
+    <div className="relative min-h-[100dvh] bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />
-      <div className="relative mx-auto max-w-lg px-4 pb-24 pt-6">
+      <div className="relative mx-auto max-w-lg px-3 pb-24 pt-4 sm:px-4 sm:pt-6">
         {/* ---- Welcome header ---- */}
         <header className="glass-panel p-4">
           <p className="text-[0.6rem] font-bold uppercase tracking-[0.32em] text-alert">
             Subcontractor Cockpit
           </p>
           <h1
-            className="mt-1 text-2xl font-black uppercase leading-tight text-foreground"
+            className="mt-1 truncate text-xl font-black uppercase leading-tight text-foreground sm:text-2xl"
             style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            title={`Welcome, ${welcome}`}
           >
             Welcome, {welcome}
           </h1>
@@ -269,6 +270,7 @@ function SubcontractorCockpit() {
             </div>
           ) : null}
         </header>
+
 
         {/* ---- Oracle card ---- */}
         <button
@@ -518,7 +520,8 @@ function SubcontractorCockpit() {
       {/* ---- Oracle chat drawer ---- */}
       {oracleOpen && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 backdrop-blur sm:items-center">
-          <div className="glass-panel flex h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-2 border-purple-400/60 sm:rounded-2xl">
+          <div className="glass-panel flex h-[92dvh] max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-2 border-purple-400/60 sm:h-[85dvh] sm:rounded-2xl">
+
             <div className="flex items-center justify-between border-b border-white/10 p-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="text-purple-300" size={18} />
