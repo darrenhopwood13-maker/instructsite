@@ -14,6 +14,66 @@ const COMMANDS = [
   { key: "snag", label: "Snag Master", icon: ClipboardCheck, desc: "Defect capture & tracking" },
   { key: "assist", label: "AI Assist", icon: Brain, desc: "On-site knowledge co-pilot" },
 ];
+const PROCESSING_STEPS = [
+  "Locking on to project context…",
+  "Retrieving drawings & documents…",
+  "Cross-referencing site data…",
+  "Reasoning through the request…",
+  "Composing response…",
+];
+
+function OracleProcessing({ label }: { label: string }) {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setStep((s) => (s + 1) % PROCESSING_STEPS.length), 1400);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="glass-panel relative overflow-hidden p-6">
+      {/* Animated scan line */}
+      <div className="pointer-events-none absolute inset-0 opacity-70">
+        <div className="oracle-scanline absolute inset-x-0 h-24 bg-gradient-to-b from-transparent via-alert/30 to-transparent blur-md" />
+      </div>
+
+      <div className="relative flex items-center gap-3">
+        <div className="relative flex h-11 w-11 items-center justify-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-alert/30" />
+          <span className="absolute inset-1 rounded-full bg-alert/15" />
+          <Sparkles size={20} className="relative animate-pulse text-alert" />
+        </div>
+        <div>
+          <div className="text-[0.65rem] font-bold uppercase tracking-[0.35em] text-alert">
+            {label} · Processing
+          </div>
+          <div className="mt-1 flex items-center gap-2 text-sm text-foreground/80">
+            <Loader2 className="animate-spin" size={14} />
+            <span key={step} className="animate-fade-in">{PROCESSING_STEPS[step]}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress dots */}
+      <div className="relative mt-5 flex items-center gap-1.5">
+        {PROCESSING_STEPS.map((_, i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-colors duration-500 ${
+              i <= step ? "bg-alert" : "bg-foreground/10"
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Shimmer bars */}
+      <div className="relative mt-5 space-y-2">
+        <div className="oracle-shimmer h-2.5 w-3/4 rounded" />
+        <div className="oracle-shimmer h-2.5 w-5/6 rounded" />
+        <div className="oracle-shimmer h-2.5 w-2/3 rounded" />
+      </div>
+    </div>
+  );
+}
+
 
 const OraclePage = () => {
   const invokeOracle = useServerFn(runOracleCommand);
