@@ -4,11 +4,34 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const projectIdInput = z.object({ projectId: z.string().uuid() });
 
-// Randall AI semantic zone patterns
-const ZONE_PATTERNS: Array<{ match: RegExp; keys: string[] }> = [
-  { match: /\b(kit|kitch|kitchen|sink|cabinet|appliance|worktop|hob|oven)\b/i, keys: ["kitchen"] },
-  { match: /\b(bath|bathroom|wc|shower|toilet|basin|ensuite|en[- ]?suite|lavatory)\b/i, keys: ["bathroom", "bath", "wc"] },
-  { match: /\b(beam|column|uc\d*|ub\d*|baseplate|steelwork|rsj|purlin|structural steel)\b/i, keys: ["structural steel", "steel", "structure"] },
+// Randall AI semantic zone patterns — matched top-to-bottom, first hit wins.
+// `keys` are substrings Randall searches for in zone names (case-insensitive).
+const ZONE_PATTERNS: Array<{ label: string; match: RegExp; keys: string[] }> = [
+  // --- Rooms / spaces ---
+  { label: "kitchen", match: /\b(kit|kitch|kitchen|sink|cabinet|appliance|worktop|hob|oven|pantry|utility)\b/i, keys: ["kitchen", "utility", "pantry"] },
+  { label: "bathroom", match: /\b(bath|bathroom|wc|shower|toilet|basin|ensuite|en[- ]?suite|lavatory|washroom)\b/i, keys: ["bathroom", "bath", "wc", "en-suite", "ensuite"] },
+  { label: "bedroom", match: /\b(bed|bedroom|master|guest\s*room)\b/i, keys: ["bedroom", "bed"] },
+  { label: "living", match: /\b(living|lounge|reception|family\s*room|snug)\b/i, keys: ["living", "lounge", "reception"] },
+  { label: "dining", match: /\b(dining|diner)\b/i, keys: ["dining"] },
+  { label: "hallway", match: /\b(hall|hallway|corridor|passage|lobby|foyer|entrance)\b/i, keys: ["hall", "corridor", "lobby"] },
+  { label: "stairs", match: /\b(stair|staircase|stairwell|landing)\b/i, keys: ["stair", "landing"] },
+  { label: "office", match: /\b(office|study|workspace|meeting|boardroom)\b/i, keys: ["office", "study", "meeting"] },
+  { label: "garage", match: /\b(garage|car\s*port|carport)\b/i, keys: ["garage", "carport"] },
+  { label: "plant", match: /\b(plant\s*room|riser|mech(anical)?\s*room|boiler|comms|server\s*room)\b/i, keys: ["plant", "mechanical", "boiler", "comms"] },
+  { label: "external", match: /\b(external|garden|patio|terrace|balcony|roof\s*terrace)\b/i, keys: ["external", "garden", "terrace", "balcony"] },
+
+  // --- Structural / envelope ---
+  { label: "structural steel", match: /\b(beam|column|uc\d*|ub\d*|baseplate|steelwork|rsj|purlin|structural\s*steel|steel\s*frame)\b/i, keys: ["structural steel", "steel", "structure", "frame"] },
+  { label: "concrete", match: /\b(slab|deck|footing|foundation|pile|pad|raft|screed|blinding)\b/i, keys: ["concrete", "slab", "foundation", "substructure"] },
+  { label: "roof", match: /\b(roof|rafter|truss|ridge|eaves|gutter|fascia|soffit)\b/i, keys: ["roof"] },
+  { label: "facade", match: /\b(facade|cladding|curtain\s*wall|rainscreen|render|brickwork|blockwork|masonry)\b/i, keys: ["facade", "cladding", "envelope"] },
+  { label: "windows", match: /\b(window|glazing|glazed|fenestration)\b/i, keys: ["window", "glazing", "fenestration"] },
+  { label: "doors", match: /\b(door|doorset|ironmongery)\b/i, keys: ["door"] },
+
+  // --- MEP ---
+  { label: "mechanical", match: /\b(hvac|ahu|fcu|duct|ductwork|ventilation|extract|supply\s*air|chiller|heat\s*pump|radiator|underfloor\s*heating|ufh)\b/i, keys: ["mechanical", "hvac", "mep"] },
+  { label: "electrical", match: /\b(cable|containment|tray|basket|conduit|switchgear|distribution\s*board|db-|luminaire|lighting|socket|small\s*power)\b/i, keys: ["electrical", "power", "lighting", "mep"] },
+  { label: "plumbing", match: /\b(pipe|pipework|drainage|soil|waste|hot\s*water|cold\s*water|sprinkler|riser)\b/i, keys: ["plumbing", "drainage", "mep"] },
 ];
 
 export const autoAllocateModelElements = createServerFn({ method: "POST" })
@@ -56,24 +79,40 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
     };
 
     const rows: Array<{ model_id: string; global_id: string; zone_id: string }> = [];
+    const missedLabels = new Set<string>();
+    let inspected = 0;
+    let matchedPattern = 0;
     for (const el of data.elements) {
+      inspected++;
       for (const pat of ZONE_PATTERNS) {
         if (pat.match.test(el.text)) {
+          matchedPattern++;
           const zoneId = findZone(pat.keys);
-          if (zoneId) rows.push({ model_id: model.id, global_id: el.globalId, zone_id: zoneId });
+          if (zoneId) {
+            rows.push({ model_id: model.id, global_id: el.globalId, zone_id: zoneId });
+          } else {
+            missedLabels.add(pat.label);
+          }
           break;
         }
       }
     }
 
     if (rows.length === 0) {
-      return { ok: true as const, count: 0, reason: "No semantic matches found" };
+      const reason =
+        matchedPattern === 0
+          ? `No semantic matches in ${inspected} elements. Element names don't hint at rooms/trades.`
+          : `Matched ${matchedPattern} elements (${Array.from(missedLabels).join(", ")}) but no zone names contain those keywords. Rename zones e.g. "Kitchen", "Bathroom", "Structural Steel".`;
+      return { ok: true as const, count: 0, reason };
     }
     const { error } = await context.supabase
       .from("ifc_element_mappings")
       .upsert(rows, { onConflict: "model_id,global_id" });
     if (error) throw new Error(error.message);
-    return { ok: true as const, count: rows.length };
+    const suffix = missedLabels.size > 0
+      ? ` (skipped: ${Array.from(missedLabels).join(", ")} — no matching zone)`
+      : "";
+    return { ok: true as const, count: rows.length, reason: `Allocated ${rows.length} of ${inspected}${suffix}` };
   });
 
 export const listIfcModels = createServerFn({ method: "GET" })
