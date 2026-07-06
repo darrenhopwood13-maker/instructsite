@@ -10,11 +10,11 @@ const InputSchema = z.object({
 });
 
 const Extracted = z.object({
-  projectName: z.string(),
-  siteAddress: z.string(),
-  clientName: z.string(),
-  mainContractor: z.string(),
-  projectBrief: z.string(),
+  projectName: z.string().default(""),
+  siteAddress: z.string().default(""),
+  clientName: z.string().default(""),
+  mainContractor: z.string().default(""),
+  projectBrief: z.string().default(""),
 });
 
 export const extractProjectFromDrawing = createServerFn({ method: "POST" })
