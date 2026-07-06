@@ -7,6 +7,7 @@ export default defineConfig({
   },
   vite: {
     optimizeDeps: {
+      disabled: true,
       needsInterop: [
         "react",
         "react-dom",
