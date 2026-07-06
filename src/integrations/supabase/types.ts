@@ -75,6 +75,51 @@ export type Database = {
           },
         ]
       }
+      daily_programme_playbooks: {
+        Row: {
+          ai_daily_summary: string
+          created_at: string
+          id: string
+          playbook_date: string
+          programme_upload_id: string | null
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          ai_daily_summary: string
+          created_at?: string
+          id?: string
+          playbook_date: string
+          programme_upload_id?: string | null
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          ai_daily_summary?: string
+          created_at?: string
+          id?: string
+          playbook_date?: string
+          programme_upload_id?: string | null
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_programme_playbooks_programme_upload_id_fkey"
+            columns: ["programme_upload_id"]
+            isOneToOne: false
+            referencedRelation: "programme_uploads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_programme_playbooks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_site_diaries: {
         Row: {
           checkout_time: string
