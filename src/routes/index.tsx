@@ -79,6 +79,15 @@ function Index() {
               </>
             )}
           </div>
+          <div className="mt-4 flex justify-center">
+            <a
+              href="/instructsite-brochure.pdf"
+              download
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs uppercase tracking-[0.3em] text-white/70 hover:text-alert transition-colors"
+            >
+              <FileDown size={13} /> Download sales brochure (PDF)
+            </a>
+          </div>
         </div>
 
         <div className="mt-20 grid grid-cols-2 gap-3 md:grid-cols-4">
