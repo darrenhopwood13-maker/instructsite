@@ -32,7 +32,7 @@ function DabsPage() {
 
   const qc = useQueryClient();
   const getP = useServerFn(getProject);
-  const drawingsFn = useServerFn(listProjectDrawings);
+  const drawingsFn = useServerFn(listDabsDrawings);
   const zonesFn = useServerFn(listProjectZones);
   const pinsFn = useServerFn(listLivePins);
   const createFn = useServerFn(createLivePin);
