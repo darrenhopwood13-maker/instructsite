@@ -10,11 +10,11 @@ const InputSchema = z.object({
 });
 
 const Extracted = z.object({
-  projectName: z.string(),
-  siteAddress: z.string(),
-  clientName: z.string(),
-  mainContractor: z.string(),
-  projectBrief: z.string(),
+  projectName: z.string().default(""),
+  siteAddress: z.string().default(""),
+  clientName: z.string().default(""),
+  mainContractor: z.string().default(""),
+  projectBrief: z.string().default(""),
 });
 
 export const extractProjectFromDrawing = createServerFn({ method: "POST" })
@@ -63,12 +63,19 @@ export const extractProjectFromDrawing = createServerFn({ method: "POST" })
       return output;
     } catch (error) {
       if (NoObjectGeneratedError.isInstance(error)) {
-        // Fallback: try to salvage JSON from the raw text
+        // Fallback: salvage JSON from the raw text (strip markdown fences, find braces)
+        const raw = error.text ?? "";
+        let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+        const start = cleaned.search(/[{[]/);
+        const end = cleaned.lastIndexOf("}");
+        if (start !== -1 && end !== -1 && end > start) {
+          cleaned = cleaned.substring(start, end + 1);
+        }
         try {
-          const parsed = JSON.parse(error.text ?? "{}");
-          return Extracted.parse(parsed);
+          return Extracted.parse(JSON.parse(cleaned));
         } catch {
-          // fall through
+          // Return empty shape so the UI can prompt manual entry instead of crashing
+          return Extracted.parse({});
         }
       }
       throw error;
