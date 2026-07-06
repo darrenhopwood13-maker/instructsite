@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays } from "lucide-react";
+import { MapPin, ArrowLeft, ClipboardList, ShieldAlert } from "lucide-react";
 import { getProject } from "@/lib/projects.functions";
 import {
   listProjectDrawings,
@@ -152,13 +152,6 @@ function ProjectDetail() {
               className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
             >
               <ClipboardList size={14} /> DABS
-            </Link>
-            <Link
-              to="/randall/$projectId"
-              params={{ projectId }}
-              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
-            >
-              <CalendarDays size={14} /> Randall Diary
             </Link>
             <Link
               to="/site-manager/$projectId"
