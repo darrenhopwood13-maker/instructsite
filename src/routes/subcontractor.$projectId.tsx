@@ -520,7 +520,8 @@ function SubcontractorCockpit() {
       {/* ---- Oracle chat drawer ---- */}
       {oracleOpen && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 backdrop-blur sm:items-center">
-          <div className="glass-panel flex h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-2 border-purple-400/60 sm:rounded-2xl">
+          <div className="glass-panel flex h-[92dvh] max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-2 border-purple-400/60 sm:h-[85dvh] sm:rounded-2xl">
+
             <div className="flex items-center justify-between border-b border-white/10 p-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="text-purple-300" size={18} />
