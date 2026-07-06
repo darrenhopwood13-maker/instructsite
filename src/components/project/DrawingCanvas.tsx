@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  Check,
   Download,
   ExternalLink,
   FileText,
@@ -10,6 +11,7 @@ import {
   Loader2,
   MapPin,
   Maximize2,
+  Plus,
   Sparkles,
   Trash2,
   ZoomIn,
@@ -17,7 +19,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { createDrawingDirectLinks, getDrawingPreview } from "@/lib/tier1-uploads.functions";
+import {
+  createDrawingDirectLinks,
+  getDrawingPreview,
+  setDrawingInDabs,
+} from "@/lib/tier1-uploads.functions";
 import { deleteDrawing } from "@/lib/admin.functions";
 import { getMyRoles } from "@/lib/projects.functions";
 
@@ -30,6 +36,7 @@ type Drawing = {
   zone?: string | null;
   page_number?: number | null;
   pack_name?: string | null;
+  in_dabs?: boolean | null;
   extraction_status?: string;
   site_documents?: { file_name?: string; mime_type?: string } | null;
 };
