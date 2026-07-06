@@ -114,7 +114,6 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
       : "";
     return { ok: true as const, count: rows.length, reason: `Allocated ${rows.length} of ${inspected}${suffix}` };
   });
-  });
 
 export const listIfcModels = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
