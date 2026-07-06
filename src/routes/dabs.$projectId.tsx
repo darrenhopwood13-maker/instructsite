@@ -44,7 +44,7 @@ function DabsPage() {
     enabled: ready,
   });
   const drawings = useQuery({
-    queryKey: ["drawings", projectId],
+    queryKey: ["dabs-drawings", projectId],
     queryFn: () => drawingsFn({ data: { projectId } }),
     enabled: ready,
   });
