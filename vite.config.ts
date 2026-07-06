@@ -7,7 +7,8 @@ export default defineConfig({
   },
   vite: {
     optimizeDeps: {
-      disabled: true,
+      noDiscovery: true,
+      holdUntilCrawlEnd: false,
       needsInterop: [
         "react",
         "react-dom",
