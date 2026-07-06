@@ -420,6 +420,9 @@
   );
   background-size: 200% 100%;
   animation: oracle-shimmer-slide 1.8s linear infinite;
+}
+
+
 
 /* Global background — professional blueprint canvas behind every page.
    Deep navy paper with subtle vignette; no moving grid, no wave, no shine. */
