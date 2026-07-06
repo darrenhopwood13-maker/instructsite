@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Loader2, X, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { runOracleCommand } from "@/lib/oracle.functions";
 import { MarkdownRenderer } from "@/components/ui/markdown";
