@@ -154,10 +154,7 @@ const OraclePage = () => {
 
             <div className="mt-6 min-h-[120px]">
               {loadingKey !== null ? (
-                <div className="flex items-center gap-3 text-foreground/70">
-                  <Loader2 className="animate-spin" size={20} />
-                  <span>Consulting the Oracle…</span>
-                </div>
+                <OracleProcessing label={activeLabel} />
               ) : error ? (
                 <div className="glass-accent p-4 text-sm text-alert">{error}</div>
               ) : (
