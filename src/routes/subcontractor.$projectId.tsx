@@ -414,6 +414,33 @@ function SubcontractorCockpit() {
           </label>
         </section>
 
+        {/* ---- Drawing selector button ---- */}
+        <section className="mt-4">
+          <button
+            type="button"
+            onClick={() => setDrawingSheetOpen(true)}
+            className="glass-panel flex w-full items-center gap-3 p-4 text-left transition hover:border-alert/60"
+          >
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-alert/15 text-alert">
+              <FileText size={20} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+                Active Drawing
+              </span>
+              <span className="block truncate text-sm font-bold text-foreground">
+                {selectedDrawingRow
+                  ? `${selectedDrawingRow.drawing_no ?? "DWG"} — ${selectedDrawingRow.title ?? ""}`
+                  : "Select Drawing"}
+              </span>
+              <span className="block truncate text-[0.65rem] text-foreground/50">
+                Tap to browse {drawingRows.length} drawing{drawingRows.length === 1 ? "" : "s"}
+              </span>
+            </span>
+            <ChevronRight size={18} className="shrink-0 text-foreground/40" />
+          </button>
+        </section>
+
         {/* ---- Drawing viewer / pin canvas ---- */}
         <section className="mt-4">
           <p className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
@@ -427,6 +454,7 @@ function SubcontractorCockpit() {
             pins={(pins.data ?? []) as never}
             pinMode={myActivePin ? "view" : "drop"}
             onDropPin={handleDrop}
+            hideInternalSelector
           />
         </section>
 
