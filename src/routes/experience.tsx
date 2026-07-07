@@ -5,12 +5,10 @@ import {
   useScroll,
   useTransform,
   useSpring,
-  useMotionValue,
   useMotionTemplate,
-  animate,
   type MotionValue,
 } from "framer-motion";
-import { ArrowRight, Sparkles, Boxes, ShieldCheck, ChevronsLeftRight } from "lucide-react";
+import { ArrowRight, Sparkles, ShieldCheck, ChevronsLeftRight } from "lucide-react";
 
 export const Route = createFileRoute("/experience")({
   head: () => ({
