@@ -71,6 +71,7 @@ export function DrawingCanvas({
   onDropPin,
   onPinClick,
   activePinId,
+  hideInternalSelector = false,
 }: {
   drawings: Drawing[];
   selectedId: string | null;
@@ -81,6 +82,7 @@ export function DrawingCanvas({
   onDropPin?: (coords: { xPct: number; yPct: number }) => void;
   onPinClick?: (pin: PinRecord) => void;
   activePinId?: string | null;
+  hideInternalSelector?: boolean;
 }) {
 
   const directLinksFn = useServerFn(createDrawingDirectLinks);
@@ -164,6 +166,7 @@ export function DrawingCanvas({
       </div>
 
       {/* Elegant single-select dropdown for sheets */}
+      {!hideInternalSelector && (
       <div className="mb-3">
         <label className="block">
           <span className="mb-1 block font-mono text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
@@ -227,6 +230,7 @@ export function DrawingCanvas({
         </label>
 
       </div>
+      )}
 
       {/* Compact metadata strip */}
       {selected && (

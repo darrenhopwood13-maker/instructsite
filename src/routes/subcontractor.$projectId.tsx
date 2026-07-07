@@ -15,6 +15,9 @@ import {
   Layers,
   MapPin,
   Timer,
+  FileText,
+  Cloud,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -23,6 +26,7 @@ import { getMyProjectContext } from "@/lib/subcontractors.functions";
 import { listProjectDrawings, listProjectZones } from "@/lib/tier1-uploads.functions";
 import { createLivePin, listLivePins } from "@/lib/live-activity.functions";
 import { askProjectOracle } from "@/lib/oracle.functions";
+import { getProjectWeather } from "@/lib/weather.functions";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
@@ -188,6 +192,22 @@ function SubcontractorCockpit() {
   const [oracleThinking, setOracleThinking] = useState(false);
   const [oracleMsgs, setOracleMsgs] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
 
+  // -------- Drawing bottom-sheet + weather + PWA install
+  const [drawingSheetOpen, setDrawingSheetOpen] = useState(false);
+  const weatherFn = useServerFn(getProjectWeather);
+  const weather = useQuery({
+    queryKey: ["weather", projectId],
+    queryFn: () => weatherFn({ data: { projectId } }),
+    enabled: ready,
+    refetchInterval: 15 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+  });
+  const [liveClock, setLiveClock] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setLiveClock(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const drawingLabel = selectedDrawingRow
     ? `${selectedDrawingRow.drawing_no ?? "DWG"} — ${selectedDrawingRow.title ?? ""}`
     : undefined;
@@ -242,23 +262,65 @@ function SubcontractorCockpit() {
       <div className="aurora-bg" />
       <div className="grain-overlay" />
       <div className="relative mx-auto max-w-lg px-3 pb-24 pt-4 sm:px-4 sm:pt-6">
-        {/* ---- Welcome header ---- */}
-        <header className="glass-panel p-4">
-          <p className="text-[0.6rem] font-bold uppercase tracking-[0.32em] text-alert">
-            Subcontractor Cockpit
-          </p>
-          <h1
-            className="mt-1 truncate text-xl font-black uppercase leading-tight text-foreground sm:text-2xl"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-            title={`Welcome, ${welcome}`}
-          >
-            Welcome, {welcome}
-          </h1>
-          <p className="mt-1 truncate text-xs text-foreground/60">
-            {ctx.data?.projectName ?? "Loading project…"}
-          </p>
+        {/* ---- Dashboard header ---- */}
+        <header className="glass-panel overflow-hidden p-0">
+          <div className="border-b border-white/10 p-4">
+            <p className="text-[0.55rem] font-bold uppercase tracking-[0.32em] text-alert">
+              Subcontractor Cockpit
+            </p>
+            <h1
+              className="mt-1 truncate text-lg font-black uppercase leading-tight text-foreground sm:text-xl"
+              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              title={ctx.data?.projectName ?? ""}
+            >
+              {ctx.data?.projectName ?? "Loading project…"}
+            </h1>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.65rem] text-foreground/70">
+              {ctx.data?.projectNumber && (
+                <span className="font-mono text-alert">#{ctx.data.projectNumber}</span>
+              )}
+              <span className="truncate">{ctx.data?.companyName ?? "—"}</span>
+              <span className="text-foreground/40">·</span>
+              <span className="truncate">{ctx.data?.email ?? welcome}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 divide-x divide-white/10 text-[0.65rem]">
+            <div className="p-3">
+              <div className="text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/50">
+                Live Date
+              </div>
+              <div className="mt-1 font-mono text-sm text-foreground">
+                {liveClock.toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "short" })}
+              </div>
+              <div className="font-mono text-[0.7rem] text-foreground/60">
+                {liveClock.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="flex items-center gap-1 text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/50">
+                <Cloud size={10} /> Weather
+              </div>
+              {weather.data ? (
+                <>
+                  <div className="mt-1 font-mono text-sm text-foreground">
+                    {weather.data.temperature_c != null
+                      ? `${Math.round(Number(weather.data.temperature_c))}°C`
+                      : "—"}
+                    <span className="ml-2 text-[0.65rem] text-foreground/60">
+                      {weather.data.wind_kph != null ? `${Math.round(Number(weather.data.wind_kph))} kph` : ""}
+                    </span>
+                  </div>
+                  <div className="truncate font-mono text-[0.7rem] text-foreground/60">
+                    {weather.data.summary ?? ""}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-1 font-mono text-[0.7rem] text-foreground/40">Loading…</div>
+              )}
+            </div>
+          </div>
           {ctx.data?.tradePackages?.length ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5 border-t border-white/10 p-3">
               {ctx.data.tradePackages.map((t) => (
                 <span
                   key={t}
@@ -270,31 +332,6 @@ function SubcontractorCockpit() {
             </div>
           ) : null}
         </header>
-
-
-        {/* ---- Oracle card ---- */}
-        <button
-          type="button"
-          onClick={() => setOracleOpen(true)}
-          className="glass-panel mt-4 flex w-full items-center gap-3 border-2 border-purple-400/50 bg-gradient-to-r from-purple-600/20 via-fuchsia-500/10 to-alert/20 p-4 text-left transition hover:border-purple-300"
-        >
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-purple-500/20 text-purple-200">
-            <Sparkles size={22} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-purple-200/80">
-              ✨ Project AI
-            </span>
-            <span className="block truncate text-base font-black uppercase tracking-tight text-foreground">
-              Ask the Project AI Oracle
-            </span>
-            <span className="mt-0.5 block truncate text-[0.65rem] text-foreground/60">
-              {selectedDrawingRow
-                ? `Locked to ${selectedDrawingRow.drawing_no ?? "drawing"}`
-                : "Ask any spec, RAMS or drawing question"}
-            </span>
-          </span>
-        </button>
 
         {/* ---- Active shift state ---- */}
         {myActivePin && (
@@ -377,6 +414,33 @@ function SubcontractorCockpit() {
           </label>
         </section>
 
+        {/* ---- Drawing selector button ---- */}
+        <section className="mt-4">
+          <button
+            type="button"
+            onClick={() => setDrawingSheetOpen(true)}
+            className="glass-panel flex w-full items-center gap-3 p-4 text-left transition hover:border-alert/60"
+          >
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-alert/15 text-alert">
+              <FileText size={20} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+                Active Drawing
+              </span>
+              <span className="block truncate text-sm font-bold text-foreground">
+                {selectedDrawingRow
+                  ? `${selectedDrawingRow.drawing_no ?? "DWG"} — ${selectedDrawingRow.title ?? ""}`
+                  : "Select Drawing"}
+              </span>
+              <span className="block truncate text-[0.65rem] text-foreground/50">
+                Tap to browse {drawingRows.length} drawing{drawingRows.length === 1 ? "" : "s"}
+              </span>
+            </span>
+            <ChevronRight size={18} className="shrink-0 text-foreground/40" />
+          </button>
+        </section>
+
         {/* ---- Drawing viewer / pin canvas ---- */}
         <section className="mt-4">
           <p className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
@@ -390,6 +454,7 @@ function SubcontractorCockpit() {
             pins={(pins.data ?? []) as never}
             pinMode={myActivePin ? "view" : "drop"}
             onDropPin={handleDrop}
+            hideInternalSelector
           />
         </section>
 
@@ -610,6 +675,94 @@ function SubcontractorCockpit() {
             qc.invalidateQueries({ queryKey: ["my-live-pins", projectId] });
           }}
         />
+      )}
+
+      {/* ---- Drawing bottom sheet ---- */}
+      {drawingSheetOpen && (
+        <div
+          className="fixed inset-0 z-[65] flex items-end justify-center bg-black/70 backdrop-blur"
+          onClick={() => setDrawingSheetOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="cockpit-sheet glass-panel flex max-h-[85dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-2 border-alert/60"
+          >
+            <div className="flex items-center justify-between border-b border-white/10 p-4">
+              <div>
+                <p className="text-[0.55rem] font-bold uppercase tracking-[0.32em] text-alert">
+                  Project Drawings
+                </p>
+                <p className="mt-0.5 text-[0.65rem] text-foreground/60">
+                  Tap a sheet to make it active
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDrawingSheetOpen(false)}
+                className="rounded-sm border border-white/15 p-1.5 text-foreground/60"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {drawingRows.length === 0 && (
+                <p className="p-6 text-center text-[0.7rem] text-foreground/50">
+                  No drawings uploaded yet.
+                </p>
+              )}
+              {drawingRows.map((d: any) => {
+                const active = d.id === selectedDrawing;
+                const title = d.title ?? d.site_documents?.file_name ?? "Untitled";
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDrawing(d.id);
+                      setDrawingSheetOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition ${
+                      active
+                        ? "border-alert bg-alert/10"
+                        : "border-white/10 bg-black/30 hover:border-alert/40"
+                    } mb-1.5`}
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-alert/15 text-alert">
+                      <FileText size={16} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-mono text-sm font-bold text-foreground">
+                        {d.drawing_no ?? "DWG"}
+                        {d.revision ? ` · Rev ${d.revision}` : ""}
+                      </span>
+                      <span className="block truncate text-[0.7rem] text-foreground/60">
+                        {title}
+                      </span>
+                    </span>
+                    {active && (
+                      <span className="rounded-full bg-alert px-2 py-0.5 text-[0.55rem] font-bold uppercase tracking-widest text-black">
+                        Active
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Oracle FAB (purple, bottom-right) ---- */}
+      {!oracleOpen && (
+        <button
+          type="button"
+          onClick={() => setOracleOpen(true)}
+          aria-label="Ask the Oracle"
+          className="oracle-fab fixed bottom-5 right-5 z-[80] grid h-16 w-16 place-items-center rounded-full border-2 border-purple-300/60 bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white active:scale-95"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <Sparkles size={26} />
+        </button>
       )}
     </div>
   );

@@ -821,14 +821,73 @@ export type Database = {
           },
         ]
       }
+      project_weather_readings: {
+        Row: {
+          apparent_c: number | null
+          captured_at: string
+          created_at: string
+          humidity_pct: number | null
+          id: string
+          precip_mm: number | null
+          project_id: string
+          raw: Json | null
+          source: string
+          summary: string | null
+          temperature_c: number | null
+          weather_code: number | null
+          wind_kph: number | null
+        }
+        Insert: {
+          apparent_c?: number | null
+          captured_at?: string
+          created_at?: string
+          humidity_pct?: number | null
+          id?: string
+          precip_mm?: number | null
+          project_id: string
+          raw?: Json | null
+          source?: string
+          summary?: string | null
+          temperature_c?: number | null
+          weather_code?: number | null
+          wind_kph?: number | null
+        }
+        Update: {
+          apparent_c?: number | null
+          captured_at?: string
+          created_at?: string
+          humidity_pct?: number | null
+          id?: string
+          precip_mm?: number | null
+          project_id?: string
+          raw?: Json | null
+          source?: string
+          summary?: string | null
+          temperature_c?: number | null
+          weather_code?: number | null
+          wind_kph?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_weather_readings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string
           created_by: string
           id: string
+          latitude: number | null
+          longitude: number | null
           master_admin_id: string | null
           name: string
           project_admin_id: string | null
+          project_number: string | null
           scope_brief: string | null
           site_address: string
           updated_at: string
@@ -837,9 +896,12 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           master_admin_id?: string | null
           name: string
           project_admin_id?: string | null
+          project_number?: string | null
           scope_brief?: string | null
           site_address: string
           updated_at?: string
@@ -848,9 +910,12 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           master_admin_id?: string | null
           name?: string
           project_admin_id?: string | null
+          project_number?: string | null
           scope_brief?: string | null
           site_address?: string
           updated_at?: string
