@@ -230,6 +230,7 @@ export function DrawingCanvas({
         </label>
 
       </div>
+      )}
 
       {/* Compact metadata strip */}
       {selected && (
