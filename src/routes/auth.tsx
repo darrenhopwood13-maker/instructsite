@@ -127,7 +127,7 @@ function InstallPwaButton() {
   );
 }
 
-function ScrollingBannerReal() {
+function ScrollingBanner() {
   const items = [...BANNER_ITEMS, ...BANNER_ITEMS];
   return (
     <div className="relative overflow-hidden border-y-2 border-alert bg-gradient-to-r from-[#ff7a00] via-[#ffb057] to-[#ff7a00] py-3 shadow-[0_10px_30px_-10px_rgba(255,122,0,0.6)]"
@@ -260,6 +260,7 @@ function AuthPage() {
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
       <BookDemoFAB />
+      <InstallPwaButton />
       <ScrollingBanner />
 
       <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-start gap-12 px-6 py-12 lg:grid-cols-2">
