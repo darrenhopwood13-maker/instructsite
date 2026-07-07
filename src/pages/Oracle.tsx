@@ -160,8 +160,8 @@ const OraclePage = () => {
           AI-powered support for site operations.
         </p>
 
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {COMMANDS.map((cmd) => {
+        <div className="mt-10 grid grid-cols-2 gap-3">
+          {COMMANDS.map((cmd, idx) => {
             const Icon = cmd.icon;
             const isLoading = loadingKey === cmd.key;
             return (
@@ -170,17 +170,27 @@ const OraclePage = () => {
                 type="button"
                 disabled={loadingKey !== null}
                 onClick={() => handleInvoke(cmd)}
-                className="glass-panel group flex flex-col items-start gap-4 p-6 text-left transition-transform hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cmd-tile shine animate-fade-up h-36 text-left disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ animationDelay: `${idx * 60}ms` }}
               >
-                <div className="glass-accent flex h-12 w-12 items-center justify-center">
-                  {isLoading ? <Loader2 size={22} className="animate-spin" /> : <Icon size={22} />}
-                </div>
-                <div>
-                  <div className="font-display text-lg font-bold text-foreground">
-                    {cmd.label}
+                <img
+                  src={cmd.image}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div className={`absolute inset-0 z-[1] bg-gradient-to-tr ${cmd.accent} mix-blend-overlay`} />
+                <div className="relative z-[2] flex h-full flex-col justify-between p-3 text-white">
+                  <div className="glass-dark inline-flex h-8 w-8 items-center justify-center rounded-lg self-start">
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-accent" /> : <Icon className="h-4 w-4 text-accent" />}
                   </div>
-                  <div className="mt-1 text-sm text-foreground/60">
-                    {cmd.desc}
+                  <div>
+                    <div className="text-[15px] font-extrabold leading-tight tracking-tight drop-shadow-md">
+                      {cmd.label}
+                    </div>
+                    <div className="mt-0.5 text-[11px] font-medium text-white/85 drop-shadow">
+                      {cmd.sub}
+                    </div>
                   </div>
                 </div>
               </button>
