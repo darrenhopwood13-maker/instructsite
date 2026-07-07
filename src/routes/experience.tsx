@@ -376,7 +376,7 @@ function RandallSection() {
     offset: ["start end", "end start"],
   });
   const blur = useTransform(scrollYProgress, [0.2, 0.6], [0, 16]);
-  const filter = useMotionTemplate(blur);
+  const filter = useMotionTemplate`blur(${blur}px)`;
   const clarityOpacity = useTransform(scrollYProgress, [0.3, 0.65], [0, 1]);
 
   return (
@@ -526,8 +526,6 @@ function RandallSection() {
   );
 }
 
-// small helper — motion template
-import { useMotionTemplate } from "framer-motion";
 
 /* ---------- Section 4: Green Mesh Reveal ---------- */
 function GreenMeshSection() {
