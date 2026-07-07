@@ -1141,7 +1141,3 @@ function ExperiencePage() {
 }
 
 export default ExperiencePage;
-
-/* silence unused imports guard */
-void animate;
-void useMotionValue;
