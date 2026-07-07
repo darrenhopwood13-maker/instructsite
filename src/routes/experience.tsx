@@ -300,7 +300,7 @@ function CommandModule() {
             <motion.div
               style={{ x: frameX, opacity: frameOpacity }}
               className="relative h-[560px] w-[280px] rounded-[3.2rem] border p-3"
-              css-role="frame"
+             
             >
               <div
                 className="absolute inset-0 rounded-[3.2rem]"
