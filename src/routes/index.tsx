@@ -118,7 +118,13 @@ function Index() {
               </>
             )}
           </div>
-          <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex flex-wrap justify-center gap-4">
+            <Link
+              to="/experience"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs uppercase tracking-[0.3em] text-alert hover:text-white transition-colors"
+            >
+              ▶ Watch the cinematic experience
+            </Link>
             <a
               href="/instructsite-brochure.pdf"
               download
