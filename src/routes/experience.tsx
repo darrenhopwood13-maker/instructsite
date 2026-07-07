@@ -27,8 +27,6 @@ import {
   Cloud,
   ChevronDown,
   Camera,
-  MapPin,
-  AlertTriangle,
   CheckCircle2,
 } from "lucide-react";
 
