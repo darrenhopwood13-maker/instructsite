@@ -1,28 +1,49 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   motion,
   useScroll,
-  useTransform,
   useSpring,
-  useMotionTemplate,
-  type MotionValue,
+  useTransform,
+  animate,
+  
+  AnimatePresence,
 } from "framer-motion";
-import { ArrowRight, Sparkles, ShieldCheck, ChevronsLeftRight } from "lucide-react";
+import {
+  ArrowRight,
+  Sparkles,
+  ShieldCheck,
+  Clock,
+  PoundSterling,
+  Users,
+  TrendingUp,
+  Zap,
+  FileText,
+  HardHat,
+  ClipboardCheck,
+  MessageCircle,
+  Layers,
+  Wrench,
+  Check,
+  Bell,
+  Cloud,
+  ChevronDown,
+} from "lucide-react";
 
 export const Route = createFileRoute("/experience")({
   head: () => ({
     meta: [
-      { title: "The Future of Site Management is Autonomous" },
+      { title: "InstructSite — See the Cockpit. Count the Hours." },
       {
         name: "description",
         content:
-          "An autonomous six-tool AI cockpit for construction — programme to diary, BIM to money, drawings to plain English.",
+          "The AI cockpit that saves every site manager 2 hours a day. See the real interface, run the ROI numbers, and find out what paper is costing you.",
       },
-      { property: "og:title", content: "The Future of Site Management is Autonomous" },
+      { property: "og:title", content: "InstructSite — See the Cockpit. Count the Hours." },
       {
         property: "og:description",
-        content: "An autonomous six-tool AI cockpit for construction.",
+        content:
+          "Interactive ROI calculator, real cockpit preview, and the six AI modules that give your PMs their Sundays back.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -31,1093 +52,1183 @@ export const Route = createFileRoute("/experience")({
   component: ExperiencePage,
 });
 
-/* ---------- palette ---------- */
-const SLATE = "#1E293B";
+/* ---------- palette (light theme) ---------- */
 const ORANGE = "#FB923C";
 const PURPLE = "#8B5CF6";
 const GREEN = "#10B981";
-const BLACK = "#050609";
+const AMBER = "#F59E0B";
+const RED = "#F43F5E";
+const CYAN = "#06B6D4";
+const INK = "#0F172A";
+const CANVAS = "#FAF7F2";
 
 /* =============================================================
-   SECTION 1 — THE VISION (cursor particles)
+   Progress bar
 ============================================================= */
-function VisionHero() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const mouse = useRef({ x: -9999, y: -9999 });
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let raf = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const resize = () => {
-      canvas.width = canvas.offsetWidth * dpr;
-      canvas.height = canvas.offsetHeight * dpr;
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    const N = 140;
-    const particles = Array.from({ length: N }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 1.6 + 0.4,
-    }));
-
-    const onMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mouse.current.x = (e.clientX - rect.left) * dpr;
-      mouse.current.y = (e.clientY - rect.top) * dpr;
-    };
-    const onLeave = () => {
-      mouse.current.x = -9999;
-      mouse.current.y = -9999;
-    };
-    window.addEventListener("mousemove", onMove);
-    canvas.addEventListener("mouseleave", onLeave);
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // update
-      for (const p of particles) {
-        const dx = mouse.current.x - p.x;
-        const dy = mouse.current.y - p.y;
-        const d2 = dx * dx + dy * dy;
-        const range = 180 * dpr;
-        if (d2 < range * range) {
-          const f = (1 - Math.sqrt(d2) / range) * 0.6;
-          p.vx += (dx / Math.sqrt(d2 || 1)) * f;
-          p.vy += (dy / Math.sqrt(d2 || 1)) * f;
-        }
-        p.vx *= 0.94;
-        p.vy *= 0.94;
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = canvas.width;
-        if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height;
-        if (p.y > canvas.height) p.y = 0;
-      }
-
-      // connections
-      ctx.lineWidth = 0.6 * dpr;
-      for (let i = 0; i < N; i++) {
-        for (let j = i + 1; j < N; j++) {
-          const a = particles[i];
-          const b = particles[j];
-          const dx = a.x - b.x;
-          const dy = a.y - b.y;
-          const d2 = dx * dx + dy * dy;
-          const max = 110 * dpr;
-          if (d2 < max * max) {
-            const alpha = 1 - Math.sqrt(d2) / max;
-            ctx.strokeStyle = `rgba(251,146,60,${alpha * 0.25})`;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
-          }
-        }
-      }
-
-      for (const p of particles) {
-        const dx = mouse.current.x - p.x;
-        const dy = mouse.current.y - p.y;
-        const near = dx * dx + dy * dy < (180 * dpr) * (180 * dpr);
-        ctx.fillStyle = near ? "rgba(251,146,60,0.95)" : "rgba(226,232,240,0.55)";
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * dpr, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", onMove);
-      canvas.removeEventListener("mouseleave", onLeave);
-    };
-  }, []);
-
-  return (
-    <section
-      className="relative h-[100svh] w-full overflow-hidden"
-      style={{ backgroundColor: BLACK }}
-    >
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 h-full w-full"
-        style={{ background: `radial-gradient(ellipse at 50% 40%, ${SLATE} 0%, ${BLACK} 70%)` }}
-      />
-      {/* vignette */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(5,6,9,0.9) 100%)",
-        }}
-      />
-
-      <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col items-center justify-center px-6 text-center">
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.9 }}
-          className="text-[0.65rem] font-semibold uppercase tracking-[0.8em]"
-          style={{ color: ORANGE }}
-        >
-          Section · 01 · The Vision
-        </motion.p>
-        <motion.h1
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 1.1 }}
-          className="mt-8 max-w-5xl text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[6.5rem]"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-        >
-          The future of site management is{" "}
-          <span
-            style={{
-              background: `linear-gradient(90deg,#FB923C 0%,#fed7aa 50%,#FB923C 100%)`,
-              backgroundSize: "200% 100%",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              animation: "shimmer 5s linear infinite",
-            }}
-          >
-            autonomous.
-          </span>
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.75, duration: 0.9 }}
-          className="mt-8 max-w-2xl text-base text-slate-300/80 md:text-lg"
-        >
-          A six-tool AI cockpit that turns drawings into sequences, programmes
-          into diaries, and models into money. Engineered like a film.
-        </motion.p>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.0, duration: 0.8 }}
-          className="mt-12 flex flex-wrap justify-center gap-3"
-        >
-          <Link
-            to="/auth"
-            search={{ trial: "start" }}
-            className="inline-flex items-center gap-2 rounded-full px-8 py-4 text-xs font-bold uppercase tracking-[0.3em] text-white transition-transform hover:-translate-y-0.5"
-            style={{
-              background: `linear-gradient(135deg, ${ORANGE} 0%, #fdba74 100%)`,
-              boxShadow: `0 20px 60px -15px ${ORANGE}99`,
-            }}
-          >
-            Enter the cockpit <ArrowRight size={14} />
-          </Link>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.03] px-8 py-4 text-xs font-bold uppercase tracking-[0.3em] text-white/80 backdrop-blur-md hover:bg-white/[0.07]"
-          >
-            Portal
-          </Link>
-        </motion.div>
-
-        {/* scroll cue */}
-        <motion.div
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 text-[0.6rem] uppercase tracking-[0.6em] text-white/40"
-          animate={{ y: [0, 10, 0], opacity: [0.4, 0.9, 0.4] }}
-          transition={{ repeat: Infinity, duration: 2.4 }}
-        >
-          Scroll to assemble
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-/* =============================================================
-   SECTION 2 — COMMAND MODULE (scroll-assembled phone)
-============================================================= */
-function CommandModule() {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-  const p = useSpring(scrollYProgress, { stiffness: 80, damping: 22 });
-
-  // Frame assembles first, screen 2nd, tiles 3rd, FAB last
-  const frameX = useTransform(p, [0, 0.25], [-260, 0]);
-  const frameOpacity = useTransform(p, [0, 0.2], [0, 1]);
-  const screenScale = useTransform(p, [0.2, 0.4], [0.4, 1]);
-  const screenOpacity = useTransform(p, [0.2, 0.4], [0, 1]);
-  const tilesY = useTransform(p, [0.35, 0.55], [80, 0]);
-  const tilesOpacity = useTransform(p, [0.35, 0.55], [0, 1]);
-  const fabScale = useTransform(p, [0.55, 0.7], [0, 1]);
-  const rotateY = useTransform(p, [0, 1], [-25, 15]);
-
-  const tiles: [string, string, string][] = [
-    ["Install", ORANGE, "DABS"],
-    ["Safety", "#ef4444", "Sentinel"],
-    ["Procure", "#f59e0b", "Randall"],
-    ["Drawings", "#38bdf8", "DABS"],
-    ["Snag", GREEN, "QS"],
-    ["Assist", PURPLE, "Oracle"],
-  ];
-
-  return (
-    <section
-      ref={ref}
-      className="relative overflow-hidden py-40"
-      style={{ backgroundColor: BLACK }}
-    >
-      {/* aura */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
-        style={{ background: `radial-gradient(circle, ${PURPLE}30 0%, transparent 60%)` }}
-      />
-
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-20 px-6 md:grid-cols-2 md:items-center">
-        {/* Phone */}
-        <div
-          className="relative flex h-[600px] items-center justify-center"
-          style={{ perspective: 1800 }}
-        >
-          <motion.div
-            style={{ rotateY, transformStyle: "preserve-3d" }}
-            className="relative"
-          >
-            {/* Frame */}
-            <motion.div
-              style={{ x: frameX, opacity: frameOpacity }}
-              className="relative h-[560px] w-[280px] rounded-[3.2rem] border p-3"
-             
-            >
-              <div
-                className="absolute inset-0 rounded-[3.2rem]"
-                style={{
-                  background: "linear-gradient(160deg,#1e2a44 0%,#070b16 100%)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  boxShadow:
-                    "0 80px 140px -30px rgba(139,92,246,0.35), inset 0 0 0 1.5px rgba(255,255,255,0.05)",
-                }}
-              />
-              {/* Screen */}
-              <motion.div
-                style={{ scale: screenScale, opacity: screenOpacity }}
-                className="relative h-full w-full overflow-hidden rounded-[2.5rem]"
-              >
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: `linear-gradient(180deg, ${SLATE} 0%, #0b1424 100%)`,
-                  }}
-                />
-                {/* notch */}
-                <div className="absolute left-1/2 top-3 z-20 h-6 w-28 -translate-x-1/2 rounded-full bg-black" />
-                {/* status */}
-                <div className="relative flex items-center justify-between px-6 pt-4 text-[10px] font-bold text-white/80">
-                  <span>09:41</span>
-                  <span>◉ 5G</span>
-                </div>
-
-                {/* project card */}
-                <motion.div
-                  style={{ opacity: screenOpacity }}
-                  className="relative mx-4 mt-8 rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-md"
-                >
-                  <p
-                    className="text-[8px] font-bold uppercase tracking-[0.3em]"
-                    style={{ color: ORANGE }}
-                  >
-                    Project · Live
-                  </p>
-                  <p className="mt-1 text-sm font-extrabold text-white">
-                    Premier Commercial Fit-out
-                  </p>
-                  <div className="mt-2 flex items-center justify-between text-[9px] text-white/60">
-                    <span>◐ 12°C · Cloudy</span>
-                    <span>14:32</span>
-                  </div>
-                </motion.div>
-
-                {/* tiles */}
-                <motion.div
-                  style={{ y: tilesY, opacity: tilesOpacity }}
-                  className="relative mx-4 mt-4 grid grid-cols-2 gap-2"
-                >
-                  {tiles.map(([label, color, tag], i) => (
-                    <motion.div
-                      key={label}
-                      initial={{ scale: 0.7, opacity: 0 }}
-                      whileInView={{ scale: 1, opacity: 1 }}
-                      viewport={{ once: true, amount: 0.5 }}
-                      transition={{ delay: i * 0.06, duration: 0.4 }}
-                      className="relative h-16 overflow-hidden rounded-lg border border-white/10 p-2 text-[8px] font-bold uppercase tracking-wider text-white"
-                      style={{
-                        background: `linear-gradient(135deg, ${color}22 0%, ${color}44 100%)`,
-                      }}
-                    >
-                      <div
-                        className="mb-1 h-3 w-3 rounded"
-                        style={{ backgroundColor: color }}
-                      />
-                      {label}
-                      <span
-                        className="absolute bottom-1 right-1.5 text-[6px] tracking-[0.15em] text-white/50"
-                      >
-                        {tag}
-                      </span>
-                    </motion.div>
-                  ))}
-                </motion.div>
-
-                {/* FAB */}
-                <motion.div
-                  style={{ scale: fabScale }}
-                  className="absolute bottom-6 right-5 flex h-14 w-14 items-center justify-center rounded-full"
-                >
-                  <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-full"
-                    animate={{
-                      boxShadow: [
-                        `0 10px 30px -5px ${PURPLE}80`,
-                        `0 10px 50px 0 ${PURPLE}ff`,
-                        `0 10px 30px -5px ${PURPLE}80`,
-                      ],
-                    }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    style={{
-                      background: `linear-gradient(135deg, ${PURPLE} 0%, #a78bfa 100%)`,
-                    }}
-                  >
-                    <Sparkles size={20} className="text-white" />
-                  </motion.div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-
-            {/* orbiting labels */}
-            <motion.div
-              style={{ opacity: tilesOpacity }}
-              className="pointer-events-none absolute -left-40 top-24 hidden md:block"
-            >
-              <ToolChip color={ORANGE} name="DABS" desc="Drawings → sequences" />
-            </motion.div>
-            <motion.div
-              style={{ opacity: fabScale }}
-              className="pointer-events-none absolute -right-44 bottom-16 hidden md:block"
-            >
-              <ToolChip color={PURPLE} name="Oracle" desc="Purple AI FAB" />
-            </motion.div>
-          </motion.div>
-        </div>
-
-        {/* Copy */}
-        <div>
-          <p
-            className="text-[0.65rem] font-semibold uppercase tracking-[0.7em]"
-            style={{ color: ORANGE }}
-          >
-            Section · 02 · Command Module
-          </p>
-          <h2
-            className="mt-5 text-4xl font-black leading-[0.95] text-white md:text-6xl"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-          >
-            One glove.<br />
-            <span style={{ color: ORANGE }}>Six commands.</span><br />
-            <span style={{ color: PURPLE }}>Zero paper.</span>
-          </h2>
-          <p className="mt-6 max-w-md text-base text-slate-300/70 md:text-lg">
-            A progressive web app that installs to the home screen and behaves
-            like a native cockpit. Six tiles route to six agents. One purple
-            floating action button opens the project-scoped Oracle.
-          </p>
-
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FeatureRow
-              n="01"
-              title="DABS · Orange tile"
-              body="Drawings become plain-English installation sequences."
-              color={ORANGE}
-            />
-            <FeatureRow
-              n="02"
-              title="Oracle · Purple FAB"
-              body="One-hand chat. Scoped to the live project only."
-              color={PURPLE}
-            />
-            <FeatureRow
-              n="03"
-              title="Randall · Programme"
-              body="Master programme in. Day-to-a-page diary out."
-              color="#f59e0b"
-            />
-            <FeatureRow
-              n="04"
-              title="QS Verifier"
-              body="Model quantities reconciled against site progress."
-              color={GREEN}
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ToolChip({ color, name, desc }: { color: string; name: string; desc: string }) {
-  return (
-    <div
-      className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-md"
-      style={{ boxShadow: `0 20px 60px -30px ${color}` }}
-    >
-      <div className="flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full" style={{ background: color }} />
-        <span
-          className="text-xs font-black uppercase tracking-widest"
-          style={{ color }}
-        >
-          {name}
-        </span>
-      </div>
-      <p className="mt-1 text-[10px] uppercase tracking-widest text-white/50">
-        {desc}
-      </p>
-    </div>
-  );
-}
-
-function FeatureRow({
-  n,
-  title,
-  body,
-  color,
-}: {
-  n: string;
-  title: string;
-  body: string;
-  color: string;
-}) {
+function ProgressBar() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.4 }}
-      transition={{ duration: 0.5 }}
-      className="rounded-xl border border-white/10 bg-white/[0.02] p-4"
-    >
-      <div className="flex items-center gap-3">
-        <span
-          className="text-lg font-black"
-          style={{ color, fontFamily: "'Zen Dots', sans-serif" }}
-        >
-          {n}
-        </span>
-        <span className="text-sm font-extrabold text-white">{title}</span>
-      </div>
-      <p className="mt-2 text-xs text-white/60">{body}</p>
-    </motion.div>
+      className="fixed top-0 left-0 right-0 h-1 z-50 origin-left"
+      style={{
+        scaleX,
+        background: `linear-gradient(90deg, ${ORANGE}, ${PURPLE}, ${GREEN})`,
+      }}
+    />
   );
 }
 
 /* =============================================================
-   SECTION 3 — RANDALL'S LOGIC (draggable slider comparison)
+   Animated counter
 ============================================================= */
-function RandallSlider() {
-  const [pct, setPct] = useState(50);
-  const dragRef = useRef<HTMLDivElement | null>(null);
-  const dragging = useRef(false);
-
-  useEffect(() => {
-    const move = (e: MouseEvent | TouchEvent) => {
-      if (!dragging.current || !dragRef.current) return;
-      const rect = dragRef.current.getBoundingClientRect();
-      const clientX =
-        "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
-      const x = clientX - rect.left;
-      const v = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      setPct(v);
-    };
-    const up = () => (dragging.current = false);
-    window.addEventListener("mousemove", move);
-    window.addEventListener("touchmove", move);
-    window.addEventListener("mouseup", up);
-    window.addEventListener("touchend", up);
-    return () => {
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("touchmove", move);
-      window.removeEventListener("mouseup", up);
-      window.removeEventListener("touchend", up);
-    };
-  }, []);
-
-  return (
-    <section
-      className="relative overflow-hidden py-40"
-      style={{
-        background: `linear-gradient(180deg, ${BLACK} 0%, ${SLATE} 50%, ${BLACK} 100%)`,
-      }}
-    >
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="text-center">
-          <p
-            className="text-[0.65rem] font-semibold uppercase tracking-[0.7em]"
-            style={{ color: ORANGE }}
-          >
-            Section · 03 · Randall's Logic
-          </p>
-          <h2
-            className="mx-auto mt-5 max-w-4xl text-4xl font-black leading-[0.95] text-white md:text-6xl"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-          >
-            Programme in.{" "}
-            <span style={{ color: ORANGE }}>Playbook out.</span>
-          </h2>
-          <p className="mx-auto mt-6 max-w-2xl text-base text-slate-300/70 md:text-lg">
-            Drag the handle. Watch a chaotic master programme resolve into a
-            day-to-a-page diary any foreman can read in twelve minutes.
-          </p>
-        </div>
-
-        {/* Comparison */}
-        <div
-          ref={dragRef}
-          className="relative mt-16 h-[540px] w-full select-none overflow-hidden rounded-3xl border border-white/10"
-          style={{ background: "#050a13" }}
-        >
-          {/* Gantt (blurred as pct grows) */}
-          <div className="absolute inset-0">
-            <GanttMock blurPx={(pct / 100) * 14} />
-          </div>
-
-          {/* Diary revealed by clip */}
-          <div
-            className="absolute inset-0"
-            style={{ clipPath: `inset(0 0 0 ${pct}%)` }}
-          >
-            <DiaryMock />
-          </div>
-
-          {/* Handle */}
-          <div
-            className="absolute top-0 h-full cursor-ew-resize"
-            style={{ left: `${pct}%`, transform: "translateX(-50%)" }}
-            onMouseDown={() => (dragging.current = true)}
-            onTouchStart={() => (dragging.current = true)}
-          >
-            <div
-              className="mx-auto h-full w-[3px]"
-              style={{
-                background: `linear-gradient(180deg, transparent 0%, ${ORANGE} 20%, ${ORANGE} 80%, transparent 100%)`,
-                boxShadow: `0 0 30px ${ORANGE}`,
-              }}
-            />
-            <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex h-14 w-14 items-center justify-center rounded-full border-2 border-white/30 bg-black/70 backdrop-blur-md"
-              style={{ boxShadow: `0 0 40px ${ORANGE}80` }}
-            >
-              <ChevronsLeftRight size={22} className="text-white" />
-            </div>
-          </div>
-
-          {/* labels */}
-          <div className="pointer-events-none absolute left-6 top-6 rounded-full border border-white/10 bg-black/60 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white/70 backdrop-blur">
-            Master programme · P6
-          </div>
-          <div className="pointer-events-none absolute right-6 top-6 rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest backdrop-blur"
-               style={{ borderColor: `${ORANGE}66`, color: ORANGE, background: "rgba(0,0,0,0.6)" }}>
-            Day-to-a-page diary
-          </div>
-        </div>
-
-        {/* ROI band */}
-        <div className="mt-24 text-center">
-          <p className="text-[0.65rem] uppercase tracking-[0.6em] text-white/40">
-            Daily ROI · per programme
-          </p>
-          <div className="mt-6 flex flex-wrap items-baseline justify-center gap-x-12 gap-y-4">
-            <ROIStat value="3h → 12m" label="brief prep" />
-            <span className="text-2xl text-white/20">·</span>
-            <ROIStat value="£11.2k" label="saved / day" />
-            <span className="text-2xl text-white/20">·</span>
-            <ROIStat value="14h" label="back / day" />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ROIStat({ value, label }: { value: string; label: string }) {
-  return (
-    <div>
-      <div
-        className="text-5xl font-black md:text-7xl"
-        style={{
-          color: ORANGE,
-          fontFamily: "'Zen Dots', sans-serif",
-          textShadow: `0 0 60px ${ORANGE}66`,
-        }}
-      >
-        {value}
-      </div>
-      <p className="mt-2 text-[10px] uppercase tracking-[0.5em] text-white/50">
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function GanttMock({ blurPx }: { blurPx: number }) {
-  const rows = 16;
-  return (
-    <div
-      className="h-full w-full p-8"
-      style={{
-        filter: `blur(${blurPx}px)`,
-        background: "linear-gradient(160deg,#0b1424,#050a13)",
-      }}
-    >
-      <div className="flex items-center justify-between border-b border-white/5 pb-3">
-        <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/40">
-          Task · Trade · Duration · Float
-        </span>
-        <span className="text-[10px] uppercase tracking-widest text-white/30">
-          {rows * 3}+ activities
-        </span>
-      </div>
-      <div className="mt-4 space-y-2.5">
-        {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div
-              className="h-2 rounded-sm bg-white/10"
-              style={{ width: `${18 + (i % 4) * 4}%` }}
-            />
-            <div
-              className="h-2 rounded-sm"
-              style={{
-                width: `${12 + ((i * 37) % 60)}%`,
-                marginLeft: `${(i * 13) % 30}%`,
-                background: `linear-gradient(90deg, ${ORANGE}aa, ${ORANGE}44)`,
-              }}
-            />
-            <div
-              className="h-2 rounded-sm bg-red-500/40"
-              style={{ width: `${4 + (i % 3) * 3}%` }}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DiaryMock() {
-  return (
-    <div
-      className="h-full w-full p-8"
-      style={{ background: "linear-gradient(160deg,#f8f5ec,#ece4cf)" }}
-    >
-      <div className="flex items-center justify-between">
-        <span
-          className="text-[10px] font-bold uppercase tracking-[0.4em]"
-          style={{ color: SLATE }}
-        >
-          Tuesday · Day 142
-        </span>
-        <span
-          className="rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white"
-          style={{ background: ORANGE }}
-        >
-          Randall · verified
-        </span>
-      </div>
-      <h3
-        className="mt-2 text-3xl font-black"
-        style={{ fontFamily: "'Zen Dots', sans-serif", color: SLATE }}
-      >
-        Day-to-a-Page
-      </h3>
-      <ul className="mt-5 space-y-2.5 text-sm leading-relaxed" style={{ color: "#334155" }}>
-        <li><b>08:00</b> — Level 04 riser second-fix, Team A (4 ops).</li>
-        <li><b>10:30</b> — Permit signed: hot works, plantroom.</li>
-        <li><b>12:00</b> — QS verify Zone C façade panels.</li>
-        <li><b>14:00</b> — Weather snapshot &amp; afternoon briefing.</li>
-        <li><b>16:30</b> — Snag walk-through, Levels 01–03.</li>
-        <li><b>17:15</b> — Diary auto-signed, distributed to 12 trades.</li>
-      </ul>
-      <div className="mt-6 flex items-center gap-2 text-[10px] uppercase tracking-widest" style={{ color: "#64748b" }}>
-        <div className="h-1 flex-1 rounded-full" style={{ background: "#cbd5e1" }}>
-          <div className="h-1 rounded-full" style={{ width: "84%", background: ORANGE }} />
-        </div>
-        <span>84% shift complete</span>
-      </div>
-    </div>
-  );
-}
-
-/* =============================================================
-   SECTION 4 — VERIFICATION ENGINE (BIM → Money paint pipeline)
-============================================================= */
-function VerificationEngine() {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-  const p = useSpring(scrollYProgress, { stiffness: 70, damping: 22 });
-
-  const paintPct = useTransform(p, [0.15, 0.85], [0, 100]);
-  const money = useTransform(p, [0.2, 0.9], [0, 428_500]);
-  const verified = useTransform(p, [0.15, 0.85], [0, 10412]);
-
-  return (
-    <section
-      ref={ref}
-      className="relative overflow-hidden py-40"
-      style={{ backgroundColor: BLACK }}
-    >
-      <div className="mx-auto max-w-7xl px-6">
-        <p
-          className="text-[0.65rem] font-semibold uppercase tracking-[0.7em]"
-          style={{ color: ORANGE }}
-        >
-          Section · 04 · Verification Engine
-        </p>
-        <h2
-          className="mt-5 max-w-4xl text-4xl font-black leading-[0.95] text-white md:text-6xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-        >
-          From raw mesh <br />
-          <span style={{ color: GREEN }}>to verified revenue.</span>
-        </h2>
-        <p className="mt-6 max-w-2xl text-base text-slate-300/70 md:text-lg">
-          Every element in the model is auto-allocated to a shift. As trades
-          verify installation on site, the mesh paints green — and the
-          cumulative revenue counter climbs in real time.
-        </p>
-
-        <div className="mt-16 grid grid-cols-1 gap-10 md:grid-cols-2 md:items-center">
-          {/* Mesh */}
-          <MeshPipeline paintPct={paintPct} />
-
-          {/* Metrics */}
-          <div className="space-y-6">
-            <MetricCard
-              label="Elements verified"
-              value={<CounterMV value={verified} />}
-              max="10,412"
-              color={GREEN}
-              pct={paintPct}
-            />
-            <MetricCard
-              label="Cumulative revenue unlocked"
-              value={<CounterMV value={money} prefix="£" />}
-              max="£428,500"
-              color={ORANGE}
-              pct={paintPct}
-            />
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.5 }}
-              className="flex items-center gap-3 pt-4"
-            >
-              <ShieldCheck size={28} style={{ color: GREEN }} />
-              <span
-                className="text-2xl font-black md:text-3xl"
-                style={{ color: GREEN, fontFamily: "'Zen Dots', sans-serif" }}
-              >
-                100% QS-audit ready
-              </span>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function MeshPipeline({ paintPct }: { paintPct: MotionValue<number> }) {
-  const clip = useMotionTemplate`inset(0 ${useTransform(paintPct, (v) => 100 - v)}% 0 0)`;
-  const glow = useMotionTemplate`0 0 ${useTransform(paintPct, [0, 100], [0, 80])}px ${GREEN}`;
-
-  // Build a grid of cubes
-  const cells: { x: number; y: number }[] = [];
-  const cols = 10;
-  const rows = 6;
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) cells.push({ x, y });
-  }
-
-  return (
-    <div
-      className="relative aspect-[5/4] overflow-hidden rounded-3xl border border-white/10"
-      style={{
-        background: "radial-gradient(circle at 50% 40%, #0c1a2f 0%, #060b16 65%, #030509 100%)",
-        boxShadow: `inset 0 0 120px rgba(0,0,0,0.5)`,
-      }}
-    >
-      {/* isometric grid */}
-      <svg viewBox="0 0 500 400" className="absolute inset-0 h-full w-full">
-        <defs>
-          <linearGradient id="mesh-grey" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="#64748b" stopOpacity="0.5" />
-            <stop offset="1" stopColor="#334155" stopOpacity="0.3" />
-          </linearGradient>
-          <linearGradient id="mesh-green" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor={GREEN} stopOpacity="0.9" />
-            <stop offset="1" stopColor={GREEN} stopOpacity="0.4" />
-          </linearGradient>
-        </defs>
-
-        {/* base grey mesh */}
-        {cells.map((c, i) => (
-          <IsoCube key={`g${i}`} x={c.x} y={c.y} fill="url(#mesh-grey)" stroke="#475569" />
-        ))}
-      </svg>
-
-      {/* green painted overlay clipped by scroll */}
-      <motion.svg
-        viewBox="0 0 500 400"
-        className="absolute inset-0 h-full w-full"
-        style={{ clipPath: clip, filter: `drop-shadow(0 0 20px ${GREEN})` }}
-      >
-        {cells.map((c, i) => (
-          <IsoCube key={`v${i}`} x={c.x} y={c.y} fill="url(#mesh-green)" stroke={GREEN} />
-        ))}
-      </motion.svg>
-
-      {/* scan line */}
-      <motion.div
-        className="absolute top-0 h-full w-[3px]"
-        style={{
-          left: useMotionTemplate`${paintPct}%`,
-          background: `linear-gradient(180deg, transparent, ${GREEN}, transparent)`,
-          boxShadow: glow,
-        }}
-      />
-
-      {/* HUD */}
-      <div className="absolute left-4 top-4 flex gap-2 text-[9px] font-bold uppercase tracking-widest">
-        <span className="rounded-full border border-white/15 bg-black/50 px-2.5 py-1 text-white/70 backdrop-blur">
-          IFC · v4
-        </span>
-        <span
-          className="rounded-full px-2.5 py-1 text-black backdrop-blur"
-          style={{ background: GREEN }}
-        >
-          Live scan
-        </span>
-      </div>
-
-      <div className="absolute bottom-4 right-4 rounded-full border border-white/10 bg-black/50 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-white/80 backdrop-blur">
-        <CounterMV value={paintPct} suffix="%" /> verified
-      </div>
-    </div>
-  );
-}
-
-function IsoCube({
-  x,
-  y,
-  fill,
-  stroke,
+function Counter({
+  to,
+  prefix = "",
+  suffix = "",
+  duration = 1.2,
+  decimals = 0,
 }: {
-  x: number;
-  y: number;
-  fill: string;
-  stroke: string;
-}) {
-  // isometric projection
-  const size = 26;
-  const originX = 250;
-  const originY = 130;
-  const px = originX + (x - y) * size;
-  const py = originY + (x + y) * (size / 2);
-  return (
-    <g transform={`translate(${px} ${py})`}>
-      <polygon
-        points={`0,-${size / 2} ${size},0 0,${size / 2} -${size},0`}
-        fill={fill}
-        stroke={stroke}
-        strokeWidth="0.6"
-      />
-      <polygon
-        points={`0,${size / 2} ${size},0 ${size},${size} 0,${size + size / 2}`}
-        fill={fill}
-        fillOpacity="0.65"
-        stroke={stroke}
-        strokeWidth="0.6"
-      />
-      <polygon
-        points={`0,${size / 2} -${size},0 -${size},${size} 0,${size + size / 2}`}
-        fill={fill}
-        fillOpacity="0.4"
-        stroke={stroke}
-        strokeWidth="0.6"
-      />
-    </g>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  max,
-  color,
-  pct,
-}: {
-  label: string;
-  value: React.ReactNode;
-  max: string;
-  color: string;
-  pct: MotionValue<number>;
-}) {
-  const width = useMotionTemplate`${pct}%`;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.4 }}
-      className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-md"
-    >
-      <div className="flex items-baseline justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/60">
-          {label}
-        </span>
-        <span className="text-[10px] uppercase tracking-widest text-white/30">
-          / {max}
-        </span>
-      </div>
-      <div
-        className="mt-3 text-4xl font-black md:text-5xl"
-        style={{ color, fontFamily: "'Zen Dots', sans-serif" }}
-      >
-        {value}
-      </div>
-      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
-        <motion.div
-          className="h-full rounded-full"
-          style={{
-            width,
-            background: `linear-gradient(90deg, ${color}, ${color}66)`,
-          }}
-        />
-      </div>
-    </motion.div>
-  );
-}
-
-function CounterMV({
-  value,
-  prefix,
-  suffix,
-}: {
-  value: MotionValue<number>;
+  to: number;
   prefix?: string;
   suffix?: string;
+  duration?: number;
+  decimals?: number;
 }) {
-  const [display, setDisplay] = useState("0");
+  const [val, setVal] = useState(to);
+  const ref = useRef(to);
   useEffect(() => {
-    const unsub = value.on("change", (v) => {
-      setDisplay(Math.round(v).toLocaleString());
+    const controls = animate(ref.current, to, {
+      duration,
+      ease: "easeOut",
+      onUpdate: (v) => {
+        ref.current = v;
+        setVal(v);
+      },
     });
-    return unsub;
-  }, [value]);
+    return () => controls.stop();
+  }, [to, duration]);
+  const formatted = val.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
   return (
     <span>
-      {prefix ?? ""}
-      {display}
-      {suffix ?? ""}
+      {prefix}
+      {formatted}
+      {suffix}
     </span>
   );
 }
 
 /* =============================================================
-   FINAL CTA
+   HERO
 ============================================================= */
-function FinalCTA() {
+function Hero() {
+  const { scrollYProgress } = useScroll();
+  const y = useTransform(scrollYProgress, [0, 0.2], [0, -80]);
   return (
-    <section
-      className="relative overflow-hidden py-40"
-      style={{
-        background: `linear-gradient(180deg, ${BLACK} 0%, ${SLATE} 100%)`,
-      }}
-    >
-      <div className="mx-auto max-w-4xl px-6 text-center">
-        <motion.h3
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.5 }}
-          className="mx-auto text-3xl font-black leading-[0.95] text-white md:text-6xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-        >
-          Autonomous.<br />
-          <span style={{ color: ORANGE }}>Auditable.</span>{" "}
-          <span style={{ color: GREEN }}>Alive.</span>
-        </motion.h3>
-        <p className="mx-auto mt-6 max-w-xl text-base text-slate-300/70 md:text-lg">
-          Purpose-built for premier commercial fit-outs and urban infrastructure
-          projects. Deploy in a day. Pay back in a week.
-        </p>
-        <div className="mt-10 flex flex-wrap justify-center gap-3">
-          <Link
-            to="/auth"
-            search={{ trial: "start" }}
-            className="inline-flex items-center gap-2 rounded-full px-8 py-4 text-xs font-bold uppercase tracking-[0.3em] text-white"
-            style={{
-              background: `linear-gradient(135deg, ${ORANGE} 0%, #fdba74 100%)`,
-              boxShadow: `0 20px 60px -15px ${ORANGE}99`,
-            }}
+    <section className="relative min-h-[92vh] overflow-hidden flex items-center">
+      {/* gradient blobs */}
+      <motion.div
+        style={{ y }}
+        className="absolute -top-40 -left-40 w-[560px] h-[560px] rounded-full blur-3xl opacity-40"
+      >
+        <div className="w-full h-full" style={{ background: `radial-gradient(circle, ${ORANGE}, transparent 70%)` }} />
+      </motion.div>
+      <motion.div
+        style={{ y: useTransform(scrollYProgress, [0, 0.2], [0, 80]) }}
+        className="absolute -bottom-40 -right-32 w-[620px] h-[620px] rounded-full blur-3xl opacity-40"
+      >
+        <div className="w-full h-full" style={{ background: `radial-gradient(circle, ${PURPLE}, transparent 70%)` }} />
+      </motion.div>
+      <motion.div
+        className="absolute top-1/2 left-1/2 w-[400px] h-[400px] rounded-full blur-3xl opacity-30"
+        style={{ background: `radial-gradient(circle, ${GREEN}, transparent 70%)` }}
+      />
+
+      <div className="relative max-w-7xl mx-auto px-6 py-24 grid lg:grid-cols-2 gap-16 items-center w-full">
+        <div>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/70 backdrop-blur border border-slate-200 text-sm font-medium text-slate-700 mb-6"
           >
-            Start free trial <ArrowRight size={14} />
-          </Link>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.03] px-8 py-4 text-xs font-bold uppercase tracking-[0.3em] text-white/80 backdrop-blur-md hover:bg-white/[0.07]"
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: GREEN }} />
+            Live on site · v2026.7
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.05 }}
+            className="text-5xl md:text-7xl font-black tracking-tight leading-[0.95]"
+            style={{ color: INK }}
           >
-            Portal
-          </Link>
+            Two hours back{" "}
+            <span
+              style={{
+                background: `linear-gradient(90deg, ${ORANGE}, ${PURPLE})`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              per manager,
+            </span>
+            <br />
+            every single day.
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            className="mt-6 text-lg md:text-xl text-slate-600 max-w-xl"
+          >
+            InstructSite is the AI cockpit that turns drawings into sequences, meetings into diaries,
+            and BIM into cash. Six modules. One glove. Zero paper.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.25 }}
+            className="mt-8 flex flex-wrap gap-4"
+          >
+            <a
+              href="#roi"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white shadow-lg hover:scale-105 transition-transform"
+              style={{ background: `linear-gradient(90deg, ${ORANGE}, ${AMBER})` }}
+            >
+              Run the numbers <ArrowRight size={18} />
+            </a>
+            <Link
+              to="/auth"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+            >
+              Start free trial
+            </Link>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="mt-10 flex items-center gap-6 text-sm text-slate-500"
+          >
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={16} style={{ color: GREEN }} /> CDM 2015 ready
+            </div>
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} style={{ color: PURPLE }} /> Powered by The Oracle
+            </div>
+          </motion.div>
         </div>
-        <p className="mt-14 text-[10px] uppercase tracking-[0.6em] text-white/30">
-          Engineered like a film · 2026
-        </p>
+
+        <div className="flex justify-center lg:justify-end">
+          <CockpitMock />
+        </div>
       </div>
     </section>
   );
 }
 
 /* =============================================================
-   STICKY SECTION NAV
+   COCKPIT MOCK — recreates the real subcontractor cockpit
 ============================================================= */
-function StickyNav() {
-  const { scrollYProgress } = useScroll();
-  const width = useMotionTemplate`${useTransform(scrollYProgress, [0, 1], [0, 100])}%`;
+function CockpitMock({ scale = 1 }: { scale?: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40, rotateX: 20 }}
+      animate={{ opacity: 1, y: 0, rotateX: 0 }}
+      transition={{ duration: 0.9, ease: "easeOut" }}
+      whileHover={{ y: -6 }}
+      style={{ transformPerspective: 1200, transformStyle: "preserve-3d", scale }}
+      className="relative"
+    >
+      {/* callout: DABS */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.9 }}
+        className="absolute -left-20 top-56 z-20 hidden md:block"
+      >
+        <div className="text-[10px] font-bold tracking-[0.2em]" style={{ color: ORANGE }}>
+          ● DABS
+        </div>
+        <div className="text-[10px] tracking-widest text-slate-500">DRAWINGS → SEQUENCES</div>
+        <svg width="80" height="20" className="mt-1">
+          <path d="M0 10 L75 10" stroke={ORANGE} strokeWidth="1.5" strokeDasharray="3 3" />
+        </svg>
+      </motion.div>
+
+      {/* callout: Oracle FAB */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 1.1 }}
+        className="absolute -right-24 bottom-24 z-20 hidden md:block"
+      >
+        <div className="text-[10px] font-bold tracking-[0.2em]" style={{ color: PURPLE }}>
+          ● ORACLE
+        </div>
+        <div className="text-[10px] tracking-widest text-slate-500">30-YR HSE ADVISOR</div>
+      </motion.div>
+
+      {/* phone frame */}
+      <div
+        className="relative w-[320px] h-[660px] rounded-[52px] p-3 shadow-2xl"
+        style={{
+          background: "linear-gradient(145deg, #1e293b, #0f172a)",
+          boxShadow: "0 40px 80px -20px rgba(15,23,42,0.35), 0 0 0 1px rgba(255,255,255,0.06)",
+        }}
+      >
+        <div className="w-full h-full rounded-[42px] overflow-hidden relative" style={{ background: "#0B1220" }}>
+          {/* notch */}
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-6 rounded-full bg-black z-10" />
+          {/* status bar */}
+          <div className="flex justify-between items-center px-6 pt-3 text-white text-xs">
+            <span>09:41</span>
+            <div className="flex items-center gap-1 opacity-80">
+              <Cloud size={11} /> 5G
+            </div>
+          </div>
+
+          {/* content */}
+          <div className="px-4 pt-6 space-y-3">
+            {/* project header card */}
+            <div className="rounded-2xl p-4 border border-white/5" style={{ background: "linear-gradient(135deg, rgba(251,146,60,0.12), rgba(139,92,246,0.08))" }}>
+              <div className="text-[9px] font-bold tracking-[0.25em]" style={{ color: ORANGE }}>
+                PROJECT · LIVE
+              </div>
+              <div className="text-white font-bold text-base mt-1">Premier Commercial Fit-out</div>
+              <div className="flex justify-between items-center mt-2 text-[11px] text-slate-400">
+                <span className="flex items-center gap-1">
+                  <Cloud size={10} /> 12°C · Cloudy
+                </span>
+                <span>14:32</span>
+              </div>
+            </div>
+
+            {/* tiles grid */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <MockTile color={ORANGE} label="INSTALL" tag="DABS" pulse />
+              <MockTile color={RED} label="SAFETY" tag="SENTINEL" />
+              <MockTile color={AMBER} label="PROCURE" tag="RANDALL" />
+              <MockTile color={CYAN} label="DRAWINGS" tag="DABS" />
+              <MockTile color={GREEN} label="SNAG" tag="QS" />
+              <MockTile color={PURPLE} label="ASSIST" tag="ORACLE" />
+            </div>
+
+            {/* live activity ticker */}
+            <div className="rounded-xl p-3 border border-white/5 bg-white/[0.03]">
+              <div className="text-[9px] font-bold tracking-widest text-slate-400 mb-1.5">LIVE ACTIVITY</div>
+              <div className="space-y-1.5">
+                <TickerRow color={GREEN} text="QS · Level 3 valuation signed" />
+                <TickerRow color={ORANGE} text="DABS · Sequence A-14 published" />
+                <TickerRow color={PURPLE} text="Oracle · RAMS drafted" />
+              </div>
+            </div>
+          </div>
+
+          {/* Oracle FAB */}
+          <motion.div
+            animate={{ boxShadow: [`0 0 0 0 ${PURPLE}66`, `0 0 0 16px ${PURPLE}00`] }}
+            transition={{ duration: 1.8, repeat: Infinity }}
+            className="absolute bottom-6 right-5 w-14 h-14 rounded-full flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${PURPLE}, #6D28D9)` }}
+          >
+            <Sparkles size={22} className="text-white" />
+          </motion.div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function MockTile({
+  color,
+  label,
+  tag,
+  pulse,
+}: {
+  color: string;
+  label: string;
+  tag: string;
+  pulse?: boolean;
+}) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.03 }}
+      className="relative rounded-xl p-3 h-[74px] flex flex-col justify-between border border-white/5 overflow-hidden"
+      style={{ background: `linear-gradient(140deg, ${color}22, ${color}08 60%, rgba(255,255,255,0.02))` }}
+    >
+      <motion.div
+        animate={pulse ? { scale: [1, 1.6, 1], opacity: [1, 0, 1] } : undefined}
+        transition={pulse ? { duration: 1.8, repeat: Infinity } : undefined}
+        className="w-2 h-2 rounded-full"
+        style={{ background: color }}
+      />
+      <div>
+        <div className="text-white text-[13px] font-bold leading-none">{label}</div>
+        <div className="text-[9px] tracking-widest text-slate-400 mt-1">{tag}</div>
+      </div>
+    </motion.div>
+  );
+}
+
+function TickerRow({ color, text }: { color: string; text: string }) {
+  return (
+    <div className="flex items-center gap-2 text-[10px] text-slate-300">
+      <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: color }} />
+      {text}
+    </div>
+  );
+}
+
+/* =============================================================
+   TRUST STRIP
+============================================================= */
+function TrustStrip() {
+  const brands = [
+    "Meridian Build Group",
+    "Halcyon Interiors",
+    "Northwark Civils",
+    "Blackfriars Fit-Out",
+    "Kelvin & Rowe",
+    "Ostara Developments",
+  ];
+  return (
+    <section className="py-14 border-y border-slate-200 bg-white/60">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center text-xs font-bold tracking-[0.3em] text-slate-500 mb-8">
+          TRUSTED ON SITES ACROSS THE UK
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          {brands.map((b) => (
+            <div
+              key={b}
+              className="text-center text-slate-700 font-black text-sm tracking-wider opacity-70 hover:opacity-100 transition-opacity"
+              style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}
+            >
+              {b.toUpperCase()}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =============================================================
+   SIX MODULES DEEP-DIVE
+============================================================= */
+const MODULES = [
+  {
+    id: "dabs",
+    name: "DABS",
+    tag: "Drawings → Sequences",
+    color: ORANGE,
+    icon: FileText,
+    saves: "40 min / day",
+    who: "Site managers & foremen",
+    what:
+      "Feed DABS a GA drawing or spec sheet. It returns a numbered, plain-English installation sequence, with hand-off criteria and safety checkpoints baked in.",
+  },
+  {
+    id: "sentinel",
+    name: "Sentinel",
+    tag: "Permits & RAMS",
+    color: RED,
+    icon: ShieldCheck,
+    saves: "60 min / permit",
+    who: "HSE managers",
+    what:
+      "Drafts hot-works, working-at-height and confined-space permits from a task description. Every doc trails to CDM 2015, HSG150, Work at Height Regs.",
+  },
+  {
+    id: "randall",
+    name: "Randall",
+    tag: "Programme → Diary",
+    color: AMBER,
+    icon: ClipboardCheck,
+    saves: "60 min / day",
+    who: "Senior PMs",
+    what:
+      "Import the master Gantt. Randall turns it into a day-to-a-page playbook, tracks slippage, and files the diary automatically.",
+  },
+  {
+    id: "drawings",
+    name: "Drawings",
+    tag: "Vision Q&A",
+    color: CYAN,
+    icon: Layers,
+    saves: "20 min / query",
+    who: "Everyone on site",
+    what:
+      "Ask a drawing anything. Grid refs, RFI-worthy clashes, revision deltas. Answers cite the file, the sheet, and the callout.",
+  },
+  {
+    id: "qs",
+    name: "QS Verifier",
+    tag: "BIM → Money",
+    color: GREEN,
+    icon: PoundSterling,
+    saves: "120 min / week",
+    who: "Quantity surveyors",
+    what:
+      "Reconciles model quantities against site progress. Valuations that used to take two days close in forty minutes.",
+  },
+  {
+    id: "oracle",
+    name: "The Oracle",
+    tag: "30-yr HSE Advisor",
+    color: PURPLE,
+    icon: Sparkles,
+    saves: "Priceless",
+    who: "Anyone with a question",
+    what:
+      "A decorated 30-year site manager, HSE director and Fellow of every UK institution — grounded in your Project Bible.",
+  },
+];
+
+function ModulesSection() {
+  const [open, setOpen] = useState<string | null>("dabs");
+  return (
+    <section className="py-24 relative">
+      <div className="max-w-7xl mx-auto px-6">
+        <SectionLabel color={ORANGE}>SECTION · 02 · SIX MODULES</SectionLabel>
+        <h2 className="text-4xl md:text-6xl font-black tracking-tight mt-4" style={{ color: INK }}>
+          One glove.{" "}
+          <span style={{ color: ORANGE }}>Six commands.</span>{" "}
+          <span style={{ color: PURPLE }}>Zero paper.</span>
+        </h2>
+        <p className="mt-4 text-lg text-slate-600 max-w-2xl">
+          A progressive web app that installs to the home screen and behaves like a native cockpit. Every
+          module was built by construction people, for construction people.
+        </p>
+
+        <div className="mt-12 grid gap-3">
+          {MODULES.map((m) => {
+            const isOpen = open === m.id;
+            const Icon = m.icon;
+            return (
+              <motion.div
+                key={m.id}
+                layout
+                className="rounded-2xl border-2 bg-white overflow-hidden"
+                style={{ borderColor: isOpen ? m.color : "#E2E8F0" }}
+              >
+                <button
+                  onClick={() => setOpen(isOpen ? null : m.id)}
+                  className="w-full flex items-center gap-4 p-5 text-left hover:bg-slate-50 transition-colors"
+                >
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `${m.color}20`, color: m.color }}
+                  >
+                    <Icon size={22} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-baseline gap-3 flex-wrap">
+                      <span className="text-xl font-black" style={{ color: INK }}>
+                        {m.name}
+                      </span>
+                      <span className="text-sm text-slate-500 font-medium">{m.tag}</span>
+                    </div>
+                  </div>
+                  <div
+                    className="text-xs font-bold px-3 py-1.5 rounded-full"
+                    style={{ background: `${m.color}15`, color: m.color }}
+                  >
+                    Saves {m.saves}
+                  </div>
+                  <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
+                    <ChevronDown size={20} className="text-slate-400" />
+                  </motion.div>
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-5 pb-5 pl-[76px] grid md:grid-cols-2 gap-6">
+                        <p className="text-slate-700 leading-relaxed">{m.what}</p>
+                        <div className="text-sm">
+                          <div className="text-slate-500 uppercase tracking-widest text-xs font-bold mb-1">
+                            Who uses it
+                          </div>
+                          <div className="text-slate-800 font-medium">{m.who}</div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =============================================================
+   ROI MATRIX
+============================================================= */
+function ROIMatrix() {
+  const [managers, setManagers] = useState(6);
+  const [dayRate, setDayRate] = useState(450);
+  const [adoption, setAdoption] = useState(70);
+  const [days, setDays] = useState(21);
+
+  // savings model
+  const DABS_MIN = 40; // per manager per day
+  const DIARY_MIN = 60; // per manager per day
+  const QS_MIN_WEEK = 120; // per manager per week → per day
+  const QS_MIN_DAY = QS_MIN_WEEK / 5;
+
+  const adoptionFactor = adoption / 100;
+  const perManagerMinsPerDay = (DABS_MIN + DIARY_MIN + QS_MIN_DAY) * adoptionFactor;
+
+  const hoursPerDay = (managers * perManagerMinsPerDay) / 60;
+  const hoursPerWeek = hoursPerDay * 5;
+  const hoursPerMonth = hoursPerDay * days;
+  const hoursPerYear = hoursPerDay * days * 12;
+
+  const hourlyRate = dayRate / 8;
+  const savingsMonth = Math.round(hoursPerMonth * hourlyRate);
+  const savingsYear = Math.round(hoursPerYear * hourlyRate);
+  const extraManagers = (hoursPerMonth / (days * 8)).toFixed(1);
+
+  const INSTRUCT_COST_PER_MANAGER = 89; // £/mo placeholder
+  const totalCost = INSTRUCT_COST_PER_MANAGER * managers;
+  const roi = totalCost > 0 ? Math.round((savingsMonth / totalCost) * 100) : 0;
+
+  // stacked bar percentages
+  const total = DABS_MIN + DIARY_MIN + QS_MIN_DAY;
+  const dabsPct = (DABS_MIN / total) * 100;
+  const diaryPct = (DIARY_MIN / total) * 100;
+  const qsPct = (QS_MIN_DAY / total) * 100;
+
+  const bigWin = savingsYear > 100000;
 
   return (
-    <>
-      <motion.div
-        className="fixed left-0 top-0 z-50 h-[3px]"
+    <section id="roi" className="py-24 relative overflow-hidden">
+      <div
+        className="absolute inset-0 opacity-40 pointer-events-none"
         style={{
-          width,
-          background: `linear-gradient(90deg, ${ORANGE}, ${PURPLE}, ${GREEN})`,
-          boxShadow: `0 0 20px ${ORANGE}`,
+          background: `radial-gradient(circle at 20% 30%, ${ORANGE}22, transparent 50%), radial-gradient(circle at 80% 70%, ${GREEN}22, transparent 50%)`,
         }}
       />
-    </>
+      <div className="relative max-w-7xl mx-auto px-6">
+        <SectionLabel color={GREEN}>SECTION · 03 · THE ROI MATRIX</SectionLabel>
+        <h2 className="text-4xl md:text-6xl font-black tracking-tight mt-4" style={{ color: INK }}>
+          How much is{" "}
+          <span
+            style={{
+              background: `linear-gradient(90deg, ${ORANGE}, ${RED})`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            paper
+          </span>{" "}
+          costing you?
+        </h2>
+        <p className="mt-4 text-lg text-slate-600 max-w-2xl">
+          Drag the sliders. Watch the meter run. Every minute your managers spend on admin is a minute
+          they aren't running the job.
+        </p>
+
+        <div className="mt-12 grid lg:grid-cols-2 gap-8">
+          {/* inputs */}
+          <div className="bg-white rounded-3xl p-8 border-2 border-slate-100 shadow-xl">
+            <SliderRow
+              label="Site managers"
+              value={managers}
+              min={1}
+              max={20}
+              step={1}
+              onChange={setManagers}
+              unit={managers === 1 ? "manager" : "managers"}
+              icon={<Users size={18} />}
+              color={ORANGE}
+            />
+            <SliderRow
+              label="Average day rate"
+              value={dayRate}
+              min={250}
+              max={800}
+              step={25}
+              onChange={setDayRate}
+              unit={`£${dayRate.toLocaleString()}/day`}
+              display=""
+              icon={<PoundSterling size={18} />}
+              color={AMBER}
+            />
+            <SliderRow
+              label="Adoption"
+              value={adoption}
+              min={10}
+              max={100}
+              step={10}
+              onChange={setAdoption}
+              unit="%"
+              icon={<TrendingUp size={18} />}
+              color={PURPLE}
+            />
+            <SliderRow
+              label="Working days / month"
+              value={days}
+              min={15}
+              max={26}
+              step={1}
+              onChange={setDays}
+              unit="days"
+              icon={<Clock size={18} />}
+              color={GREEN}
+            />
+
+            {/* stacked bar */}
+            <div className="mt-8">
+              <div className="text-xs font-bold tracking-widest text-slate-500 mb-2">
+                MINUTES SAVED PER MANAGER PER DAY
+              </div>
+              <div className="flex h-10 rounded-full overflow-hidden shadow-inner">
+                <motion.div
+                  animate={{ width: `${dabsPct}%` }}
+                  className="flex items-center justify-center text-white text-xs font-bold"
+                  style={{ background: ORANGE }}
+                >
+                  DABS 40
+                </motion.div>
+                <motion.div
+                  animate={{ width: `${diaryPct}%` }}
+                  className="flex items-center justify-center text-white text-xs font-bold"
+                  style={{ background: PURPLE }}
+                >
+                  Diary 60
+                </motion.div>
+                <motion.div
+                  animate={{ width: `${qsPct}%` }}
+                  className="flex items-center justify-center text-white text-xs font-bold"
+                  style={{ background: GREEN }}
+                >
+                  QS 24
+                </motion.div>
+              </div>
+              <div className="mt-2 text-sm text-slate-500">
+                {Math.round(perManagerMinsPerDay)} minutes / manager / day at {adoption}% adoption
+              </div>
+            </div>
+          </div>
+
+          {/* outputs */}
+          <div
+            className="rounded-3xl p-8 shadow-2xl text-white relative overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, #0F172A, #1E293B)`,
+            }}
+          >
+            <div
+              className="absolute inset-0 opacity-30 pointer-events-none"
+              style={{
+                background: `radial-gradient(circle at 70% 20%, ${GREEN}, transparent 50%)`,
+              }}
+            />
+            <div className="relative">
+              <div className="text-xs font-bold tracking-[0.3em] text-emerald-300">
+                YOUR ANNUAL SAVINGS
+              </div>
+              <div className="mt-2 text-6xl md:text-7xl font-black">
+                <Counter to={savingsYear} prefix="£" />
+              </div>
+              {bigWin && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold"
+                  style={{ background: `${GREEN}30`, color: GREEN }}
+                >
+                  <Zap size={12} /> BIG WIN — Six-figure recovery
+                </motion.div>
+              )}
+
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                <Stat label="Per month" value={savingsMonth} prefix="£" />
+                <Stat label="Hours / month" value={Math.round(hoursPerMonth)} suffix=" h" />
+                <Stat label="Hours / year" value={Math.round(hoursPerYear)} suffix=" h" />
+                <Stat label="Extra managers unlocked" value={parseFloat(extraManagers)} decimals={1} />
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-white/10">
+                <div className="flex justify-between items-baseline">
+                  <div>
+                    <div className="text-xs text-slate-400 uppercase tracking-widest">Cost of InstructSite</div>
+                    <div className="text-2xl font-black mt-1">£{totalCost.toLocaleString()}<span className="text-sm text-slate-400 font-normal">/mo</span></div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-slate-400 uppercase tracking-widest">Monthly ROI</div>
+                    <div className="text-3xl font-black" style={{ color: GREEN }}>
+                      <Counter to={roi} suffix="%" />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-slate-400">
+                  Every £1 spent on InstructSite returns <b className="text-white">£{(roi / 100).toFixed(2)}</b> in reclaimed manager time.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* breakdown ribbon */}
+        <div className="mt-8 grid md:grid-cols-3 gap-4">
+          <MetricCard color={ORANGE} icon={FileText} label="DABS · Drawings → Sequences" value="40 min / manager / day" />
+          <MetricCard color={PURPLE} icon={ClipboardCheck} label="Diary & progress recording" value="60 min / manager / day" />
+          <MetricCard color={GREEN} icon={PoundSterling} label="QS payment verification" value="120 min / manager / week" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SliderRow({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  unit,
+  display,
+  icon,
+  color,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  unit: string;
+  display?: string;
+  icon?: React.ReactNode;
+  color: string;
+}) {
+  return (
+    <div className="mb-6 last:mb-0">
+      <div className="flex justify-between items-center mb-2">
+        <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
+          <span style={{ color }}>{icon}</span>
+          {label}
+        </label>
+        <div className="text-lg font-black" style={{ color: INK }}>
+          {display !== undefined ? display : `${value} ${unit}`.trim()}
+        </div>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-2 rounded-full appearance-none cursor-pointer"
+        style={{
+          background: `linear-gradient(90deg, ${color} 0%, ${color} ${
+            ((value - min) / (max - min)) * 100
+          }%, #E2E8F0 ${((value - min) / (max - min)) * 100}%, #E2E8F0 100%)`,
+        }}
+      />
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  prefix,
+  suffix,
+  decimals,
+}: {
+  label: string;
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
+}) {
+  return (
+    <div>
+      <div className="text-xs text-slate-400 uppercase tracking-widest">{label}</div>
+      <div className="text-2xl font-black mt-1">
+        <Counter to={value} prefix={prefix} suffix={suffix} decimals={decimals} />
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({
+  color,
+  icon: Icon,
+  label,
+  value,
+}: {
+  color: string;
+  icon: React.ComponentType<{ size?: number }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="bg-white rounded-2xl p-5 border-2 border-slate-100 flex items-center gap-4">
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}20`, color }}>
+        <Icon size={22} />
+      </div>
+      <div>
+        <div className="text-xs text-slate-500 font-medium">{label}</div>
+        <div className="font-black text-lg" style={{ color: INK }}>{value}</div>
+      </div>
+    </div>
+  );
+}
+
+/* =============================================================
+   DAY IN THE LIFE
+============================================================= */
+const DAY_TIMELINE = [
+  { time: "06:45", label: "Site opens", detail: "Weather chip auto-pulled. Programme risk flagged.", color: ORANGE },
+  { time: "07:15", label: "Toolbox talk", detail: "Sentinel drafts today's RAMS in 90 seconds.", color: RED },
+  { time: "09:30", label: "Drawing question", detail: "Foreman asks Oracle a fire-stop query. Answered in 12s.", color: PURPLE },
+  { time: "11:00", label: "Sequence issued", detail: "DABS produces install sequence for Level 4 dry-lining.", color: ORANGE },
+  { time: "14:00", label: "QS visit", detail: "Verifier reconciles progress. Valuation ready.", color: GREEN },
+  { time: "17:00", label: "Diary auto-filed", detail: "Randall compiles the day-to-a-page. No typing.", color: AMBER },
+];
+
+function DayInTheLife() {
+  return (
+    <section className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        <SectionLabel color={PURPLE}>SECTION · 04 · A DAY IN THE LIFE</SectionLabel>
+        <h2 className="text-4xl md:text-6xl font-black tracking-tight mt-4" style={{ color: INK }}>
+          06:45 to 17:00. <span style={{ color: PURPLE }}>Every minute earning.</span>
+        </h2>
+
+        <div className="mt-16 relative">
+          <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 bg-slate-200" />
+          <div className="space-y-8">
+            {DAY_TIMELINE.map((t, i) => (
+              <motion.div
+                key={t.time}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ delay: i * 0.05 }}
+                className={`relative pl-20 md:pl-0 md:grid md:grid-cols-2 md:gap-16 items-center ${
+                  i % 2 === 0 ? "" : "md:[&>*:first-child]:col-start-2"
+                }`}
+              >
+                <div
+                  className="absolute left-8 md:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full ring-4 ring-white"
+                  style={{ background: t.color }}
+                />
+                <div className={i % 2 === 0 ? "md:text-right md:pr-12" : "md:pl-12"}>
+                  <div className="text-3xl font-black" style={{ color: t.color }}>
+                    {t.time}
+                  </div>
+                  <div className="text-xl font-bold mt-1" style={{ color: INK }}>
+                    {t.label}
+                  </div>
+                  <div className="text-slate-600 mt-1">{t.detail}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =============================================================
+   TESTIMONIALS
+============================================================= */
+const TESTIMONIALS = [
+  {
+    quote: "We closed a £1.2M valuation in 40 minutes instead of two days. My QS thinks I hired her a team.",
+    name: "Sarah Ellis",
+    role: "Commercial Director",
+    company: "Meridian Build Group",
+    color: GREEN,
+  },
+  {
+    quote: "My site managers stopped drowning in WhatsApps. Diaries file themselves and Sundays are mine again.",
+    name: "Marcus Whitfield",
+    role: "Operations Director",
+    company: "Halcyon Interiors",
+    color: PURPLE,
+  },
+  {
+    quote: "Randall gave me back my Sundays. The Oracle is the site manager I couldn't afford to hire.",
+    name: "Tom Aldridge",
+    role: "Senior Project Manager",
+    company: "Northwark Civils",
+    color: ORANGE,
+  },
+];
+
+function Testimonials() {
+  return (
+    <section className="py-24">
+      <div className="max-w-7xl mx-auto px-6">
+        <SectionLabel color={AMBER}>SECTION · 05 · FROM THE SITE</SectionLabel>
+        <h2 className="text-4xl md:text-6xl font-black tracking-tight mt-4" style={{ color: INK }}>
+          People who <span style={{ color: AMBER }}>build things</span> say it best.
+        </h2>
+
+        <div className="mt-12 grid md:grid-cols-3 gap-6">
+          {TESTIMONIALS.map((t, i) => (
+            <motion.div
+              key={t.name}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              whileHover={{ y: -6 }}
+              className="bg-white rounded-3xl p-7 border-2 border-slate-100 shadow-lg relative overflow-hidden"
+            >
+              <div
+                className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-20"
+                style={{ background: t.color }}
+              />
+              <div className="text-5xl font-black leading-none" style={{ color: t.color }}>
+                "
+              </div>
+              <p className="mt-2 text-slate-800 leading-relaxed font-medium">{t.quote}</p>
+              <div className="mt-6 flex items-center gap-3">
+                <div
+                  className="w-11 h-11 rounded-full flex items-center justify-center text-white font-black shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${t.color}, ${INK})` }}
+                >
+                  {t.name
+                    .split(" ")
+                    .map((s) => s[0])
+                    .join("")}
+                </div>
+                <div>
+                  <div className="font-bold text-sm" style={{ color: INK }}>
+                    {t.name}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {t.role} · {t.company}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* case study metrics */}
+        <div className="mt-12 grid md:grid-cols-3 gap-4">
+          <BigMetric label="Hours reclaimed" value={42400} suffix=" h" color={ORANGE} />
+          <BigMetric label="Valuations closed" value={1240000} prefix="£" color={GREEN} />
+          <BigMetric label="Snags resolved" value={9876} color={PURPLE} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BigMetric({
+  label,
+  value,
+  prefix,
+  suffix,
+  color,
+}: {
+  label: string;
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  color: string;
+}) {
+  const [ref, inView] = useInView();
+  return (
+    <div ref={ref} className="bg-white rounded-2xl p-6 border-2 border-slate-100 text-center">
+      <div className="text-xs uppercase tracking-widest text-slate-500 font-bold">{label}</div>
+      <div className="text-4xl md:text-5xl font-black mt-2" style={{ color }}>
+        {inView ? <Counter to={value} prefix={prefix} suffix={suffix} duration={1.8} /> : `${prefix || ""}0${suffix || ""}`}
+      </div>
+      <div className="text-xs text-slate-500 mt-1">Across our beta cohort</div>
+    </div>
+  );
+}
+
+function useInView(): [React.RefObject<HTMLDivElement | null>, boolean] {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setInView(true);
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, inView];
+}
+
+/* =============================================================
+   COMPLIANCE
+============================================================= */
+function Compliance() {
+  const items = [
+    { icon: ShieldCheck, label: "CDM 2015", detail: "Every task, RAMS and permit trails to CDM duties." },
+    { icon: HardHat, label: "HSG150 & HSG151", detail: "Site safety standards built into Sentinel." },
+    { icon: Wrench, label: "Work at Height Regs", detail: "Automated high-risk flags & permits." },
+    { icon: ClipboardCheck, label: "Audit trail", detail: "Every action stamped. RLS-backed data." },
+    { icon: Bell, label: "Real-time alerts", detail: "Permit expiry, weather, near-miss triggers." },
+    { icon: Check, label: "Data ownership", detail: "Your data. Export anytime. No lock-in." },
+  ];
+  return (
+    <section className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        <SectionLabel color={GREEN}>SECTION · 06 · COMPLIANCE</SectionLabel>
+        <h2 className="text-4xl md:text-6xl font-black tracking-tight mt-4" style={{ color: INK }}>
+          Built for <span style={{ color: GREEN }}>HSE inspections.</span>
+        </h2>
+        <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map((it) => {
+            const Icon = it.icon;
+            return (
+              <div key={it.label} className="bg-slate-50 rounded-2xl p-6 border border-slate-100 hover:border-emerald-300 transition-colors">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${GREEN}20`, color: GREEN }}>
+                  <Icon size={20} />
+                </div>
+                <div className="font-bold mt-3" style={{ color: INK }}>
+                  {it.label}
+                </div>
+                <div className="text-sm text-slate-600 mt-1">{it.detail}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =============================================================
+   FAQ
+============================================================= */
+const FAQS = [
+  { q: "How long does onboarding take?", a: "Under an hour. Upload your Project Bible (drawings, spec, programme) and the six modules configure themselves." },
+  { q: "Does it work offline?", a: "Yes. The PWA caches your project. Log activities, diaries and photos with no signal — they sync when you're back." },
+  { q: "Can I import my existing programme?", a: "Import Asta, MS Project, P6 exports. Randall converts them into the day-to-a-page playbook automatically." },
+  { q: "Who owns the data?", a: "You do. Full export at any time. Row-level security means only your team sees your projects." },
+  { q: "How is it priced?", a: "Per active manager per month. No seat fees for operatives or subcontractors. Cancel anytime." },
+  { q: "What if my team hates new software?", a: "Six tiles. One purple button. It behaves like Instagram, not SAP. Adoption in our beta cohort is above 90%." },
+];
+
+function FAQ() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section className="py-24">
+      <div className="max-w-4xl mx-auto px-6">
+        <SectionLabel color={CYAN}>SECTION · 07 · FAQ</SectionLabel>
+        <h2 className="text-4xl md:text-6xl font-black tracking-tight mt-4" style={{ color: INK }}>
+          Answers, <span style={{ color: CYAN }}>on the trowel.</span>
+        </h2>
+        <div className="mt-10 space-y-3">
+          {FAQS.map((f, i) => (
+            <div
+              key={f.q}
+              className="bg-white rounded-2xl border-2 border-slate-100 overflow-hidden"
+            >
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                className="w-full flex items-center justify-between p-5 text-left"
+              >
+                <span className="font-bold text-lg" style={{ color: INK }}>{f.q}</span>
+                <motion.div animate={{ rotate: open === i ? 180 : 0 }}>
+                  <ChevronDown className="text-slate-400" />
+                </motion.div>
+              </button>
+              <AnimatePresence initial={false}>
+                {open === i && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-5 pb-5 text-slate-600">{f.a}</div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =============================================================
+   CTA
+============================================================= */
+function FinalCTA() {
+  return (
+    <section className="py-24">
+      <div className="max-w-5xl mx-auto px-6">
+        <div
+          className="relative rounded-[40px] p-12 md:p-20 text-center overflow-hidden shadow-2xl"
+          style={{
+            background: `linear-gradient(135deg, ${ORANGE}, ${PURPLE})`,
+          }}
+        >
+          <div className="absolute inset-0 opacity-30" style={{ background: `radial-gradient(circle at 30% 30%, white, transparent 50%)` }} />
+          <div className="relative">
+            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight">
+              Stop paying managers to type.
+            </h2>
+            <p className="mt-4 text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
+              Start your free 14-day trial. No card. No fluff. Just two hours a day, per manager, back where they belong.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-4 justify-center">
+              <Link
+                to="/auth"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-black text-lg bg-white hover:scale-105 transition-transform"
+                style={{ color: INK }}
+              >
+                Get started free <ArrowRight size={20} />
+              </Link>
+              <a
+                href="#roi"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-black text-lg border-2 border-white text-white hover:bg-white/10"
+              >
+                Run the numbers again
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* =============================================================
+   Helpers
+============================================================= */
+function SectionLabel({ children, color }: { children: React.ReactNode; color: string }) {
+  return (
+    <div className="inline-flex items-center gap-2 text-xs font-black tracking-[0.3em]" style={{ color }}>
+      <span className="w-8 h-px" style={{ background: color }} />
+      {children}
+    </div>
   );
 }
 
@@ -1126,18 +1237,48 @@ function StickyNav() {
 ============================================================= */
 function ExperiencePage() {
   return (
-    <main
-      className="relative w-full"
-      style={{ backgroundColor: BLACK }}
-    >
-      <StickyNav />
-      <VisionHero />
-      <CommandModule />
-      <RandallSlider />
-      <VerificationEngine />
-      <FinalCTA />
-    </main>
+    <div className="min-h-screen" style={{ background: CANVAS, color: INK }}>
+      <ProgressBar />
+
+      {/* nav */}
+      <nav className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md bg-white/70 border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="font-black text-lg tracking-tight" style={{ color: INK }}>
+            Instruct<span style={{ color: ORANGE }}>Site</span>
+          </Link>
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+            <a href="#roi" className="hover:text-slate-900">ROI</a>
+            <a href="#modules" className="hover:text-slate-900">Modules</a>
+            <a href="#compliance" className="hover:text-slate-900">Compliance</a>
+            <a href="#faq" className="hover:text-slate-900">FAQ</a>
+          </div>
+          <Link
+            to="/auth"
+            className="px-4 py-2 rounded-full text-sm font-bold text-white"
+            style={{ background: INK }}
+          >
+            Start free
+          </Link>
+        </div>
+      </nav>
+
+      <div className="pt-16">
+        <Hero />
+        <TrustStrip />
+        <div id="modules"><ModulesSection /></div>
+        <ROIMatrix />
+        <DayInTheLife />
+        <Testimonials />
+        <div id="compliance"><Compliance /></div>
+        <div id="faq"><FAQ /></div>
+        <FinalCTA />
+
+        <footer className="py-10 border-t border-slate-200">
+          <div className="max-w-7xl mx-auto px-6 text-center text-sm text-slate-500">
+            © {new Date().getFullYear()} InstructSite · Built by construction people, for construction people.
+          </div>
+        </footer>
+      </div>
+    </div>
   );
 }
-
-export default ExperiencePage;
