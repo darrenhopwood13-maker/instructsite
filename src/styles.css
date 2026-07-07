@@ -159,6 +159,11 @@
   0% { transform: translateX(-150%) skewX(-20deg); }
   100% { transform: translateX(200%) skewX(-20deg); }
 }
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
 @keyframes aurora-drift {
   0%, 100% { transform: translate3d(0,0,0) rotate(0deg); opacity: 0.55; }
   50% { transform: translate3d(-4%, 3%, 0) rotate(8deg); opacity: 0.85; }

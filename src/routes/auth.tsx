@@ -187,10 +187,11 @@ function AuthPage() {
             <p className="text-[0.7rem] font-bold uppercase tracking-[0.5em] text-alert">
               7-Day Free Trial · No card required
             </p>
-            <h1 className="mt-6 text-6xl font-extrabold leading-[0.95] tracking-tight text-foreground"
+            <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[0.9] tracking-tight text-foreground"
                 style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}>
-              instruct<span style={{ color: "#ff7a00" }}>Site</span>
+              <span className="block sm:inline">instruct</span><span className="block sm:inline" style={{ color: "#ff7a00" }}>Site</span>
             </h1>
+
             <div className="mt-8 h-px w-24 bg-alert" />
             <p className="mt-6 max-w-md text-sm leading-relaxed text-foreground/80">
               Start free — explore Randall AI auto-allocation, live IFC zone tracking, permit
@@ -224,10 +225,11 @@ function AuthPage() {
                 {mode === "signin" ? "Secure Sign In" : mode === "signup" ? "Start Free Trial" : "Password Recovery"}
               </span>
             </div>
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-foreground"
+            <h2 className="mt-4 text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground break-words"
                 style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}>
               {mode === "signin" ? "Enter the portal" : mode === "signup" ? "Create your account" : "Reset password"}
             </h2>
+
             <p className="mt-2 text-sm text-foreground/60">
               {mode === "signin"
                 ? "Sign in with your workspace credentials."
