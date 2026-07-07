@@ -14,6 +14,7 @@ import { Route as TrialEndedRouteImport } from './routes/trial-ended'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as ExperienceRouteImport } from './routes/experience'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
@@ -56,6 +57,11 @@ const OracleRoute = OracleRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExperienceRoute = ExperienceRouteImport.update({
+  id: '/experience',
+  path: '/experience',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -208,6 +216,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/experience'
     | '/mcp'
     | '/oracle'
     | '/reset-password'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/experience'
     | '/mcp'
     | '/oracle'
     | '/reset-password'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/experience'
     | '/mcp'
     | '/oracle'
     | '/reset-password'
@@ -311,6 +323,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
+  ExperienceRoute: typeof ExperienceRoute
   McpRoute: typeof McpRoute
   OracleRoute: typeof OracleRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -368,6 +381,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/experience': {
+      id: '/experience'
+      path: '/experience'
+      fullPath: '/experience'
+      preLoaderRoute: typeof ExperienceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -503,6 +523,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
+  ExperienceRoute: ExperienceRoute,
   McpRoute: McpRoute,
   OracleRoute: OracleRoute,
   ResetPasswordRoute: ResetPasswordRoute,
