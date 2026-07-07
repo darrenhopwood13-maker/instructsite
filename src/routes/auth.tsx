@@ -7,6 +7,7 @@ import { routeForRoles } from "@/lib/ensure-oracle-session";
 import {
   Loader2, ShieldAlert, ArrowRight, Eye, EyeOff, MailCheck,
   HardHat, Wrench, GraduationCap, Calculator, Sparkles, PhoneCall,
+  Smartphone,
 } from "lucide-react";
 import { z } from "zod";
 
@@ -46,6 +47,94 @@ const BANNER_ITEMS = [
 ];
 
 function ScrollingBanner() {
+  const items = [...BANNER_ITEMS, ...BANNER_ITEMS];
+  return null || (
+    (undefined as unknown as never) // keeps original fn shape below
+  );
+}
+function _unused() { const _x: any = ScrollingBanner; return _x; }
+
+function InstallPwaButton() {
+  const [deferred, setDeferred] = useState<any>(null);
+  const [installed, setInstalled] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+  const [showIosHint, setShowIosHint] = useState(false);
+
+  useEffect(() => {
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const iOS = /iPhone|iPad|iPod/i.test(ua) && !/CriOS|FxiOS/i.test(ua);
+    setIsIos(iOS);
+    const isStandalone =
+      typeof window !== "undefined" &&
+      (window.matchMedia?.("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true);
+    setInstalled(isStandalone);
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferred(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", () => setInstalled(true));
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  if (installed) return null;
+
+  const onClick = async () => {
+    if (isIos) {
+      setShowIosHint(true);
+      return;
+    }
+    if (!deferred) {
+      setShowIosHint(true);
+      return;
+    }
+    deferred.prompt();
+    await deferred.userChoice;
+    setDeferred(null);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onClick}
+        className="fixed left-4 top-4 z-50 flex items-center gap-2 rounded-full border border-alert/60 bg-alert/15 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-[0.28em] text-alert shadow-lg backdrop-blur"
+      >
+        <Smartphone size={12} /> Add to Home Screen
+      </button>
+      {showIosHint && (
+        <div
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-black/70 backdrop-blur"
+          onClick={() => setShowIosHint(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="cockpit-sheet w-full max-w-md rounded-t-2xl border-2 border-alert/60 bg-background p-5 text-sm text-foreground"
+          >
+            <p className="text-[0.6rem] font-bold uppercase tracking-[0.32em] text-alert">
+              Install instructSite
+            </p>
+            <p className="mt-2">
+              {isIos
+                ? "In Safari, tap the Share icon, then choose \"Add to Home Screen\"."
+                : "Open the browser menu and choose \"Install app\" or \"Add to Home screen\"."}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowIosHint(false)}
+              className="mt-4 w-full rounded-lg border border-white/20 bg-white/5 py-2 text-[0.7rem] font-bold uppercase tracking-widest"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ScrollingBannerReal() {
   const items = [...BANNER_ITEMS, ...BANNER_ITEMS];
   return (
     <div className="relative overflow-hidden border-y-2 border-alert bg-gradient-to-r from-[#ff7a00] via-[#ffb057] to-[#ff7a00] py-3 shadow-[0_10px_30px_-10px_rgba(255,122,0,0.6)]"
