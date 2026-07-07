@@ -166,6 +166,7 @@ export function DrawingCanvas({
       </div>
 
       {/* Elegant single-select dropdown for sheets */}
+      {!hideInternalSelector && (
       <div className="mb-3">
         <label className="block">
           <span className="mb-1 block font-mono text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
