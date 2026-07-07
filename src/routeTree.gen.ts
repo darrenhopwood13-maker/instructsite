@@ -31,6 +31,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$drawingId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiPublicHooksWeatherSnapshotRouteImport } from './routes/api/public/hooks/weather-snapshot'
 
 const UnlockRoute = UnlockRouteImport.update({
   id: '/unlock',
@@ -145,6 +146,12 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksWeatherSnapshotRoute =
+  ApiPublicHooksWeatherSnapshotRouteImport.update({
+    id: '/api/public/hooks/weather-snapshot',
+    path: '/api/public/hooks/weather-snapshot',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
+  '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -193,6 +201,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
+  '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -218,6 +227,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
+  '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
+    | '/api/public/hooks/weather-snapshot'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
+    | '/api/public/hooks/weather-snapshot'
   id:
     | '__root__'
     | '/'
@@ -292,6 +304,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
+    | '/api/public/hooks/weather-snapshot'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -317,6 +330,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiDrawingDrawingIdRoute: typeof ApiDrawingDrawingIdRoute
+  ApiPublicHooksWeatherSnapshotRoute: typeof ApiPublicHooksWeatherSnapshotRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -475,6 +489,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/weather-snapshot': {
+      id: '/api/public/hooks/weather-snapshot'
+      path: '/api/public/hooks/weather-snapshot'
+      fullPath: '/api/public/hooks/weather-snapshot'
+      preLoaderRoute: typeof ApiPublicHooksWeatherSnapshotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -502,6 +523,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiDrawingDrawingIdRoute: ApiDrawingDrawingIdRoute,
+  ApiPublicHooksWeatherSnapshotRoute: ApiPublicHooksWeatherSnapshotRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
