@@ -6,13 +6,20 @@ import { MarkdownRenderer } from "@/components/ui/markdown";
 import { ProjectBibleUpload } from "@/components/oracle/ProjectBibleUpload";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
+import cmdInstallation from "@/assets/cmd-installation.jpg";
+import cmdSafety from "@/assets/cmd-safety.jpg";
+import cmdProcurement from "@/assets/cmd-procurement.jpg";
+import cmdDrawing from "@/assets/cmd-drawing.jpg";
+import cmdSnag from "@/assets/cmd-snag.jpg";
+import cmdAssist from "@/assets/cmd-assist.jpg";
+
 const COMMANDS = [
-  { key: "installation", label: "Installation Sequence", icon: Wrench, desc: "Step-by-step build & commissioning" },
-  { key: "safety", label: "Safety Auditor", icon: ShieldAlert, desc: "Risk, RAMS, compliance checks" },
-  { key: "procurement", label: "Procurement", icon: ShoppingBag, desc: "BOMs, vendors, lead times" },
-  { key: "drawing", label: "Drawing Q&A", icon: FileSearch, desc: "Query technical drawings" },
-  { key: "snag", label: "Snag Master", icon: ClipboardCheck, desc: "Defect capture & tracking" },
-  { key: "assist", label: "AI Assist", icon: Brain, desc: "On-site knowledge co-pilot" },
+  { key: "installation", label: "Installation Sequence", sub: "Build order & trade coordination", icon: Wrench,         desc: "Step-by-step build & commissioning", image: cmdInstallation, accent: "from-amber-500/20 to-orange-600/30" },
+  { key: "safety",       label: "Safety Auditor",        sub: "BSR risk & compliance",            icon: ShieldAlert,    desc: "Risk, RAMS, compliance checks",      image: cmdSafety,       accent: "from-yellow-400/20 to-red-500/30" },
+  { key: "procurement",  label: "Procurement",           sub: "Identify & source materials",      icon: ShoppingBag,    desc: "BOMs, vendors, lead times",          image: cmdProcurement,  accent: "from-orange-400/20 to-amber-700/30" },
+  { key: "drawing",      label: "Drawing Q&A",           sub: "Symbols, datums, MBC details",     icon: FileSearch,     desc: "Query technical drawings",           image: cmdDrawing,      accent: "from-sky-400/20 to-blue-700/30" },
+  { key: "snag",         label: "Snag Master",           sub: "RICS-standard rectification",      icon: ClipboardCheck, desc: "Defect capture & tracking",          image: cmdSnag,         accent: "from-emerald-400/20 to-green-700/30" },
+  { key: "assist",       label: "AI Assist",             sub: "Cross-trade problem solving",      icon: Brain,          desc: "On-site knowledge co-pilot",         image: cmdAssist,       accent: "from-lime-400/30 to-emerald-700/40" },
 ];
 const PROCESSING_STEPS = [
   "Locking on to project context…",
