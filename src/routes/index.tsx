@@ -40,18 +40,57 @@ function Index() {
             AI · Site Operations
           </p>
           <h1
-            className="mt-6 text-7xl font-extrabold leading-none tracking-tight md:text-8xl lg:text-9xl"
+            className="mt-6 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-extrabold leading-[0.9] tracking-tight"
             style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
           >
-            <span style={{ color: "#ff7a00" }}>instruct</span>
-            <span className="text-white">Site</span>
+            <span className="block sm:inline" style={{ color: "#ff7a00" }}>instruct</span>
+            <span className="block sm:inline text-white">Site</span>
           </h1>
-          <p className="mt-6 text-lg md:text-xl font-medium text-white/85">
-            Turn complex 2D drawings into instant, plain-English sequences.
+          <p
+            className="mt-6 text-xl md:text-3xl font-black tracking-tight text-white"
+            style={{ fontFamily: "'Space Grotesk', 'Inter Tight', sans-serif" }}
+          >
+            Turn complex 2D drawings into{" "}
+            <span
+              className="bg-clip-text text-transparent"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg,#ff7a00 0%,#ffb057 50%,#ff7a00 100%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 3s linear infinite",
+              }}
+            >
+              instant, plain-English
+            </span>{" "}
+            sequences.
           </p>
           <p className="mt-2 text-sm md:text-base text-white/60">
             Whether you have 30 years of experience or 30 days — get the edge in seconds.
           </p>
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-3xl mx-auto">
+            {[
+              { n: "Oracle", d: "Project Bible extraction" },
+              { n: "DABS AI", d: "Daily briefing compiler" },
+              { n: "Randall", d: "Programme → diary playbook" },
+              { n: "BIM Auto-Allocator", d: "10k+ IFC elements in seconds" },
+              { n: "QS Verifier", d: "Photo-evidence progress" },
+              { n: "Permit Sentinel", d: "High-risk auto-flagging" },
+            ].map((t) => (
+              <div
+                key={t.n}
+                className="glass-panel border border-white/10 rounded-lg px-3 py-2 text-left flex items-start gap-2"
+              >
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-alert shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[0.7rem] font-bold uppercase tracking-wider text-alert truncate">
+                    {t.n}
+                  </p>
+                  <p className="text-[0.7rem] text-white/70 leading-tight">{t.d}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="mt-10 h-px w-32 mx-auto bg-alert" />
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             {signedIn ? (
