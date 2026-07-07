@@ -524,3 +524,61 @@
 @utility float-y {
   animation: float-y 3.4s ease-in-out infinite;
 }
+
+/* ============ Cinematic command tiles (from instructSite) ============ */
+.cmd-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  isolation: isolate;
+  transform: translateZ(0);
+  transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease;
+}
+.cmd-tile::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 30%, hsl(140 60% 5% / .85) 100%);
+  z-index: 1;
+  transition: opacity .3s ease;
+}
+.cmd-tile:hover { transform: translateY(-4px) scale(1.015); box-shadow: 0 20px 50px -20px hsl(122 60% 30% / .6); }
+.cmd-tile:active { transform: translateY(-1px) scale(.99); }
+.cmd-tile img { transition: transform .8s cubic-bezier(.2,.8,.2,1), filter .4s ease; }
+.cmd-tile:hover img { transform: scale(1.08); filter: brightness(1.05) saturate(1.15); }
+
+.shine::before {
+  content: "";
+  position: absolute; top: 0; left: -75%;
+  width: 50%; height: 100%;
+  background: linear-gradient(120deg, transparent, hsl(0 0% 100% / .25), transparent);
+  transform: skewX(-20deg);
+  z-index: 2;
+  transition: left .7s ease;
+}
+.shine:hover::before { left: 130%; }
+
+.glass-dark {
+  background: linear-gradient(180deg, hsl(140 40% 8% / 0.55), hsl(140 40% 5% / 0.75));
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid hsl(122 45% 55% / 0.18);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up .5s cubic-bezier(.2,.8,.2,1) both; }
+
+@keyframes scan-line {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+.scan-line::after {
+  content: "";
+  position: absolute; left: 0; right: 0; height: 60%;
+  background: linear-gradient(180deg, transparent, hsl(122 80% 60% / .35), transparent);
+  animation: scan-line 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
