@@ -145,12 +145,14 @@ export const getMyProjectContext = createServerFn({ method: "GET" })
       .maybeSingle();
     const { data: proj } = await context.supabase
       .from("projects")
-      .select("name")
+      .select("name, project_number, site_address")
       .eq("id", data.projectId)
       .maybeSingle();
     return {
       email: email ?? null,
       projectName: proj?.name ?? null,
+      projectNumber: (proj as any)?.project_number ?? null,
+      siteAddress: (proj as any)?.site_address ?? null,
       companyName: inv?.company_name ?? null,
       tradePackages: (inv?.trade_packages ?? []) as string[],
     };
