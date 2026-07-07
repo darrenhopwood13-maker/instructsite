@@ -71,6 +71,7 @@ export function DrawingCanvas({
   onDropPin,
   onPinClick,
   activePinId,
+  hideInternalSelector = false,
 }: {
   drawings: Drawing[];
   selectedId: string | null;
@@ -81,6 +82,7 @@ export function DrawingCanvas({
   onDropPin?: (coords: { xPct: number; yPct: number }) => void;
   onPinClick?: (pin: PinRecord) => void;
   activePinId?: string | null;
+  hideInternalSelector?: boolean;
 }) {
 
   const directLinksFn = useServerFn(createDrawingDirectLinks);
