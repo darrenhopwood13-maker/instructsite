@@ -192,6 +192,22 @@ function SubcontractorCockpit() {
   const [oracleThinking, setOracleThinking] = useState(false);
   const [oracleMsgs, setOracleMsgs] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
 
+  // -------- Drawing bottom-sheet + weather + PWA install
+  const [drawingSheetOpen, setDrawingSheetOpen] = useState(false);
+  const weatherFn = useServerFn(getProjectWeather);
+  const weather = useQuery({
+    queryKey: ["weather", projectId],
+    queryFn: () => weatherFn({ data: { projectId } }),
+    enabled: ready,
+    refetchInterval: 15 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+  });
+  const [liveClock, setLiveClock] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setLiveClock(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const drawingLabel = selectedDrawingRow
     ? `${selectedDrawingRow.drawing_no ?? "DWG"} — ${selectedDrawingRow.title ?? ""}`
     : undefined;
