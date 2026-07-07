@@ -676,6 +676,94 @@ function SubcontractorCockpit() {
           }}
         />
       )}
+
+      {/* ---- Drawing bottom sheet ---- */}
+      {drawingSheetOpen && (
+        <div
+          className="fixed inset-0 z-[65] flex items-end justify-center bg-black/70 backdrop-blur"
+          onClick={() => setDrawingSheetOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="cockpit-sheet glass-panel flex max-h-[85dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-2 border-alert/60"
+          >
+            <div className="flex items-center justify-between border-b border-white/10 p-4">
+              <div>
+                <p className="text-[0.55rem] font-bold uppercase tracking-[0.32em] text-alert">
+                  Project Drawings
+                </p>
+                <p className="mt-0.5 text-[0.65rem] text-foreground/60">
+                  Tap a sheet to make it active
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDrawingSheetOpen(false)}
+                className="rounded-sm border border-white/15 p-1.5 text-foreground/60"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {drawingRows.length === 0 && (
+                <p className="p-6 text-center text-[0.7rem] text-foreground/50">
+                  No drawings uploaded yet.
+                </p>
+              )}
+              {drawingRows.map((d: any) => {
+                const active = d.id === selectedDrawing;
+                const title = d.title ?? d.site_documents?.file_name ?? "Untitled";
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDrawing(d.id);
+                      setDrawingSheetOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition ${
+                      active
+                        ? "border-alert bg-alert/10"
+                        : "border-white/10 bg-black/30 hover:border-alert/40"
+                    } mb-1.5`}
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-alert/15 text-alert">
+                      <FileText size={16} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-mono text-sm font-bold text-foreground">
+                        {d.drawing_no ?? "DWG"}
+                        {d.revision ? ` · Rev ${d.revision}` : ""}
+                      </span>
+                      <span className="block truncate text-[0.7rem] text-foreground/60">
+                        {title}
+                      </span>
+                    </span>
+                    {active && (
+                      <span className="rounded-full bg-alert px-2 py-0.5 text-[0.55rem] font-bold uppercase tracking-widest text-black">
+                        Active
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Oracle FAB (purple, bottom-right) ---- */}
+      {!oracleOpen && (
+        <button
+          type="button"
+          onClick={() => setOracleOpen(true)}
+          aria-label="Ask the Oracle"
+          className="oracle-fab fixed bottom-5 right-5 z-[80] grid h-16 w-16 place-items-center rounded-full border-2 border-purple-300/60 bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white active:scale-95"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <Sparkles size={26} />
+        </button>
+      )}
     </div>
   );
 }
