@@ -582,3 +582,40 @@
   animation: scan-line 1.6s ease-in-out infinite;
   pointer-events: none;
 }
+
+/* ============ Mobile Cockpit stability locks (PWA) ============ */
+@media (max-width: 900px) {
+  html, body {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: contain;
+  }
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* Keep inputs selectable */
+  input, textarea, select, [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+    touch-action: manipulation;
+  }
+}
+
+/* Bottom sheet slide-up */
+@keyframes cockpit-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.cockpit-sheet {
+  animation: cockpit-sheet-up 220ms cubic-bezier(.2,.9,.3,1);
+}
+
+/* Purple Oracle FAB glow */
+@keyframes oracle-fab-pulse {
+  0%,100% { box-shadow: 0 8px 30px -8px rgba(168,85,247,.55), 0 0 0 0 rgba(168,85,247,.4); }
+  50%     { box-shadow: 0 10px 40px -6px rgba(168,85,247,.75), 0 0 0 10px rgba(168,85,247,0); }
+}
+.oracle-fab {
+  animation: oracle-fab-pulse 3s ease-in-out infinite;
+}
