@@ -46,13 +46,6 @@ const BANNER_ITEMS = [
   "🎯 Role-tailored dashboards for Managers, QS, Subs & Apprentices",
 ];
 
-function ScrollingBanner() {
-  const items = [...BANNER_ITEMS, ...BANNER_ITEMS];
-  return null || (
-    (undefined as unknown as never) // keeps original fn shape below
-  );
-}
-function _unused() { const _x: any = ScrollingBanner; return _x; }
 
 function InstallPwaButton() {
   const [deferred, setDeferred] = useState<any>(null);
