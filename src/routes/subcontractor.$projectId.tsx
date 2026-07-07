@@ -15,6 +15,9 @@ import {
   Layers,
   MapPin,
   Timer,
+  FileText,
+  Cloud,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -23,6 +26,7 @@ import { getMyProjectContext } from "@/lib/subcontractors.functions";
 import { listProjectDrawings, listProjectZones } from "@/lib/tier1-uploads.functions";
 import { createLivePin, listLivePins } from "@/lib/live-activity.functions";
 import { askProjectOracle } from "@/lib/oracle.functions";
+import { getProjectWeather } from "@/lib/weather.functions";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
