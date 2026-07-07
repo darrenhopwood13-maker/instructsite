@@ -262,23 +262,65 @@ function SubcontractorCockpit() {
       <div className="aurora-bg" />
       <div className="grain-overlay" />
       <div className="relative mx-auto max-w-lg px-3 pb-24 pt-4 sm:px-4 sm:pt-6">
-        {/* ---- Welcome header ---- */}
-        <header className="glass-panel p-4">
-          <p className="text-[0.6rem] font-bold uppercase tracking-[0.32em] text-alert">
-            Subcontractor Cockpit
-          </p>
-          <h1
-            className="mt-1 truncate text-xl font-black uppercase leading-tight text-foreground sm:text-2xl"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-            title={`Welcome, ${welcome}`}
-          >
-            Welcome, {welcome}
-          </h1>
-          <p className="mt-1 truncate text-xs text-foreground/60">
-            {ctx.data?.projectName ?? "Loading project…"}
-          </p>
+        {/* ---- Dashboard header ---- */}
+        <header className="glass-panel overflow-hidden p-0">
+          <div className="border-b border-white/10 p-4">
+            <p className="text-[0.55rem] font-bold uppercase tracking-[0.32em] text-alert">
+              Subcontractor Cockpit
+            </p>
+            <h1
+              className="mt-1 truncate text-lg font-black uppercase leading-tight text-foreground sm:text-xl"
+              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              title={ctx.data?.projectName ?? ""}
+            >
+              {ctx.data?.projectName ?? "Loading project…"}
+            </h1>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.65rem] text-foreground/70">
+              {ctx.data?.projectNumber && (
+                <span className="font-mono text-alert">#{ctx.data.projectNumber}</span>
+              )}
+              <span className="truncate">{ctx.data?.companyName ?? "—"}</span>
+              <span className="text-foreground/40">·</span>
+              <span className="truncate">{ctx.data?.email ?? welcome}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 divide-x divide-white/10 text-[0.65rem]">
+            <div className="p-3">
+              <div className="text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/50">
+                Live Date
+              </div>
+              <div className="mt-1 font-mono text-sm text-foreground">
+                {liveClock.toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "short" })}
+              </div>
+              <div className="font-mono text-[0.7rem] text-foreground/60">
+                {liveClock.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="flex items-center gap-1 text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/50">
+                <Cloud size={10} /> Weather
+              </div>
+              {weather.data ? (
+                <>
+                  <div className="mt-1 font-mono text-sm text-foreground">
+                    {weather.data.temperature_c != null
+                      ? `${Math.round(Number(weather.data.temperature_c))}°C`
+                      : "—"}
+                    <span className="ml-2 text-[0.65rem] text-foreground/60">
+                      {weather.data.wind_kph != null ? `${Math.round(Number(weather.data.wind_kph))} kph` : ""}
+                    </span>
+                  </div>
+                  <div className="truncate font-mono text-[0.7rem] text-foreground/60">
+                    {weather.data.summary ?? ""}
+                  </div>
+                </>
+              ) : (
+                <div className="mt-1 font-mono text-[0.7rem] text-foreground/40">Loading…</div>
+              )}
+            </div>
+          </div>
           {ctx.data?.tradePackages?.length ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5 border-t border-white/10 p-3">
               {ctx.data.tradePackages.map((t) => (
                 <span
                   key={t}
@@ -290,31 +332,6 @@ function SubcontractorCockpit() {
             </div>
           ) : null}
         </header>
-
-
-        {/* ---- Oracle card ---- */}
-        <button
-          type="button"
-          onClick={() => setOracleOpen(true)}
-          className="glass-panel mt-4 flex w-full items-center gap-3 border-2 border-purple-400/50 bg-gradient-to-r from-purple-600/20 via-fuchsia-500/10 to-alert/20 p-4 text-left transition hover:border-purple-300"
-        >
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-purple-500/20 text-purple-200">
-            <Sparkles size={22} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-purple-200/80">
-              ✨ Project AI
-            </span>
-            <span className="block truncate text-base font-black uppercase tracking-tight text-foreground">
-              Ask the Project AI Oracle
-            </span>
-            <span className="mt-0.5 block truncate text-[0.65rem] text-foreground/60">
-              {selectedDrawingRow
-                ? `Locked to ${selectedDrawingRow.drawing_no ?? "drawing"}`
-                : "Ask any spec, RAMS or drawing question"}
-            </span>
-          </span>
-        </button>
 
         {/* ---- Active shift state ---- */}
         {myActivePin && (
