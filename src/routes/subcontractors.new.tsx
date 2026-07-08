@@ -51,6 +51,7 @@ interface FormState {
   projectId: string;
   companyName: string;
   tradePackage: string;
+  seatRole: "admin" | "read_only";
   registeredAddress: string;
   officePhone: string;
   corporateEmail: string;
@@ -66,6 +67,7 @@ const EMPTY: FormState = {
   projectId: "",
   companyName: "",
   tradePackage: "",
+  seatRole: "admin",
   registeredAddress: "",
   officePhone: "",
   corporateEmail: "",
