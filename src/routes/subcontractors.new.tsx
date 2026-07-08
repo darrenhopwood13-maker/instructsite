@@ -135,7 +135,7 @@ function RegisterPartnerPage() {
     return `${typeof window !== "undefined" ? window.location.origin : ""}/invite/${result.token}`;
   }, [result]);
 
-  const setField = (k: keyof FormState, v: string) =>
+  const setField = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((prev) => ({ ...prev, [k]: v }));
 
   const submit = async (e: React.FormEvent) => {
