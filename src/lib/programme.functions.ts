@@ -17,10 +17,8 @@ const CompileSchema = z.object({
   projectStart: z.string().default(""),
   projectEnd: z.string().default(""),
   tasks: z.array(TaskSchema).default([]),
-  dailySummaries: z
-    .array(z.object({ date: z.string(), summary: z.string() }))
-    .default([]),
 });
+
 
 type Task = z.infer<typeof TaskSchema>;
 
