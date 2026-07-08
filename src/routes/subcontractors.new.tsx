@@ -234,6 +234,20 @@ function RegisterPartnerPage() {
               disabled={!ready || busy}
             />
 
+            {form.companyName.trim().length >= 2 && (
+              <SeatCapacityBar
+                company={form.companyName.trim()}
+                adminUsed={seatData.adminUsed}
+                readonlyUsed={seatData.readonlyUsed}
+                capFull={capFull}
+                seatRole={form.seatRole}
+                onSeatRole={(v) => setField("seatRole", v)}
+                adminFull={adminFull}
+                readonlyFull={readonlyFull}
+              />
+            )}
+
+
             <div className="mt-6 grid gap-6 lg:grid-cols-3">
               <Section
                 icon={<Building2 size={16} />}
