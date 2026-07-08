@@ -103,31 +103,39 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
     }
 
     let parsed: z.infer<typeof CompileSchema>;
+    const salvageFromText = (raw: string): z.infer<typeof CompileSchema> => {
+      const cleaned = raw
+        .replace(/```json\s*/gi, "")
+        .replace(/```\s*/g, "")
+        .trim();
+      const s = cleaned.search(/[{[]/);
+      const e = cleaned.lastIndexOf("}");
+      if (s >= 0 && e > s) {
+        try {
+          return CompileSchema.parse(JSON.parse(cleaned.slice(s, e + 1)));
+        } catch {
+          return CompileSchema.parse({});
+        }
+      }
+      return CompileSchema.parse({});
+    };
+
     try {
-      const { output } = await generateText({
+      const result = await generateText({
         model: gateway("google/gemini-2.5-pro"),
         output: Output.object({ schema: CompileSchema }),
         messages: [{ role: "user", content: userContent }],
+        maxOutputTokens: 32768,
       });
-      parsed = output;
+      try {
+        parsed = result.output;
+      } catch {
+        // Model produced text but no structured output — try to salvage
+        parsed = salvageFromText(result.text ?? "");
+      }
     } catch (err) {
       if (NoObjectGeneratedError.isInstance(err)) {
-        const raw = err.text ?? "";
-        const cleaned = raw
-          .replace(/```json\s*/gi, "")
-          .replace(/```\s*/g, "")
-          .trim();
-        const s = cleaned.search(/[{[]/);
-        const e = cleaned.lastIndexOf("}");
-        if (s >= 0 && e > s) {
-          try {
-            parsed = CompileSchema.parse(JSON.parse(cleaned.slice(s, e + 1)));
-          } catch {
-            parsed = CompileSchema.parse({});
-          }
-        } else {
-          parsed = CompileSchema.parse({});
-        }
+        parsed = salvageFromText(err.text ?? "");
       } else {
         throw err;
       }
