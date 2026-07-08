@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { compileProgrammeFile, type ProgrammeTask } from "@/lib/programme-compiler.server";
+import type { ProgrammeTask } from "@/lib/programme-compiler.server";
 
 // ---------------- Schemas ----------------
 
@@ -115,6 +115,7 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
 
     let compiled;
     try {
+      const { compileProgrammeFile } = await import("@/lib/programme-compiler.server");
       compiled = await compileProgrammeFile({
         fileName: data.fileName,
         mimeType: data.mimeType,

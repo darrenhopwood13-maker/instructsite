@@ -344,8 +344,12 @@ async function aiExtractFromText(text: string): Promise<ProgrammeTask[]> {
     });
     return mergeTasks(result.output.tasks ?? []);
   } catch (err) {
-    if (NoObjectGeneratedError.isInstance(err) || NoOutputGeneratedError.isInstance(err)) {
+    if (NoObjectGeneratedError.isInstance(err)) {
       return mergeTasks(salvageJson(err.text ?? "").tasks ?? []);
+    }
+    if (NoOutputGeneratedError.isInstance(err)) {
+      console.warn("[Randall] AI fallback returned no output");
+      return [];
     }
     if (isAbortError(err)) {
       console.warn("[Randall] AI fallback timed out; deterministic parsers already attempted");
