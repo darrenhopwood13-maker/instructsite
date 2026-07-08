@@ -86,7 +86,7 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
       {
         type: "text",
         text:
-          "You are Randall, the InstructSite programme compiler. Read this construction programme (Gantt / task list). Identify every task with its start date, end date, trade, and location. Then produce a plain-English daily summary for EVERY active date from project start to project end. Each daily summary must explicitly name every task active on that date, state 'Day X of Y' for each, and call out overlapping tasks. Dates must be ISO YYYY-MM-DD. Return strictly the JSON schema. If a date has no tasks, omit it.",
+          "You are Randall, the InstructSite programme extractor. Read this construction programme (Gantt / task list). Extract ONLY the list of tasks with startDate, endDate (ISO YYYY-MM-DD), trade, location, and a one-line plainEnglish description. Also return projectStart and projectEnd if visible. Do NOT produce daily summaries. Keep the response compact — one entry per task, no commentary.",
       },
     ];
     if (isPdf || isCsv) {
