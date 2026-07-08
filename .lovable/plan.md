@@ -1,103 +1,75 @@
+# Randall Programme Compiler — Rebuild For Good
 
-# Experience Page — Light, Alive, and Money-Talking
+## What's actually wrong
 
-Rework `/experience` from a dark cinematic teaser into a bright, playful, information-rich marketing page that mirrors the actual InstructSite cockpit and proves ROI in hard numbers.
+Checked the AI Gateway logs. The most recent compile call:
+`google/gemini-2.5-pro`, 12,887 output tokens, **101,430 ms**.
 
-## 1. Palette + Mood Reset
+That is the smoking gun. The gateway responded successfully, but 101 s is past the practical Worker execution budget for a single server function — the client's `fetch` to `/_serverFn/...` gets torn down before the handler finishes writing rows, so the UI reports "no output generated" / stuck / doesn't work even though the model actually replied. Combine that with:
 
-Shift from near-black to a warmer, brighter surface while keeping the electric orange / purple / green accents from the real app.
+- One giant `generateText` call trying to do **task extraction + every daily summary** in one JSON blob, which is why output is 13 k tokens.
+- `Output.object({ schema })` on `openai-compatible` + Gemini is **not** strict-schema enforced (see `ai-sdk-lovable-gateway`) — schema drift is silently possible, and only caught by the salvage path.
+- PDF/CSV passed as an AI SDK `file` part through the openai-compatible transport to Gemini is fragile; CSVs in particular go in as base64 and the model wastes a chunk of its budget just decoding them.
+- One-shot design means the user waits 100 s staring at a spinner and, if it fails at any point, gets nothing.
 
-- Background: soft off-white `#F7F5F1` with subtle warm gradient washes (peach, lilac).
-- Ink: deep slate `#0F172A` for body text (kept for legibility, not for backgrounds).
-- Accents (matching app):
-  - DABS Orange `#FB923C`
-  - Oracle Purple `#8B5CF6`
-  - QS Verified Green `#10B981`
-  - Randall Amber `#F59E0B`
-- Playful touches: floating gradient blobs, tape/sticker labels, micro-confetti on ROI reveal, spring-y hover bounces.
+## Fix strategy — split the job, keep it deterministic where possible
 
-## 2. Replace the Phone Mock with the Real Cockpit
+Rework `compileProgrammePlaybooks` into a short, fast **extraction-only** AI call, then build the day-to-a-page playbook deterministically from the extracted tasks. This is the "explore every conceivable way" answer: we stop asking the model to do the part it's bad at (writing 300 daily paragraphs) and only ask it to do the part it's good at (reading a Gantt and returning tasks).
 
-Rebuild the Command Module section around a pixel-faithful recreation of the InstructSite subcontractor cockpit (`/subcontractor/$projectId`) rendered as a live-looking mock, not a stock phone image.
+### 1. Server-side pre-parse before touching AI
 
-Contents of the mock (matching current app):
-- Top bar: project name, live weather chip (12°C · Cloudy), time.
-- 6 command tiles with the real colour dots and labels: INSTALL·DABS, SAFETY·SENTINEL, PROCURE·RANDALL, DRAWINGS·DABS, SNAG·QS, ASSIST·ORACLE.
-- Purple floating Oracle FAB bottom-right.
-- Animated: a tile pulses, tooltip callouts point to DABS + Oracle FAB with framer-motion.
+`src/lib/programme.functions.ts`:
 
-Bonus: a second device mock next to it showing the site-manager cockpit (Zone Matrix / QS Verification Queue) so viewers see both audiences.
+- **CSV path (fully deterministic, no AI):** parse the CSV in Node, auto-detect columns (`task`/`name`/`activity`, `start`/`start date`, `end`/`finish`/`end date`, optional `trade`, `location`, `zone`). Support common formats (Asta, MSP CSV export, Primavera CSV, plain Excel-saved CSV). If we get ≥1 valid task, **skip the AI entirely**.
+- **PDF path:** extract text with `unpdf` (Worker-safe, pure JS, no native bindings). Truncate to ~120 k characters of raw text and pass **only the text** to the AI, not the base64 PDF. This roughly halves input tokens and removes the openai-compatible `file`-part fragility.
+- Add `bun add unpdf papaparse` and `@types/papaparse`.
 
-## 3. Interactive ROI Matrix (the headline feature)
+### 2. AI call: extraction only, chunked, structured
 
-A big, bright, tactile calculator titled "How much is paper costing you?"
+- Model: `google/gemini-2.5-pro` (already correct — big context, strong at tabular reading).
+- Provider built with `{ structuredOutputs: true }` via a shared helper in `ai-gateway.server.ts` for OpenAI-family models; for Gemini we keep `Output.object` but also **wrap the call** in `NoObjectGeneratedError.isInstance` + `salvageFromText` (already present, kept and hardened).
+- **Schema shrinks** to only what's needed: `{ projectStart, projectEnd, tasks: [{ taskName, startDate, endDate, trade, location }] }`. No more `dailySummaries`, no more `plainEnglish` from the model. This drops output size from ~13 k tokens to ~1–2 k, which brings the call under ~20 s.
+- If the extracted-text length > ~80 k chars, split into overlapping chunks and run **N extraction calls in parallel** (`Promise.all`), merge + de-dupe tasks by `(taskName, startDate)`.
+- `maxOutputTokens: 8192` per chunk is now plenty.
 
-Inputs (sliders + steppers):
-- Managers on site: 1–20
-- Average manager day-rate: £250–£800 (default £450)
-- Adoption %: 10, 20, 30, … 100 (default 70%)
-- Working days / month: default 21
+### 3. Playbook generation without AI
 
-Fixed time-savings model (from user brief):
-- DABS drawings→sequences: 40 min / manager / day
-- Daily diaries + progress recording: 60 min / manager / day
-- QS payment verification: 120 min / manager / week (÷5 → 24 min/day)
-- Total: 124 min/day/manager at 100% adoption, scaled linearly by adoption %.
+Replace the "AI writes every daily summary" path with a richer deterministic writer:
 
-Live outputs (spring-animated counters):
-- Hours saved / day, week, month, year
-- £ saved / month, / year
-- Equivalent extra site managers unlocked (hours ÷ 8)
-- Payback period vs InstructSite cost (assume £X/manager/month placeholder, editable constant)
+- For each date in `[projectStart, projectEnd]` (capped at 400 days):
+  - list active tasks with `Day X of Y`
+  - group by trade
+  - mark **starts today** / **ends today**
+  - flag overlapping trades in the same location
+  - roll up a one-line headline ("Heavy day — 4 trades active in Zone B")
+- Zero AI cost, zero latency, always succeeds, and reads exactly like the current `buildDeterministicSummary` — just more detail.
+- Optional: keep an AI "polish this day" server fn (`polishPlaybookDay`) the UI can call **on demand** for a single date the user is reading — cheap, fast, and never blocks the initial compile.
 
-Visuals:
-- Horizontal stacked bar splitting the saved minutes by module (orange DABS, purple Diary, green QS).
-- Big number display with animated £ counter and a confetti burst when > £100k/year.
-- "Share this result" button (copies a summary string — no backend).
+### 4. Make the compile fit the Worker budget
 
-## 4. New Information Sections
+- Split the server function into two phases exposed to the UI:
+  1. `extractProgrammeTasks` — uploads file, runs pre-parse + AI extraction, returns `{ uploadId, taskCount, firstDate, lastDate }`. This is the only call that touches the model; target < 30 s.
+  2. `generatePlaybookDays` — takes `uploadId`, writes `daily_programme_playbooks` rows in batches of 100 with `upsert`. Pure DB work, fast.
+- The UI (`programme.$projectId.tsx`) chains them: shows "Reading programme…" then "Building playbook…" with a real progress indicator, instead of one 100 s spinner.
 
-Fold in real product depth so it reads like a brochure, not a teaser:
+### 5. Better failure surfacing
 
-- **Six Modules, deep-dive cards** — expandable cards per module (DABS, Sentinel, Randall, Drawings, QS Verifier, Oracle) with what it does, who it's for, and the time it saves.
-- **A Day in the Life** — timeline strip (07:00 toolbox → 17:00 diary auto-filed) showing where each module fires.
-- **Verification Engine** — keep, but on light background with the mesh painting green as you scroll.
-- **Randall slider** — keep the Gantt→Diary drag, restyled bright.
-- **Security & Compliance** — CDM 2015, RAMS, permits-to-work, RLS-backed data, audit trail.
-- **FAQ** — 6 questions: onboarding time, offline use, existing programme import, data ownership, pricing model, cancel anytime.
+- If pre-parse yields 0 tasks *and* AI yields 0 tasks, throw a specific error the UI shows verbatim: "Randall couldn't find any dated tasks. Expected a CSV/PDF with task name + start + end date columns."
+- Wrap the AI call in a 45 s `AbortController` timeout so we fail fast instead of dangling.
+- Log `console.info` at each phase boundary so `supabase--edge_function_logs` / server-function logs actually show where a run stopped.
 
-## 5. Clients + Testimonials (fabricated placeholders, clearly plausible)
+## Technical notes (files touched)
 
-Logo wall (text-based faux logos, no real trademarks): Meridian Build Group, Halcyon Interiors, Northwark Civils, Blackfriars Fit-Out, Kelvin & Rowe, Ostara Developments.
+- `src/lib/programme.functions.ts` — split into `extractProgrammeTasks` + `generatePlaybookDays` + `polishPlaybookDay`; add CSV parser, PDF text extractor, chunked AI extraction, richer deterministic writer, abort timeout.
+- `src/lib/ai-gateway.server.ts` — accept a `{ structuredOutputs?: boolean }` option so the OpenAI-family path is strict; Gemini path unchanged.
+- `src/routes/programme.$projectId.tsx` — two-step compile mutation with phase labels; keep the existing UI shell.
+- `package.json` — add `unpdf`, `papaparse`, `@types/papaparse`.
+- No DB migration required — reuses `programme_uploads`, `programme_reference_tasks`, `daily_programme_playbooks`.
 
-Testimonial cards (3, with headshots via initials avatars):
-- "We closed a £1.2M valuation in 40 minutes instead of two days." — Site QS, Meridian Build Group
-- "My site managers stopped drowning in WhatsApps. Diaries file themselves." — Ops Director, Halcyon Interiors
-- "Randall gave me back my Sundays." — Senior PM, Northwark Civils
+## Out of scope
 
-Case-study strip: 3 mini metrics cards (hours saved, £ recovered, snags closed) with big numbers.
-
-## 6. Motion + Polish
-
-- Keep framer-motion driving parallax, but reduce dark overlays. Motion should feel bouncy (spring stiffness 180, damping 20), not cinematic-heavy.
-- Sticky top progress bar tinted with the current section's accent.
-- Section headers use the existing display font with orange/purple splits from user's earlier direction.
-- Reduce-motion respected via `prefers-reduced-motion`.
-
-## Technical Notes
-
-- File: rewrite `src/routes/experience.tsx` end-to-end.
-- No new routes, no DB, no server functions. Purely presentational.
-- ROI calc: pure React state, `framer-motion` `animate` on numeric spring.
-- Cockpit mock: hand-built JSX+Tailwind (no iframe of the real app) so it renders instantly and is stylable.
-- Add lightweight SVG faux-logos inline; no external image fetches.
-- Head/meta on this route updated: title "InstructSite — See the Cockpit. Count the Hours.", matching description + og tags.
-- Respect design tokens; add any new light-mode tokens in `src/styles.css`, not hardcoded hex.
-
-## Out of Scope
-
-- No changes to the actual cockpit routes or backend.
-- No new PWA assets.
-- No real client logos or third-party imagery.
+- No changes to `programme_manager_notes` / notes UI.
+- No changes to subscription gating on Randall.
+- No new routes.
 
 Confirm and I'll build it.
