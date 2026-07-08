@@ -45,7 +45,8 @@ export const Route = createFileRoute("/api/public/webhooks/stripe")({
           return null;
         };
 
-        const statusMap: Record<string, string> = {
+        type SubStatus = "trialing" | "active" | "past_due" | "canceled" | "incomplete";
+        const statusMap: Record<string, SubStatus> = {
           trialing: "trialing",
           active: "active",
           past_due: "past_due",
