@@ -87,6 +87,7 @@ function RegisterPartnerPage() {
 
   const listFn = useServerFn(listMyProjects);
   const createFn = useServerFn(createSubcontractorInvite);
+  const seatFn = useServerFn(getSubcontractorSeatUsage);
 
   const projects = useQuery({
     queryKey: ["my-projects"],
@@ -104,6 +105,31 @@ function RegisterPartnerPage() {
     if (!form.projectId && rows.length) setForm((f) => ({ ...f, projectId: rows[0].id }));
   }, [rows, form.projectId]);
 
+  // Seat usage lookup: only queries once a project + company are picked.
+  const seats = useQuery({
+    queryKey: ["seat-usage", form.projectId, form.companyName.trim().toLowerCase()],
+    enabled: ready && !!form.projectId && form.companyName.trim().length >= 2,
+    queryFn: () =>
+      seatFn({
+        data: {
+          projectId: form.projectId,
+          companyName: form.companyName.trim(),
+        },
+      }),
+    staleTime: 15_000,
+  });
+
+  const seatData = seats.data ?? {
+    adminUsed: 0,
+    readonlyUsed: 0,
+    adminCap: 1,
+    readonlyCap: 2,
+    totalCap: 3,
+  };
+  const adminFull = seatData.adminUsed >= seatData.adminCap;
+  const readonlyFull = seatData.readonlyUsed >= seatData.readonlyCap;
+  const capFull = adminFull && readonlyFull;
+
   const inviteUrl = useMemo(() => {
     if (!result) return "";
     return `${typeof window !== "undefined" ? window.location.origin : ""}/invite/${result.token}`;
@@ -117,6 +143,13 @@ function RegisterPartnerPage() {
     if (!form.projectId) return toast.error("Select a project first.");
     if (!form.companyName.trim()) return toast.error("Company name is required.");
     if (!form.tradePackage) return toast.error("Select a trade package.");
+    if (capFull) return toast.error("Maximum Capacity Reached · 3 seats per subcontractor.");
+    if (form.seatRole === "admin" && adminFull) {
+      return toast.error("Admin seat already assigned — pick Read-Only.");
+    }
+    if (form.seatRole === "read_only" && readonlyFull) {
+      return toast.error("Read-only seats full — pick Admin (if free).");
+    }
     setBusy(true);
     try {
       const res = await createFn({
@@ -124,6 +157,7 @@ function RegisterPartnerPage() {
           projectId: form.projectId,
           companyName: form.companyName.trim(),
           tradePackages: [form.tradePackage],
+          seatRole: form.seatRole,
           registeredAddress: form.registeredAddress,
           officePhone: form.officePhone,
           corporateEmail: form.corporateEmail,
@@ -137,6 +171,7 @@ function RegisterPartnerPage() {
       });
       setResult({ token: res.token, expiresAt: res.expiresAt, company: form.companyName.trim() });
       toast.success("Partner registered · access tokens generated.");
+      seats.refetch();
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
