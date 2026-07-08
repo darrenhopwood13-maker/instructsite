@@ -120,7 +120,7 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
 
     try {
       const result = await generateText({
-        model: gateway("google/gemini-2.5-pro"),
+        model: gateway("google/gemini-2.5-flash"),
         output: Output.object({ schema: CompileSchema }),
         messages: [{ role: "user", content: userContent }],
         maxOutputTokens: 32768,
