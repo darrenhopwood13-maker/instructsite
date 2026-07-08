@@ -513,6 +513,7 @@ function RootComponent() {
           <Outlet />
         </main>
       </div>
+      <OracleFAB />
     </QueryClientProvider>
   );
 }
