@@ -1,94 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { ProgrammeTask } from "@/lib/programme-compiler.server";
-
-// ---------------- Schemas ----------------
-
-type Task = ProgrammeTask;
-
-// ---------------- Date helpers ----------------
-
-function toIso(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-function addDays(iso: string, n: number): string {
-  const d = new Date(iso + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + n);
-  return toIso(d);
-}
-function diffDays(a: string, b: string): number {
-  const da = new Date(a + "T00:00:00Z").getTime();
-  const db = new Date(b + "T00:00:00Z").getTime();
-  return Math.round((db - da) / 86_400_000);
-}
-function isIso(s: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(s);
-}
-
-// ---------------- Deterministic playbook writer ----------------
-
-function buildRichSummary(date: string, tasks: Task[]): string {
-  const active = tasks.filter((t) => t.startDate <= date && date <= t.endDate);
-  if (active.length === 0) return "";
-
-  const starts = active.filter((t) => t.startDate === date);
-  const ends = active.filter((t) => t.endDate === date);
-
-  const byTrade = new Map<string, Task[]>();
-  for (const t of active) {
-    const key = t.trade?.trim() || "General";
-    if (!byTrade.has(key)) byTrade.set(key, []);
-    byTrade.get(key)!.push(t);
-  }
-
-  const headline =
-    active.length >= 4
-      ? `Heavy day — ${active.length} activities live across ${byTrade.size} trade${byTrade.size === 1 ? "" : "s"}.`
-      : active.length === 1
-        ? `Focused day — ${active[0].taskName} on site.`
-        : `${active.length} activities live across ${byTrade.size} trade${byTrade.size === 1 ? "" : "s"}.`;
-
-  const lines: string[] = [headline, ""];
-
-  for (const [trade, list] of byTrade) {
-    lines.push(`${trade.toUpperCase()}`);
-    for (const t of list) {
-      const total = Math.max(1, diffDays(t.startDate, t.endDate) + 1);
-      const dayNo = Math.max(1, diffDays(t.startDate, date) + 1);
-      const loc = t.location ? ` [${t.location}]` : "";
-      const flag =
-        t.startDate === date ? " · STARTS TODAY"
-        : t.endDate === date ? " · ENDS TODAY"
-        : "";
-      lines.push(`• ${t.taskName}${loc} — Day ${dayNo} of ${total}${flag}`);
-    }
-    lines.push("");
-  }
-
-  if (starts.length + ends.length > 0) {
-    const notes: string[] = [];
-    if (starts.length) notes.push(`Kicking off: ${starts.map((s) => s.taskName).join(", ")}.`);
-    if (ends.length) notes.push(`Wrapping up: ${ends.map((s) => s.taskName).join(", ")}.`);
-    lines.push(notes.join(" "));
-  }
-
-  // Location clash
-  const locGroups = new Map<string, Task[]>();
-  for (const t of active) {
-    const loc = t.location?.trim();
-    if (!loc) continue;
-    if (!locGroups.has(loc)) locGroups.set(loc, []);
-    locGroups.get(loc)!.push(t);
-  }
-  for (const [loc, ts] of locGroups) {
-    if (ts.length > 1) {
-      lines.push(`Coordination flag — ${ts.length} trades sharing ${loc}: ${ts.map((t) => t.taskName).join(" · ")}.`);
-    }
-  }
-
-  return lines.join("\n").trim();
-}
 
 // ---------------- Server functions ----------------
 
@@ -157,34 +69,12 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
     if (tErr) throw new Error(tErr.message);
 
     // Build deterministic day-to-a-page playbook
-    const starts = tasks.map((t) => t.startDate).sort();
-    const ends = tasks.map((t) => t.endDate).sort();
-    const first = starts[0];
-    const last = ends[ends.length - 1];
-
-    const playbookRows: {
-      project_id: string;
-      programme_upload_id: string;
-      playbook_date: string;
-      ai_daily_summary: string;
-    }[] = [];
-
-    if (first && last) {
-      const maxDays = 400;
-      const total = Math.min(maxDays, diffDays(first, last) + 1);
-      for (let i = 0; i < total; i++) {
-        const date = addDays(first, i);
-        const summary = buildRichSummary(date, tasks);
-        if (summary) {
-          playbookRows.push({
-            project_id: data.projectId,
-            programme_upload_id: up.id,
-            playbook_date: date,
-            ai_daily_summary: summary,
-          });
-        }
-      }
-    }
+    const { buildProgrammePlaybookRows } = await import("@/lib/programme-compiler.server");
+    const playbookRows = buildProgrammePlaybookRows({
+      projectId: data.projectId,
+      uploadId: up.id,
+      tasks,
+    });
 
     // Replace playbooks for this project
     await supabase
