@@ -17,10 +17,8 @@ const CompileSchema = z.object({
   projectStart: z.string().default(""),
   projectEnd: z.string().default(""),
   tasks: z.array(TaskSchema).default([]),
-  dailySummaries: z
-    .array(z.object({ date: z.string(), summary: z.string() }))
-    .default([]),
 });
+
 
 type Task = z.infer<typeof TaskSchema>;
 
@@ -88,7 +86,7 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
       {
         type: "text",
         text:
-          "You are Randall, the InstructSite programme compiler. Read this construction programme (Gantt / task list). Identify every task with its start date, end date, trade, and location. Then produce a plain-English daily summary for EVERY active date from project start to project end. Each daily summary must explicitly name every task active on that date, state 'Day X of Y' for each, and call out overlapping tasks. Dates must be ISO YYYY-MM-DD. Return strictly the JSON schema. If a date has no tasks, omit it.",
+          "You are Randall, the InstructSite programme extractor. Read this construction programme (Gantt / task list). Extract ONLY the list of tasks with startDate, endDate (ISO YYYY-MM-DD), trade, location, and a one-line plainEnglish description. Also return projectStart and projectEnd if visible. Do NOT produce daily summaries. Keep the response compact — one entry per task, no commentary.",
       },
     ];
     if (isPdf || isCsv) {
@@ -122,7 +120,7 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
 
     try {
       const result = await generateText({
-        model: gateway("google/gemini-2.5-pro"),
+        model: gateway("google/gemini-2.5-flash"),
         output: Output.object({ schema: CompileSchema }),
         messages: [{ role: "user", content: userContent }],
         maxOutputTokens: 32768,
@@ -178,13 +176,9 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
       if (tErr) throw new Error(tErr.message);
     }
 
-    // Build daily summaries — prefer AI, fall back to deterministic
-    const aiByDate = new Map<string, string>();
-    for (const d of parsed.dailySummaries ?? []) {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(d.date) && d.summary?.trim()) {
-        aiByDate.set(d.date, d.summary.trim());
-      }
-    }
+    // Daily summaries are built deterministically from the extracted tasks —
+    // no second AI call, no huge JSON, no truncation crashes.
+
 
     // Range
     const starts = validTasks.map((t) => t.startDate).sort();
@@ -204,8 +198,7 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
       const total = Math.min(maxDays, diffDays(first, last) + 1);
       for (let i = 0; i < total; i++) {
         const date = addDays(first, i);
-        const summary =
-          aiByDate.get(date) ?? buildDeterministicSummary(date, validTasks);
+        const summary = buildDeterministicSummary(date, validTasks);
         if (summary && summary !== "No scheduled activity on site for this date.") {
           playbookRows.push({
             project_id: data.projectId,
