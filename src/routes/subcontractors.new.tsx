@@ -345,11 +345,15 @@ function RegisterPartnerPage() {
               </Link>
               <button
                 type="submit"
-                disabled={busy}
-                className="inline-flex items-center gap-2 rounded-md border-2 border-[#1d3f8a] bg-[#1d3f8a] px-6 py-3 text-[0.7rem] font-extrabold uppercase tracking-[0.28em] text-white shadow-[4px_4px_0_0_rgba(15,23,42,0.35)] transition hover:brightness-110 disabled:opacity-50"
+                disabled={busy || capFull}
+                className="inline-flex items-center gap-2 rounded-md border-2 border-[#1d3f8a] bg-[#1d3f8a] px-6 py-3 text-[0.7rem] font-extrabold uppercase tracking-[0.28em] text-white shadow-[4px_4px_0_0_rgba(15,23,42,0.35)] transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <QrCode size={14} />
-                {busy ? "Saving…" : "Save Partner & Generate Access Tokens"}
+                {capFull
+                  ? "Maximum Capacity Reached"
+                  : busy
+                    ? "Saving…"
+                    : "Save Partner & Generate Access Tokens"}
               </button>
             </div>
           </form>
