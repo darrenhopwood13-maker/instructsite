@@ -146,7 +146,10 @@ async function extractPdfText(bytes: Uint8Array): Promise<string> {
   const { extractText, getDocumentProxy } = await import("unpdf");
   const doc = await getDocumentProxy(bytes);
   const { text } = await extractText(doc, { mergePages: true });
-  return typeof text === "string" ? text : (Array.isArray(text) ? text.join("\n") : "");
+  const t: unknown = text;
+  if (typeof t === "string") return t;
+  if (Array.isArray(t)) return (t as string[]).join("\n");
+  return "";
 }
 
 // ---------------- AI extraction ----------------
