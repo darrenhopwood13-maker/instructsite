@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnlockRouteImport } from './routes/unlock'
 import { Route as TrialEndedRouteImport } from './routes/trial-ended'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as ExperienceRouteImport } from './routes/experience'
@@ -27,11 +28,13 @@ import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projec
 import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
+import { Route as BillingProjectIdRouteImport } from './routes/billing.$projectId'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$drawingId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiPublicWebhooksStripeRouteImport } from './routes/api/public/webhooks/stripe'
 import { Route as ApiPublicHooksWeatherSnapshotRouteImport } from './routes/api/public/hooks/weather-snapshot'
 
 const UnlockRoute = UnlockRouteImport.update({
@@ -47,6 +50,11 @@ const TrialEndedRoute = TrialEndedRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OracleRoute = OracleRouteImport.update({
@@ -124,6 +132,11 @@ const DabsProjectIdRoute = DabsProjectIdRouteImport.update({
   path: '/dabs/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BillingProjectIdRoute = BillingProjectIdRouteImport.update({
+  id: '/billing/$projectId',
+  path: '/billing/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
     id: '/.well-known/oauth-protected-resource',
@@ -152,6 +165,11 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWebhooksStripeRoute = ApiPublicWebhooksStripeRouteImport.update({
+  id: '/api/public/webhooks/stripe',
+  path: '/api/public/webhooks/stripe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksWeatherSnapshotRoute =
   ApiPublicHooksWeatherSnapshotRouteImport.update({
     id: '/api/public/hooks/weather-snapshot',
@@ -166,11 +184,13 @@ export interface FileRoutesByFullPath {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
@@ -184,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
+  '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -192,11 +213,13 @@ export interface FileRoutesByTo {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
@@ -210,6 +233,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
+  '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -219,11 +243,13 @@ export interface FileRoutesById {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
@@ -237,6 +263,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
+  '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -247,11 +274,13 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
+    | '/pricing'
     | '/reset-password'
     | '/trial-ended'
     | '/unlock'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
     | '/programme/$projectId'
@@ -265,6 +294,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
     | '/api/public/hooks/weather-snapshot'
+    | '/api/public/webhooks/stripe'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -273,11 +303,13 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
+    | '/pricing'
     | '/reset-password'
     | '/trial-ended'
     | '/unlock'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
     | '/programme/$projectId'
@@ -291,6 +323,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
     | '/api/public/hooks/weather-snapshot'
+    | '/api/public/webhooks/stripe'
   id:
     | '__root__'
     | '/'
@@ -299,11 +332,13 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
+    | '/pricing'
     | '/reset-password'
     | '/trial-ended'
     | '/unlock'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
     | '/programme/$projectId'
@@ -317,6 +352,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
     | '/api/public/hooks/weather-snapshot'
+    | '/api/public/webhooks/stripe'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -326,11 +362,13 @@ export interface RootRouteChildren {
   ExperienceRoute: typeof ExperienceRoute
   McpRoute: typeof McpRoute
   OracleRoute: typeof OracleRoute
+  PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TrialEndedRoute: typeof TrialEndedRoute
   UnlockRoute: typeof UnlockRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  BillingProjectIdRoute: typeof BillingProjectIdRoute
   DabsProjectIdRoute: typeof DabsProjectIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ProgrammeProjectIdRoute: typeof ProgrammeProjectIdRoute
@@ -344,6 +382,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiDrawingDrawingIdRoute: typeof ApiDrawingDrawingIdRoute
   ApiPublicHooksWeatherSnapshotRoute: typeof ApiPublicHooksWeatherSnapshotRoute
+  ApiPublicWebhooksStripeRoute: typeof ApiPublicWebhooksStripeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -367,6 +406,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oracle': {
@@ -474,6 +520,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DabsProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/billing/$projectId': {
+      id: '/billing/$projectId'
+      path: '/billing/$projectId'
+      fullPath: '/billing/$projectId'
+      preLoaderRoute: typeof BillingProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.well-known/oauth-protected-resource': {
       id: '/.well-known/oauth-protected-resource'
       path: '/.well-known/oauth-protected-resource'
@@ -509,6 +562,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/stripe': {
+      id: '/api/public/webhooks/stripe'
+      path: '/api/public/webhooks/stripe'
+      fullPath: '/api/public/webhooks/stripe'
+      preLoaderRoute: typeof ApiPublicWebhooksStripeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/weather-snapshot': {
       id: '/api/public/hooks/weather-snapshot'
       path: '/api/public/hooks/weather-snapshot'
@@ -526,12 +586,14 @@ const rootRouteChildren: RootRouteChildren = {
   ExperienceRoute: ExperienceRoute,
   McpRoute: McpRoute,
   OracleRoute: OracleRoute,
+  PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TrialEndedRoute: TrialEndedRoute,
   UnlockRoute: UnlockRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  BillingProjectIdRoute: BillingProjectIdRoute,
   DabsProjectIdRoute: DabsProjectIdRoute,
   InviteTokenRoute: InviteTokenRoute,
   ProgrammeProjectIdRoute: ProgrammeProjectIdRoute,
@@ -545,6 +607,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiDrawingDrawingIdRoute: ApiDrawingDrawingIdRoute,
   ApiPublicHooksWeatherSnapshotRoute: ApiPublicHooksWeatherSnapshotRoute,
+  ApiPublicWebhooksStripeRoute: ApiPublicWebhooksStripeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
