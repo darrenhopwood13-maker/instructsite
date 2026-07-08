@@ -176,13 +176,9 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
       if (tErr) throw new Error(tErr.message);
     }
 
-    // Build daily summaries — prefer AI, fall back to deterministic
-    const aiByDate = new Map<string, string>();
-    for (const d of parsed.dailySummaries ?? []) {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(d.date) && d.summary?.trim()) {
-        aiByDate.set(d.date, d.summary.trim());
-      }
-    }
+    // Daily summaries are built deterministically from the extracted tasks —
+    // no second AI call, no huge JSON, no truncation crashes.
+
 
     // Range
     const starts = validTasks.map((t) => t.startDate).sort();
