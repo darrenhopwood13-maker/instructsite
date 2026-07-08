@@ -36,6 +36,7 @@ export const createSubcontractorInvite = createServerFn({ method: "POST" })
         projectId: z.string().uuid(),
         companyName: z.string().trim().min(1).max(200),
         tradePackages: z.array(z.string().trim().min(1).max(80)).min(1).max(20),
+        seatRole: z.enum(["admin", "read_only"]).default("read_only"),
         registeredAddress: z.string().trim().max(500).optional().nullable(),
         officePhone: z.string().trim().max(40).optional().nullable(),
         corporateEmail: z.string().trim().email().max(200).optional().nullable().or(z.literal("")),
@@ -59,6 +60,7 @@ export const createSubcontractorInvite = createServerFn({ method: "POST" })
         project_id: data.projectId,
         company_name: data.companyName,
         trade_packages: data.tradePackages,
+        seat_role: data.seatRole,
         token_hash: tokenHash,
         created_by: context.userId,
         registered_address: emptyToNull(data.registeredAddress),
@@ -73,7 +75,19 @@ export const createSubcontractorInvite = createServerFn({ method: "POST" })
       })
       .select("id, expires_at")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      const m = error.message || "";
+      if (m.includes("SEAT_CAP_ADMIN")) {
+        throw new Error("Maximum Capacity Reached · This subcontractor already has an admin seat.");
+      }
+      if (m.includes("SEAT_CAP_READONLY")) {
+        throw new Error("Maximum Capacity Reached · 2 read-only seats already assigned.");
+      }
+      if (m.includes("SEAT_CAP_TOTAL")) {
+        throw new Error("Maximum Capacity Reached · 3 seats per subcontractor (1 admin + 2 read-only).");
+      }
+      throw new Error(error.message);
+    }
     return { id: row.id, token, expiresAt: row.expires_at };
   });
 
