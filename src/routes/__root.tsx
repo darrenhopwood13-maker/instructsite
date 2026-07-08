@@ -14,6 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getGateStatus } from "../lib/gate.functions";
+import { OracleFAB } from "@/components/OracleFAB";
 
 
 function NotFoundComponent() {
@@ -513,6 +514,7 @@ function RootComponent() {
           <Outlet />
         </main>
       </div>
+      <OracleFAB />
     </QueryClientProvider>
   );
 }

@@ -75,6 +75,56 @@ export type Database = {
           },
         ]
       }
+      bespoke_upgrade_requests: {
+        Row: {
+          contact_email: string
+          contact_name: string
+          contact_phone: string | null
+          created_at: string
+          feature_key: string | null
+          id: string
+          message: string | null
+          project_id: string
+          requested_by: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_email: string
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string
+          feature_key?: string | null
+          id?: string
+          message?: string | null
+          project_id: string
+          requested_by: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          feature_key?: string | null
+          id?: string
+          message?: string | null
+          project_id?: string
+          requested_by?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bespoke_upgrade_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_programme_playbooks: {
         Row: {
           ai_daily_summary: string
@@ -821,6 +871,56 @@ export type Database = {
           },
         ]
       }
+      project_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          id: string
+          project_id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          project_id: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          project_id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_subscriptions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_weather_readings: {
         Row: {
           apparent_c: number | null
@@ -1032,6 +1132,7 @@ export type Database = {
           project_id: string
           registered_address: string | null
           revoked_at: string | null
+          seat_role: string
           supervisor_email: string | null
           supervisor_mobile: string | null
           supervisor_name: string | null
@@ -1054,6 +1155,7 @@ export type Database = {
           project_id: string
           registered_address?: string | null
           revoked_at?: string | null
+          seat_role?: string
           supervisor_email?: string | null
           supervisor_mobile?: string | null
           supervisor_name?: string | null
@@ -1076,6 +1178,7 @@ export type Database = {
           project_id?: string
           registered_address?: string | null
           revoked_at?: string | null
+          seat_role?: string
           supervisor_email?: string | null
           supervisor_mobile?: string | null
           supervisor_name?: string | null
@@ -1172,6 +1275,10 @@ export type Database = {
         Returns: boolean
       }
       dev_claim_master_admin: { Args: { _project_id?: string }; Returns: Json }
+      has_feature: {
+        Args: { _feature: string; _project_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1199,6 +1306,16 @@ export type Database = {
         Args: { _document_id: string }
         Returns: string[]
       }
+      subcontractor_seat_usage: {
+        Args: { _company_name: string; _project_id: string }
+        Returns: {
+          admin_cap: number
+          admin_used: number
+          readonly_cap: number
+          readonly_used: number
+          total_cap: number
+        }[]
+      }
       zone_approved_completion: {
         Args: { _project_id: string }
         Returns: {
@@ -1215,6 +1332,13 @@ export type Database = {
         | "subcontractor"
         | "apprentice"
         | "qs"
+      subscription_status:
+        | "trialing"
+        | "active"
+        | "past_due"
+        | "canceled"
+        | "incomplete"
+      subscription_tier: "baseline" | "structure" | "apex"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1350,6 +1474,14 @@ export const Constants = {
         "apprentice",
         "qs",
       ],
+      subscription_status: [
+        "trialing",
+        "active",
+        "past_due",
+        "canceled",
+        "incomplete",
+      ],
+      subscription_tier: ["baseline", "structure", "apex"],
     },
   },
 } as const

@@ -2,11 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Copy, Check, Building2, UserSquare2, HardHat, QrCode } from "lucide-react";
+import { ArrowLeft, Copy, Check, Building2, UserSquare2, HardHat, QrCode, ShieldCheck, Eye } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { listMyProjects } from "@/lib/projects.functions";
 import { createSubcontractorInvite } from "@/lib/subcontractors.functions";
+import { getSubcontractorSeatUsage } from "@/lib/subscriptions.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 export const Route = createFileRoute("/subcontractors/new")({
@@ -50,6 +51,7 @@ interface FormState {
   projectId: string;
   companyName: string;
   tradePackage: string;
+  seatRole: "admin" | "read_only";
   registeredAddress: string;
   officePhone: string;
   corporateEmail: string;
@@ -65,6 +67,7 @@ const EMPTY: FormState = {
   projectId: "",
   companyName: "",
   tradePackage: "",
+  seatRole: "admin",
   registeredAddress: "",
   officePhone: "",
   corporateEmail: "",
@@ -84,6 +87,7 @@ function RegisterPartnerPage() {
 
   const listFn = useServerFn(listMyProjects);
   const createFn = useServerFn(createSubcontractorInvite);
+  const seatFn = useServerFn(getSubcontractorSeatUsage);
 
   const projects = useQuery({
     queryKey: ["my-projects"],
@@ -101,12 +105,37 @@ function RegisterPartnerPage() {
     if (!form.projectId && rows.length) setForm((f) => ({ ...f, projectId: rows[0].id }));
   }, [rows, form.projectId]);
 
+  // Seat usage lookup: only queries once a project + company are picked.
+  const seats = useQuery({
+    queryKey: ["seat-usage", form.projectId, form.companyName.trim().toLowerCase()],
+    enabled: ready && !!form.projectId && form.companyName.trim().length >= 2,
+    queryFn: () =>
+      seatFn({
+        data: {
+          projectId: form.projectId,
+          companyName: form.companyName.trim(),
+        },
+      }),
+    staleTime: 15_000,
+  });
+
+  const seatData = seats.data ?? {
+    adminUsed: 0,
+    readonlyUsed: 0,
+    adminCap: 1,
+    readonlyCap: 2,
+    totalCap: 3,
+  };
+  const adminFull = seatData.adminUsed >= seatData.adminCap;
+  const readonlyFull = seatData.readonlyUsed >= seatData.readonlyCap;
+  const capFull = adminFull && readonlyFull;
+
   const inviteUrl = useMemo(() => {
     if (!result) return "";
     return `${typeof window !== "undefined" ? window.location.origin : ""}/invite/${result.token}`;
   }, [result]);
 
-  const setField = (k: keyof FormState, v: string) =>
+  const setField = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((prev) => ({ ...prev, [k]: v }));
 
   const submit = async (e: React.FormEvent) => {
@@ -114,6 +143,13 @@ function RegisterPartnerPage() {
     if (!form.projectId) return toast.error("Select a project first.");
     if (!form.companyName.trim()) return toast.error("Company name is required.");
     if (!form.tradePackage) return toast.error("Select a trade package.");
+    if (capFull) return toast.error("Maximum Capacity Reached · 3 seats per subcontractor.");
+    if (form.seatRole === "admin" && adminFull) {
+      return toast.error("Admin seat already assigned — pick Read-Only.");
+    }
+    if (form.seatRole === "read_only" && readonlyFull) {
+      return toast.error("Read-only seats full — pick Admin (if free).");
+    }
     setBusy(true);
     try {
       const res = await createFn({
@@ -121,6 +157,7 @@ function RegisterPartnerPage() {
           projectId: form.projectId,
           companyName: form.companyName.trim(),
           tradePackages: [form.tradePackage],
+          seatRole: form.seatRole,
           registeredAddress: form.registeredAddress,
           officePhone: form.officePhone,
           corporateEmail: form.corporateEmail,
@@ -134,6 +171,7 @@ function RegisterPartnerPage() {
       });
       setResult({ token: res.token, expiresAt: res.expiresAt, company: form.companyName.trim() });
       toast.success("Partner registered · access tokens generated.");
+      seats.refetch();
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -195,6 +233,20 @@ function RegisterPartnerPage() {
               options={rows.map((r: any) => ({ id: r.id, name: r.name }))}
               disabled={!ready || busy}
             />
+
+            {form.companyName.trim().length >= 2 && (
+              <SeatCapacityBar
+                company={form.companyName.trim()}
+                adminUsed={seatData.adminUsed}
+                readonlyUsed={seatData.readonlyUsed}
+                capFull={capFull}
+                seatRole={form.seatRole}
+                onSeatRole={(v) => setField("seatRole", v)}
+                adminFull={adminFull}
+                readonlyFull={readonlyFull}
+              />
+            )}
+
 
             <div className="mt-6 grid gap-6 lg:grid-cols-3">
               <Section
@@ -293,11 +345,15 @@ function RegisterPartnerPage() {
               </Link>
               <button
                 type="submit"
-                disabled={busy}
-                className="inline-flex items-center gap-2 rounded-md border-2 border-[#1d3f8a] bg-[#1d3f8a] px-6 py-3 text-[0.7rem] font-extrabold uppercase tracking-[0.28em] text-white shadow-[4px_4px_0_0_rgba(15,23,42,0.35)] transition hover:brightness-110 disabled:opacity-50"
+                disabled={busy || capFull}
+                className="inline-flex items-center gap-2 rounded-md border-2 border-[#1d3f8a] bg-[#1d3f8a] px-6 py-3 text-[0.7rem] font-extrabold uppercase tracking-[0.28em] text-white shadow-[4px_4px_0_0_rgba(15,23,42,0.35)] transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <QrCode size={14} />
-                {busy ? "Saving…" : "Save Partner & Generate Access Tokens"}
+                {capFull
+                  ? "Maximum Capacity Reached"
+                  : busy
+                    ? "Saving…"
+                    : "Save Partner & Generate Access Tokens"}
               </button>
             </div>
           </form>
@@ -308,6 +364,129 @@ function RegisterPartnerPage() {
 }
 
 /* ---------------- sub-components ---------------- */
+
+function SeatCapacityBar({
+  company,
+  adminUsed,
+  readonlyUsed,
+  capFull,
+  seatRole,
+  onSeatRole,
+  adminFull,
+  readonlyFull,
+}: {
+  company: string;
+  adminUsed: number;
+  readonlyUsed: number;
+  capFull: boolean;
+  seatRole: "admin" | "read_only";
+  onSeatRole: (v: "admin" | "read_only") => void;
+  adminFull: boolean;
+  readonlyFull: boolean;
+}) {
+  const total = adminUsed + readonlyUsed;
+  return (
+    <div
+      className={`mt-4 rounded-lg border-2 p-5 shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] ${
+        capFull
+          ? "border-[#FB923C] bg-[#0A192F] text-white"
+          : "border-neutral-900 bg-white"
+      }`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p
+            className={`text-[0.55rem] font-bold uppercase tracking-[0.32em] ${
+              capFull ? "text-[#FB923C]" : "text-neutral-500"
+            }`}
+          >
+            Seat Capacity · {company}
+          </p>
+          <p
+            className={`mt-1 text-sm font-bold ${
+              capFull ? "text-white" : "text-neutral-900"
+            }`}
+          >
+            {total} / 3 seats used
+            <span className="ml-2 text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-neutral-400">
+              (1 admin · 2 read-only)
+            </span>
+          </p>
+        </div>
+        {capFull && (
+          <span className="rounded-md border border-[#FB923C] bg-[#FB923C]/10 px-3 py-1.5 text-[0.6rem] font-black uppercase tracking-[0.28em] text-[#FB923C]">
+            Maximum Capacity Reached
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <SeatRoleTile
+          selected={seatRole === "admin"}
+          disabled={adminFull}
+          onClick={() => onSeatRole("admin")}
+          icon={<ShieldCheck size={14} />}
+          label="Admin"
+          hint={adminFull ? "Assigned" : `${adminUsed}/1 used`}
+          dark={capFull}
+        />
+        <SeatRoleTile
+          selected={seatRole === "read_only"}
+          disabled={readonlyFull}
+          onClick={() => onSeatRole("read_only")}
+          icon={<Eye size={14} />}
+          label="Read-Only"
+          hint={`${readonlyUsed}/2 used`}
+          dark={capFull}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SeatRoleTile({
+  selected,
+  disabled,
+  onClick,
+  icon,
+  label,
+  hint,
+  dark,
+}: {
+  selected: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  hint: string;
+  dark?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex items-center justify-between rounded-md border-2 px-4 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-40 ${
+        selected
+          ? dark
+            ? "border-[#FB923C] bg-[#FB923C]/15"
+            : "border-[#1d3f8a] bg-[#1d3f8a] text-white"
+          : dark
+            ? "border-white/15 bg-[#1E293B]/50 text-white/80 hover:border-[#FB923C]"
+            : "border-neutral-300 bg-white text-neutral-800 hover:border-neutral-900"
+      }`}
+    >
+      <span className="flex items-center gap-2 text-[0.7rem] font-extrabold uppercase tracking-[0.22em]">
+        {icon}
+        {label}
+      </span>
+      <span className="text-[0.6rem] font-bold uppercase tracking-[0.24em] opacity-70">
+        {hint}
+      </span>
+    </button>
+  );
+}
+
 
 function ProjectSelect({
   value,
