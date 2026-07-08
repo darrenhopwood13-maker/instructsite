@@ -53,7 +53,10 @@ function isIso(s: string): boolean {
 
 function normalizeDate(raw: string): string {
   if (!raw) return "";
-  const s = String(raw).trim().replace(/^[A-Za-z]{3,9}\s+/i, "").replace(/,$/, "");
+  const s = String(raw)
+    .trim()
+    .replace(/^(?:mon|monday|tue|tues|tuesday|wed|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday)\s+/i, "")
+    .replace(/,$/, "");
   if (!s) return "";
 
   const isoPrefix = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
