@@ -198,8 +198,7 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
       const total = Math.min(maxDays, diffDays(first, last) + 1);
       for (let i = 0; i < total; i++) {
         const date = addDays(first, i);
-        const summary =
-          aiByDate.get(date) ?? buildDeterministicSummary(date, validTasks);
+        const summary = buildDeterministicSummary(date, validTasks);
         if (summary && summary !== "No scheduled activity on site for this date.") {
           playbookRows.push({
             project_id: data.projectId,
