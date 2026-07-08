@@ -150,6 +150,7 @@ function ProgrammePage() {
       });
     },
     onSuccess: (res) => {
+      if (!res.ok) return;
       qc.invalidateQueries({ queryKey: ["playbook-range", projectId] });
       qc.invalidateQueries({ queryKey: ["playbook", projectId] });
       if (res.firstDate) setDate(res.firstDate);
@@ -216,8 +217,8 @@ function ProgrammePage() {
                   Upload Project Programme
                 </h2>
                 <p className="mt-1 text-xs text-foreground/60">
-                  PDF or CSV Gantt / task list. Randall reads it once and writes
-                  a plain-English playbook for every active date.
+                  PDF, CSV, XML, XER or text Gantt / task list. Randall reads it
+                  once and writes a plain-English playbook for every active date.
                 </p>
               </div>
               <button
@@ -239,7 +240,7 @@ function ProgrammePage() {
               <input
                 ref={fileInput}
                 type="file"
-                accept="application/pdf,text/csv,.csv,.pdf"
+                accept="application/pdf,text/csv,text/plain,application/xml,.csv,.tsv,.txt,.pdf,.xml,.xer"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -254,11 +255,14 @@ function ProgrammePage() {
                 {(compileMut.error as Error).message}
               </p>
             )}
-            {compileMut.isSuccess && (
+            {compileMut.data?.ok === false && (
+              <p className="mt-3 text-xs text-destructive">{compileMut.data.error}</p>
+            )}
+            {compileMut.data?.ok === true && (
               <p className="mt-3 text-xs text-emerald-400">
                 Compiled {compileMut.data.taskCount} task
                 {compileMut.data.taskCount === 1 ? "" : "s"} across{" "}
-                {compileMut.data.dayCount} active dates.
+                {compileMut.data.dayCount} active dates via {compileMut.data.source}.
               </p>
             )}
           </section>
