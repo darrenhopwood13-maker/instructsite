@@ -1,69 +1,50 @@
+## Scaffold the Render PDF Parser Service
 
-# Randall Diary — Async Pipeline with Python Sidecar
+I'll create a standalone Python service you can deploy to Render. It lives in a new folder `render-parser/` inside your project so you can push it to a separate Git repo (or point Render at that subdirectory).
 
-Rebuild the programme → day-to-a-page compiler as an **async job queue** backed by an **external Python microservice** that specialises in visual Gantt PDFs (Asta / P6 exports).
-
-## Architecture
+### What gets created
 
 ```text
-Browser ──upload──▶ TanStack serverFn ──▶ Supabase Storage (programme_uploads bucket)
-                          │
-                          ├── inserts programme_jobs row (status='queued')
-                          └── POSTs {job_id, file_url} to Python service (fire-and-forget)
-
-Python FastAPI worker (Render / Railway)
-   1. downloads PDF via signed URL
-   2. multi-strategy extraction:
-        • pdfplumber → tables/text
-        • Camelot → lattice/stream tables
-        • pdf2image + Gemini Vision → visual Gantt bar OCR
-        • fuzzy bay/zone matcher (rapidfuzz)
-   3. emits normalised task rows (task, start, finish, zone, dep, trade)
-   4. calls back POST /api/public/hooks/programme-ingest with HMAC signature
-        → writes tasks + generates day-to-a-page playbooks + marks job 'complete'
-
-Browser ─── Supabase realtime on programme_jobs ─── live progress + result
+render-parser/
+├── main.py              FastAPI app with POST / endpoint
+├── requirements.txt     fastapi, uvicorn, pdf2image, pillow, openai, python-multipart
+├── Dockerfile           python:3.11-slim + poppler-utils (needed by pdf2image)
+├── render.yaml          One-click Render blueprint (web service, env vars)
+└── README.md            Deploy steps + how to test locally
 ```
 
-## Deliverables
+### How `main.py` will work
 
-### 1. Database (migration)
-- `programme_jobs` table: `id`, `project_id`, `upload_id`, `status` (queued/parsing/writing/complete/failed), `strategy` (text|vision|table|hybrid), `progress` (0–100), `error`, `stats` jsonb, timestamps.
-- GRANT + RLS: project members read own jobs; service_role full.
-- Enable realtime on the table.
+1. `POST /` accepts `multipart/form-data` with `file`, `fileName`, `mimeType`.
+2. Auth: compares `x-parser-secret` header against `PARSER_SECRET` env var (rejects with 401 if mismatch).
+3. If `mimeType` is PDF:
+   - Rasterise pages with `pdf2image` (uses poppler from the Docker image) at ~200 DPI.
+   - Send each page image to OpenAI `gpt-4o` with a strict JSON-schema prompt asking for `{ tasks: [{ taskName, startDate, endDate, trade?, location? }] }` where dates are `YYYY-MM-DD`.
+   - Merge tasks across pages, de-dupe by `(taskName, startDate)`.
+4. If `mimeType` is CSV / XML / XER: return 415 so your app's inline parser handles it (it already does those well).
+5. Response: `{ "source": "pdf-vision", "tasks": [...] }` — matches the contract `programme.functions.ts` already expects.
+6. Errors return JSON `{ error, detail }` with a non-200 status so the Lovable app falls back to inline parsing cleanly.
 
-### 2. Python microservice (`services/programme-parser/`)
-- FastAPI app, Dockerfile, `requirements.txt`.
-- Endpoints:
-  - `POST /parse` — accepts `{job_id, signed_url, callback_url}`, returns 202 immediately, processes in background task.
-  - `GET /health`.
-- Libraries: `pdfplumber`, `camelot-py[cv]`, `pdf2image`, `pillow`, `rapidfuzz`, `pydantic`, `google-generativeai` (Gemini vision for Gantt-bar reading), `httpx`.
-- HMAC-signs the callback with `PROGRAMME_PARSER_SECRET`.
-- Deploy target: Render (free tier ok for MVP) or Railway. User owns the hosting account.
+### Env vars the service reads
 
-### 3. TanStack side
-- `src/lib/programme.functions.ts` — replace `compileProgrammePlaybooks` with:
-  - `enqueueProgrammeJob({ uploadId })` — creates job row, signs storage URL (1h), POSTs to `PROGRAMME_PARSER_URL` with `PROGRAMME_PARSER_SECRET`.
-  - `getProgrammeJob(jobId)` — read status.
-- `src/routes/api/public/hooks/programme-ingest.ts` — HMAC-verified callback. Writes `programme_reference_tasks`, generates `daily_programme_playbooks` deterministically (existing `buildProgrammePlaybookRows` logic moves here), updates job.
-- `src/routes/programme.$projectId.tsx` — replace synchronous button with:
-  - Upload → enqueue → subscribe to job row via Supabase realtime.
-  - Progress bar, per-stage status ("Extracting tables… Reading Gantt bars… Writing 142 tasks…"), clear failure surface.
+| Name | Purpose |
+|---|---|
+| `PARSER_SECRET` | Must equal `PROGRAMME_PARSER_SECRET` you saved in Lovable |
+| `OPENAI_API_KEY` | For GPT-4o vision |
+| `PORT` | Provided by Render automatically |
 
-### 4. Secrets to add
-- `PROGRAMME_PARSER_URL` — https URL of deployed Python service.
-- `PROGRAMME_PARSER_SECRET` — HMAC shared secret (generated).
-- `GEMINI_API_KEY` inside the Python service env (uses same Lovable AI gateway or direct — configured on Render, not in this app).
+### Deploy flow (what you'll do after I scaffold)
 
-## Rollout order
+1. Push `render-parser/` to GitHub (new repo or a subdir of this one).
+2. In Render → New → Blueprint → point at the repo. `render.yaml` provisions the web service.
+3. Set `PARSER_SECRET` and `OPENAI_API_KEY` in Render's env var UI.
+4. Copy the live URL (e.g. `https://randall-parser.onrender.com`) into Lovable's `PROGRAMME_PARSER_URL` secret.
+5. Upload a Gantt PDF in the app — `programme.functions.ts` will hit Render first, get real tasks back, and write them to `daily_programme_playbooks`.
 
-1. Migration + realtime enabled.
-2. Ship the Python service repo (I'll write it in full — you deploy to Render, paste the URL back).
-3. Wire the TanStack side + callback route behind the two secrets.
-4. Remove the old inline `compileProgrammePlaybooks` AI path once end-to-end verified on Grafton PDF.
+### What I will NOT change
 
-## Not in scope this pass
+- No edits to `src/lib/programme.functions.ts` — the client contract is already correct from the previous turn.
+- No changes to database schema or existing app code.
+- No secret values set — you'll paste `OPENAI_API_KEY` into Render yourself.
 
-- XER/MPP native parsing (add after visual-PDF path is proven).
-- Auto email-ingestion pipeline.
-- Fuzzy-matching UI for reviewing unresolved bays (data captured in `stats.unresolved`, reviewed later).
+Approve and I'll create the four files.
