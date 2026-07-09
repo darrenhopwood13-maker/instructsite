@@ -421,7 +421,7 @@ async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<Pr
             },
           ],
         },
-      ],
+      ] as never,
       maxOutputTokens: 8192,
       abortSignal: controller.signal,
     });
