@@ -36,7 +36,6 @@ import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicWebhooksStripeRouteImport } from './routes/api/public/webhooks/stripe'
 import { Route as ApiPublicHooksWeatherSnapshotRouteImport } from './routes/api/public/hooks/weather-snapshot'
-import { Route as ApiPublicHooksProgrammeIngestRouteImport } from './routes/api/public/hooks/programme-ingest'
 
 const UnlockRoute = UnlockRouteImport.update({
   id: '/unlock',
@@ -177,12 +176,6 @@ const ApiPublicHooksWeatherSnapshotRoute =
     path: '/api/public/hooks/weather-snapshot',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksProgrammeIngestRoute =
-  ApiPublicHooksProgrammeIngestRouteImport.update({
-    id: '/api/public/hooks/programme-ingest',
-    path: '/api/public/hooks/programme-ingest',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -210,7 +203,6 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
-  '/api/public/hooks/programme-ingest': typeof ApiPublicHooksProgrammeIngestRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
   '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
@@ -240,7 +232,6 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
-  '/api/public/hooks/programme-ingest': typeof ApiPublicHooksProgrammeIngestRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
   '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
@@ -271,7 +262,6 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
-  '/api/public/hooks/programme-ingest': typeof ApiPublicHooksProgrammeIngestRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
   '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
@@ -303,7 +293,6 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
-    | '/api/public/hooks/programme-ingest'
     | '/api/public/hooks/weather-snapshot'
     | '/api/public/webhooks/stripe'
   fileRoutesByTo: FileRoutesByTo
@@ -333,7 +322,6 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
-    | '/api/public/hooks/programme-ingest'
     | '/api/public/hooks/weather-snapshot'
     | '/api/public/webhooks/stripe'
   id:
@@ -363,7 +351,6 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
-    | '/api/public/hooks/programme-ingest'
     | '/api/public/hooks/weather-snapshot'
     | '/api/public/webhooks/stripe'
   fileRoutesById: FileRoutesById
@@ -394,7 +381,6 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiDrawingDrawingIdRoute: typeof ApiDrawingDrawingIdRoute
-  ApiPublicHooksProgrammeIngestRoute: typeof ApiPublicHooksProgrammeIngestRoute
   ApiPublicHooksWeatherSnapshotRoute: typeof ApiPublicHooksWeatherSnapshotRoute
   ApiPublicWebhooksStripeRoute: typeof ApiPublicWebhooksStripeRoute
 }
@@ -590,13 +576,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksWeatherSnapshotRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/programme-ingest': {
-      id: '/api/public/hooks/programme-ingest'
-      path: '/api/public/hooks/programme-ingest'
-      fullPath: '/api/public/hooks/programme-ingest'
-      preLoaderRoute: typeof ApiPublicHooksProgrammeIngestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -627,7 +606,6 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiDrawingDrawingIdRoute: ApiDrawingDrawingIdRoute,
-  ApiPublicHooksProgrammeIngestRoute: ApiPublicHooksProgrammeIngestRoute,
   ApiPublicHooksWeatherSnapshotRoute: ApiPublicHooksWeatherSnapshotRoute,
   ApiPublicWebhooksStripeRoute: ApiPublicWebhooksStripeRoute,
 }
