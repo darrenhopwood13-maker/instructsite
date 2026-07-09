@@ -36,12 +36,13 @@ function toIso(d: Date): string {
 }
 function fmtHuman(iso: string): string {
   const d = new Date(iso + "T00:00:00Z");
-  return d.toLocaleDateString(undefined, {
+  return new Intl.DateTimeFormat("en-GB", {
     weekday: "long",
     day: "2-digit",
     month: "short",
     year: "numeric",
-  });
+    timeZone: "UTC",
+  }).format(d);
 }
 function shiftDate(iso: string, days: number): string {
   const d = new Date(iso + "T00:00:00Z");
@@ -231,14 +232,13 @@ function ProgrammePage() {
       return res;
     },
     onSuccess: (res) => {
-      if (!res.ok) return;
       setJobId(res.jobId);
       setJob({
-        status: "queued",
-        stage: "queued",
+        status: res.ok ? "queued" : "failed",
+        stage: res.ok ? "queued" : "failed",
         strategy: null,
-        progress: 0,
-        error: null,
+        progress: res.ok ? 0 : 100,
+        error: res.ok ? null : (res.error ?? "Programme compile failed"),
         stats: {},
       });
     },

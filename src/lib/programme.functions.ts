@@ -191,7 +191,7 @@ export const enqueueProgrammeJob = createServerFn({ method: "POST" })
     } catch (err) {
       const message = err instanceof Error ? err.message : "Programme compile failed";
       await fail(message);
-      throw new Error(message);
+      return { ok: false as const, jobId: job.id, uploadId: up.id, error: message };
     }
   });
 

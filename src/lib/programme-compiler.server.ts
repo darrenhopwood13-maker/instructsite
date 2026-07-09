@@ -21,7 +21,7 @@ export type ProgrammeTask = z.infer<typeof TaskSchema>;
 
 export type ProgrammeCompileResult = {
   tasks: ProgrammeTask[];
-  source: "csv" | "xer" | "xml" | "pdf-text" | "text" | "ai";
+  source: "csv" | "xer" | "xml" | "pdf-text" | "pdf-vision" | "text" | "ai";
 };
 
 export type ProgrammePlaybookRow = {
@@ -384,6 +384,57 @@ async function aiExtractFromText(text: string): Promise<ProgrammeTask[]> {
   }
 }
 
+async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<ProgrammeTask[]> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) return [];
+  const gateway = createLovableAiGatewayProvider(key);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 55_000);
+  try {
+    const result = await generateText({
+      model: gateway("google/gemini-2.5-flash"),
+      output: Output.object({ schema: ExtractSchema }),
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                "Read this construction programme PDF visually. It may be a Gantt chart where activities are row labels and bars map to a calendar scale. Extract real scheduled activities only. Return taskName, startDate, endDate, trade, location. Dates must be ISO YYYY-MM-DD. Do not return calendar-axis labels, month headings, page titles, legends, or project rollups as tasks. If a bar spans multiple days, infer the best start/end dates from the visible scale.",
+            },
+            {
+              type: "file",
+              data: bytes,
+              filename: fileName,
+              mediaType: "application/pdf",
+            },
+          ],
+        },
+      ],
+      maxOutputTokens: 8192,
+      abortSignal: controller.signal,
+    });
+    return mergeTasks(result.output.tasks ?? []);
+  } catch (err) {
+    if (NoObjectGeneratedError.isInstance(err)) {
+      return mergeTasks(salvageJson(err.text ?? "").tasks ?? []);
+    }
+    if (NoOutputGeneratedError.isInstance(err)) {
+      console.warn("[Randall] PDF vision fallback returned no output");
+      return [];
+    }
+    if (isAbortError(err)) {
+      console.warn("[Randall] PDF vision fallback timed out");
+      return [];
+    }
+    console.error("[Randall] PDF vision fallback failed", err);
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function decodeBase64(dataBase64: string): Uint8Array {
   const bin = atob(dataBase64);
   const bytes = new Uint8Array(bin.length);
@@ -425,14 +476,19 @@ export async function compileProgrammeFile(input: {
       // scale — those tend to produce 0-2 bogus "tasks" from axis labels.
       if (tasks.length >= 3) return { tasks, source: "pdf-text" };
 
-      // Try AI on the extracted text if we have any
+      // Try AI on the extracted text if we have any.
       if (text.trim().length > 100) {
         const aiTasks = await aiExtractFromText(text);
         if (aiTasks.length >= 3) return { tasks: aiTasks, source: "ai" };
       }
 
+      // Visual Gantt PDFs often expose almost no usable text. In that case,
+      // pass the PDF itself to a multimodal model so bars + date axes can be read.
+      const visualTasks = await aiExtractFromPdf(bytes, input.fileName);
+      if (visualTasks.length >= 3) return { tasks: visualTasks, source: "pdf-vision" };
+
       throw new Error(
-        "Randall could not read a task schedule from this PDF — it looks like a visual Gantt chart with no extractable task rows. Please upload the programme as CSV, XML, or XER (Asta/P6 export), or a text-based PDF task list with dates.",
+        "Randall could not read a task schedule from this PDF. The visual PDF fallback could not identify enough dated task rows. Please upload CSV, XML, XER, or a clearer task-list PDF.",
       );
     } catch (err) {
       if (err instanceof Error && err.message.startsWith("Randall could not read")) throw err;
