@@ -232,14 +232,13 @@ function ProgrammePage() {
       return res;
     },
     onSuccess: (res) => {
-      if (!res.ok) return;
       setJobId(res.jobId);
       setJob({
-        status: "queued",
-        stage: "queued",
+        status: res.ok ? "queued" : "failed",
+        stage: res.ok ? "queued" : "failed",
         strategy: null,
-        progress: 0,
-        error: null,
+        progress: res.ok ? 0 : 100,
+        error: res.ok ? null : res.error,
         stats: {},
       });
     },
