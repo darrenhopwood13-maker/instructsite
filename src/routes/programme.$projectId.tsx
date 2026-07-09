@@ -209,11 +209,8 @@ function ProgrammePage() {
     };
   }, [ready, jobId, projectId, qc]);
 
-  const resetCompiler = () => {
-    compileMut.reset();
-    setJob(null);
-    setJobId(null);
-  };
+
+
 
   const compileMut = useMutation({
     mutationFn: async (file: File) => {
