@@ -238,7 +238,7 @@ function ProgrammePage() {
         stage: res.ok ? "queued" : "failed",
         strategy: null,
         progress: res.ok ? 0 : 100,
-        error: res.ok ? null : res.error,
+        error: res.ok ? null : (res.error ?? "Programme compile failed"),
         stats: {},
       });
     },
