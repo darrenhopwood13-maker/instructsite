@@ -344,6 +344,15 @@ function salvageJson(raw: string): z.infer<typeof ExtractSchema> {
   return ExtractSchema.parse({});
 }
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
 function isAbortError(err: unknown): boolean {
   return err instanceof Error && (err.name === "AbortError" || /aborted/i.test(err.message));
 }
@@ -405,9 +414,10 @@ async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<Pr
             },
             {
               type: "file",
-              data: bytes,
-              filename: fileName,
-              mediaType: "application/pdf",
+              file: {
+                filename: fileName,
+                file_data: `data:application/pdf;base64,${bytesToBase64(bytes)}`,
+              },
             },
           ],
         },
@@ -487,15 +497,14 @@ export async function compileProgrammeFile(input: {
       const visualTasks = await aiExtractFromPdf(bytes, input.fileName);
       if (visualTasks.length >= 3) return { tasks: visualTasks, source: "pdf-vision" };
 
-      throw new Error(
-        "Randall could not read a task schedule from this PDF. The visual PDF fallback could not identify enough dated task rows. Please upload CSV, XML, XER, or a clearer task-list PDF.",
-      );
+      console.warn("[Randall] PDF did not contain enough dated task rows", {
+        textTasks: tasks.length,
+        visualTasks: visualTasks.length,
+      });
+      return { tasks: [], source: "pdf-vision" };
     } catch (err) {
-      if (err instanceof Error && err.message.startsWith("Randall could not read")) throw err;
       console.error("[Randall] pdf text extract failed", err);
-      throw new Error(
-        "Randall could not read this PDF. Please upload the programme as CSV, XML, XER, or a text-based PDF task list.",
-      );
+      return { tasks: [], source: "pdf-text" };
     }
   } else {
     text = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
