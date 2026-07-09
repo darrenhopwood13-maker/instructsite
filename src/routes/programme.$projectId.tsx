@@ -209,6 +209,9 @@ function ProgrammePage() {
     };
   }, [ready, jobId, projectId, qc]);
 
+
+
+
   const compileMut = useMutation({
     mutationFn: async (file: File) => {
       // Upload directly to Supabase Storage first
@@ -231,6 +234,11 @@ function ProgrammePage() {
       });
       return res;
     },
+    onMutate: () => {
+      // Clear any previous failure state before starting a new attempt
+      setJob(null);
+      setJobId(null);
+    },
     onSuccess: (res) => {
       setJobId(res.jobId);
       setJob({
@@ -243,6 +251,15 @@ function ProgrammePage() {
       });
     },
   });
+
+  const resetCompiler = () => {
+    compileMut.reset();
+    setJob(null);
+    setJobId(null);
+  };
+
+
+
 
 
   const noteMut = useMutation({
@@ -339,9 +356,18 @@ function ProgrammePage() {
             </div>
 
             {compileMut.isError && (
-              <p className="mt-3 text-xs text-destructive">
-                {(compileMut.error as Error).message}
-              </p>
+              <div className="mt-3 flex items-start justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3">
+                <p className="text-xs text-destructive">
+                  {(compileMut.error as Error).message}
+                </p>
+                <button
+                  type="button"
+                  onClick={resetCompiler}
+                  className="text-[0.6rem] uppercase tracking-widest text-destructive hover:text-destructive/80"
+                >
+                  Dismiss
+                </button>
+              </div>
             )}
 
             {job && (
@@ -356,7 +382,18 @@ function ProgrammePage() {
                           ? `${job.status} · ${job.stage}`
                           : job.status}
                   </span>
-                  <span>{job.progress}%</span>
+                  <div className="flex items-center gap-2">
+                    <span>{job.progress}%</span>
+                    {job.status === "failed" && (
+                      <button
+                        type="button"
+                        onClick={resetCompiler}
+                        className="text-destructive hover:text-destructive/80"
+                      >
+                        Dismiss
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded bg-white/10">
                   <div
@@ -381,6 +418,7 @@ function ProgrammePage() {
                 )}
               </div>
             )}
+
 
           </section>
         )}
