@@ -36,11 +36,12 @@ function toIso(d: Date): string {
 }
 function fmtHuman(iso: string): string {
   const d = new Date(iso + "T00:00:00Z");
-  return d.toLocaleDateString(undefined, {
+  return new Intl.DateTimeFormat("en-GB", {
     weekday: "long",
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 function shiftDate(iso: string, days: number): string {
