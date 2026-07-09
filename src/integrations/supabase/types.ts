@@ -584,6 +584,66 @@ export type Database = {
         }
         Relationships: []
       }
+      programme_jobs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error: string | null
+          id: string
+          progress: number
+          project_id: string
+          stage: string | null
+          stats: Json
+          status: string
+          strategy: string | null
+          updated_at: string
+          upload_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          id?: string
+          progress?: number
+          project_id: string
+          stage?: string | null
+          stats?: Json
+          status?: string
+          strategy?: string | null
+          updated_at?: string
+          upload_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          id?: string
+          progress?: number
+          project_id?: string
+          stage?: string | null
+          stats?: Json
+          status?: string
+          strategy?: string | null
+          updated_at?: string
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_jobs_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "programme_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       programme_manager_notes: {
         Row: {
           author_id: string
