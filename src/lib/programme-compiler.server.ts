@@ -421,9 +421,25 @@ export async function compileProgrammeFile(input: {
       text = await extractPdfText(bytes);
       console.info("[Randall] pdf text extracted", { chars: text.length });
       tasks = parseFreeTextToTasks(text);
-      if (tasks.length) return { tasks, source: "pdf-text" };
+      // Guard against visual Gantt PDFs whose only text is a month/year
+      // scale — those tend to produce 0-2 bogus "tasks" from axis labels.
+      if (tasks.length >= 3) return { tasks, source: "pdf-text" };
+
+      // Try AI on the extracted text if we have any
+      if (text.trim().length > 100) {
+        const aiTasks = await aiExtractFromText(text);
+        if (aiTasks.length >= 3) return { tasks: aiTasks, source: "ai" };
+      }
+
+      throw new Error(
+        "Randall could not read a task schedule from this PDF — it looks like a visual Gantt chart with no extractable task rows. Please upload the programme as CSV, XML, or XER (Asta/P6 export), or a text-based PDF task list with dates.",
+      );
     } catch (err) {
+      if (err instanceof Error && err.message.startsWith("Randall could not read")) throw err;
       console.error("[Randall] pdf text extract failed", err);
+      throw new Error(
+        "Randall could not read this PDF. Please upload the programme as CSV, XML, XER, or a text-based PDF task list.",
+      );
     }
   } else {
     text = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
