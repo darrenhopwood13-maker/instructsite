@@ -749,6 +749,8 @@ export type Database = {
           id: string
           mime_type: string | null
           project_id: string
+          status: string
+          storage_path: string | null
           task_count: number
           uploaded_by: string | null
         }
@@ -758,6 +760,8 @@ export type Database = {
           id?: string
           mime_type?: string | null
           project_id: string
+          status?: string
+          storage_path?: string | null
           task_count?: number
           uploaded_by?: string | null
         }
@@ -767,6 +771,8 @@ export type Database = {
           id?: string
           mime_type?: string | null
           project_id?: string
+          status?: string
+          storage_path?: string | null
           task_count?: number
           uploaded_by?: string | null
         }
