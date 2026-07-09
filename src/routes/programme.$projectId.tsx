@@ -15,12 +15,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import {
-  compileProgrammePlaybooks,
+  enqueueProgrammeJob,
+  getLatestProgrammeJob,
   getPlaybookForDate,
   getPlaybookRange,
   listManagerNotes,
   addManagerNote,
 } from "@/lib/programme.functions";
+
 
 export const Route = createFileRoute("/programme/$projectId")({
   head: () => ({
