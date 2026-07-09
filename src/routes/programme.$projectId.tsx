@@ -252,6 +252,14 @@ function ProgrammePage() {
     },
   });
 
+  const resetCompiler = () => {
+    compileMut.reset();
+    setJob(null);
+    setJobId(null);
+  };
+
+
+
 
 
   const noteMut = useMutation({
