@@ -138,28 +138,112 @@ function ProgrammePage() {
     };
   }, [ready, projectId, date, qc]);
 
+  // --- Async job state ---
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [job, setJob] = useState<{
+    status: "queued" | "parsing" | "writing" | "complete" | "failed";
+    stage: string | null;
+    strategy: string | null;
+    progress: number;
+    error: string | null;
+    stats: Record<string, unknown>;
+  } | null>(null);
+
+  // Reload latest job on mount so we surface any in-flight job
+  useEffect(() => {
+    if (!ready) return;
+    latestJobFn({ data: { projectId } }).then((row) => {
+      if (!row) return;
+      setJobId(row.id);
+      setJob({
+        status: row.status as typeof job extends null ? never : NonNullable<typeof job>["status"],
+        stage: row.stage,
+        strategy: row.strategy,
+        progress: row.progress ?? 0,
+        error: row.error,
+        stats: (row.stats as Record<string, unknown>) ?? {},
+      });
+    }).catch(() => undefined);
+  }, [ready, projectId, latestJobFn]);
+
+  // Realtime subscription to the current job
+  useEffect(() => {
+    if (!ready || !jobId) return;
+    const channel = supabase
+      .channel(`programme-job:${jobId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "programme_jobs",
+          filter: `id=eq.${jobId}`,
+        },
+        (payload) => {
+          const row = payload.new as {
+            status: NonNullable<typeof job>["status"];
+            stage: string | null;
+            strategy: string | null;
+            progress: number;
+            error: string | null;
+            stats: Record<string, unknown> | null;
+          };
+          setJob({
+            status: row.status,
+            stage: row.stage,
+            strategy: row.strategy,
+            progress: row.progress ?? 0,
+            error: row.error,
+            stats: row.stats ?? {},
+          });
+          if (row.status === "complete") {
+            qc.invalidateQueries({ queryKey: ["playbook-range", projectId] });
+            qc.invalidateQueries({ queryKey: ["playbook", projectId] });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [ready, jobId, projectId, qc]);
+
   const compileMut = useMutation({
     mutationFn: async (file: File) => {
-      const buf = new Uint8Array(await file.arrayBuffer());
-      let bin = "";
-      for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-      const b64 = btoa(bin);
-      return compileFn({
+      // Upload directly to Supabase Storage first
+      const objectKey = `${projectId}/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-]+/g, "_")}`;
+      const { error: upErr } = await supabase.storage
+        .from("programme-uploads")
+        .upload(objectKey, file, {
+          cacheControl: "3600",
+          contentType: file.type || "application/pdf",
+          upsert: false,
+        });
+      if (upErr) throw new Error(upErr.message);
+      const res = await enqueueFn({
         data: {
           projectId,
+          storagePath: objectKey,
           fileName: file.name,
           mimeType: file.type || "application/pdf",
-          dataBase64: b64,
         },
       });
+      return res;
     },
     onSuccess: (res) => {
       if (!res.ok) return;
-      qc.invalidateQueries({ queryKey: ["playbook-range", projectId] });
-      qc.invalidateQueries({ queryKey: ["playbook", projectId] });
-      if (res.firstDate) setDate(res.firstDate);
+      setJobId(res.jobId);
+      setJob({
+        status: "queued",
+        stage: "queued",
+        strategy: null,
+        progress: 0,
+        error: null,
+        stats: {},
+      });
     },
   });
+
 
   const noteMut = useMutation({
     mutationFn: async (body: string) => addNoteFn({ data: { projectId, date, body } }),
