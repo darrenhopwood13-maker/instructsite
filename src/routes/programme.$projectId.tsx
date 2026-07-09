@@ -155,6 +155,7 @@ function ProgrammePage() {
     if (!ready) return;
     latestJobFn({ data: { projectId } }).then((row) => {
       if (!row) return;
+      if (row.status === "failed") return;
       setJobId(row.id);
       setJob({
         status: row.status as typeof job extends null ? never : NonNullable<typeof job>["status"],
@@ -240,15 +241,24 @@ function ProgrammePage() {
       setJobId(null);
     },
     onSuccess: (res) => {
+      if (!res.ok) {
+        setJobId(null);
+        setJob(null);
+        return;
+      }
       setJobId(res.jobId);
       setJob({
-        status: res.ok ? "queued" : "failed",
-        stage: res.ok ? "queued" : "failed",
+        status: "queued",
+        stage: "queued",
         strategy: null,
-        progress: res.ok ? 0 : 100,
-        error: res.ok ? null : (res.error ?? "Programme compile failed"),
+        progress: 0,
+        error: null,
         stats: {},
       });
+    },
+    onError: () => {
+      setJobId(null);
+      setJob(null);
     },
   });
 
@@ -354,22 +364,6 @@ function ProgrammePage() {
                 }}
               />
             </div>
-
-            {compileMut.isError && (
-              <div className="mt-3 flex items-start justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3">
-                <p className="text-xs text-destructive">
-                  {(compileMut.error as Error).message}
-                </p>
-                <button
-                  type="button"
-                  onClick={resetCompiler}
-                  className="text-[0.6rem] uppercase tracking-widest text-destructive hover:text-destructive/80"
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-
             {job && (
               <div className="mt-4 rounded-lg border border-white/10 bg-black/30 p-3">
                 <div className="flex items-center justify-between text-[0.6rem] uppercase tracking-widest text-foreground/60">
@@ -384,15 +378,6 @@ function ProgrammePage() {
                   </span>
                   <div className="flex items-center gap-2">
                     <span>{job.progress}%</span>
-                    {job.status === "failed" && (
-                      <button
-                        type="button"
-                        onClick={resetCompiler}
-                        className="text-destructive hover:text-destructive/80"
-                      >
-                        Dismiss
-                      </button>
-                    )}
                   </div>
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded bg-white/10">
@@ -407,9 +392,6 @@ function ProgrammePage() {
                     style={{ width: `${Math.max(4, job.progress)}%` }}
                   />
                 </div>
-                {job.error && (
-                  <p className="mt-2 text-xs text-destructive">{job.error}</p>
-                )}
                 {job.status === "complete" && job.stats && (
                   <p className="mt-2 text-xs text-emerald-400">
                     {String(job.stats.task_count ?? "?")} tasks · {String(job.stats.day_count ?? "?")} active dates
