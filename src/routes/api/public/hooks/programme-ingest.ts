@@ -141,13 +141,8 @@ export const Route = createFileRoute("/api/public/hooks/programme-ingest")({
           .delete()
           .eq("programme_upload_id", uploadId);
 
-        const insertBatch = async <T>(table: string, rows: T[]) => {
-          const batchSize = 200;
-          for (let i = 0; i < rows.length; i += batchSize) {
-            const { error } = await supabaseAdmin.from(table).insert(rows.slice(i, i + batchSize));
-            if (error) throw new Error(`${table} insert failed: ${error.message}`);
-          }
-        };
+
+
 
         try {
           const batchSize = 200;
