@@ -217,7 +217,7 @@ function parseCsvToTasks(text: string): ProgrammeTask[] {
   }));
 }
 
-const DATE_RE = /(\d{4}-\d{1,2}-\d{1,2}(?:[T\s]\d{1,2}:\d{2}(?::\d{2})?)?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{1,2}[\s\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[A-Za-z]*[\s\-,]+\d{2,4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[A-Za-z]*[\s\-]+\d{1,2}[\s\-,]+\d{2,4})/gi;
+const DATE_RE = /(\d{4}-\d{1,2}-\d{1,2}(?:[T\s]\d{1,2}:\d{2}(?::\d{2})?)?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{1,2}[\s\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[A-Za-z]*[\s\-,]\d{2,4})/gi;
 
 function dateMatches(line: string): { raw: string; iso: string; index: number }[] {
   const matches: { raw: string; iso: string; index: number }[] = [];
@@ -365,11 +365,17 @@ async function aiExtractFromText(text: string): Promise<ProgrammeTask[]> {
   const timer = setTimeout(() => controller.abort(), 28_000);
   try {
     const result = await generateText({
-      model: gateway("openai/gpt-5.5"),
+      model: gateway("openai/gpt-4o"),
       output: Output.object({ schema: ExtractSchema }),
       prompt:
-        "Extract construction programme activities from the text. Return taskName, startDate, endDate, trade, location. Dates must be ISO YYYY-MM-DD. Skip headings, summaries, blank rows and project rollups.\n\n" +
-        text.slice(0, 45_000),
+        "Extract construction programme activities from the text. Return only dated work tasks with taskName, startDate, endDate, trade, and location. Dates must be ISO YYYY-MM-DD format. Skip headings, summaries, blank rows, and metadata. Extract all real scheduled activities.",
+      system: "You are a construction programme parser. Extract scheduled tasks only, ignoring headers and non-task lines.",
+      messages: [
+        {
+          role: "user",
+          content: text.slice(0, 45_000),
+        },
+      ],
       maxOutputTokens: 4096,
       abortSignal: controller.signal,
     });
@@ -410,7 +416,7 @@ async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<Pr
             {
               type: "text",
               text:
-                "Read this construction programme PDF visually. It may be a Gantt chart where activities are row labels and bars map to a calendar scale. Extract real scheduled activities only. Return taskName, startDate, endDate, trade, location. Dates must be ISO YYYY-MM-DD. Do not return calendar-axis labels, month headings, page titles, legends, or project rollups as tasks. If a bar spans multiple days, infer the best start/end dates from the visible scale.",
+                "Read this construction programme PDF visually. It may be a Gantt chart where activities are row labels and bars map to a calendar scale. Extract real scheduled activities only. Return taskName, startDate, endDate, trade, location. Dates must be ISO YYYY-MM-DD. Skip headers, summaries, and non-task rows.",
             },
             {
               type: "file",
