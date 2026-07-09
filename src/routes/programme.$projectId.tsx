@@ -343,16 +343,45 @@ function ProgrammePage() {
                 {(compileMut.error as Error).message}
               </p>
             )}
-            {compileMut.data?.ok === false && (
-              <p className="mt-3 text-xs text-destructive">{compileMut.data.error}</p>
+
+            {job && (
+              <div className="mt-4 rounded-lg border border-white/10 bg-black/30 p-3">
+                <div className="flex items-center justify-between text-[0.6rem] uppercase tracking-widest text-foreground/60">
+                  <span>
+                    {job.status === "complete"
+                      ? "Compiled"
+                      : job.status === "failed"
+                        ? "Failed"
+                        : job.stage
+                          ? `${job.status} · ${job.stage}`
+                          : job.status}
+                  </span>
+                  <span>{job.progress}%</span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded bg-white/10">
+                  <div
+                    className={`h-full transition-all ${
+                      job.status === "failed"
+                        ? "bg-destructive"
+                        : job.status === "complete"
+                          ? "bg-emerald-400"
+                          : "bg-alert"
+                    }`}
+                    style={{ width: `${Math.max(4, job.progress)}%` }}
+                  />
+                </div>
+                {job.error && (
+                  <p className="mt-2 text-xs text-destructive">{job.error}</p>
+                )}
+                {job.status === "complete" && job.stats && (
+                  <p className="mt-2 text-xs text-emerald-400">
+                    {String(job.stats.task_count ?? "?")} tasks · {String(job.stats.day_count ?? "?")} active dates
+                    {job.strategy ? ` · via ${job.strategy}` : ""}
+                  </p>
+                )}
+              </div>
             )}
-            {compileMut.data?.ok === true && (
-              <p className="mt-3 text-xs text-emerald-400">
-                Compiled {compileMut.data.taskCount} task
-                {compileMut.data.taskCount === 1 ? "" : "s"} across{" "}
-                {compileMut.data.dayCount} active dates via {compileMut.data.source}.
-              </p>
-            )}
+
           </section>
         )}
 
