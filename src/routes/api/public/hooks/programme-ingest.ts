@@ -150,7 +150,13 @@ export const Route = createFileRoute("/api/public/hooks/programme-ingest")({
         };
 
         try {
-          await insertBatch("programme_reference_tasks", taskRows);
+          const batchSize = 200;
+          for (let i = 0; i < taskRows.length; i += batchSize) {
+            const { error } = await supabaseAdmin
+              .from("programme_reference_tasks")
+              .insert(taskRows.slice(i, i + batchSize));
+            if (error) throw new Error(`programme_reference_tasks insert failed: ${error.message}`);
+          }
 
           const playbookRows = buildProgrammePlaybookRows({
             projectId,
@@ -163,9 +169,13 @@ export const Route = createFileRoute("/api/public/hooks/programme-ingest")({
             .delete()
             .eq("project_id", projectId);
 
-          if (playbookRows.length) {
-            await insertBatch("daily_programme_playbooks", playbookRows);
+          for (let i = 0; i < playbookRows.length; i += batchSize) {
+            const { error } = await supabaseAdmin
+              .from("daily_programme_playbooks")
+              .insert(playbookRows.slice(i, i + batchSize));
+            if (error) throw new Error(`daily_programme_playbooks insert failed: ${error.message}`);
           }
+
 
           await supabaseAdmin
             .from("programme_uploads")
