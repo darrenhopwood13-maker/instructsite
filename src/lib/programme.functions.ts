@@ -4,15 +4,31 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // ---------------- Server functions ----------------
 
-export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
+/**
+ * Enqueue an async Randall parsing job.
+ *
+ * Flow:
+ *   1. The client has already uploaded the programme file to the
+ *      `programme-uploads` Supabase Storage bucket at `<projectId>/<uuid>-<name>`.
+ *   2. This server function creates a `programme_uploads` row and a
+ *      `programme_jobs` row, signs the storage object for 1 hour, and
+ *      POSTs `{ job_id, project_id, signed_url, file_name, mime_type,
+ *      callback_url }` to the external Python parser.
+ *   3. The parser processes in the background and calls back
+ *      `/api/public/hooks/programme-ingest` with the parsed tasks.
+ *
+ * The UI subscribes to the `programme_jobs` row via Supabase realtime and
+ * shows progress live.
+ */
+export const enqueueProgrammeJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) =>
     z
       .object({
         projectId: z.string().uuid(),
+        storagePath: z.string().min(1),
         fileName: z.string().min(1),
         mimeType: z.string().min(1),
-        dataBase64: z.string().min(1),
       })
       .parse(i),
   )
@@ -25,22 +41,14 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
     });
     if (!isAdmin) throw new Error("Only project admins can compile programmes.");
 
-    let compiled;
-    try {
-      const { compileProgrammeFile } = await import("@/lib/programme-compiler.server");
-      compiled = await compileProgrammeFile({
-        fileName: data.fileName,
-        mimeType: data.mimeType,
-        dataBase64: data.dataBase64,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Randall could not compile this programme.";
-      console.error("[Randall] compile failed", err);
-      return { ok: false as const, error: message };
+    const parserUrl = process.env.PROGRAMME_PARSER_URL;
+    const parserSecret = process.env.PROGRAMME_PARSER_SECRET;
+    if (!parserUrl || !parserSecret) {
+      throw new Error(
+        "Randall parser is not configured yet. Add the PROGRAMME_PARSER_URL secret in Lovable Cloud once the Python service is deployed.",
+      );
     }
-    const tasks = compiled.tasks;
 
-    // Insert upload row
     const { data: up, error: upErr } = await supabase
       .from("programme_uploads")
       .insert({
@@ -48,66 +56,102 @@ export const compileProgrammePlaybooks = createServerFn({ method: "POST" })
         file_name: data.fileName,
         mime_type: data.mimeType,
         uploaded_by: userId,
-        task_count: tasks.length,
+        task_count: 0,
+        storage_path: data.storagePath,
+        status: "queued",
       })
       .select("id")
       .single();
     if (upErr || !up) throw new Error(upErr?.message ?? "Upload record failed");
 
-    // Insert tasks
-    const taskRows = tasks.map((t) => ({
-      programme_upload_id: up.id,
-      project_id: data.projectId,
-      task_name: t.taskName || "Untitled task",
-      plain_english: t.taskName || "Task",
-      start_date: t.startDate,
-      end_date: t.endDate,
-      location: t.location || null,
-      trade: t.trade || null,
-    }));
-    const { error: tErr } = await supabase.from("programme_reference_tasks").insert(taskRows);
-    if (tErr) throw new Error(tErr.message);
+    const { data: job, error: jobErr } = await supabase
+      .from("programme_jobs")
+      .insert({
+        project_id: data.projectId,
+        upload_id: up.id,
+        status: "queued",
+        progress: 0,
+        stage: "queued",
+        created_by: userId,
+      })
+      .select("id")
+      .single();
+    if (jobErr || !job) throw new Error(jobErr?.message ?? "Job record failed");
 
-    // Build deterministic day-to-a-page playbook
-    const { buildProgrammePlaybookRows } = await import("@/lib/programme-compiler.server");
-    const playbookRows = buildProgrammePlaybookRows({
-      projectId: data.projectId,
-      uploadId: up.id,
-      tasks,
-    });
-
-    // Replace playbooks for this project
-    await supabase
-      .from("daily_programme_playbooks")
-      .delete()
-      .eq("project_id", data.projectId);
-
-    if (playbookRows.length) {
-      // insert in batches to keep payloads sane
-      const batchSize = 100;
-      for (let i = 0; i < playbookRows.length; i += batchSize) {
-        const batch = playbookRows.slice(i, i + batchSize);
-        const { error: pbErr } = await supabase.from("daily_programme_playbooks").insert(batch);
-        if (pbErr) throw new Error(pbErr.message);
-      }
+    const { data: signed, error: signErr } = await supabase.storage
+      .from("programme-uploads")
+      .createSignedUrl(data.storagePath, 60 * 60);
+    if (signErr || !signed?.signedUrl) {
+      throw new Error(signErr?.message ?? "Could not sign programme file");
     }
 
-    console.info("[Randall] compile done", {
-      taskCount: tasks.length,
-      dayCount: playbookRows.length,
-      source: compiled.source,
-    });
+    const appOrigin = process.env.APP_ORIGIN ?? "https://instructsite.lovable.app";
+    const callbackUrl = `${appOrigin.replace(/\/$/, "")}/api/public/hooks/programme-ingest`;
 
-    return {
-      ok: true as const,
-      uploadId: up.id,
-      taskCount: tasks.length,
-      dayCount: playbookRows.length,
-      firstDate: playbookRows[0]?.playbook_date ?? null,
-      lastDate: playbookRows[playbookRows.length - 1]?.playbook_date ?? null,
-      source: compiled.source,
-    };
+    try {
+      const res = await fetch(`${parserUrl.replace(/\/$/, "")}/parse`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${parserSecret}`,
+        },
+        body: JSON.stringify({
+          job_id: job.id,
+          project_id: data.projectId,
+          signed_url: signed.signedUrl,
+          file_name: data.fileName,
+          mime_type: data.mimeType,
+          callback_url: callbackUrl,
+        }),
+      });
+      if (!res.ok && res.status !== 202) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`Parser rejected job (${res.status}): ${body.slice(0, 200)}`);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not reach Randall parser";
+      await supabase
+        .from("programme_jobs")
+        .update({ status: "failed", error: message, progress: 100 })
+        .eq("id", job.id);
+      throw new Error(message);
+    }
+
+    await supabase
+      .from("programme_jobs")
+      .update({ status: "parsing", stage: "dispatched", progress: 8 })
+      .eq("id", job.id);
+
+    return { ok: true as const, jobId: job.id, uploadId: up.id };
   });
+
+export const getProgrammeJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ jobId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("programme_jobs")
+      .select("id, project_id, status, stage, strategy, progress, error, stats, created_at, updated_at")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const getLatestProgrammeJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: row } = await context.supabase
+      .from("programme_jobs")
+      .select("id, status, stage, strategy, progress, error, stats, updated_at")
+      .eq("project_id", data.projectId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return row;
+  });
+
 
 export const getPlaybookForDate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

@@ -15,12 +15,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import {
-  compileProgrammePlaybooks,
+  enqueueProgrammeJob,
+  getLatestProgrammeJob,
   getPlaybookForDate,
   getPlaybookRange,
   listManagerNotes,
   addManagerNote,
 } from "@/lib/programme.functions";
+
 
 export const Route = createFileRoute("/programme/$projectId")({
   head: () => ({
@@ -56,11 +58,13 @@ function ProgrammePage() {
 
   const projectFn = useServerFn(getProject);
   const rolesFn = useServerFn(getMyRoles);
-  const compileFn = useServerFn(compileProgrammePlaybooks);
+  const enqueueFn = useServerFn(enqueueProgrammeJob);
+  const latestJobFn = useServerFn(getLatestProgrammeJob);
   const dayFn = useServerFn(getPlaybookForDate);
   const rangeFn = useServerFn(getPlaybookRange);
   const notesFn = useServerFn(listManagerNotes);
   const addNoteFn = useServerFn(addManagerNote);
+
 
   const qc = useQueryClient();
 
@@ -134,28 +138,112 @@ function ProgrammePage() {
     };
   }, [ready, projectId, date, qc]);
 
+  // --- Async job state ---
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [job, setJob] = useState<{
+    status: "queued" | "parsing" | "writing" | "complete" | "failed";
+    stage: string | null;
+    strategy: string | null;
+    progress: number;
+    error: string | null;
+    stats: Record<string, unknown>;
+  } | null>(null);
+
+  // Reload latest job on mount so we surface any in-flight job
+  useEffect(() => {
+    if (!ready) return;
+    latestJobFn({ data: { projectId } }).then((row) => {
+      if (!row) return;
+      setJobId(row.id);
+      setJob({
+        status: row.status as typeof job extends null ? never : NonNullable<typeof job>["status"],
+        stage: row.stage,
+        strategy: row.strategy,
+        progress: row.progress ?? 0,
+        error: row.error,
+        stats: (row.stats as Record<string, unknown>) ?? {},
+      });
+    }).catch(() => undefined);
+  }, [ready, projectId, latestJobFn]);
+
+  // Realtime subscription to the current job
+  useEffect(() => {
+    if (!ready || !jobId) return;
+    const channel = supabase
+      .channel(`programme-job:${jobId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "programme_jobs",
+          filter: `id=eq.${jobId}`,
+        },
+        (payload) => {
+          const row = payload.new as {
+            status: NonNullable<typeof job>["status"];
+            stage: string | null;
+            strategy: string | null;
+            progress: number;
+            error: string | null;
+            stats: Record<string, unknown> | null;
+          };
+          setJob({
+            status: row.status,
+            stage: row.stage,
+            strategy: row.strategy,
+            progress: row.progress ?? 0,
+            error: row.error,
+            stats: row.stats ?? {},
+          });
+          if (row.status === "complete") {
+            qc.invalidateQueries({ queryKey: ["playbook-range", projectId] });
+            qc.invalidateQueries({ queryKey: ["playbook", projectId] });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [ready, jobId, projectId, qc]);
+
   const compileMut = useMutation({
     mutationFn: async (file: File) => {
-      const buf = new Uint8Array(await file.arrayBuffer());
-      let bin = "";
-      for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-      const b64 = btoa(bin);
-      return compileFn({
+      // Upload directly to Supabase Storage first
+      const objectKey = `${projectId}/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-]+/g, "_")}`;
+      const { error: upErr } = await supabase.storage
+        .from("programme-uploads")
+        .upload(objectKey, file, {
+          cacheControl: "3600",
+          contentType: file.type || "application/pdf",
+          upsert: false,
+        });
+      if (upErr) throw new Error(upErr.message);
+      const res = await enqueueFn({
         data: {
           projectId,
+          storagePath: objectKey,
           fileName: file.name,
           mimeType: file.type || "application/pdf",
-          dataBase64: b64,
         },
       });
+      return res;
     },
     onSuccess: (res) => {
       if (!res.ok) return;
-      qc.invalidateQueries({ queryKey: ["playbook-range", projectId] });
-      qc.invalidateQueries({ queryKey: ["playbook", projectId] });
-      if (res.firstDate) setDate(res.firstDate);
+      setJobId(res.jobId);
+      setJob({
+        status: "queued",
+        stage: "queued",
+        strategy: null,
+        progress: 0,
+        error: null,
+        stats: {},
+      });
     },
   });
+
 
   const noteMut = useMutation({
     mutationFn: async (body: string) => addNoteFn({ data: { projectId, date, body } }),
@@ -255,16 +343,45 @@ function ProgrammePage() {
                 {(compileMut.error as Error).message}
               </p>
             )}
-            {compileMut.data?.ok === false && (
-              <p className="mt-3 text-xs text-destructive">{compileMut.data.error}</p>
+
+            {job && (
+              <div className="mt-4 rounded-lg border border-white/10 bg-black/30 p-3">
+                <div className="flex items-center justify-between text-[0.6rem] uppercase tracking-widest text-foreground/60">
+                  <span>
+                    {job.status === "complete"
+                      ? "Compiled"
+                      : job.status === "failed"
+                        ? "Failed"
+                        : job.stage
+                          ? `${job.status} · ${job.stage}`
+                          : job.status}
+                  </span>
+                  <span>{job.progress}%</span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded bg-white/10">
+                  <div
+                    className={`h-full transition-all ${
+                      job.status === "failed"
+                        ? "bg-destructive"
+                        : job.status === "complete"
+                          ? "bg-emerald-400"
+                          : "bg-alert"
+                    }`}
+                    style={{ width: `${Math.max(4, job.progress)}%` }}
+                  />
+                </div>
+                {job.error && (
+                  <p className="mt-2 text-xs text-destructive">{job.error}</p>
+                )}
+                {job.status === "complete" && job.stats && (
+                  <p className="mt-2 text-xs text-emerald-400">
+                    {String(job.stats.task_count ?? "?")} tasks · {String(job.stats.day_count ?? "?")} active dates
+                    {job.strategy ? ` · via ${job.strategy}` : ""}
+                  </p>
+                )}
+              </div>
             )}
-            {compileMut.data?.ok === true && (
-              <p className="mt-3 text-xs text-emerald-400">
-                Compiled {compileMut.data.taskCount} task
-                {compileMut.data.taskCount === 1 ? "" : "s"} across{" "}
-                {compileMut.data.dayCount} active dates via {compileMut.data.source}.
-              </p>
-            )}
+
           </section>
         )}
 
