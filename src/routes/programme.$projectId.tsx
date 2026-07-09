@@ -209,6 +209,12 @@ function ProgrammePage() {
     };
   }, [ready, jobId, projectId, qc]);
 
+  const resetCompiler = () => {
+    compileMut.reset();
+    setJob(null);
+    setJobId(null);
+  };
+
   const compileMut = useMutation({
     mutationFn: async (file: File) => {
       // Upload directly to Supabase Storage first
@@ -231,6 +237,11 @@ function ProgrammePage() {
       });
       return res;
     },
+    onMutate: () => {
+      // Clear any previous failure state before starting a new attempt
+      setJob(null);
+      setJobId(null);
+    },
     onSuccess: (res) => {
       setJobId(res.jobId);
       setJob({
@@ -243,6 +254,7 @@ function ProgrammePage() {
       });
     },
   });
+
 
 
   const noteMut = useMutation({
