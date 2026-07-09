@@ -58,11 +58,13 @@ function ProgrammePage() {
 
   const projectFn = useServerFn(getProject);
   const rolesFn = useServerFn(getMyRoles);
-  const compileFn = useServerFn(compileProgrammePlaybooks);
+  const enqueueFn = useServerFn(enqueueProgrammeJob);
+  const latestJobFn = useServerFn(getLatestProgrammeJob);
   const dayFn = useServerFn(getPlaybookForDate);
   const rangeFn = useServerFn(getPlaybookRange);
   const notesFn = useServerFn(listManagerNotes);
   const addNoteFn = useServerFn(addManagerNote);
+
 
   const qc = useQueryClient();
 
