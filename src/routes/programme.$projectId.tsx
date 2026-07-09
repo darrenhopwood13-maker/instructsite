@@ -42,7 +42,7 @@ function fmtHuman(iso: string): string {
     month: "short",
     year: "numeric",
     timeZone: "UTC",
-  });
+  }).format(d);
 }
 function shiftDate(iso: string, days: number): string {
   const d = new Date(iso + "T00:00:00Z");
