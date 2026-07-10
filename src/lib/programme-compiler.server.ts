@@ -422,14 +422,14 @@ async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<Pr
             },
             {
               type: "file",
-              file: {
-                filename: fileName,
-                file_data: `data:application/pdf;base64,${bytesToBase64(bytes)}`,
-              },
+              data: bytes,
+              mediaType: "application/pdf",
+              filename: fileName,
             },
           ],
         },
-      ] as never,
+      ],
+
       maxOutputTokens: 16384,
       abortSignal: controller.signal,
     });
