@@ -1,4 +1,4 @@
-import { generateText, NoObjectGeneratedError, NoOutputGeneratedError, Output } from "ai";
+import { generateText, NoObjectGeneratedError, NoOutputGeneratedError } from "ai";
 import Papa from "papaparse";
 import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
@@ -7,8 +7,8 @@ const TaskSchema = z.object({
   taskName: z.string(),
   startDate: z.string(),
   endDate: z.string(),
-  trade: z.string().default(""),
-  location: z.string().default(""),
+  trade: z.preprocess((value) => value ?? "", z.string()).default(""),
+  location: z.preprocess((value) => value ?? "", z.string()).default(""),
 });
 
 const ExtractSchema = z.object({
@@ -344,6 +344,19 @@ function salvageJson(raw: string): z.infer<typeof ExtractSchema> {
   return ExtractSchema.parse({});
 }
 
+function parseAiTasks(raw: string): ProgrammeTask[] {
+  if (!raw.trim()) return [];
+  try {
+    return mergeTasks(salvageJson(raw).tasks ?? []);
+  } catch (err) {
+    console.warn("[Randall] AI JSON parse failed", {
+      chars: raw.length,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return [];
+  }
+}
+
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   const chunkSize = 0x8000;
@@ -351,6 +364,24 @@ function bytesToBase64(bytes: Uint8Array): string {
     binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
   }
   return btoa(binary);
+}
+
+type GatewayChatResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string | Array<{ type?: string; text?: string }> | null;
+    };
+  }>;
+  error?: { message?: string };
+};
+
+function gatewayText(response: GatewayChatResponse): string {
+  const content = response.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content.map((part) => part.text ?? "").join("\n");
+  }
+  return "";
 }
 
 function isAbortError(err: unknown): boolean {
@@ -366,19 +397,20 @@ async function aiExtractFromText(text: string): Promise<ProgrammeTask[]> {
   try {
     const result = await generateText({
       model: gateway("google/gemini-2.5-flash"),
-      output: Output.object({ schema: ExtractSchema }),
       system: "You are a construction programme parser. Extract scheduled tasks only, ignoring headers and non-task lines.",
       prompt:
-        "Extract construction programme activities from the text below. Return only dated work tasks with taskName, startDate, endDate, trade, and location. Dates must be ISO YYYY-MM-DD. Skip headings, summaries, blank rows, and metadata.\n\n---\n\n" +
+        "Extract construction programme activities from the text below. Return one JSON object only in this exact shape: " +
+        "{\"projectStart\":\"\",\"projectEnd\":\"\",\"tasks\":[{\"taskName\":\"\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"trade\":\"\",\"location\":\"\"}]}. " +
+        "Return only dated work tasks. Dates must be ISO YYYY-MM-DD. Skip headings, summaries, blank rows, metadata, legends, and date-axis labels. No prose.\n\n---\n\n" +
         text.slice(0, 45_000),
-      maxOutputTokens: 4096,
+      maxOutputTokens: 16384,
 
       abortSignal: controller.signal,
     });
-    return mergeTasks(result.output.tasks ?? []);
+    return parseAiTasks(result.text);
   } catch (err) {
     if (NoObjectGeneratedError.isInstance(err)) {
-      return mergeTasks(salvageJson(err.text ?? "").tasks ?? []);
+      return parseAiTasks(err.text ?? "");
     }
     if (NoOutputGeneratedError.isInstance(err)) {
       console.warn("[Randall] AI fallback returned no output");
@@ -398,46 +430,60 @@ async function aiExtractFromText(text: string): Promise<ProgrammeTask[]> {
 async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<ProgrammeTask[]> {
   const key = process.env.LOVABLE_API_KEY;
   if (!key) return [];
-  const gateway = createLovableAiGatewayProvider(key);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 55_000);
   try {
-    const result = await generateText({
-      model: gateway("google/gemini-2.5-pro"),
-      output: Output.object({ schema: ExtractSchema }),
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text:
-                "You are reading a construction programme (Gantt chart) PDF. Extract every real scheduled activity. " +
-                "Rules: (1) taskName is the row label as printed. " +
-                "(2) startDate and endDate MUST be ISO YYYY-MM-DD — infer year from the chart's date axis; if only month/day is visible, use the year from the header or title block. " +
-                "(3) Skip summary/rollup rows, section headers, legends, and zero-duration milestones unless they have an explicit date. " +
-                "(4) trade and location only if visibly labelled in a column; otherwise leave empty. " +
-                "(5) If this PDF is not a programme/schedule, return {\"tasks\": []}. " +
-                "Return strict JSON matching the schema. No prose.",
-            },
-            {
-              type: "file",
-              data: bytes,
-              mediaType: "application/pdf",
-              filename: fileName,
-            },
-          ],
-        },
-      ],
+    const prompt =
+      "You are reading a construction programme (Gantt chart) PDF. Extract every real scheduled activity. " +
+      "Return one JSON object only in this exact shape: {\"projectStart\":\"\",\"projectEnd\":\"\",\"tasks\":[{\"taskName\":\"\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"trade\":\"\",\"location\":\"\"}]}. " +
+      "Rules: (1) taskName is the row label as printed. " +
+      "(2) startDate and endDate MUST be ISO YYYY-MM-DD — infer year from the chart's date axis; if only month/day is visible, use the year from the header or title block. " +
+      "(3) Skip summary/rollup rows, section headers, legends, and zero-duration milestones unless they have an explicit date. " +
+      "(4) trade and location only if visibly labelled in a column; otherwise leave empty. " +
+      "(5) If this PDF is not a programme/schedule, return {\"tasks\": []}. No prose.";
 
-      maxOutputTokens: 16384,
-      abortSignal: controller.signal,
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": key,
+        "X-Lovable-AIG-SDK": "vercel-ai-sdk",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        max_tokens: 16384,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "file",
+                file: {
+                  filename: fileName,
+                  file_data: `data:application/pdf;base64,${bytesToBase64(bytes)}`,
+                },
+              },
+            ],
+          },
+        ],
+      }),
+      signal: controller.signal,
     });
 
-    return mergeTasks(result.output.tasks ?? []);
+    const json = (await response.json()) as GatewayChatResponse;
+    if (!response.ok) {
+      console.error("[Randall] PDF vision gateway failed", {
+        status: response.status,
+        message: json.error?.message ?? response.statusText,
+      });
+      return [];
+    }
+
+    return parseAiTasks(gatewayText(json));
   } catch (err) {
     if (NoObjectGeneratedError.isInstance(err)) {
-      return mergeTasks(salvageJson(err.text ?? "").tasks ?? []);
+      return parseAiTasks(err.text ?? "");
     }
     if (NoOutputGeneratedError.isInstance(err)) {
       console.warn("[Randall] PDF vision fallback returned no output");
