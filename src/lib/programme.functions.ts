@@ -93,73 +93,18 @@ export const enqueueProgrammeJob = createServerFn({ method: "POST" })
       for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
       const dataBase64 = btoa(bin);
 
-      // 2. Parse — prefer external Render parser if configured, otherwise inline compile.
+      // 2. Parse inline via Lovable AI (Gemini PDF vision + deterministic parsers).
       await supabaseAdmin
         .from("programme_jobs")
         .update({ status: "parsing", stage: "parsing", progress: 25 })
         .eq("id", job.id);
 
-      const parserUrl = process.env.PROGRAMME_PARSER_URL?.trim();
-      const parserSecret = process.env.PROGRAMME_PARSER_SECRET?.trim();
+      const result = await compileProgrammeFile({
+        fileName: data.fileName,
+        mimeType: data.mimeType,
+        dataBase64,
+      });
 
-      let result: Awaited<ReturnType<typeof compileProgrammeFile>> | null = null;
-
-      if (parserUrl) {
-        try {
-          const form = new FormData();
-          form.append(
-            "file",
-            new Blob([buf], { type: data.mimeType }),
-            data.fileName,
-          );
-          form.append("fileName", data.fileName);
-          form.append("mimeType", data.mimeType);
-          const res = await fetch(parserUrl, {
-            method: "POST",
-            headers: parserSecret ? { "x-parser-secret": parserSecret } : {},
-            body: form,
-          });
-          if (!res.ok) throw new Error(`parser ${res.status}: ${await res.text()}`);
-          const payload = (await res.json()) as {
-            tasks?: Array<{
-              taskName: string;
-              startDate: string;
-              endDate: string;
-              trade?: string;
-              location?: string;
-            }>;
-            source?: string;
-          };
-          const tasks = (payload.tasks ?? []).map((t) => ({
-            taskName: String(t.taskName ?? ""),
-            startDate: String(t.startDate ?? ""),
-            endDate: String(t.endDate ?? ""),
-            trade: String(t.trade ?? ""),
-            location: String(t.location ?? ""),
-          }));
-          result = {
-            tasks,
-            source: (payload.source ?? "ai") as Awaited<
-              ReturnType<typeof compileProgrammeFile>
-            >["source"],
-          };
-          console.info("[Randall] external parser succeeded", {
-            tasks: tasks.length,
-            source: result.source,
-          });
-        } catch (err) {
-          console.warn("[Randall] external parser failed, falling back inline", err);
-          result = null;
-        }
-      }
-
-      if (!result) {
-        result = await compileProgrammeFile({
-          fileName: data.fileName,
-          mimeType: data.mimeType,
-          dataBase64,
-        });
-      }
 
 
       if (result.tasks.length === 0) {
