@@ -365,19 +365,14 @@ async function aiExtractFromText(text: string): Promise<ProgrammeTask[]> {
   const timer = setTimeout(() => controller.abort(), 28_000);
   try {
     const result = await generateText({
-      model: gateway("openai/gpt-4o"),
+      model: gateway("google/gemini-2.5-flash"),
       output: Output.object({ schema: ExtractSchema }),
-      prompt:
-        "Extract construction programme activities from the text. Return only dated work tasks with taskName, startDate, endDate, trade, and location. Dates must be ISO YYYY-MM-DD format. Skip headings, summaries, blank rows, and metadata. Extract all real scheduled activities.",
       system: "You are a construction programme parser. Extract scheduled tasks only, ignoring headers and non-task lines.",
-      messages: [
-        {
-          role: "user",
-          content: text.slice(0, 45_000),
-        },
-      ] as never,
-
+      prompt:
+        "Extract construction programme activities from the text below. Return only dated work tasks with taskName, startDate, endDate, trade, and location. Dates must be ISO YYYY-MM-DD. Skip headings, summaries, blank rows, and metadata.\n\n---\n\n" +
+        text.slice(0, 45_000),
       maxOutputTokens: 4096,
+
       abortSignal: controller.signal,
     });
     return mergeTasks(result.output.tasks ?? []);
@@ -427,14 +422,14 @@ async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<Pr
             },
             {
               type: "file",
-              file: {
-                filename: fileName,
-                file_data: `data:application/pdf;base64,${bytesToBase64(bytes)}`,
-              },
+              data: bytes,
+              mediaType: "application/pdf",
+              filename: fileName,
             },
           ],
         },
-      ] as never,
+      ],
+
       maxOutputTokens: 16384,
       abortSignal: controller.signal,
     });
