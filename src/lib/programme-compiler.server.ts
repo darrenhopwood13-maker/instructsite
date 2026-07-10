@@ -375,7 +375,8 @@ async function aiExtractFromText(text: string): Promise<ProgrammeTask[]> {
           role: "user",
           content: text.slice(0, 45_000),
         },
-      ],
+      ] as never,
+
       maxOutputTokens: 4096,
       abortSignal: controller.signal,
     });
