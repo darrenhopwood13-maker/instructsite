@@ -408,7 +408,7 @@ async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<Pr
   const timer = setTimeout(() => controller.abort(), 55_000);
   try {
     const result = await generateText({
-      model: gateway("google/gemini-2.5-flash"),
+      model: gateway("google/gemini-2.5-pro"),
       output: Output.object({ schema: ExtractSchema }),
       messages: [
         {
@@ -417,7 +417,13 @@ async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<Pr
             {
               type: "text",
               text:
-                "Read this construction programme PDF visually. It may be a Gantt chart where activities are row labels and bars map to a calendar scale. Extract real scheduled activities only. Return taskName, startDate, endDate, trade, location. Dates must be ISO YYYY-MM-DD. Skip headers, summaries, and non-task rows.",
+                "You are reading a construction programme (Gantt chart) PDF. Extract every real scheduled activity. " +
+                "Rules: (1) taskName is the row label as printed. " +
+                "(2) startDate and endDate MUST be ISO YYYY-MM-DD — infer year from the chart's date axis; if only month/day is visible, use the year from the header or title block. " +
+                "(3) Skip summary/rollup rows, section headers, legends, and zero-duration milestones unless they have an explicit date. " +
+                "(4) trade and location only if visibly labelled in a column; otherwise leave empty. " +
+                "(5) If this PDF is not a programme/schedule, return {\"tasks\": []}. " +
+                "Return strict JSON matching the schema. No prose.",
             },
             {
               type: "file",
@@ -429,9 +435,10 @@ async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<Pr
           ],
         },
       ] as never,
-      maxOutputTokens: 8192,
+      maxOutputTokens: 16384,
       abortSignal: controller.signal,
     });
+
     return mergeTasks(result.output.tasks ?? []);
   } catch (err) {
     if (NoObjectGeneratedError.isInstance(err)) {
