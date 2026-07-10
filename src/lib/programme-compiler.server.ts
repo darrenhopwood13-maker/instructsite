@@ -366,6 +366,24 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+type GatewayChatResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string | Array<{ type?: string; text?: string }> | null;
+    };
+  }>;
+  error?: { message?: string };
+};
+
+function gatewayText(response: GatewayChatResponse): string {
+  const content = response.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content.map((part) => part.text ?? "").join("\n");
+  }
+  return "";
+}
+
 function isAbortError(err: unknown): boolean {
   return err instanceof Error && (err.name === "AbortError" || /aborted/i.test(err.message));
 }
@@ -412,43 +430,57 @@ async function aiExtractFromText(text: string): Promise<ProgrammeTask[]> {
 async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<ProgrammeTask[]> {
   const key = process.env.LOVABLE_API_KEY;
   if (!key) return [];
-  const gateway = createLovableAiGatewayProvider(key);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 55_000);
   try {
-    const result = await generateText({
-      model: gateway("google/gemini-2.5-pro"),
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text:
-                "You are reading a construction programme (Gantt chart) PDF. Extract every real scheduled activity. " +
-                "Return one JSON object only in this exact shape: {\"projectStart\":\"\",\"projectEnd\":\"\",\"tasks\":[{\"taskName\":\"\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"trade\":\"\",\"location\":\"\"}]}. " +
-                "Rules: (1) taskName is the row label as printed. " +
-                "(2) startDate and endDate MUST be ISO YYYY-MM-DD — infer year from the chart's date axis; if only month/day is visible, use the year from the header or title block. " +
-                "(3) Skip summary/rollup rows, section headers, legends, and zero-duration milestones unless they have an explicit date. " +
-                "(4) trade and location only if visibly labelled in a column; otherwise leave empty. " +
-                "(5) If this PDF is not a programme/schedule, return {\"tasks\": []}. " +
-                "No prose.",
-            },
-            {
-              type: "file",
-              data: { type: "data", data: bytesToBase64(bytes) },
-              mediaType: "application/pdf",
-              filename: fileName,
-            },
-          ],
-        },
-      ],
+    const prompt =
+      "You are reading a construction programme (Gantt chart) PDF. Extract every real scheduled activity. " +
+      "Return one JSON object only in this exact shape: {\"projectStart\":\"\",\"projectEnd\":\"\",\"tasks\":[{\"taskName\":\"\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"trade\":\"\",\"location\":\"\"}]}. " +
+      "Rules: (1) taskName is the row label as printed. " +
+      "(2) startDate and endDate MUST be ISO YYYY-MM-DD — infer year from the chart's date axis; if only month/day is visible, use the year from the header or title block. " +
+      "(3) Skip summary/rollup rows, section headers, legends, and zero-duration milestones unless they have an explicit date. " +
+      "(4) trade and location only if visibly labelled in a column; otherwise leave empty. " +
+      "(5) If this PDF is not a programme/schedule, return {\"tasks\": []}. No prose.";
 
-      maxOutputTokens: 16384,
-      abortSignal: controller.signal,
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": key,
+        "X-Lovable-AIG-SDK": "vercel-ai-sdk",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        max_tokens: 16384,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "file",
+                file: {
+                  filename: fileName,
+                  file_data: `data:application/pdf;base64,${bytesToBase64(bytes)}`,
+                },
+              },
+            ],
+          },
+        ],
+      }),
+      signal: controller.signal,
     });
 
-    return parseAiTasks(result.text);
+    const json = (await response.json()) as GatewayChatResponse;
+    if (!response.ok) {
+      console.error("[Randall] PDF vision gateway failed", {
+        status: response.status,
+        message: json.error?.message ?? response.statusText,
+      });
+      return [];
+    }
+
+    return parseAiTasks(gatewayText(json));
   } catch (err) {
     if (NoObjectGeneratedError.isInstance(err)) {
       return parseAiTasks(err.text ?? "");
