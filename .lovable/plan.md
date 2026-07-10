@@ -1,50 +1,40 @@
-## Scaffold the Render PDF Parser Service
+## What's actually going on
 
-I'll create a standalone Python service you can deploy to Render. It lives in a new folder `render-parser/` inside your project so you can push it to a separate Git repo (or point Render at that subdirectory).
+You're right to be annoyed. The app already has a Gemini PDF vision path built in — it lives in `src/lib/programme-compiler.server.ts` (`aiExtractFromPdf`) and calls `google/gemini-2.5-flash` through the Lovable AI Gateway, passing the raw PDF as a file part. That's the "Gemini done it in 10 seconds" path.
 
-### What gets created
+On top of that, we *also* built a whole second parser — the `render-parser/` FastAPI service — which:
 
-```text
-render-parser/
-├── main.py              FastAPI app with POST / endpoint
-├── requirements.txt     fastapi, uvicorn, pdf2image, pillow, openai, python-multipart
-├── Dockerfile           python:3.11-slim + poppler-utils (needed by pdf2image)
-├── render.yaml          One-click Render blueprint (web service, env vars)
-└── README.md            Deploy steps + how to test locally
-```
+- Runs on Render (separate deploy, separate secret, cold-start ~30s on free tier)
+- Uses `pdf2image` + `poppler` to rasterise the PDF to PNGs
+- Sends each PNG to **OpenAI gpt-4o** (needs an `OPENAI_API_KEY` you'd have to pay for separately)
+- Returns tasks that then go through the same DB writes
 
-### How `main.py` will work
+The server function tries Render first (if `PROGRAMME_PARSER_URL` is set) and only falls back to Gemini if Render fails. So if you set that env var, you're paying OpenAI + Render to do a worse, slower version of what Gemini already does for free through Lovable Cloud.
 
-1. `POST /` accepts `multipart/form-data` with `file`, `fileName`, `mimeType`.
-2. Auth: compares `x-parser-secret` header against `PARSER_SECRET` env var (rejects with 401 if mismatch).
-3. If `mimeType` is PDF:
-   - Rasterise pages with `pdf2image` (uses poppler from the Docker image) at ~200 DPI.
-   - Send each page image to OpenAI `gpt-4o` with a strict JSON-schema prompt asking for `{ tasks: [{ taskName, startDate, endDate, trade?, location? }] }` where dates are `YYYY-MM-DD`.
-   - Merge tasks across pages, de-dupe by `(taskName, startDate)`.
-4. If `mimeType` is CSV / XML / XER: return 415 so your app's inline parser handles it (it already does those well).
-5. Response: `{ "source": "pdf-vision", "tasks": [...] }` — matches the contract `programme.functions.ts` already expects.
-6. Errors return JSON `{ error, detail }` with a non-200 status so the Lovable app falls back to inline parsing cleanly.
+If `PROGRAMME_PARSER_URL` isn't set, the Render service isn't being used at all — Gemini is already doing the work. Which is almost certainly what happened in your 10-second test.
 
-### Env vars the service reads
+## Plan
 
-| Name | Purpose |
-|---|---|
-| `PARSER_SECRET` | Must equal `PROGRAMME_PARSER_SECRET` you saved in Lovable |
-| `OPENAI_API_KEY` | For GPT-4o vision |
-| `PORT` | Provided by Render automatically |
+1. **Delete the Render parser entirely** — `render-parser/` folder (Dockerfile, main.py, render.yaml, requirements.txt, README.md).
+2. **Remove the Render branch in `src/lib/programme.functions.ts`** — strip the `PROGRAMME_PARSER_URL` / `PROGRAMME_PARSER_SECRET` fetch block (~50 lines) and always call `compileProgrammeFile` directly. Keep everything else (upload record, job record, task/playbook writes, progress updates) unchanged.
+3. **Tune the Gemini path so it wins on the first try** — in `aiExtractFromPdf`:
+   - Bump `maxOutputTokens` from 8192 → 16384 so large programmes don't get truncated.
+   - Tighten the prompt: state that dates must be inferred from the chart's date axis, skip summary/milestone rows, and return `{tasks: []}` when the page isn't a programme.
+   - Optionally switch to `google/gemini-2.5-pro` for PDFs over a size threshold — more accurate on dense Gantts, still one call.
+4. **Keep the deterministic pre-passes** (CSV/XER/XML/text-based PDF extract via unpdf). Those are free and instant when the file is text-based — no reason to touch them.
+5. **Leave `PROGRAMME_PARSER_URL` / `PROGRAMME_PARSER_SECRET` behind as unused secrets** — no code reads them anymore, and you can delete them from the dashboard whenever.
 
-### Deploy flow (what you'll do after I scaffold)
+## What this changes for you
 
-1. Push `render-parser/` to GitHub (new repo or a subdir of this one).
-2. In Render → New → Blueprint → point at the repo. `render.yaml` provisions the web service.
-3. Set `PARSER_SECRET` and `OPENAI_API_KEY` in Render's env var UI.
-4. Copy the live URL (e.g. `https://randall-parser.onrender.com`) into Lovable's `PROGRAMME_PARSER_URL` secret.
-5. Upload a Gantt PDF in the app — `programme.functions.ts` will hit Render first, get real tasks back, and write them to `daily_programme_playbooks`.
+- No Render account, no Docker service, no `OPENAI_API_KEY`, no `PARSER_SECRET`.
+- One code path: deterministic parse → Gemini PDF vision fallback.
+- Uses Lovable AI credits only (already provisioned via `LOVABLE_API_KEY`).
+- Same DB shape, same UI, same realtime job progress.
 
-### What I will NOT change
+## Not doing (unless you ask)
 
-- No edits to `src/lib/programme.functions.ts` — the client contract is already correct from the previous turn.
-- No changes to database schema or existing app code.
-- No secret values set — you'll paste `OPENAI_API_KEY` into Render yourself.
+- Changing the DB schema or the playbook builder.
+- Touching the upload UI or the realtime job status component.
+- Adding a new model provider or new secrets.
 
-Approve and I'll create the four files.
+Shall I go ahead and rip the Render parser out and tune the Gemini call?
