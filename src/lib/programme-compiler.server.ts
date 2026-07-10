@@ -7,8 +7,8 @@ const TaskSchema = z.object({
   taskName: z.string(),
   startDate: z.string(),
   endDate: z.string(),
-  trade: z.string().default(""),
-  location: z.string().default(""),
+  trade: z.preprocess((value) => value ?? "", z.string()).default(""),
+  location: z.preprocess((value) => value ?? "", z.string()).default(""),
 });
 
 const ExtractSchema = z.object({
