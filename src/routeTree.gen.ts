@@ -30,6 +30,7 @@ import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
+import { Route as JoinOrgSlugRouteImport } from './routes/join-org.$slug'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
 import { Route as BillingProjectIdRouteImport } from './routes/billing.$projectId'
@@ -146,6 +147,11 @@ const ProgrammeProjectIdRoute = ProgrammeProjectIdRouteImport.update({
   path: '/programme/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JoinOrgSlugRoute = JoinOrgSlugRouteImport.update({
+  id: '/join-org/$slug',
+  path: '/join-org/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
@@ -218,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join-org/$slug': typeof JoinOrgSlugRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join-org/$slug': typeof JoinOrgSlugRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join-org/$slug': typeof JoinOrgSlugRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -320,6 +329,7 @@ export interface FileRouteTypes {
     | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
+    | '/join-org/$slug'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
+    | '/join-org/$slug'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
+    | '/join-org/$slug'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -420,6 +432,7 @@ export interface RootRouteChildren {
   BillingProjectIdRoute: typeof BillingProjectIdRoute
   DabsProjectIdRoute: typeof DabsProjectIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  JoinOrgSlugRoute: typeof JoinOrgSlugRoute
   ProgrammeProjectIdRoute: typeof ProgrammeProjectIdRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
@@ -586,6 +599,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgrammeProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/join-org/$slug': {
+      id: '/join-org/$slug'
+      path: '/join-org/$slug'
+      fullPath: '/join-org/$slug'
+      preLoaderRoute: typeof JoinOrgSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/invite/$token': {
       id: '/invite/$token'
       path: '/invite/$token'
@@ -677,6 +697,7 @@ const rootRouteChildren: RootRouteChildren = {
   BillingProjectIdRoute: BillingProjectIdRoute,
   DabsProjectIdRoute: DabsProjectIdRoute,
   InviteTokenRoute: InviteTokenRoute,
+  JoinOrgSlugRoute: JoinOrgSlugRoute,
   ProgrammeProjectIdRoute: ProgrammeProjectIdRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
