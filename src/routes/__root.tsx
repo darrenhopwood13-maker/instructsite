@@ -10,6 +10,7 @@ import {
   isRedirect,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
+import { Camera } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -551,6 +552,10 @@ function AuthNav() {
         <>
           <Link to="/projects" className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
             Projects
+          </Link>
+          <Link to="/snags" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
+            <Camera className="h-3.5 w-3.5" />
+            Snag Master
           </Link>
           <Link to="/oracle" className="glass-orange rounded-lg px-4 py-2 text-sm">
             AI Tooling

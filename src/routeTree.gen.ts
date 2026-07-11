@@ -13,19 +13,24 @@ import { Route as UnlockRouteImport } from './routes/unlock'
 import { Route as TrialEndedRouteImport } from './routes/trial-ended'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as OrgRouteImport } from './routes/org'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as ExperienceRouteImport } from './routes/experience'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SnagsIndexRouteImport } from './routes/snags.index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as SubcontractorsNewRouteImport } from './routes/subcontractors.new'
 import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontractor.$projectId'
+import { Route as SnagsNewRouteImport } from './routes/snags.new'
+import { Route as SnagsSnagIdRouteImport } from './routes/snags.$snagId'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
+import { Route as JoinOrgSlugRouteImport } from './routes/join-org.$slug'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
 import { Route as BillingProjectIdRouteImport } from './routes/billing.$projectId'
@@ -55,6 +60,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgRoute = OrgRouteImport.update({
+  id: '/org',
+  path: '/org',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OracleRoute = OracleRouteImport.update({
@@ -87,6 +97,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SnagsIndexRoute = SnagsIndexRouteImport.update({
+  id: '/snags/',
+  path: '/snags/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
@@ -100,6 +115,16 @@ const SubcontractorsNewRoute = SubcontractorsNewRouteImport.update({
 const SubcontractorProjectIdRoute = SubcontractorProjectIdRouteImport.update({
   id: '/subcontractor/$projectId',
   path: '/subcontractor/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SnagsNewRoute = SnagsNewRouteImport.update({
+  id: '/snags/new',
+  path: '/snags/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SnagsSnagIdRoute = SnagsSnagIdRouteImport.update({
+  id: '/snags/$snagId',
+  path: '/snags/$snagId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SiteManagerProjectIdRoute = SiteManagerProjectIdRouteImport.update({
@@ -120,6 +145,11 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 const ProgrammeProjectIdRoute = ProgrammeProjectIdRouteImport.update({
   id: '/programme/$projectId',
   path: '/programme/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinOrgSlugRoute = JoinOrgSlugRouteImport.update({
+  id: '/join-org/$slug',
+  path: '/join-org/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
@@ -184,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/org': typeof OrgRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -193,13 +224,17 @@ export interface FileRoutesByFullPath {
   '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join-org/$slug': typeof JoinOrgSlugRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
+  '/snags/$snagId': typeof SnagsSnagIdRoute
+  '/snags/new': typeof SnagsNewRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/snags/': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
@@ -213,6 +248,7 @@ export interface FileRoutesByTo {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/org': typeof OrgRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -222,13 +258,17 @@ export interface FileRoutesByTo {
   '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join-org/$slug': typeof JoinOrgSlugRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
+  '/snags/$snagId': typeof SnagsSnagIdRoute
+  '/snags/new': typeof SnagsNewRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/projects': typeof ProjectsIndexRoute
+  '/snags': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
@@ -243,6 +283,7 @@ export interface FileRoutesById {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/org': typeof OrgRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -252,13 +293,17 @@ export interface FileRoutesById {
   '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/join-org/$slug': typeof JoinOrgSlugRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
+  '/snags/$snagId': typeof SnagsSnagIdRoute
+  '/snags/new': typeof SnagsNewRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/snags/': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
@@ -274,6 +319,7 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
+    | '/org'
     | '/pricing'
     | '/reset-password'
     | '/trial-ended'
@@ -283,13 +329,17 @@ export interface FileRouteTypes {
     | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
+    | '/join-org/$slug'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
+    | '/snags/$snagId'
+    | '/snags/new'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/projects/'
+    | '/snags/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
@@ -303,6 +353,7 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
+    | '/org'
     | '/pricing'
     | '/reset-password'
     | '/trial-ended'
@@ -312,13 +363,17 @@ export interface FileRouteTypes {
     | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
+    | '/join-org/$slug'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
+    | '/snags/$snagId'
+    | '/snags/new'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/projects'
+    | '/snags'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
@@ -332,6 +387,7 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
+    | '/org'
     | '/pricing'
     | '/reset-password'
     | '/trial-ended'
@@ -341,13 +397,17 @@ export interface FileRouteTypes {
     | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
+    | '/join-org/$slug'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
+    | '/snags/$snagId'
+    | '/snags/new'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/projects/'
+    | '/snags/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
@@ -362,6 +422,7 @@ export interface RootRouteChildren {
   ExperienceRoute: typeof ExperienceRoute
   McpRoute: typeof McpRoute
   OracleRoute: typeof OracleRoute
+  OrgRoute: typeof OrgRoute
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TrialEndedRoute: typeof TrialEndedRoute
@@ -371,13 +432,17 @@ export interface RootRouteChildren {
   BillingProjectIdRoute: typeof BillingProjectIdRoute
   DabsProjectIdRoute: typeof DabsProjectIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  JoinOrgSlugRoute: typeof JoinOrgSlugRoute
   ProgrammeProjectIdRoute: typeof ProgrammeProjectIdRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
+  SnagsSnagIdRoute: typeof SnagsSnagIdRoute
+  SnagsNewRoute: typeof SnagsNewRoute
   SubcontractorProjectIdRoute: typeof SubcontractorProjectIdRoute
   SubcontractorsNewRoute: typeof SubcontractorsNewRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  SnagsIndexRoute: typeof SnagsIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiDrawingDrawingIdRoute: typeof ApiDrawingDrawingIdRoute
@@ -413,6 +478,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org': {
+      id: '/org'
+      path: '/org'
+      fullPath: '/org'
+      preLoaderRoute: typeof OrgRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oracle': {
@@ -457,6 +529,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/snags/': {
+      id: '/snags/'
+      path: '/snags'
+      fullPath: '/snags/'
+      preLoaderRoute: typeof SnagsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/': {
       id: '/projects/'
       path: '/projects'
@@ -476,6 +555,20 @@ declare module '@tanstack/react-router' {
       path: '/subcontractor/$projectId'
       fullPath: '/subcontractor/$projectId'
       preLoaderRoute: typeof SubcontractorProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/snags/new': {
+      id: '/snags/new'
+      path: '/snags/new'
+      fullPath: '/snags/new'
+      preLoaderRoute: typeof SnagsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/snags/$snagId': {
+      id: '/snags/$snagId'
+      path: '/snags/$snagId'
+      fullPath: '/snags/$snagId'
+      preLoaderRoute: typeof SnagsSnagIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/site-manager/$projectId': {
@@ -504,6 +597,13 @@ declare module '@tanstack/react-router' {
       path: '/programme/$projectId'
       fullPath: '/programme/$projectId'
       preLoaderRoute: typeof ProgrammeProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join-org/$slug': {
+      id: '/join-org/$slug'
+      path: '/join-org/$slug'
+      fullPath: '/join-org/$slug'
+      preLoaderRoute: typeof JoinOrgSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invite/$token': {
@@ -586,6 +686,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExperienceRoute: ExperienceRoute,
   McpRoute: McpRoute,
   OracleRoute: OracleRoute,
+  OrgRoute: OrgRoute,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TrialEndedRoute: TrialEndedRoute,
@@ -596,13 +697,17 @@ const rootRouteChildren: RootRouteChildren = {
   BillingProjectIdRoute: BillingProjectIdRoute,
   DabsProjectIdRoute: DabsProjectIdRoute,
   InviteTokenRoute: InviteTokenRoute,
+  JoinOrgSlugRoute: JoinOrgSlugRoute,
   ProgrammeProjectIdRoute: ProgrammeProjectIdRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
+  SnagsSnagIdRoute: SnagsSnagIdRoute,
+  SnagsNewRoute: SnagsNewRoute,
   SubcontractorProjectIdRoute: SubcontractorProjectIdRoute,
   SubcontractorsNewRoute: SubcontractorsNewRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  SnagsIndexRoute: SnagsIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiDrawingDrawingIdRoute: ApiDrawingDrawingIdRoute,

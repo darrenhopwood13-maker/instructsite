@@ -503,6 +503,65 @@ export type Database = {
           },
         ]
       }
+      org_members: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orgs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       permits: {
         Row: {
           activity_id: string | null
@@ -561,6 +620,7 @@ export type Database = {
         Row: {
           created_at: string
           full_name: string | null
+          org_id: string | null
           selected_role: string | null
           trial_ends_at: string
           updated_at: string
@@ -569,6 +629,7 @@ export type Database = {
         Insert: {
           created_at?: string
           full_name?: string | null
+          org_id?: string | null
           selected_role?: string | null
           trial_ends_at?: string
           updated_at?: string
@@ -577,12 +638,21 @@ export type Database = {
         Update: {
           created_at?: string
           full_name?: string | null
+          org_id?: string | null
           selected_role?: string | null
           trial_ends_at?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       programme_jobs: {
         Row: {
@@ -1052,6 +1122,7 @@ export type Database = {
           longitude: number | null
           master_admin_id: string | null
           name: string
+          org_id: string | null
           project_admin_id: string | null
           project_number: string | null
           scope_brief: string | null
@@ -1066,6 +1137,7 @@ export type Database = {
           longitude?: number | null
           master_admin_id?: string | null
           name: string
+          org_id?: string | null
           project_admin_id?: string | null
           project_number?: string | null
           scope_brief?: string | null
@@ -1080,13 +1152,22 @@ export type Database = {
           longitude?: number | null
           master_admin_id?: string | null
           name?: string
+          org_id?: string | null
           project_admin_id?: string | null
           project_number?: string | null
           scope_brief?: string | null
           site_address?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rams_documents: {
         Row: {
@@ -1180,6 +1261,164 @@ export type Database = {
           uploaded_by?: string
         }
         Relationships: []
+      }
+      snag_comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          org_id: string
+          snag_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          org_id: string
+          snag_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          snag_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snag_comments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "snag_comments_snag_id_fkey"
+            columns: ["snag_id"]
+            isOneToOne: false
+            referencedRelation: "snags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      snag_projects: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          org_id: string
+          site_address: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          org_id: string
+          site_address?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          org_id?: string
+          site_address?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snag_projects_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      snags: {
+        Row: {
+          cause: string | null
+          created_at: string
+          created_by: string
+          defect_title: string
+          description: string | null
+          hs_notes: string | null
+          id: string
+          org_id: string
+          photo_path: string
+          rectification_option_a: string | null
+          rectification_option_b: string | null
+          regulatory_citations: Json
+          severity: string
+          snag_project_id: string | null
+          status: string
+          trade: string | null
+          tradesman_hack: string | null
+          updated_at: string
+        }
+        Insert: {
+          cause?: string | null
+          created_at?: string
+          created_by: string
+          defect_title: string
+          description?: string | null
+          hs_notes?: string | null
+          id?: string
+          org_id: string
+          photo_path: string
+          rectification_option_a?: string | null
+          rectification_option_b?: string | null
+          regulatory_citations?: Json
+          severity?: string
+          snag_project_id?: string | null
+          status?: string
+          trade?: string | null
+          tradesman_hack?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cause?: string | null
+          created_at?: string
+          created_by?: string
+          defect_title?: string
+          description?: string | null
+          hs_notes?: string | null
+          id?: string
+          org_id?: string
+          photo_path?: string
+          rectification_option_a?: string | null
+          rectification_option_b?: string | null
+          regulatory_citations?: Json
+          severity?: string
+          snag_project_id?: string | null
+          status?: string
+          trade?: string | null
+          tradesman_hack?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snags_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "snags_snag_project_id_fkey"
+            columns: ["snag_project_id"]
+            isOneToOne: false
+            referencedRelation: "snag_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subcontractor_invites: {
         Row: {
@@ -1352,6 +1591,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_org_admin: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_org_member: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_project_admin: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
@@ -1368,6 +1615,7 @@ export type Database = {
         Args: { _completion_pct: number; _notes: string; _pin_id: string }
         Returns: string
       }
+      org_admin_count: { Args: { _org_id: string }; Returns: number }
       site_document_project_ids: {
         Args: { _document_id: string }
         Returns: string[]
