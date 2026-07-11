@@ -19,6 +19,7 @@ import { Route as ExperienceRouteImport } from './routes/experience'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SnagsIndexRouteImport } from './routes/snags.index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as SubcontractorsNewRouteImport } from './routes/subcontractors.new'
 import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontractor.$projectId'
@@ -85,6 +86,11 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SnagsIndexRoute = SnagsIndexRouteImport.update({
+  id: '/snags/',
+  path: '/snags/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
@@ -200,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/snags/': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
@@ -229,6 +236,7 @@ export interface FileRoutesByTo {
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/projects': typeof ProjectsIndexRoute
+  '/snags': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
@@ -259,6 +267,7 @@ export interface FileRoutesById {
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/snags/': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
@@ -290,6 +299,7 @@ export interface FileRouteTypes {
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/projects/'
+    | '/snags/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/projects'
+    | '/snags'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/projects/'
+    | '/snags/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
@@ -378,6 +390,7 @@ export interface RootRouteChildren {
   SubcontractorProjectIdRoute: typeof SubcontractorProjectIdRoute
   SubcontractorsNewRoute: typeof SubcontractorsNewRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  SnagsIndexRoute: typeof SnagsIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiDrawingDrawingIdRoute: typeof ApiDrawingDrawingIdRoute
@@ -455,6 +468,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/snags/': {
+      id: '/snags/'
+      path: '/snags'
+      fullPath: '/snags/'
+      preLoaderRoute: typeof SnagsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/': {
@@ -603,6 +623,7 @@ const rootRouteChildren: RootRouteChildren = {
   SubcontractorProjectIdRoute: SubcontractorProjectIdRoute,
   SubcontractorsNewRoute: SubcontractorsNewRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  SnagsIndexRoute: SnagsIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiDrawingDrawingIdRoute: ApiDrawingDrawingIdRoute,
