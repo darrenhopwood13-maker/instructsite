@@ -13,6 +13,7 @@ import { Route as UnlockRouteImport } from './routes/unlock'
 import { Route as TrialEndedRouteImport } from './routes/trial-ended'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as OrgRouteImport } from './routes/org'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as ExperienceRouteImport } from './routes/experience'
@@ -58,6 +59,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgRoute = OrgRouteImport.update({
+  id: '/org',
+  path: '/org',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OracleRoute = OracleRouteImport.update({
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/org': typeof OrgRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -234,6 +241,7 @@ export interface FileRoutesByTo {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/org': typeof OrgRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -267,6 +275,7 @@ export interface FileRoutesById {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/org': typeof OrgRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -301,6 +310,7 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
+    | '/org'
     | '/pricing'
     | '/reset-password'
     | '/trial-ended'
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
+    | '/org'
     | '/pricing'
     | '/reset-password'
     | '/trial-ended'
@@ -365,6 +376,7 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
+    | '/org'
     | '/pricing'
     | '/reset-password'
     | '/trial-ended'
@@ -398,6 +410,7 @@ export interface RootRouteChildren {
   ExperienceRoute: typeof ExperienceRoute
   McpRoute: typeof McpRoute
   OracleRoute: typeof OracleRoute
+  OrgRoute: typeof OrgRoute
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TrialEndedRoute: typeof TrialEndedRoute
@@ -452,6 +465,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org': {
+      id: '/org'
+      path: '/org'
+      fullPath: '/org'
+      preLoaderRoute: typeof OrgRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oracle': {
@@ -646,6 +666,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExperienceRoute: ExperienceRoute,
   McpRoute: McpRoute,
   OracleRoute: OracleRoute,
+  OrgRoute: OrgRoute,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TrialEndedRoute: TrialEndedRoute,
