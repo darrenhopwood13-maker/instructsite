@@ -1,0 +1,243 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { generateText, Output, NoObjectGeneratedError } from "ai";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+
+const SnagReport = z.object({
+  defectTitle: z.string().default(""),
+  description: z.string().default(""),
+  cause: z.string().default(""),
+  rectificationOptionA: z.string().default(""),
+  rectificationOptionB: z.string().default(""),
+  tradesmanHack: z.string().default(""),
+  regulatoryCitations: z.array(z.string()).default([]),
+  hsNotes: z.string().default(""),
+  severity: z.enum(["low", "medium", "high", "critical"]).default("medium"),
+  trade: z.string().default(""),
+});
+export type SnagReportT = z.infer<typeof SnagReport>;
+
+async function getMyOrgId(supabase: any, userId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from("org_members")
+    .select("org_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("You are not a member of an organisation.");
+  return data.org_id as string;
+}
+
+/** List snags for the caller's org, optionally filtered by status. */
+export const listSnags = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ status: z.string().optional() }).parse(i ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    let q = context.supabase
+      .from("snags")
+      .select("id, defect_title, severity, status, trade, photo_path, created_at, created_by")
+      .order("created_at", { ascending: false });
+    if (data.status && data.status !== "all") q = q.eq("status", data.status);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+
+    // Sign photo URLs (1h)
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const items = await Promise.all(
+      (rows ?? []).map(async (r) => {
+        const { data: signed } = await supabaseAdmin.storage
+          .from("snag-photos")
+          .createSignedUrl(r.photo_path, 3600);
+        return { ...r, photoUrl: signed?.signedUrl ?? null };
+      }),
+    );
+    return items;
+  });
+
+export const getSnag = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ snagId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: snag, error } = await context.supabase
+      .from("snags")
+      .select("*")
+      .eq("id", data.snagId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!snag) throw new Error("Snag not found.");
+
+    const { data: comments } = await context.supabase
+      .from("snag_comments")
+      .select("id, user_id, body, created_at")
+      .eq("snag_id", data.snagId)
+      .order("created_at", { ascending: true });
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed } = await supabaseAdmin.storage
+      .from("snag-photos")
+      .createSignedUrl(snag.photo_path, 3600);
+
+    return { snag, comments: comments ?? [], photoUrl: signed?.signedUrl ?? null };
+  });
+
+/** Upload photo → analyze with GPT-4o Vision via Lovable AI Gateway. Returns structured report + photoPath. */
+export const analyzeSnag = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        fileName: z.string(),
+        mimeType: z.string(),
+        dataBase64: z.string().min(1),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("Missing LOVABLE_API_KEY");
+    if (!/^image\//i.test(data.mimeType)) {
+      throw new Error("Please upload an image file.");
+    }
+
+    const orgId = await getMyOrgId(context.supabase, context.userId);
+
+    // Upload photo to snag-photos/{orgId}/{uuid}.ext via admin client (still stored under org folder for RLS)
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const ext = (data.fileName.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const photoPath = `${orgId}/${crypto.randomUUID()}.${ext || "jpg"}`;
+    const buf = Buffer.from(data.dataBase64, "base64");
+    const { error: upErr } = await supabaseAdmin.storage
+      .from("snag-photos")
+      .upload(photoPath, buf, { contentType: data.mimeType, upsert: false });
+    if (upErr) throw new Error(`Photo upload failed: ${upErr.message}`);
+
+    const gateway = createLovableAiGatewayProvider(key);
+    const dataUrl = `data:${data.mimeType};base64,${data.dataBase64}`;
+
+    const systemPrompt =
+      "You are The Foreman — a battle-hardened UK construction site manager and defect inspector with 30+ years on the tools. " +
+      "You inspect a photograph of a construction defect (a 'snag') and produce a full site report. Be blunt, technical, and specific. " +
+      "Cite real UK regulations where relevant (Building Regs Part L/E/B/K, BS 8000, BS 5395, CDM 2015, HSE guidance, NHBC Standards). " +
+      "The 'tradesman's hack' is a hard-won trade tip a foreman would tell a green apprentice — practical, cheap, effective.";
+
+    try {
+      const { output } = await generateText({
+        model: gateway("openai/gpt-4o"),
+        output: Output.object({ schema: SnagReport }),
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text:
+                  "Inspect this snag photo. Return a JSON report with: defectTitle (5–8 words), description (2–4 sentences), cause (root cause), rectificationOptionA (proper by-the-book fix), rectificationOptionB (fast/budget alternative), tradesmanHack (real trade tip), regulatoryCitations (array of relevant UK regs/standards), hsNotes (health & safety concerns), severity (low/medium/high/critical), trade (which trade owns this: bricklayer/plasterer/carpenter/plumber/electrician/tiler/painter/etc).",
+              },
+              { type: "image", image: dataUrl },
+            ],
+          },
+        ],
+      });
+      return { report: output, photoPath };
+    } catch (error) {
+      if (NoObjectGeneratedError.isInstance(error)) {
+        // salvage
+        const raw = error.text ?? "";
+        let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+        const start = cleaned.search(/[{[]/);
+        const end = cleaned.lastIndexOf("}");
+        if (start !== -1 && end !== -1 && end > start) cleaned = cleaned.substring(start, end + 1);
+        try {
+          const parsed = SnagReport.parse(JSON.parse(cleaned));
+          return { report: parsed, photoPath };
+        } catch {
+          // fall through
+        }
+      }
+      // Clean up the orphan upload if AI failed
+      await supabaseAdmin.storage.from("snag-photos").remove([photoPath]).catch(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const msg = (error as any)?.message || "AI analysis failed.";
+      throw new Error(msg);
+    }
+  });
+
+export const createSnag = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        photoPath: z.string(),
+        report: SnagReport,
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const orgId = await getMyOrgId(context.supabase, context.userId);
+    const { data: row, error } = await context.supabase
+      .from("snags")
+      .insert({
+        org_id: orgId,
+        photo_path: data.photoPath,
+        defect_title: data.report.defectTitle,
+        description: data.report.description,
+        cause: data.report.cause,
+        rectification_option_a: data.report.rectificationOptionA,
+        rectification_option_b: data.report.rectificationOptionB,
+        tradesman_hack: data.report.tradesmanHack,
+        regulatory_citations: data.report.regulatoryCitations,
+        hs_notes: data.report.hsNotes,
+        severity: data.report.severity,
+        trade: data.report.trade,
+        created_by: context.userId,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id };
+  });
+
+export const updateSnagStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        snagId: z.string().uuid(),
+        status: z.enum(["open", "in_progress", "closed", "disputed"]),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("snags")
+      .update({ status: data.status })
+      .eq("id", data.snagId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const postSnagComment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        snagId: z.string().uuid(),
+        body: z.string().trim().min(1).max(4000),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const orgId = await getMyOrgId(context.supabase, context.userId);
+    const { error } = await context.supabase.from("snag_comments").insert({
+      snag_id: data.snagId,
+      org_id: orgId,
+      user_id: context.userId,
+      body: data.body,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
