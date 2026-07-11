@@ -24,6 +24,7 @@ import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as SubcontractorsNewRouteImport } from './routes/subcontractors.new'
 import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontractor.$projectId'
 import { Route as SnagsNewRouteImport } from './routes/snags.new'
+import { Route as SnagsSnagIdRouteImport } from './routes/snags.$snagId'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
@@ -112,6 +113,11 @@ const SubcontractorProjectIdRoute = SubcontractorProjectIdRouteImport.update({
 const SnagsNewRoute = SnagsNewRouteImport.update({
   id: '/snags/new',
   path: '/snags/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SnagsSnagIdRoute = SnagsSnagIdRouteImport.update({
+  id: '/snags/$snagId',
+  path: '/snags/$snagId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SiteManagerProjectIdRoute = SiteManagerProjectIdRouteImport.update({
@@ -209,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
+  '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
@@ -240,6 +247,7 @@ export interface FileRoutesByTo {
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
+  '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
@@ -272,6 +280,7 @@ export interface FileRoutesById {
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
+  '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
@@ -305,6 +314,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
+    | '/snags/$snagId'
     | '/snags/new'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
+    | '/snags/$snagId'
     | '/snags/new'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
@@ -367,6 +378,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/site-manager/$projectId'
+    | '/snags/$snagId'
     | '/snags/new'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
@@ -399,6 +411,7 @@ export interface RootRouteChildren {
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
+  SnagsSnagIdRoute: typeof SnagsSnagIdRoute
   SnagsNewRoute: typeof SnagsNewRoute
   SubcontractorProjectIdRoute: typeof SubcontractorProjectIdRoute
   SubcontractorsNewRoute: typeof SubcontractorsNewRoute
@@ -516,6 +529,13 @@ declare module '@tanstack/react-router' {
       path: '/snags/new'
       fullPath: '/snags/new'
       preLoaderRoute: typeof SnagsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/snags/$snagId': {
+      id: '/snags/$snagId'
+      path: '/snags/$snagId'
+      fullPath: '/snags/$snagId'
+      preLoaderRoute: typeof SnagsSnagIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/site-manager/$projectId': {
@@ -640,6 +660,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
+  SnagsSnagIdRoute: SnagsSnagIdRoute,
   SnagsNewRoute: SnagsNewRoute,
   SubcontractorProjectIdRoute: SubcontractorProjectIdRoute,
   SubcontractorsNewRoute: SubcontractorsNewRoute,
