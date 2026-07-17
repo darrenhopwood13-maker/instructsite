@@ -43,6 +43,7 @@ function NewSnagPage() {
   const [report, setReport] = useState<SnagReportT | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   async function handleFile(file: File) {
     setError(null);
