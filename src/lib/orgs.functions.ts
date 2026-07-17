@@ -294,3 +294,47 @@ export const createOrg = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { orgId: inserted.id as string, slug: inserted.slug as string };
   });
+
+const updateOrgSchema = createOrgSchema.extend({
+  orgId: z.string().uuid(),
+});
+
+export const updateOrg = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => updateOrgSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    assertOwner(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let slug = data.slug && data.slug.length >= 2 ? data.slug : slugify(data.name);
+    if (!slug) throw new Error("Could not derive a slug from the name. Provide one manually.");
+
+    // Ensure uniqueness (excluding current row)
+    const base = slug;
+    for (let i = 2; i < 50; i += 1) {
+      const { data: existing } = await supabaseAdmin
+        .from("orgs")
+        .select("id")
+        .eq("slug", slug)
+        .neq("id", data.orgId)
+        .maybeSingle();
+      if (!existing) break;
+      slug = `${base}-${i}`;
+    }
+
+    const { error } = await supabaseAdmin
+      .from("orgs")
+      .update({
+        name: data.name,
+        slug,
+        company_number: data.companyNumber || null,
+        contact_name: data.contactName || null,
+        contact_email: data.contactEmail || null,
+        contact_phone: data.contactPhone || null,
+        registered_address: data.registeredAddress || null,
+        notes: data.notes || null,
+      })
+      .eq("id", data.orgId);
+    if (error) throw new Error(error.message);
+    return { orgId: data.orgId, slug };
+  });
