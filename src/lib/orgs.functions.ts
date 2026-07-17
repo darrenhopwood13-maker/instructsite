@@ -511,6 +511,7 @@ export const inviteOrgMember = createServerFn({ method: "POST" })
       .select("id, token")
       .single();
     if (error) throw new Error(error.message);
+    await sendOrgInviteEmail(data.email.toLowerCase(), inserted.token as string);
     return { inviteId: inserted.id as string, token: inserted.token as string, isStandard };
   });
 
