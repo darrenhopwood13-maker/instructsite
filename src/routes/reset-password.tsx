@@ -1,9 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/reset-password")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" && s.next.startsWith("/") ? s.next : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Reset password — instructSite" },
@@ -15,6 +18,8 @@ export const Route = createFileRoute("/reset-password")({
 
 function ResetPasswordPage() {
   const navigate = useNavigate();
+  const search = useSearch({ from: "/reset-password" });
+  const nextPath = search.next;
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -72,6 +77,9 @@ function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       setComplete(true);
+      if (nextPath) {
+        setTimeout(() => navigate({ to: nextPath, replace: true }), 800);
+      }
     } catch (e: any) {
       setError(e?.message ?? "Password reset failed. Please request a fresh reset email.");
     } finally {
@@ -103,15 +111,17 @@ function ResetPasswordPage() {
           {complete ? (
             <div className="mt-6 space-y-4">
               <div className="rounded-md border border-alert/45 bg-alert/10 px-3 py-2 text-sm text-foreground">
-                Password updated. You can now sign in with the new password.
+                {nextPath
+                  ? "Password set. Taking you to your invitation…"
+                  : "Password updated. You can now sign in with the new password."}
               </div>
               <button
                 type="button"
-                onClick={() => navigate({ to: "/auth", replace: true })}
+                onClick={() => navigate({ to: nextPath ?? "/auth", replace: true })}
                 className="glass-orange shimmer-btn inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
               >
                 <ArrowRight size={14} />
-                Back to sign in
+                {nextPath ? "Continue" : "Back to sign in"}
               </button>
             </div>
           ) : (

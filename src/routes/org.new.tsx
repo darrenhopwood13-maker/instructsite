@@ -243,7 +243,8 @@ function NewOrgPage() {
             </p>
             <p className="mb-4 text-[0.7rem] text-foreground/60">
               Every organisation has 3 standard seats: 1 Project Manager + 2 Subcontractors.
-              Emails are optional — you can send invites later from the edit page.
+              Invitees get an email with a magic link — they set their own password on first use.
+              Emails are optional; you can send invites later from the edit page.
             </p>
 
             <label className="mb-3 block">

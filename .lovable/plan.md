@@ -1,54 +1,56 @@
-## Subcontractor Pack — Frontend Build Plan
+## What's actually happening
 
-Backend is ready (`subcontractors`, `workers`, `registers`, `toolbox_talks`, `look_aheads` scoped by `project_id`, plus private `compliance-docs` bucket). This plan wires the UI on top, matching the existing InstructSite design (glass panels, Zen Dots headings, alert-orange accent, dark theme — same tokens used across `DropZone`, DABS, Subcontractor Cockpit).
+**1. No email is being sent.**
+When you invite a PM from the New Organisation form (or from the org edit page), the code only inserts a row into `org_invites` with a token and gives you a "copy link". There is no email delivery wired up anywhere — that's why nothing lands in the invitee's inbox. This matches what I told you last time; we never actually built the sender.
 
-### 1. Server functions — `src/lib/subcontractor-pack.functions.ts`
-All functions use `requireSupabaseAuth` (RLS handles project scoping):
-- `getSubcontractorPack({ projectId })` — returns `{ subcontractor, workers[], registers[], toolboxTalks[], lookAheads[] }`. Auto-creates/find a `subcontractors` row for the caller's company on this project (uses `getMyProjectContext` for company name).
-- `getPackAggregate({ projectId })` — site-manager view; groups all subs on the project with counts and latest items.
-- `addWorker`, `addRegister`, `addToolboxTalk`, `addLookAhead` — insert one row each, all with Zod validation.
-- Signed-URL helper for competency card / certificate previews from `compliance-docs`.
+**2. There is no global password.**
+The app uses standard email + password auth (per user). Each person sets their own password when they sign up. So when your PM opens the invite link:
 
-### 2. Entry point buttons
-- **DABS dashboard** (`src/routes/dabs.$projectId.tsx`): add a "Subcontractors Pack" button in the header action row → `Link to="/subcontractor-pack/$projectId"`.
-- **Site Manager dashboard** (`src/routes/site-manager.$projectId.tsx`): add "Subcontractors Weekly Pack" button → `Link to="/subcontractor-pack/$projectId/manager"`.
+- If they don't have an account yet → they need to hit **Sign up** on `/auth` and choose their own password.
+- If they already have an account → they sign in with their existing password.
+- Then the invite page calls `accept_org_invite` and drops them into the org.
 
-### 3. New routes
-```
-src/routes/subcontractor-pack.$projectId.tsx           → Sub portal (Hub + Daily Log tabs)
-src/routes/subcontractor-pack.$projectId.manager.tsx   → Site Manager aggregate view
-```
+You didn't miss a step — there was never a shared password. The confusion is just that the invite page doesn't currently walk them through "create an account first, then come back".
 
-**Sub portal layout:**
-- Shared header: glass panel with company name (from `getMyProjectContext`), project name, back link.
-- Top tab toggle (2 tabs, styled like existing segmented controls): **Hub** | **Daily Log**.
-- Prominent orange "Submit Weekly Pack" button in header (UI only — disabled tooltip "PDF export coming next").
+## The plan
 
-**Hub view (`SubHub` component)** — four glass-panel cards in a responsive grid:
-1. Labour Roster — table: name, role, competency card link (opens signed URL).
-2. Equipment Registers — grouped by type badge (PUWER/LOLER/HAVS/Plant), asset name, date.
-3. Recent Toolbox Talks — last 5, topic + attendee count + date.
-4. Current Look-Ahead — most recent row, work-plan text, red-outline chips if High Risk / Permit Required.
+### A. Wire up automated invite emails (Lovable Emails)
 
-**Daily Log view (`SubDailyLog` component)** — accordion (shadcn `Accordion`) with four sections, each with its own Save button and success toast:
-1. **Add Labour** — Name, Role, file input for competency card. On save: upload to `compliance-docs/{userId}/{projectId}/workers/{ts}-{filename}` then insert `workers` row with `competency_card_url` = storage path.
-2. **Safety Register** — Type select (PUWER/LOLER/HAVS/Plant), Asset Name, Date picker, cert file upload → `compliance-docs/.../registers/...` → insert `registers`.
-3. **Toolbox Talk** — Topic select (fixed list: Manual Handling, Working at Height, Slips/Trips, Fire Safety, Waste Segregation, Spill Control, Hot Weather, Confined Spaces, Hot Works, Excavations), attendees textarea (one per line → stored as `jsonb` array).
-4. **Look-Ahead** — work plan textarea, two switches: High Risk, Permit Required.
+1. Confirm the project's email domain is ready (`check_email_domain_status`). If no domain is configured, show the email setup dialog first — the user needs a domain they own before anything can send.
+2. Run `setup_email_infra` (queues, cron, tables) if not already done.
+3. Run `scaffold_transactional_email` to get the send route + template registry.
+4. Add a branded `org-invite` React Email template in `src/lib/email-templates/` with:
+  - Org name, inviter name, role (PM / Subcontractor)
+  - Big "Accept invitation" button → `https://<site>/join-org/invite/<token>`
+  - Short note: "You'll be asked to sign in or create an account with this email address."
+5. Register it in `src/lib/email-templates/registry.ts`.
+6. In `orgs.functions.ts`, after inserting an invite row (both in `createOrg`'s bulk insert path and in `inviteOrgMember`), POST to `/lovable/email/transactional/send` with `templateName: "org-invite"`, the invitee's email, and an idempotency key of the invite id. Failures don't roll back the invite — we just log; the Copy Link fallback still works.
 
-Each section invalidates the `subcontractor-pack` query on success so Hub reflects new data instantly.
+### B. Fix the invitee experience so the password step is obvious
 
-**Manager aggregate view** — glass table listing every subcontractor on the project with: company name, worker count, register count, latest toolbox talk date, latest look-ahead flags. Each row expands to show detail cards (same components as the Hub, read-only).
+On `/join-org/invite/$token`, when there is no session:
 
-### 4. Design system compliance
-- Reuse existing tokens only (`glass-panel`, `glass-accent`, `text-alert`, `border-white/10`, `bg-black/20`, `text-foreground`).
-- Zen Dots for section headings, Inter Tight body — same as `DropZone`.
-- shadcn `Accordion`, `Select`, `Switch`, `Input`, `Textarea`, `Button` (already in project).
-- File uploads follow the `DropZone`/`compliance-docs` pattern: direct `supabase.storage.from("compliance-docs").upload(...)` from the browser after `ensureOracleSession`, then server-fn insert with the returned path.
+- Show a clear panel: "You've been invited as **Project Manager** of &nbsp;. Sign in or create an account with &nbsp; to accept."
+- Two buttons: **Sign in** and **Create account**, both linking to `/auth?mode=signin|signup&next=<current-url>&email=<invited-email>`.
 
-### 5. Out of scope (deferred, per your note)
-- PDF generation for "Submit Weekly Pack" — button renders but does nothing yet.
-- Editing/deleting existing rows — insert-only for this pass.
-- Notifications to PMs when a pack is submitted.
+On `/auth`:
 
-Ready to build once you approve.
+- Read `next` and `email` from the query string.
+- Prefill the email field (read-only hint acceptable) and, on successful sign-in or sign-up, navigate to `next` instead of `/`.
+- Keep the current password + Google flow; no schema changes.
+
+### C. Communicate the "no global password" reality in the UI
+
+Small helper text on the New Organisation form under the invite email fields:
+
+> "Invitees receive an email with a link. They sign in with their own password (or create one on first use) — there is no shared password."
+
+## Not doing
+
+- No changes to `org_invites`, RLS, or `accept_org_invite` — the accept flow itself works.
+- Not switching to magic-link / passwordless. If you'd rather invitees skip choosing a password entirely, say so and I'll swap the invite email for a Supabase magic-link instead (separate plan).
+
+## Confirm before I build
+
+1. OK to send invite emails through **Lovable Emails** (requires a verified sender domain on the project — I'll check status first and prompt setup if missing)? ok 
+2. Keep **email + password** signup for invitees, or do you want magic-link instead? magic link then set password
