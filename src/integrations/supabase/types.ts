@@ -503,6 +503,47 @@ export type Database = {
           },
         ]
       }
+      look_aheads: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          is_high_risk: boolean
+          permit_required: boolean
+          subcontractor_id: string
+          updated_at: string
+          work_plan: string | null
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          is_high_risk?: boolean
+          permit_required?: boolean
+          subcontractor_id: string
+          updated_at?: string
+          work_plan?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          is_high_risk?: boolean
+          permit_required?: boolean
+          subcontractor_id?: string
+          updated_at?: string
+          work_plan?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "look_aheads_subcontractor_id_fkey"
+            columns: ["subcontractor_id"]
+            isOneToOne: false
+            referencedRelation: "subcontractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1389,6 +1430,47 @@ export type Database = {
           },
         ]
       }
+      registers: {
+        Row: {
+          asset_name: string | null
+          certificate_url: string | null
+          created_at: string
+          id: string
+          inspection_date: string | null
+          subcontractor_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          asset_name?: string | null
+          certificate_url?: string | null
+          created_at?: string
+          id?: string
+          inspection_date?: string | null
+          subcontractor_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          asset_name?: string | null
+          certificate_url?: string | null
+          created_at?: string
+          id?: string
+          inspection_date?: string | null
+          subcontractor_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registers_subcontractor_id_fkey"
+            columns: ["subcontractor_id"]
+            isOneToOne: false
+            referencedRelation: "subcontractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_documents: {
         Row: {
           bucket: string
@@ -1669,6 +1751,79 @@ export type Database = {
           },
         ]
       }
+      subcontractors: {
+        Row: {
+          company_name: string
+          created_at: string
+          id: string
+          manager_name: string | null
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          id?: string
+          manager_name?: string | null
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          id?: string
+          manager_name?: string | null
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcontractors_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      toolbox_talks: {
+        Row: {
+          attendance_list: Json
+          created_at: string
+          date: string
+          id: string
+          subcontractor_id: string
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          attendance_list?: Json
+          created_at?: string
+          date?: string
+          id?: string
+          subcontractor_id: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attendance_list?: Json
+          created_at?: string
+          date?: string
+          id?: string
+          subcontractor_id?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toolbox_talks_subcontractor_id_fkey"
+            columns: ["subcontractor_id"]
+            isOneToOne: false
+            referencedRelation: "subcontractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1724,6 +1879,44 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workers: {
+        Row: {
+          competency_card_url: string | null
+          created_at: string
+          id: string
+          name: string
+          role: string | null
+          subcontractor_id: string
+          updated_at: string
+        }
+        Insert: {
+          competency_card_url?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          role?: string | null
+          subcontractor_id: string
+          updated_at?: string
+        }
+        Update: {
+          competency_card_url?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          role?: string | null
+          subcontractor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workers_subcontractor_id_fkey"
+            columns: ["subcontractor_id"]
+            isOneToOne: false
+            referencedRelation: "subcontractors"
             referencedColumns: ["id"]
           },
         ]
@@ -1796,6 +1989,7 @@ export type Database = {
         Args: { _document_id: string }
         Returns: string[]
       }
+      subcontractor_project_id: { Args: { _sub_id: string }; Returns: string }
       subcontractor_seat_usage: {
         Args: { _company_name: string; _project_id: string }
         Returns: {
