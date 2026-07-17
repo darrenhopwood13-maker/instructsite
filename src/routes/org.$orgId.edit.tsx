@@ -153,9 +153,6 @@ function EditOrgPage() {
           <Field label="Organisation Name" icon={<Building2 size={14} />} required>
             <input
               disabled={!isOwner}
-          <Field label="Organisation Name" icon={<Building2 size={14} />} required>
-            <input
-              disabled={!isOwner}
               className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
               value={name}
               maxLength={120}
