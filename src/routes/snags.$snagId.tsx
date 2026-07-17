@@ -213,6 +213,16 @@ function SnagDetail() {
           <img src={photoUrl} alt={snag.defect_title} className="max-h-full max-w-full object-contain" />
         </div>
       )}
+
+      <ReportViewer
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        kicker="Snag Report"
+        title={report.defectTitle}
+        subtitle={`${report.trade || "General"} · Severity ${report.severity}`}
+        category="Snag"
+        markdown={snagReportToMarkdown(report)}
+      />
     </div>
   );
 }
