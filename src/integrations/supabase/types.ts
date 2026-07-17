@@ -1949,6 +1949,10 @@ export type Database = {
         Returns: boolean
       }
       dev_claim_master_admin: { Args: { _project_id?: string }; Returns: Json }
+      get_subcontractor_project_id: {
+        Args: { sub_id: string }
+        Returns: string
+      }
       has_feature: {
         Args: { _feature: string; _project_id: string }
         Returns: boolean
