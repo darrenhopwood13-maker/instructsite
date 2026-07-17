@@ -781,12 +781,20 @@ function AddLookAhead({ subId, onSaved }: { subId: string; onSaved: () => void }
       toast.error("Work plan required");
       return;
     }
+    const flags = [highRisk ? "HIGH RISK" : null, permit ? "PERMIT REQUIRED" : null].filter(Boolean).join(" · ") || "none";
+    const preview = plan.trim().length > 180 ? plan.trim().slice(0, 180) + "…" : plan.trim();
+    const verify = window.confirm(
+      `Please verify this look-ahead:\n\n• Flags: ${flags}\n• Plan: ${preview}\n\nSave look-ahead?`,
+    );
+    if (!verify) return;
     setBusy(true);
     try {
       await fn({
         data: { subcontractorId: subId, workPlan: plan, isHighRisk: highRisk, permitRequired: permit },
       });
-      toast.success("Look-ahead saved");
+      toast.success("Look-ahead added to work plan", {
+        description: flags === "none" ? undefined : `Flags: ${flags}`,
+      });
       setPlan("");
       setHighRisk(false);
       setPermit(false);
