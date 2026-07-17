@@ -90,12 +90,34 @@ function OrgDetailPage() {
           <ArrowLeft size={12} /> All Organisations
         </Link>
 
-        <p className="mt-6 text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
-          Organisation
-        </p>
-        <h1
-          className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+        <div className="mt-6 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
+              Organisation
+            </p>
+            <h1
+              className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
+              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            >
+              {org.data?.name ?? "…"}
+            </h1>
+            {org.data?.slug && (
+              <p className="mt-1 text-xs uppercase tracking-widest text-foreground/50">
+                {org.data.slug}
+              </p>
+            )}
+          </div>
+          {org.data && (
+            <Link
+              to="/org/$orgId/edit"
+              params={{ orgId }}
+              className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+            >
+              <Pencil size={14} /> Edit
+            </Link>
+          )}
+        </div>
+
         >
           {org.data?.name ?? "…"}
         </h1>
