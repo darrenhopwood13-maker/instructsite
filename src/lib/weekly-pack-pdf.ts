@@ -12,7 +12,38 @@ export type WeeklyPackInput = {
   registers: Register[];
   toolboxTalks: ToolboxTalk[];
   lookAheads: LookAhead[];
+  /** Optional resolver that turns a stored path/URL into a temporary fetchable URL (e.g. Supabase signed URL). */
+  resolveUrl?: (path: string) => Promise<string>;
 };
+
+type ImageAsset = { dataUrl: string; format: "PNG" | "JPEG"; width: number; height: number };
+
+async function fetchAsImage(url: string): Promise<ImageAsset | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const type = (res.headers.get("content-type") || "").toLowerCase();
+    if (!type.startsWith("image/")) return null; // skip PDFs / non-images
+    const blob = await res.blob();
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(blob);
+    });
+    const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      img.onerror = () => resolve({ w: 800, h: 600 });
+      img.src = dataUrl;
+    });
+    const format: "PNG" | "JPEG" = type.includes("png") ? "PNG" : "JPEG";
+    return { dataUrl, format, width: dims.w, height: dims.h };
+  } catch {
+    return null;
+  }
+}
+
 
 function currentWeekRange(now = new Date()): { start: Date; end: Date; label: string } {
   const d = new Date(now);
