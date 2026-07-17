@@ -1,7 +1,49 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isOwnerFromClaims, slugify } from "@/lib/owner";
+
+/**
+ * Send the invite email via Supabase's built-in auth email flow.
+ * Uses the default Lovable auth sender — no custom email domain required.
+ * - New users: admin.inviteUserByEmail (invite template)
+ * - Existing users: resetPasswordForEmail (password-reset template as the magic link)
+ * Redirects the recipient to /reset-password?next=/join-org/invite/<token>
+ * so they set (or update) a password and then land on the accept page with a session.
+ * Failures are logged but never block invite creation — copy-link fallback still works.
+ */
+async function sendOrgInviteEmail(email: string, token: string): Promise<void> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const req = getRequest();
+    const originHeader =
+      req?.headers.get("origin") ||
+      (req?.headers.get("host") ? `https://${req.headers.get("host")}` : "");
+    const origin = process.env.PUBLIC_SITE_URL || originHeader || "https://instructsite.com";
+    const next = `/join-org/invite/${token}`;
+    const redirectTo = `${origin.replace(/\/$/, "")}/reset-password?next=${encodeURIComponent(next)}`;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const admin = supabaseAdmin.auth.admin as any;
+    const { error: inviteErr } = await admin.inviteUserByEmail(email, { redirectTo });
+    if (!inviteErr) return;
+
+    const msg = String(inviteErr.message || "");
+    // Existing user → send password-recovery email (acts as the magic link)
+    if (/already|registered|exists/i.test(msg)) {
+      const { error: resetErr } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+      if (resetErr) console.warn("[orgs] invite reset fallback failed", resetErr.message);
+      return;
+    }
+    console.warn("[orgs] inviteUserByEmail failed", msg);
+  } catch (e) {
+    console.warn("[orgs] sendOrgInviteEmail threw", e);
+  }
+}
 
 export type OwnerOrgSummary = {
   id: string;
