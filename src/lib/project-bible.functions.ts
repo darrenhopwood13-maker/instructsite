@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type BibleDocument = {
   id: string; // site_document_id (or programme_upload id for programmes)
-  source: "drawing" | "logistics" | "rams" | "programme";
+  source: "drawing" | "logistics" | "rams" | "programme" | "report";
   title: string;
   category: string;
   fileName: string;
@@ -159,6 +159,36 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
       }
     }
 
+    // Filed reports (Oracle / Snag / Programme etc.)
+    {
+      const { data: rows, error } = await supabase
+        .from("project_bible_reports")
+        .select(
+          "id,category,source,title,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status)",
+        )
+        .eq("project_id", data.projectId);
+      if (error) throw new Error(error.message);
+      for (const row of (rows ?? []) as any[]) {
+        const sd: any = Array.isArray(row.site_documents)
+          ? row.site_documents[0]
+          : row.site_documents;
+        if (!sd) continue;
+        docs.push({
+          id: sd.id,
+          source: "report",
+          title: row.title || sd.file_name,
+          category: `Report · ${row.category}`,
+          fileName: sd.file_name,
+          mimeType: sd.mime_type,
+          bucket: sd.bucket ?? "project-bible",
+          filePath: sd.file_path,
+          sizeBytes: sd.file_size ?? null,
+          uploadedAt: sd.created_at ?? row.created_at ?? null,
+          extractionStatus: sd.extraction_status ?? null,
+        });
+      }
+    }
+
     // Dedupe by (bucket + filePath), keep first occurrence
     const seen = new Set<string>();
     const unique = docs.filter((d) => {
@@ -194,3 +224,180 @@ export const getBibleDocumentSignedUrl = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { signedUrl: signed?.signedUrl ?? null };
   });
+
+function slugForFilename(s: string): string {
+  return (
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 60) || "report"
+  );
+}
+
+/**
+ * File a generated report into the Project Bible.
+ * Renders the markdown as a text-only PDF (Worker-safe, no headless browser),
+ * stores it in the `project-bible` bucket, links it via `project_bible_reports`,
+ * and fans out notifications to project managers/members.
+ */
+export const addReportToProjectBible = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        projectId: z.string().uuid(),
+        title: z.string().min(1).max(200),
+        category: z.enum(["Oracle", "Snag", "Programme", "Custom"]),
+        markdown: z.string().min(1),
+        source: z.string().max(120).optional(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureProjectMember(supabase, userId, data.projectId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { default: jsPDF } = await import("jspdf");
+
+    // Build a simple, paginated text PDF.
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const marginX = 16;
+    const marginY = 20;
+    let y = marginY;
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(16);
+    const titleLines = pdf.splitTextToSize(data.title, pageW - marginX * 2);
+    pdf.text(titleLines, marginX, y);
+    y += titleLines.length * 7 + 2;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.setTextColor(120);
+    pdf.text(
+      `${data.category} · Filed ${new Date().toLocaleString()}`,
+      marginX,
+      y,
+    );
+    y += 8;
+    pdf.setTextColor(0);
+
+    const writeLine = (line: string, opts?: { bold?: boolean; size?: number }) => {
+      const size = opts?.size ?? 11;
+      pdf.setFont("helvetica", opts?.bold ? "bold" : "normal");
+      pdf.setFontSize(size);
+      const wrapped = pdf.splitTextToSize(line, pageW - marginX * 2);
+      for (const w of wrapped) {
+        if (y > pageH - marginY) {
+          pdf.addPage();
+          y = marginY;
+        }
+        pdf.text(w, marginX, y);
+        y += size * 0.42 + 1.2;
+      }
+    };
+
+    for (const raw of data.markdown.split(/\r?\n/)) {
+      const line = raw.replace(/[*_`]/g, "");
+      if (/^##\s+/.test(raw)) {
+        y += 3;
+        writeLine(line.replace(/^##\s+/, ""), { bold: true, size: 13 });
+      } else if (/^###\s+/.test(raw)) {
+        writeLine(line.replace(/^###\s+/, ""), { bold: true, size: 11 });
+      } else if (line.trim() === "") {
+        y += 3;
+      } else if (/^\s*[-*]\s+/.test(raw)) {
+        writeLine(`• ${line.replace(/^\s*[-*]\s+/, "")}`);
+      } else {
+        writeLine(line);
+      }
+    }
+
+    const pdfBytes = pdf.output("arraybuffer") as ArrayBuffer;
+    const bytes = new Uint8Array(pdfBytes);
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const slug = slugForFilename(data.title);
+    const fileName = `${stamp}-${slug}.pdf`;
+    const storagePath = `bible-reports/${data.projectId}/${fileName}`;
+
+    const { error: upErr } = await supabaseAdmin.storage
+      .from("project-bible")
+      .upload(storagePath, bytes, {
+        contentType: "application/pdf",
+        upsert: false,
+      });
+    if (upErr) throw new Error(upErr.message);
+
+    // Insert site_documents row (service role: admin insert).
+    const { data: sdRow, error: sdErr } = await supabaseAdmin
+      .from("site_documents")
+      .insert({
+        file_name: fileName,
+        file_path: storagePath,
+        bucket: "project-bible",
+        mime_type: "application/pdf",
+        file_size: bytes.byteLength,
+        uploaded_by: userId,
+        extraction_status: "ready",
+      })
+      .select("id")
+      .single();
+    if (sdErr || !sdRow) throw new Error(sdErr?.message ?? "Failed to save document.");
+
+    // Link into project_bible_reports (user-scoped via RLS).
+    const { data: reportRow, error: linkErr } = await supabase
+      .from("project_bible_reports")
+      .insert({
+        project_id: data.projectId,
+        site_document_id: sdRow.id,
+        category: data.category,
+        source: data.source ?? null,
+        title: data.title,
+        created_by: userId,
+      })
+      .select("id")
+      .single();
+    if (linkErr || !reportRow) throw new Error(linkErr?.message ?? "Failed to link report.");
+
+    // Fan out notifications to project managers/members (service role, ignore RLS).
+    const { data: proj } = await supabaseAdmin
+      .from("projects")
+      .select("name,master_admin_id,project_admin_id,created_by")
+      .eq("id", data.projectId)
+      .maybeSingle();
+    const { data: members } = await supabaseAdmin
+      .from("project_members")
+      .select("user_id")
+      .eq("project_id", data.projectId);
+
+    const recipientSet = new Set<string>();
+    for (const m of members ?? []) if (m?.user_id) recipientSet.add(m.user_id);
+    if (proj?.master_admin_id) recipientSet.add(proj.master_admin_id);
+    if (proj?.project_admin_id) recipientSet.add(proj.project_admin_id);
+    if (proj?.created_by) recipientSet.add(proj.created_by);
+    recipientSet.delete(userId); // don't notify the creator
+
+    if (recipientSet.size > 0) {
+      const rows = Array.from(recipientSet).map((uid) => ({
+        user_id: uid,
+        project_id: data.projectId,
+        kind: "report_added_to_bible",
+        title: `New report in Project Bible${proj?.name ? ` · ${proj.name}` : ""}`,
+        body: `${data.category}: ${data.title}`,
+        link_to: `/projects_/${data.projectId}/bible`,
+      }));
+      await supabaseAdmin.from("notifications").insert(rows);
+    }
+
+    return {
+      documentId: sdRow.id,
+      reportId: reportRow.id,
+      filePath: storagePath,
+    };
+  });
+

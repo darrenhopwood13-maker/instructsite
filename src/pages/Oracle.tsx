@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Loader2, X, Sparkles } from "lucide-react";
+import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Loader2, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { runOracleCommand } from "@/lib/oracle.functions";
-import { MarkdownRenderer } from "@/components/ui/markdown";
 import { ProjectBibleUpload } from "@/components/oracle/ProjectBibleUpload";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { ReportViewer } from "@/components/reports/ReportViewer";
 
 import cmdInstallation from "@/assets/cmd-installation.jpg";
 import cmdSafety from "@/assets/cmd-safety.jpg";
@@ -89,6 +89,7 @@ const OraclePage = () => {
   const [activeLabel, setActiveLabel] = useState<string>("");
   const [answer, setAnswer] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [projectId, setProjectId] = useState<string | undefined>(undefined);
 
   const handleInvoke = async (cmd: { key: string; label: string }) => {
     setLoadingKey(cmd.key);
@@ -98,7 +99,7 @@ const OraclePage = () => {
     setDialogOpen(true);
 
     // Read locked oracle context from session (set by "Lock to Oracle" button)
-    let projectId: string | undefined;
+    let localProjectId: string | undefined;
     let lockedContext:
       | { kind: "drawing" | "zone"; id: string; label: string }
       | undefined;
@@ -109,7 +110,7 @@ const OraclePage = () => {
           : null;
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed?.projectId) projectId = parsed.projectId;
+        if (parsed?.projectId) localProjectId = parsed.projectId;
         if (parsed?.kind && parsed?.id && parsed?.label) {
           lockedContext = {
             kind: parsed.kind,
@@ -121,11 +122,12 @@ const OraclePage = () => {
     } catch {
       // ignore malformed context
     }
+    setProjectId(localProjectId);
 
     try {
       await ensureOracleSession();
       const result = await invokeOracle({
-        data: { key: cmd.key, projectId, lockedContext },
+        data: { key: cmd.key, projectId: localProjectId, lockedContext },
       });
       setAnswer(result?.answer ?? "No response returned.");
     } catch (err) {
@@ -140,6 +142,8 @@ const OraclePage = () => {
     setAnswer("");
     setError(null);
   };
+
+  const bodyMarkdown = error ? `## Error\n\n${error}` : answer;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background p-6">
@@ -201,48 +205,36 @@ const OraclePage = () => {
         <ProjectBibleUpload />
       </div>
 
-      {dialogOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm"
-          onClick={closeDialog}
-        >
-          <div
-            className="glass-panel relative w-full max-w-2xl p-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={closeDialog}
-              className="glass-accent absolute right-4 top-4 flex h-9 w-9 items-center justify-center"
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
-
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-alert">
-              Oracle Response
-            </p>
-            <h2
-              className="mt-2 text-2xl font-extrabold uppercase tracking-tight text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-            >
-              {activeLabel}
-            </h2>
-
-            <div className="mt-6 min-h-[120px]">
-              {loadingKey !== null ? (
-                <OracleProcessing label={activeLabel} />
-              ) : error ? (
-                <div className="glass-accent p-4 text-sm text-alert">{error}</div>
-              ) : (
-                <div className="glass-panel max-h-[60vh] overflow-y-auto p-6">
-                  <MarkdownRenderer content={answer} />
+      <ReportViewer
+        open={dialogOpen}
+        onClose={closeDialog}
+        kicker="Oracle Response"
+        title={activeLabel || "Oracle"}
+        subtitle={loadingKey ? "Processing…" : undefined}
+        category="Oracle"
+        markdown={bodyMarkdown}
+        projectId={projectId}
+      >
+        {loadingKey !== null ? (
+          <div className="glass-panel relative overflow-hidden p-6">
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-11 w-11 items-center justify-center">
+                <span className="absolute inset-0 animate-ping rounded-full bg-alert/30" />
+                <Sparkles size={20} className="relative animate-pulse text-alert" />
+              </span>
+              <div>
+                <div className="text-[0.65rem] font-bold uppercase tracking-[0.35em] text-alert">
+                  {activeLabel} · Processing
                 </div>
-              )}
+                <div className="mt-1 flex items-center gap-2 text-sm text-foreground/80">
+                  <Loader2 className="animate-spin" size={14} />
+                  Composing response…
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        ) : undefined}
+      </ReportViewer>
     </div>
   );
 };
