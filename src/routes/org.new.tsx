@@ -75,6 +75,11 @@ function NewOrgPage() {
     setSaving(true);
     setErr(null);
     try {
+      const invites: { email: string; role: "admin" | "subcontractor" }[] = [];
+      if (pmEmail.trim()) invites.push({ email: pmEmail.trim(), role: "admin" });
+      if (sub1Email.trim()) invites.push({ email: sub1Email.trim(), role: "subcontractor" });
+      if (sub2Email.trim()) invites.push({ email: sub2Email.trim(), role: "subcontractor" });
+
       const { orgId } = await create({
         data: {
           name: name.trim(),
@@ -85,11 +90,13 @@ function NewOrgPage() {
           contactPhone: contactPhone.trim(),
           registeredAddress: registeredAddress.trim(),
           notes: notes.trim(),
+          invites,
         },
       });
       nav({ to: "/org/$orgId", params: { orgId } });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+
       setErr(msg || "Something went wrong.");
       setSaving(false);
     }
