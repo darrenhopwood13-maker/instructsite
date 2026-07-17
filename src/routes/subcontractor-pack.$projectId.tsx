@@ -718,10 +718,16 @@ function AddToolboxTalk({ subId, onSaved }: { subId: string; onSaved: () => void
       toast.error("Add at least one attendee");
       return;
     }
+    const verify = window.confirm(
+      `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}\n\nLog this talk?`,
+    );
+    if (!verify) return;
     setBusy(true);
     try {
       await fn({ data: { subcontractorId: subId, topic, attendees: list } });
-      toast.success("Toolbox talk logged");
+      toast.success(`Toolbox talk logged: ${topic}`, {
+        description: `${list.length} attendee${list.length === 1 ? "" : "s"} recorded`,
+      });
       setAttendees("");
       onSaved();
     } catch (e) {
