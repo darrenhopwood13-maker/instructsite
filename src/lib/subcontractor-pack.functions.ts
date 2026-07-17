@@ -236,5 +236,59 @@ export const getManagerPack = createServerFn({ method: "POST" })
     return { subcontractors: detailed };
   });
 
+export const checkWorkerDuplicate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        subcontractorId: z.string().uuid(),
+        name: z.string().trim().min(1).max(120),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: rows } = await context.supabase
+      .from("workers")
+      .select("id, competency_card_url, created_at")
+      .eq("subcontractor_id", data.subcontractorId)
+      .ilike("name", data.name);
+    const same = (rows ?? []) as any[];
+    return {
+      exists: same.length > 0,
+      hasCard: same.some((r) => !!r.competency_card_url),
+      sameDay: same.some((r) => (r.created_at ?? "").slice(0, 10) === today),
+    };
+  });
+
+export const checkRegisterDuplicate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        subcontractorId: z.string().uuid(),
+        type: z.enum(REGISTER_TYPES),
+        assetName: z.string().trim().max(200).optional().nullable(),
+        inspectionDate: z.string().trim().optional().nullable(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    let q = context.supabase
+      .from("registers")
+      .select("id, certificate_url, inspection_date")
+      .eq("subcontractor_id", data.subcontractorId)
+      .eq("type", data.type);
+    if (data.assetName) q = q.ilike("asset_name", data.assetName);
+    if (data.inspectionDate) q = q.eq("inspection_date", data.inspectionDate);
+    const { data: rows } = await q;
+    const same = (rows ?? []) as any[];
+    return {
+      exists: same.length > 0,
+      hasCert: same.some((r) => !!r.certificate_url),
+    };
+  });
+
 export const TOOLBOX_TOPIC_OPTIONS = TOOLBOX_TOPICS;
 export const REGISTER_TYPE_OPTIONS = REGISTER_TYPES;
+
