@@ -553,6 +553,16 @@ function ProgrammePage() {
           </div>
         </section>
       </div>
+      <ReportViewer
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        kicker="Programme Playbook"
+        title={`Daily Playbook · ${fmtHuman(date)}`}
+        subtitle={project.data?.name ?? undefined}
+        category="Programme"
+        markdown={summary || "_No summary available for this date._"}
+        projectId={projectId}
+      />
     </div>
   );
 }
