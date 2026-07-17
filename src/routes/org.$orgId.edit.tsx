@@ -284,10 +284,196 @@ function EditOrgPage() {
           </div>
         </form>
         )}
+
+        {isOwner && <MembersPanel orgId={orgId} />}
       </div>
     </div>
   );
 }
+
+function MembersPanel({ orgId }: { orgId: string }) {
+  const listFn = useServerFn(listOrgInvites);
+  const membersFn = useServerFn(listOrgMembersFor);
+  const inviteFn = useServerFn(inviteOrgMember);
+  const revokeFn = useServerFn(revokeOrgInvite);
+
+  const invites = useQuery({
+    queryKey: ["org-invites", orgId],
+    queryFn: () => listFn({ data: { orgId } }),
+  });
+  const members = useQuery({
+    queryKey: ["org-members-for", orgId],
+    queryFn: () => membersFn({ data: { orgId } }),
+  });
+
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"admin" | "subcontractor">("subcontractor");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const pendingInvites = (invites.data ?? []).filter((i) => i.status === "pending");
+  const stdPMFilled =
+    (members.data ?? []).some((m) => m.role === "admin") ||
+    pendingInvites.some((i) => i.role === "admin" && i.is_standard);
+  const stdSubCount =
+    (members.data ?? []).filter((m) => m.role === "subcontractor").length +
+    pendingInvites.filter((i) => i.role === "subcontractor" && i.is_standard).length;
+  const stdComplete = stdPMFilled && stdSubCount >= 2;
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await inviteFn({ data: { orgId, email: email.trim(), role } });
+      setEmail("");
+      invites.refetch();
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : String(e2));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revoke(id: string) {
+    await revokeFn({ data: { inviteId: id } });
+    invites.refetch();
+  }
+
+  function inviteLink(token: string) {
+    return `${window.location.origin}/join-org/invite/${token}`;
+  }
+
+  async function copyLink(token: string) {
+    await navigator.clipboard.writeText(inviteLink(token));
+    setCopied(token);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
+  return (
+    <div className="glass-panel mt-8 space-y-6 p-6">
+      <div>
+        <p className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
+          Members & Invites
+        </p>
+        <p className="mt-1 text-xs text-foreground/60">
+          Standard seats: 1 Project Manager + 2 Subcontractors. Additional members unlock once all
+          3 standard seats are used.
+        </p>
+      </div>
+
+      <div>
+        <p className="mb-2 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/60">
+          Active Members
+        </p>
+        <div className="space-y-2">
+          {(members.data ?? []).length === 0 && (
+            <p className="text-xs text-foreground/50">No members joined yet.</p>
+          )}
+          {(members.data ?? []).map((m) => (
+            <div
+              key={m.id}
+              className="flex items-center justify-between rounded-md border border-white/10 bg-black/30 p-2 text-xs"
+            >
+              <span className="font-mono text-foreground/80">{m.user_id.slice(0, 12)}…</span>
+              <span className="uppercase tracking-widest text-foreground/50">
+                {m.role === "admin" ? "Project Manager" : "Subcontractor"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/60">
+          Pending Invites
+        </p>
+        <div className="space-y-2">
+          {pendingInvites.length === 0 && (
+            <p className="text-xs text-foreground/50">No pending invites.</p>
+          )}
+          {pendingInvites.map((i) => (
+            <div
+              key={i.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-white/10 bg-black/30 p-2 text-xs"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-foreground/80">{i.email}</span>
+                <span className="rounded bg-alert/20 px-2 py-0.5 text-[0.6rem] uppercase tracking-widest text-alert">
+                  {i.role === "admin" ? "PM" : "Sub"}
+                </span>
+                {!i.is_standard && (
+                  <span className="rounded bg-white/10 px-2 py-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/70">
+                    Additional
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => copyLink(i.token)}
+                  className="glass-btn inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.65rem] uppercase tracking-widest"
+                  title="Copy invite link"
+                >
+                  {copied === i.token ? <Check size={11} /> : <Copy size={11} />}
+                  {copied === i.token ? "Copied" : "Copy link"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => revoke(i.id)}
+                  className="inline-flex items-center gap-1 rounded-md border border-alert/40 px-2 py-1 text-[0.65rem] uppercase tracking-widest text-alert hover:bg-alert/10"
+                >
+                  <X size={11} /> Revoke
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <form onSubmit={submit} className="space-y-3 border-t border-white/10 pt-4">
+        <p className="flex items-center gap-2 text-[0.7rem] font-bold uppercase tracking-widest text-foreground/80">
+          <UserPlus size={12} />
+          {stdComplete ? "Invite Additional Member" : "Invite Standard Member"}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <input
+            type="email"
+            required
+            placeholder="member@company.example"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="flex-1 rounded-md border border-white/15 bg-black/40 px-3 py-2 text-sm text-foreground outline-none focus:border-alert"
+          />
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as "admin" | "subcontractor")}
+            className="rounded-md border border-white/15 bg-black/40 px-3 py-2 text-sm text-foreground outline-none focus:border-alert"
+          >
+            <option value="admin">Project Manager</option>
+            <option value="subcontractor">Subcontractor</option>
+          </select>
+          <button
+            type="submit"
+            disabled={busy}
+            className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs uppercase tracking-wider disabled:opacity-40"
+          >
+            {busy ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />}
+            Send Invite
+          </button>
+        </div>
+        {err && (
+          <p className="flex items-start gap-2 text-xs text-alert">
+            <AlertCircle size={12} className="mt-0.5" /> {err}
+          </p>
+        )}
+      </form>
+    </div>
+  );
+}
+
 
 function Field({
   label,
