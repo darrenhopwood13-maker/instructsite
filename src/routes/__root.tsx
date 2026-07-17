@@ -4,13 +4,14 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useMatches,
   HeadContent,
   Scripts,
   redirect,
   isRedirect,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Camera } from "lucide-react";
+import { Camera, BookOpen } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -565,6 +566,8 @@ function AuthNav() {
             </Link>
           )}
 
+          <ProjectBibleNavLink />
+
           <Link to="/snags" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
             <Camera className="h-3.5 w-3.5" />
             Snag Master
@@ -588,4 +591,28 @@ function AuthNav() {
     </div>
   );
 }
+
+function ProjectBibleNavLink() {
+  const matches = useMatches();
+  let projectId: string | undefined;
+  for (const m of matches) {
+    const p = (m.params as { projectId?: string } | undefined)?.projectId;
+    if (p) {
+      projectId = p;
+      break;
+    }
+  }
+  if (!projectId) return null;
+  return (
+    <Link
+      to="/projects_/$projectId/bible"
+      params={{ projectId }}
+      className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
+    >
+      <BookOpen className="h-3.5 w-3.5" />
+      Project Bible
+    </Link>
+  );
+}
+
 
