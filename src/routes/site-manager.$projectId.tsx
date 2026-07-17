@@ -176,6 +176,17 @@ function SiteManagerPage() {
           Realtime spatial overlay of active site labor · click any pin for the HUD popover.
         </p>
 
+        <div className="mt-4">
+          <Link
+            to="/subcontractor-pack/$projectId/manager"
+            params={{ projectId }}
+            className="inline-flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-alert hover:bg-alert hover:text-black transition-colors"
+          >
+            <ClipboardList size={14} /> Subcontractors Weekly Pack
+          </Link>
+        </div>
+
+
         <section className="mt-6">
           <DrawingCanvas
             drawings={drawingRows as never}
