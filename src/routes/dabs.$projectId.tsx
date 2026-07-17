@@ -160,6 +160,17 @@ function DabsPage() {
           Select your zone & trade, then click the drawing to drop a labor pin.
         </p>
 
+        <div className="mt-4">
+          <Link
+            to="/subcontractor-pack/$projectId"
+            params={{ projectId }}
+            className="inline-flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-alert hover:bg-alert hover:text-black transition-colors"
+          >
+            <ClipboardList size={14} /> Subcontractors Pack
+          </Link>
+        </div>
+
+
         <div className="glass-panel mt-6 grid gap-4 p-5 md:grid-cols-2">
           <label className="block">
             <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
