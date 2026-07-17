@@ -144,6 +144,15 @@ function SnagDetail() {
           </div>
 
           <div>
+            <div className="mb-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className="glass-orange inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
+              >
+                <FileText className="h-4 w-4" /> View Full Report
+              </button>
+            </div>
             <ReportView report={report} />
 
             <section className="mt-8">
