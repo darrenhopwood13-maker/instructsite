@@ -46,17 +46,17 @@ function OrgDetailPage() {
   const org = useQuery({
     queryKey: ["owner-org", orgId],
     queryFn: () => getOrgFn({ data: { orgId } }),
-    enabled: ready && isOwner,
+    enabled: ready && isOwner && !!orgId,
   });
   const projects = useQuery({
     queryKey: ["owner-org-projects", orgId],
     queryFn: () => projectsFn({ data: { orgId } }),
-    enabled: ready && isOwner,
+    enabled: ready && isOwner && !!orgId,
   });
   const members = useQuery({
     queryKey: ["owner-org-members", orgId],
     queryFn: () => membersFn({ data: { orgId } }),
-    enabled: ready && isOwner,
+    enabled: ready && isOwner && !!orgId,
   });
 
   if (!ready || me.isLoading) {
