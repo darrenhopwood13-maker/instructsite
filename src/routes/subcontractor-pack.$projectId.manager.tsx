@@ -79,12 +79,13 @@ function ManagerPackPage() {
         )}
 
         {!active && subs.length > 0 && (
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 flex flex-col gap-4">
             {subs.map((s) => (
               <SubCard key={s.id} sub={s} onOpen={() => setActiveId(s.id)} />
             ))}
           </div>
         )}
+
 
         {active && (
           <SubDetail
