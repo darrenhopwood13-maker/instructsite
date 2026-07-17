@@ -108,24 +108,22 @@ function SubCard({ sub, onOpen }: { sub: Sub; onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="glass-panel group flex flex-col justify-between p-5 text-left transition hover:border-alert/50 hover:shadow-[0_0_0_1px_rgba(255,122,0,0.35)]"
+      className="glass-panel group flex w-full items-center gap-6 p-6 text-left transition hover:border-alert/60 hover:shadow-[0_0_0_1px_rgba(255,122,0,0.45)] md:p-8"
     >
-      <div>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p
-              className="text-lg font-extrabold uppercase leading-tight tracking-tight text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-            >
-              {sub.company_name}
-            </p>
-            <p className="mt-1 text-[0.6rem] uppercase tracking-widest text-foreground/50">
-              Manager · {sub.manager_name || "—"}
-            </p>
-          </div>
-          <ChevronRight size={16} className="mt-1 text-foreground/40 transition group-hover:text-alert" />
-        </div>
-        <div className="mt-4 flex flex-wrap gap-1.5">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border-2 border-alert/60 bg-alert/10 text-alert md:h-20 md:w-20">
+        <HardHat size={32} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p
+          className="truncate text-2xl font-extrabold uppercase leading-tight tracking-tight text-foreground md:text-3xl"
+          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+        >
+          {sub.company_name}
+        </p>
+        <p className="mt-1 text-[0.65rem] uppercase tracking-widest text-foreground/50">
+          Manager · {sub.manager_name || "—"}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
           {highRisk && (
             <span className="rounded-sm border border-red-500 bg-red-600/20 px-2 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-red-300">
               High Risk
@@ -138,14 +136,19 @@ function SubCard({ sub, onOpen }: { sub: Sub; onOpen: () => void }) {
           )}
         </div>
       </div>
-      <div className="mt-5 grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
+      <div className="hidden shrink-0 grid-cols-3 gap-3 md:grid">
         <MiniStat icon={<Users size={12} />} label="Workers" value={activeWorkers} />
         <MiniStat icon={<ShieldCheck size={12} />} label="Registers" value={registers} />
         <MiniStat icon={<CalendarRange size={12} />} label="Talks" value={sub.toolboxTalks?.length ?? 0} />
       </div>
+      <div className="ml-auto flex shrink-0 items-center gap-2 rounded-md border border-alert/50 bg-alert/10 px-4 py-3 text-alert transition group-hover:bg-alert group-hover:text-black md:px-6 md:py-4">
+        <span className="text-[0.7rem] font-extrabold uppercase tracking-widest">Open Pack</span>
+        <ChevronRight size={18} />
+      </div>
     </button>
   );
 }
+
 
 function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
   return (
