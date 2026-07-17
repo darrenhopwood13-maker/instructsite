@@ -272,6 +272,7 @@ function EditOrgPage() {
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
