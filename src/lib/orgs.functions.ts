@@ -231,6 +231,11 @@ export const listOrgMembersFor = createServerFn({ method: "GET" })
     return members ?? [];
   });
 
+const inviteRowSchema = z.object({
+  email: z.string().trim().email().max(200),
+  role: z.enum(["admin", "subcontractor"]),
+});
+
 const createOrgSchema = z.object({
   name: z.string().trim().min(2).max(120),
   slug: z
@@ -252,6 +257,7 @@ const createOrgSchema = z.object({
   contactPhone: z.string().trim().max(40).optional().default(""),
   registeredAddress: z.string().trim().max(500).optional().default(""),
   notes: z.string().trim().max(1000).optional().default(""),
+  invites: z.array(inviteRowSchema).max(10).optional().default([]),
 });
 
 export const createOrg = createServerFn({ method: "POST" })
@@ -264,7 +270,6 @@ export const createOrg = createServerFn({ method: "POST" })
     let slug = data.slug && data.slug.length >= 2 ? data.slug : slugify(data.name);
     if (!slug) throw new Error("Could not derive a slug from the name. Provide one manually.");
 
-    // Ensure uniqueness — append -2, -3, … if taken
     const base = slug;
     for (let i = 2; i < 50; i += 1) {
       const { data: existing } = await supabaseAdmin
@@ -292,8 +297,28 @@ export const createOrg = createServerFn({ method: "POST" })
       .select("id, slug")
       .single();
     if (error) throw new Error(error.message);
+
+    // Enforce the 1-PM + 2-Sub standard cap on the invites payload
+    const pmCount = data.invites.filter((r) => r.role === "admin").length;
+    const subCount = data.invites.filter((r) => r.role === "subcontractor").length;
+    if (pmCount > 1) throw new Error("Only 1 Project Manager can be invited as a standard seat.");
+    if (subCount > 2) throw new Error("Only 2 Subcontractors can be invited as standard seats.");
+
+    if (data.invites.length > 0) {
+      const rows = data.invites.map((r) => ({
+        org_id: inserted.id,
+        email: r.email.toLowerCase(),
+        role: r.role,
+        is_standard: true,
+        invited_by: context.userId,
+      }));
+      const { error: invErr } = await supabaseAdmin.from("org_invites").insert(rows);
+      if (invErr) throw new Error(invErr.message);
+    }
+
     return { orgId: inserted.id as string, slug: inserted.slug as string };
   });
+
 
 const updateOrgSchema = createOrgSchema.extend({
   orgId: z.string().uuid(),
