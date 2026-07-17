@@ -453,9 +453,20 @@ function ProgrammePage() {
 
         {/* AI Summary — read only */}
         <section className="glass-panel mt-6 p-6">
-          <p className="text-[0.6rem] font-bold uppercase tracking-[0.35em] text-alert">
-            AI Daily Summary · Read Only
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-[0.6rem] font-bold uppercase tracking-[0.35em] text-alert">
+              AI Daily Summary · Read Only
+            </p>
+            {summary && (
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className="glass-orange inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[0.65rem] uppercase tracking-widest"
+              >
+                <FileText className="h-3.5 w-3.5" /> View Full Report
+              </button>
+            )}
+          </div>
           <div className="mt-3">
             {playbookQ.isLoading ? (
               <p className="text-xs text-foreground/50">Loading…</p>
