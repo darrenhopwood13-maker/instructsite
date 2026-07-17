@@ -25,7 +25,7 @@ import { generateWeeklyPackPdf } from "@/lib/weekly-pack-pdf";
 
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 
-export const Route = createFileRoute("/subcontractor-pack/$projectId")({
+export const Route = createFileRoute("/subcontractor-pack/$projectId/")({
   head: () => ({ meta: [{ title: "Subcontractors Pack — InstructSite" }] }),
   component: SubPackPage,
 });
