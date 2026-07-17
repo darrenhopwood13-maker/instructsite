@@ -16,7 +16,7 @@ import {
 import { getMyOrg, getOrgById, updateOrg } from "@/lib/orgs.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
-export const Route = createFileRoute("/org/$orgId_/edit")({
+export const Route = createFileRoute("/org/$orgId/edit")({
   head: () => ({ meta: [{ title: "Edit Organisation — instructSite" }] }),
   component: EditOrgPage,
 });
