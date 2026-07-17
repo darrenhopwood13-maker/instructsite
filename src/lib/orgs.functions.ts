@@ -354,8 +354,16 @@ export const createOrg = createServerFn({ method: "POST" })
         is_standard: true,
         invited_by: context.userId,
       }));
-      const { error: invErr } = await supabaseAdmin.from("org_invites").insert(rows);
+      const { data: insertedInvites, error: invErr } = await supabaseAdmin
+        .from("org_invites")
+        .insert(rows)
+        .select("email, token");
       if (invErr) throw new Error(invErr.message);
+      await Promise.all(
+        (insertedInvites ?? []).map((i) =>
+          sendOrgInviteEmail(i.email as string, i.token as string),
+        ),
+      );
     }
 
     return { orgId: inserted.id as string, slug: inserted.slug as string };
