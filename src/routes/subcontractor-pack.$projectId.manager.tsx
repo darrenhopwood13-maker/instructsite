@@ -190,12 +190,13 @@ function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string
     }
   };
 
-  const filterByDate = <T extends { created_at?: string; date?: string; inspection_date?: string }>(rows: T[]): T[] => {
+  const filterByDate = <T,>(rows: T[]): T[] => {
     if (!startDate && !endDate) return rows;
     const from = startDate ? new Date(startDate + "T00:00:00").getTime() : -Infinity;
     const to = endDate ? new Date(endDate + "T23:59:59").getTime() : Infinity;
     return rows.filter((r) => {
-      const raw = r.date || r.inspection_date || r.created_at;
+      const rec = r as { created_at?: string; date?: string; inspection_date?: string };
+      const raw = rec.date || rec.inspection_date || rec.created_at;
       if (!raw) return true;
       const t = new Date(raw).getTime();
       return t >= from && t <= to;
