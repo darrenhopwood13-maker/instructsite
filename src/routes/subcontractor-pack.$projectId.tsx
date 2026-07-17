@@ -122,6 +122,17 @@ function SubPackPage() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["sub-pack", projectId, companyName] });
 
   if (project.isError) return <AccessDeniedScreen message={(project.error as Error)?.message} />;
+  if (!ready) {
+    return (
+      <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
+        <div className="aurora-bg" />
+        <div className="grain-overlay" />
+        <div className="relative mx-auto flex max-w-6xl items-center gap-2 px-6 py-14 text-xs uppercase tracking-widest text-foreground/60">
+          <Loader2 size={14} className="animate-spin" /> Loading…
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
