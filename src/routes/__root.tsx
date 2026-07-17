@@ -522,15 +522,20 @@ function RootComponent() {
 
 function AuthNav() {
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
   useEffect(() => {
     let mounted = true;
     let unsub: (() => void) | undefined;
+    const OWNER = "darrenhopwood13@gmail.com";
+    const apply = (email: string | null | undefined) => {
+      if (!mounted) return;
+      setSignedIn(!!email);
+      setIsOwner((email ?? "").trim().toLowerCase() === OWNER);
+    };
     import("@/integrations/supabase/client").then(({ supabase }) => {
-      supabase.auth.getUser().then(({ data }) => {
-        if (mounted) setSignedIn(!!data?.user?.id);
-      });
+      supabase.auth.getUser().then(({ data }) => apply(data?.user?.email));
       const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-        if (mounted) setSignedIn(!!session?.user?.id);
+        apply(session?.user?.email);
       });
       unsub = () => sub.subscription.unsubscribe();
     });
@@ -550,9 +555,16 @@ function AuthNav() {
     <div className="flex items-center gap-3">
       {signedIn ? (
         <>
-          <Link to="/projects" className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
-            Projects
-          </Link>
+          {isOwner ? (
+            <Link to="/org" className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
+              Organisation
+            </Link>
+          ) : (
+            <Link to="/projects" className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
+              Projects
+            </Link>
+          )}
+
           <Link to="/snags" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
             <Camera className="h-3.5 w-3.5" />
             Snag Master
