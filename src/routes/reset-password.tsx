@@ -77,6 +77,9 @@ function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       setComplete(true);
+      if (nextPath) {
+        setTimeout(() => navigate({ to: nextPath, replace: true }), 800);
+      }
     } catch (e: any) {
       setError(e?.message ?? "Password reset failed. Please request a fresh reset email.");
     } finally {
