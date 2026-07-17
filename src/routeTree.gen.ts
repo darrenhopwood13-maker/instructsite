@@ -38,7 +38,7 @@ import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
 import { Route as BillingProjectIdRouteImport } from './routes/billing.$projectId'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as OrgOrgIdEditRouteImport } from './routes/org.$orgId.edit'
+import { Route as OrgOrgIdEditRouteImport } from './routes/org.$orgId_.edit'
 import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$drawingId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -193,9 +193,9 @@ const Char91DotmcpChar93ListToolsRoute =
     getParentRoute: () => rootRouteImport,
   } as any)
 const OrgOrgIdEditRoute = OrgOrgIdEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => OrgOrgIdRoute,
+  id: '/org/$orgId_/edit',
+  path: '/org/$orgId/edit',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiDrawingDrawingIdRoute = ApiDrawingDrawingIdRouteImport.update({
   id: '/api/drawing/$drawingId',
@@ -242,7 +242,7 @@ export interface FileRoutesByFullPath {
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join-org/$slug': typeof JoinOrgSlugRoute
-  '/org/$orgId': typeof OrgOrgIdRouteWithChildren
+  '/org/$orgId': typeof OrgOrgIdRoute
   '/org/new': typeof OrgNewRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -279,7 +279,7 @@ export interface FileRoutesByTo {
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join-org/$slug': typeof JoinOrgSlugRoute
-  '/org/$orgId': typeof OrgOrgIdRouteWithChildren
+  '/org/$orgId': typeof OrgOrgIdRoute
   '/org/new': typeof OrgNewRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -317,7 +317,7 @@ export interface FileRoutesById {
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join-org/$slug': typeof JoinOrgSlugRoute
-  '/org/$orgId': typeof OrgOrgIdRouteWithChildren
+  '/org/$orgId': typeof OrgOrgIdRoute
   '/org/new': typeof OrgNewRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
@@ -333,7 +333,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
-  '/org/$orgId/edit': typeof OrgOrgIdEditRoute
+  '/org/$orgId_/edit': typeof OrgOrgIdEditRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
   '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
 }
@@ -446,7 +446,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
-    | '/org/$orgId/edit'
+    | '/org/$orgId_/edit'
     | '/api/public/hooks/weather-snapshot'
     | '/api/public/webhooks/stripe'
   fileRoutesById: FileRoutesById
@@ -468,7 +468,7 @@ export interface RootRouteChildren {
   DabsProjectIdRoute: typeof DabsProjectIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinOrgSlugRoute: typeof JoinOrgSlugRoute
-  OrgOrgIdRoute: typeof OrgOrgIdRouteWithChildren
+  OrgOrgIdRoute: typeof OrgOrgIdRoute
   OrgNewRoute: typeof OrgNewRoute
   ProgrammeProjectIdRoute: typeof ProgrammeProjectIdRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
@@ -484,6 +484,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiDrawingDrawingIdRoute: typeof ApiDrawingDrawingIdRoute
+  OrgOrgIdEditRoute: typeof OrgOrgIdEditRoute
   ApiPublicHooksWeatherSnapshotRoute: typeof ApiPublicHooksWeatherSnapshotRoute
   ApiPublicWebhooksStripeRoute: typeof ApiPublicWebhooksStripeRoute
 }
@@ -693,12 +694,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/org/$orgId/edit': {
-      id: '/org/$orgId/edit'
-      path: '/edit'
+    '/org/$orgId_/edit': {
+      id: '/org/$orgId_/edit'
+      path: '/org/$orgId/edit'
       fullPath: '/org/$orgId/edit'
       preLoaderRoute: typeof OrgOrgIdEditRouteImport
-      parentRoute: typeof OrgOrgIdRoute
+      parentRoute: typeof rootRouteImport
     }
     '/api/drawing/$drawingId': {
       id: '/api/drawing/$drawingId'
@@ -738,18 +739,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface OrgOrgIdRouteChildren {
-  OrgOrgIdEditRoute: typeof OrgOrgIdEditRoute
-}
-
-const OrgOrgIdRouteChildren: OrgOrgIdRouteChildren = {
-  OrgOrgIdEditRoute: OrgOrgIdEditRoute,
-}
-
-const OrgOrgIdRouteWithChildren = OrgOrgIdRoute._addFileChildren(
-  OrgOrgIdRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
@@ -768,7 +757,7 @@ const rootRouteChildren: RootRouteChildren = {
   DabsProjectIdRoute: DabsProjectIdRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinOrgSlugRoute: JoinOrgSlugRoute,
-  OrgOrgIdRoute: OrgOrgIdRouteWithChildren,
+  OrgOrgIdRoute: OrgOrgIdRoute,
   OrgNewRoute: OrgNewRoute,
   ProgrammeProjectIdRoute: ProgrammeProjectIdRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
@@ -784,6 +773,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiDrawingDrawingIdRoute: ApiDrawingDrawingIdRoute,
+  OrgOrgIdEditRoute: OrgOrgIdEditRoute,
   ApiPublicHooksWeatherSnapshotRoute: ApiPublicHooksWeatherSnapshotRoute,
   ApiPublicWebhooksStripeRoute: ApiPublicWebhooksStripeRoute,
 }
