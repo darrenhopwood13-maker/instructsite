@@ -109,7 +109,7 @@ function OrgDetailPage() {
           </div>
           {org.data && (
             <Link
-              to="/org/$orgId_/edit"
+              to="/org/$orgId/edit"
               params={{ orgId }}
               className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
             >
