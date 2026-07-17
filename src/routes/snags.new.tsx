@@ -189,6 +189,13 @@ function NewSnagPage() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => setReportOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-3 text-xs uppercase tracking-widest text-foreground/80 hover:text-foreground"
+                    >
+                      <FileText className="h-4 w-4" /> View Full Report
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         setPreviewUrl(null);
                         setReport(null);
