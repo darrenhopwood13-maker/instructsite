@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle, Clock, Users, X, ShieldAlert } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Clock, Users, X, ShieldAlert, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { getProject } from "@/lib/projects.functions";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
@@ -175,6 +175,17 @@ function SiteManagerPage() {
         <p className="mt-2 text-sm text-foreground/70">
           Realtime spatial overlay of active site labor · click any pin for the HUD popover.
         </p>
+
+        <div className="mt-4">
+          <Link
+            to="/subcontractor-pack/$projectId/manager"
+            params={{ projectId }}
+            className="inline-flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-alert hover:bg-alert hover:text-black transition-colors"
+          >
+            <ClipboardList size={14} /> Subcontractors Weekly Pack
+          </Link>
+        </div>
+
 
         <section className="mt-6">
           <DrawingCanvas

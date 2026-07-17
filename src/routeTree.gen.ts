@@ -24,6 +24,7 @@ import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as OrgIndexRouteImport } from './routes/org.index'
 import { Route as SubcontractorsNewRouteImport } from './routes/subcontractors.new'
 import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontractor.$projectId'
+import { Route as SubcontractorPackProjectIdRouteImport } from './routes/subcontractor-pack.$projectId'
 import { Route as SnagsNewRouteImport } from './routes/snags.new'
 import { Route as SnagsSnagIdRouteImport } from './routes/snags.$snagId'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
@@ -39,6 +40,7 @@ import { Route as BillingProjectIdRouteImport } from './routes/billing.$projectI
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as OrgOrgIdIndexRouteImport } from './routes/org.$orgId.index'
+import { Route as SubcontractorPackProjectIdManagerRouteImport } from './routes/subcontractor-pack.$projectId.manager'
 import { Route as ProjectsProjectIdBibleRouteImport } from './routes/projects_.$projectId.bible'
 import { Route as OrgOrgIdEditRouteImport } from './routes/org.$orgId.edit'
 import { Route as JoinOrgInviteTokenRouteImport } from './routes/join-org.invite.$token'
@@ -123,6 +125,12 @@ const SubcontractorProjectIdRoute = SubcontractorProjectIdRouteImport.update({
   path: '/subcontractor/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SubcontractorPackProjectIdRoute =
+  SubcontractorPackProjectIdRouteImport.update({
+    id: '/subcontractor-pack/$projectId',
+    path: '/subcontractor-pack/$projectId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SnagsNewRoute = SnagsNewRouteImport.update({
   id: '/snags/new',
   path: '/snags/new',
@@ -200,6 +208,12 @@ const OrgOrgIdIndexRoute = OrgOrgIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OrgOrgIdRoute,
 } as any)
+const SubcontractorPackProjectIdManagerRoute =
+  SubcontractorPackProjectIdManagerRouteImport.update({
+    id: '/manager',
+    path: '/manager',
+    getParentRoute: () => SubcontractorPackProjectIdRoute,
+  } as any)
 const ProjectsProjectIdBibleRoute = ProjectsProjectIdBibleRouteImport.update({
   id: '/projects_/$projectId/bible',
   path: '/projects/$projectId/bible',
@@ -268,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
+  '/subcontractor-pack/$projectId': typeof SubcontractorPackProjectIdRouteWithChildren
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org/': typeof OrgIndexRoute
@@ -279,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/join-org/invite/$token': typeof JoinOrgInviteTokenRoute
   '/org/$orgId/edit': typeof OrgOrgIdEditRoute
   '/projects/$projectId/bible': typeof ProjectsProjectIdBibleRoute
+  '/subcontractor-pack/$projectId/manager': typeof SubcontractorPackProjectIdManagerRoute
   '/org/$orgId/': typeof OrgOrgIdIndexRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
   '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
@@ -307,6 +323,7 @@ export interface FileRoutesByTo {
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
+  '/subcontractor-pack/$projectId': typeof SubcontractorPackProjectIdRouteWithChildren
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org': typeof OrgIndexRoute
@@ -318,6 +335,7 @@ export interface FileRoutesByTo {
   '/join-org/invite/$token': typeof JoinOrgInviteTokenRoute
   '/org/$orgId/edit': typeof OrgOrgIdEditRoute
   '/projects/$projectId/bible': typeof ProjectsProjectIdBibleRoute
+  '/subcontractor-pack/$projectId/manager': typeof SubcontractorPackProjectIdManagerRoute
   '/org/$orgId': typeof OrgOrgIdIndexRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
   '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
@@ -348,6 +366,7 @@ export interface FileRoutesById {
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
+  '/subcontractor-pack/$projectId': typeof SubcontractorPackProjectIdRouteWithChildren
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org/': typeof OrgIndexRoute
@@ -359,6 +378,7 @@ export interface FileRoutesById {
   '/join-org/invite/$token': typeof JoinOrgInviteTokenRoute
   '/org/$orgId/edit': typeof OrgOrgIdEditRoute
   '/projects_/$projectId/bible': typeof ProjectsProjectIdBibleRoute
+  '/subcontractor-pack/$projectId/manager': typeof SubcontractorPackProjectIdManagerRoute
   '/org/$orgId/': typeof OrgOrgIdIndexRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
   '/api/public/webhooks/stripe': typeof ApiPublicWebhooksStripeRoute
@@ -390,6 +410,7 @@ export interface FileRouteTypes {
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
+    | '/subcontractor-pack/$projectId'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/org/'
@@ -401,6 +422,7 @@ export interface FileRouteTypes {
     | '/join-org/invite/$token'
     | '/org/$orgId/edit'
     | '/projects/$projectId/bible'
+    | '/subcontractor-pack/$projectId/manager'
     | '/org/$orgId/'
     | '/api/public/hooks/weather-snapshot'
     | '/api/public/webhooks/stripe'
@@ -429,6 +451,7 @@ export interface FileRouteTypes {
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
+    | '/subcontractor-pack/$projectId'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/org'
@@ -440,6 +463,7 @@ export interface FileRouteTypes {
     | '/join-org/invite/$token'
     | '/org/$orgId/edit'
     | '/projects/$projectId/bible'
+    | '/subcontractor-pack/$projectId/manager'
     | '/org/$orgId'
     | '/api/public/hooks/weather-snapshot'
     | '/api/public/webhooks/stripe'
@@ -469,6 +493,7 @@ export interface FileRouteTypes {
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
+    | '/subcontractor-pack/$projectId'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/org/'
@@ -480,6 +505,7 @@ export interface FileRouteTypes {
     | '/join-org/invite/$token'
     | '/org/$orgId/edit'
     | '/projects_/$projectId/bible'
+    | '/subcontractor-pack/$projectId/manager'
     | '/org/$orgId/'
     | '/api/public/hooks/weather-snapshot'
     | '/api/public/webhooks/stripe'
@@ -510,6 +536,7 @@ export interface RootRouteChildren {
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
   SnagsSnagIdRoute: typeof SnagsSnagIdRoute
   SnagsNewRoute: typeof SnagsNewRoute
+  SubcontractorPackProjectIdRoute: typeof SubcontractorPackProjectIdRouteWithChildren
   SubcontractorProjectIdRoute: typeof SubcontractorProjectIdRoute
   SubcontractorsNewRoute: typeof SubcontractorsNewRoute
   OrgIndexRoute: typeof OrgIndexRoute
@@ -631,6 +658,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubcontractorProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/subcontractor-pack/$projectId': {
+      id: '/subcontractor-pack/$projectId'
+      path: '/subcontractor-pack/$projectId'
+      fullPath: '/subcontractor-pack/$projectId'
+      preLoaderRoute: typeof SubcontractorPackProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/snags/new': {
       id: '/snags/new'
       path: '/snags/new'
@@ -736,6 +770,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgOrgIdIndexRouteImport
       parentRoute: typeof OrgOrgIdRoute
     }
+    '/subcontractor-pack/$projectId/manager': {
+      id: '/subcontractor-pack/$projectId/manager'
+      path: '/manager'
+      fullPath: '/subcontractor-pack/$projectId/manager'
+      preLoaderRoute: typeof SubcontractorPackProjectIdManagerRouteImport
+      parentRoute: typeof SubcontractorPackProjectIdRoute
+    }
     '/projects_/$projectId/bible': {
       id: '/projects_/$projectId/bible'
       path: '/projects/$projectId/bible'
@@ -809,6 +850,21 @@ const OrgOrgIdRouteWithChildren = OrgOrgIdRoute._addFileChildren(
   OrgOrgIdRouteChildren,
 )
 
+interface SubcontractorPackProjectIdRouteChildren {
+  SubcontractorPackProjectIdManagerRoute: typeof SubcontractorPackProjectIdManagerRoute
+}
+
+const SubcontractorPackProjectIdRouteChildren: SubcontractorPackProjectIdRouteChildren =
+  {
+    SubcontractorPackProjectIdManagerRoute:
+      SubcontractorPackProjectIdManagerRoute,
+  }
+
+const SubcontractorPackProjectIdRouteWithChildren =
+  SubcontractorPackProjectIdRoute._addFileChildren(
+    SubcontractorPackProjectIdRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
@@ -835,6 +891,7 @@ const rootRouteChildren: RootRouteChildren = {
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
   SnagsSnagIdRoute: SnagsSnagIdRoute,
   SnagsNewRoute: SnagsNewRoute,
+  SubcontractorPackProjectIdRoute: SubcontractorPackProjectIdRouteWithChildren,
   SubcontractorProjectIdRoute: SubcontractorProjectIdRoute,
   SubcontractorsNewRoute: SubcontractorsNewRoute,
   OrgIndexRoute: OrgIndexRoute,
