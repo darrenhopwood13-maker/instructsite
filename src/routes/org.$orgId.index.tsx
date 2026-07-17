@@ -24,7 +24,7 @@ import {
 } from "@/lib/orgs.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
-export const Route = createFileRoute("/org/$orgId")({
+export const Route = createFileRoute("/org/$orgId/")({
   head: () => ({ meta: [{ title: "Organisation — instructSite" }] }),
   component: OrgDetailPage,
 });
