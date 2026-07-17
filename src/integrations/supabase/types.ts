@@ -1929,8 +1929,8 @@ export type Database = {
       accept_org_invite: {
         Args: { _token: string }
         Returns: {
-          org_id: string
-          role: string
+          out_org_id: string
+          out_role: string
         }[]
       }
       accept_subcontractor_invite: {

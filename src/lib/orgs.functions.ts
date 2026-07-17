@@ -554,6 +554,9 @@ export const acceptOrgInvite = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const row = Array.isArray(result) ? (result[0] as any) : (result as any);
-    return { orgId: row?.org_id as string, role: row?.role as string };
+    return {
+      orgId: (row?.out_org_id ?? row?.org_id) as string,
+      role: (row?.out_role ?? row?.role) as string,
+    };
   });
 
