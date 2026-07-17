@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, ArrowLeft, Save, Trash2, HardHat, Lightbulb, Scale, ShieldAlert } from "lucide-react";
+import { Camera, Loader2, ArrowLeft, Save, Trash2, HardHat, Lightbulb, Scale, ShieldAlert, FileText } from "lucide-react";
 import { analyzeSnag, createSnag, type SnagReportT } from "@/lib/snags.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { ReportViewer } from "@/components/reports/ReportViewer";
+import { snagReportToMarkdown } from "@/lib/report-format";
 
 export const Route = createFileRoute("/snags/new")({
   head: () => ({
