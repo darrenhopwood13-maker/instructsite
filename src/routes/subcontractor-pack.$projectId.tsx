@@ -193,6 +193,51 @@ function SubPackPage() {
   );
 }
 
+function SubmitWeeklyPackButton({
+  disabled,
+  projectName,
+  companyName,
+  pack,
+}: {
+  disabled: boolean;
+  projectName: string;
+  companyName: string;
+  pack: any;
+}) {
+  const [busy, setBusy] = useState(false);
+  const onClick = async () => {
+    if (!pack) return;
+    setBusy(true);
+    try {
+      const { filename } = await generateWeeklyPackPdf({
+        projectName,
+        companyName,
+        workers: pack.workers ?? [],
+        registers: pack.registers ?? [],
+        toolboxTalks: pack.toolboxTalks ?? [],
+        lookAheads: pack.lookAheads ?? [],
+      });
+      toast.success("Weekly Pack Generated Successfully", { description: filename });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not generate PDF");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || busy}
+      className={primaryBtn(disabled || busy ? "opacity-70 cursor-not-allowed" : "")}
+    >
+      {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+      {busy ? "Generating Pack…" : "Submit Weekly Pack"}
+    </button>
+  );
+}
+
+
 function HubView({ pack }: { pack: any }) {
   const getSig = useServerFn(getComplianceSignedUrl);
   const openDoc = async (path?: string | null) => {
