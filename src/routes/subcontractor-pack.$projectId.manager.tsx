@@ -184,7 +184,12 @@ function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string
         registers: sub.registers ?? [],
         toolboxTalks: sub.toolboxTalks ?? [],
         lookAheads: sub.lookAheads ?? [],
+        resolveUrl: async (path: string) => {
+          const { url } = await getSig({ data: { path } });
+          return url;
+        },
       });
+
       toast.success(`Weekly Pack Generated: ${filename}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to generate pack");
