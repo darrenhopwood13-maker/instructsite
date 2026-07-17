@@ -118,12 +118,6 @@ function OrgDetailPage() {
           )}
         </div>
 
-        >
-          {org.data?.name ?? "…"}
-        </h1>
-        {org.data?.slug && (
-          <p className="mt-1 text-xs uppercase tracking-widest text-foreground/50">{org.data.slug}</p>
-        )}
 
         {/* Company details */}
         {org.data && (
