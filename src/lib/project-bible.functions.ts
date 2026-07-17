@@ -389,7 +389,7 @@ export const addReportToProjectBible = createServerFn({ method: "POST" })
         kind: "report_added_to_bible",
         title: `New report in Project Bible${proj?.name ? ` · ${proj.name}` : ""}`,
         body: `${data.category}: ${data.title}`,
-        link_to: `/projects_/${data.projectId}/bible`,
+        link_to: `/projects/${data.projectId}/bible`,
       }));
       await supabaseAdmin.from("notifications").insert(rows);
     }
