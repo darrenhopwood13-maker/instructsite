@@ -24,6 +24,7 @@ import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as OrgIndexRouteImport } from './routes/org.index'
 import { Route as SubcontractorsNewRouteImport } from './routes/subcontractors.new'
 import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontractor.$projectId'
+import { Route as SubcontractorPackProjectIdRouteImport } from './routes/subcontractor-pack.$projectId'
 import { Route as SnagsNewRouteImport } from './routes/snags.new'
 import { Route as SnagsSnagIdRouteImport } from './routes/snags.$snagId'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
@@ -123,6 +124,12 @@ const SubcontractorProjectIdRoute = SubcontractorProjectIdRouteImport.update({
   path: '/subcontractor/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SubcontractorPackProjectIdRoute =
+  SubcontractorPackProjectIdRouteImport.update({
+    id: '/subcontractor-pack/$projectId',
+    path: '/subcontractor-pack/$projectId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SnagsNewRoute = SnagsNewRouteImport.update({
   id: '/snags/new',
   path: '/snags/new',
@@ -268,6 +275,7 @@ export interface FileRoutesByFullPath {
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
+  '/subcontractor-pack/$projectId': typeof SubcontractorPackProjectIdRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org/': typeof OrgIndexRoute
@@ -307,6 +315,7 @@ export interface FileRoutesByTo {
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
+  '/subcontractor-pack/$projectId': typeof SubcontractorPackProjectIdRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org': typeof OrgIndexRoute
@@ -348,6 +357,7 @@ export interface FileRoutesById {
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
+  '/subcontractor-pack/$projectId': typeof SubcontractorPackProjectIdRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org/': typeof OrgIndexRoute
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
+    | '/subcontractor-pack/$projectId'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/org/'
@@ -429,6 +440,7 @@ export interface FileRouteTypes {
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
+    | '/subcontractor-pack/$projectId'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/org'
@@ -469,6 +481,7 @@ export interface FileRouteTypes {
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
+    | '/subcontractor-pack/$projectId'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
     | '/org/'
@@ -510,6 +523,7 @@ export interface RootRouteChildren {
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
   SnagsSnagIdRoute: typeof SnagsSnagIdRoute
   SnagsNewRoute: typeof SnagsNewRoute
+  SubcontractorPackProjectIdRoute: typeof SubcontractorPackProjectIdRoute
   SubcontractorProjectIdRoute: typeof SubcontractorProjectIdRoute
   SubcontractorsNewRoute: typeof SubcontractorsNewRoute
   OrgIndexRoute: typeof OrgIndexRoute
@@ -629,6 +643,13 @@ declare module '@tanstack/react-router' {
       path: '/subcontractor/$projectId'
       fullPath: '/subcontractor/$projectId'
       preLoaderRoute: typeof SubcontractorProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/subcontractor-pack/$projectId': {
+      id: '/subcontractor-pack/$projectId'
+      path: '/subcontractor-pack/$projectId'
+      fullPath: '/subcontractor-pack/$projectId'
+      preLoaderRoute: typeof SubcontractorPackProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/snags/new': {
@@ -835,6 +856,7 @@ const rootRouteChildren: RootRouteChildren = {
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
   SnagsSnagIdRoute: SnagsSnagIdRoute,
   SnagsNewRoute: SnagsNewRoute,
+  SubcontractorPackProjectIdRoute: SubcontractorPackProjectIdRoute,
   SubcontractorProjectIdRoute: SubcontractorProjectIdRoute,
   SubcontractorsNewRoute: SubcontractorsNewRoute,
   OrgIndexRoute: OrgIndexRoute,
