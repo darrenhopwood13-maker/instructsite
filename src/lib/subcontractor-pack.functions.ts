@@ -221,8 +221,8 @@ export const getManagerPack = createServerFn({ method: "POST" })
         const [w, r, t, l] = await Promise.all([
           context.supabase.from("workers").select("id,name,role,competency_card_url,created_at").eq("subcontractor_id", s.id).order("created_at", { ascending: false }),
           context.supabase.from("registers").select("id,type,asset_name,inspection_date,certificate_url,created_at").eq("subcontractor_id", s.id).order("created_at", { ascending: false }),
-          context.supabase.from("toolbox_talks").select("id,topic,attendance_list,date").eq("subcontractor_id", s.id).order("date", { ascending: false }).limit(5),
-          context.supabase.from("look_aheads").select("id,work_plan,is_high_risk,permit_required,date").eq("subcontractor_id", s.id).order("date", { ascending: false }).limit(3),
+          context.supabase.from("toolbox_talks").select("id,topic,attendance_list,date,created_at").eq("subcontractor_id", s.id).order("date", { ascending: false }).limit(100),
+          context.supabase.from("look_aheads").select("id,work_plan,is_high_risk,permit_required,date,created_at").eq("subcontractor_id", s.id).order("date", { ascending: false }).limit(100),
         ]);
         return {
           ...s,
