@@ -128,14 +128,12 @@ function SubPackPage() {
               {companyLocked ? companyName : "Set your company to begin"} · Weekly compliance & labour submission
             </p>
           </div>
-          <button
-            type="button"
-            disabled
-            title="PDF export coming next"
-            className={primaryBtn("opacity-70 cursor-not-allowed")}
-          >
-            <Send size={14} /> Submit Weekly Pack
-          </button>
+          <SubmitWeeklyPackButton
+            disabled={!pack.data || !companyLocked}
+            projectName={project.data?.name ?? "Project"}
+            companyName={companyName}
+            pack={pack.data}
+          />
         </div>
 
         {!companyLocked && (
