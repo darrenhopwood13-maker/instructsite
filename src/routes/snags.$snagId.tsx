@@ -2,9 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Send, X, ZoomIn } from "lucide-react";
+import { ArrowLeft, Loader2, Send, X, ZoomIn, FileText } from "lucide-react";
 import { getSnag, updateSnagStatus, postSnagComment } from "@/lib/snags.functions";
 import { ReportView } from "./snags.new";
+import { ReportViewer } from "@/components/reports/ReportViewer";
+import { snagReportToMarkdown } from "@/lib/report-format";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 const STATUS_OPTIONS = [
@@ -29,6 +31,7 @@ function SnagDetail() {
   const [zoom, setZoom] = useState(false);
   const [comment, setComment] = useState("");
   const [posting, setPosting] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     ensureOracleSession().then(() => setReady(true));
@@ -141,6 +144,15 @@ function SnagDetail() {
           </div>
 
           <div>
+            <div className="mb-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className="glass-orange inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
+              >
+                <FileText className="h-4 w-4" /> View Full Report
+              </button>
+            </div>
             <ReportView report={report} />
 
             <section className="mt-8">
@@ -201,6 +213,16 @@ function SnagDetail() {
           <img src={photoUrl} alt={snag.defect_title} className="max-h-full max-w-full object-contain" />
         </div>
       )}
+
+      <ReportViewer
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        kicker="Snag Report"
+        title={report.defectTitle}
+        subtitle={`${report.trade || "General"} · Severity ${report.severity}`}
+        category="Snag"
+        markdown={snagReportToMarkdown(report)}
+      />
     </div>
   );
 }

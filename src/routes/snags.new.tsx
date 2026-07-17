@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, ArrowLeft, Save, Trash2, HardHat, Lightbulb, Scale, ShieldAlert } from "lucide-react";
+import { Camera, Loader2, ArrowLeft, Save, Trash2, HardHat, Lightbulb, Scale, ShieldAlert, FileText } from "lucide-react";
 import { analyzeSnag, createSnag, type SnagReportT } from "@/lib/snags.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { ReportViewer } from "@/components/reports/ReportViewer";
+import { snagReportToMarkdown } from "@/lib/report-format";
 
 export const Route = createFileRoute("/snags/new")({
   head: () => ({
@@ -41,6 +43,7 @@ function NewSnagPage() {
   const [report, setReport] = useState<SnagReportT | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   async function handleFile(file: File) {
     setError(null);
@@ -186,6 +189,13 @@ function NewSnagPage() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => setReportOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-3 text-xs uppercase tracking-widest text-foreground/80 hover:text-foreground"
+                    >
+                      <FileText className="h-4 w-4" /> View Full Report
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         setPreviewUrl(null);
                         setReport(null);
@@ -202,6 +212,17 @@ function NewSnagPage() {
           </div>
         )}
       </div>
+      {report && (
+        <ReportViewer
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          kicker="Snag Report"
+          title={report.defectTitle}
+          subtitle={`${report.trade || "General"} · Severity ${report.severity}`}
+          category="Snag"
+          markdown={snagReportToMarkdown(report)}
+        />
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { Camera, BookOpen } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -567,6 +568,7 @@ function AuthNav() {
           )}
 
           <ProjectBibleNavLink />
+          <NotificationBell />
 
           <Link to="/snags" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
             <Camera className="h-3.5 w-3.5" />
