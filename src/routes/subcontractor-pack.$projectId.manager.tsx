@@ -203,10 +203,10 @@ function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string
     });
   };
 
-  const filteredWorkers = filterByDate(sub.workers ?? []);
-  const filteredRegisters = filterByDate(sub.registers ?? []);
-  const filteredTalks = filterByDate(sub.toolboxTalks ?? []);
-  const filteredLookAheads = filterByDate(sub.lookAheads ?? []);
+  const filteredWorkers = filterByDate<any>(sub.workers ?? []);
+  const filteredRegisters = filterByDate<any>(sub.registers ?? []);
+  const filteredTalks = filterByDate<any>(sub.toolboxTalks ?? []);
+  const filteredLookAheads = filterByDate<any>(sub.lookAheads ?? []);
 
   const download = async () => {
     setDownloading(true);
