@@ -607,7 +607,7 @@ function ProjectBibleNavLink() {
   if (!projectId) return null;
   return (
     <Link
-      to="/projects_/$projectId/bible"
+      to="/projects/$projectId/bible"
       params={{ projectId }}
       className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
     >
