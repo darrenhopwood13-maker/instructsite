@@ -444,24 +444,52 @@ function DailyLogView({
 
 function AddLabour({ subId, projectId, onSaved }: { subId: string; projectId: string; onSaved: () => void }) {
   const fn = useServerFn(addWorker);
+  const dupeFn = useServerFn(checkWorkerDuplicate);
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pct, setPct] = useState(0);
   const submit = async () => {
     if (!name.trim()) {
       toast.error("Worker name required");
       return;
     }
     setBusy(true);
+    setPct(0);
     try {
+      if (file) {
+        const dupe = await dupeFn({ data: { subcontractorId: subId, name: name.trim() } });
+        if (dupe.hasCard) {
+          const ok = window.confirm(
+            `A competency card is already on file for "${name.trim()}"${dupe.sameDay ? " (uploaded today)" : ""}. Upload another anyway?`,
+          );
+          if (!ok) {
+            toast.message("Upload cancelled");
+            setBusy(false);
+            return;
+          }
+        }
+      }
       let url: string | null = null;
-      if (file) url = await uploadCompliance(projectId, `workers/${subId}`, file);
+      if (file) {
+        try {
+          url = await uploadCompliance(projectId, `workers/${subId}`, file, setPct);
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Card upload failed", {
+            description: "The worker was not saved. Try a smaller file or check your connection.",
+          });
+          setBusy(false);
+          setPct(0);
+          return;
+        }
+      }
       await fn({ data: { subcontractorId: subId, name, role: role || null, competencyCardUrl: url } });
       toast.success("Worker added");
       setName("");
       setRole("");
       setFile(null);
+      setPct(0);
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
@@ -486,7 +514,7 @@ function AddLabour({ subId, projectId, onSaved }: { subId: string; projectId: st
         </label>
         <label className="block md:col-span-2">
           <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
-            Competency Card (PDF / Image)
+            Competency Card (PDF / Image · max {MAX_UPLOAD_MB}MB)
           </span>
           <input
             type="file"
@@ -495,6 +523,7 @@ function AddLabour({ subId, projectId, onSaved }: { subId: string; projectId: st
             className="block w-full text-xs text-foreground/70 file:mr-3 file:rounded-md file:border-0 file:bg-alert/20 file:px-3 file:py-2 file:text-[0.65rem] file:font-bold file:uppercase file:tracking-widest file:text-alert hover:file:bg-alert/30"
           />
           {file && <p className="mt-1 font-mono text-[0.65rem] text-foreground/50">{file.name}</p>}
+          {busy && file && <ProgressBar pct={pct} />}
         </label>
       </div>
       <button type="button" onClick={submit} disabled={busy} className={primaryBtn("mt-4")}>
@@ -504,6 +533,7 @@ function AddLabour({ subId, projectId, onSaved }: { subId: string; projectId: st
     </AccordionCard>
   );
 }
+
 
 function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: string; onSaved: () => void }) {
   const fn = useServerFn(addRegister);
