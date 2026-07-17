@@ -10,7 +10,9 @@ import {
   Loader2,
   UploadCloud,
   StickyNote,
+  FileText,
 } from "lucide-react";
+import { ReportViewer } from "@/components/reports/ReportViewer";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
