@@ -205,6 +205,7 @@ function SubmitWeeklyPackButton({
   pack: any;
 }) {
   const [busy, setBusy] = useState(false);
+  const getSig = useServerFn(getComplianceSignedUrl);
   const onClick = async () => {
     if (!pack) return;
     setBusy(true);
@@ -216,8 +217,13 @@ function SubmitWeeklyPackButton({
         registers: pack.registers ?? [],
         toolboxTalks: pack.toolboxTalks ?? [],
         lookAheads: pack.lookAheads ?? [],
+        resolveUrl: async (path: string) => {
+          const { url } = await getSig({ data: { path } });
+          return url;
+        },
       });
       toast.success("Weekly Pack Generated Successfully", { description: filename });
+
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not generate PDF");
     } finally {
