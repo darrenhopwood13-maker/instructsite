@@ -592,3 +592,27 @@ function AuthNav() {
   );
 }
 
+function ProjectBibleNavLink() {
+  const matches = useMatches();
+  let projectId: string | undefined;
+  for (const m of matches) {
+    const p = (m.params as { projectId?: string } | undefined)?.projectId;
+    if (p) {
+      projectId = p;
+      break;
+    }
+  }
+  if (!projectId) return null;
+  return (
+    <Link
+      to="/projects_/$projectId/bible"
+      params={{ projectId }}
+      className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
+    >
+      <BookOpen className="h-3.5 w-3.5" />
+      Project Bible
+    </Link>
+  );
+}
+
+
