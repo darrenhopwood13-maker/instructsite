@@ -31,6 +31,7 @@ function SnagDetail() {
   const [zoom, setZoom] = useState(false);
   const [comment, setComment] = useState("");
   const [posting, setPosting] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     ensureOracleSession().then(() => setReady(true));
