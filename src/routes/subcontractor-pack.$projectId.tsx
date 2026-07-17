@@ -537,16 +537,51 @@ function AddLabour({ subId, projectId, onSaved }: { subId: string; projectId: st
 
 function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: string; onSaved: () => void }) {
   const fn = useServerFn(addRegister);
+  const dupeFn = useServerFn(checkRegisterDuplicate);
   const [type, setType] = useState<(typeof REGISTER_TYPE_OPTIONS)[number]>("PUWER");
   const [asset, setAsset] = useState("");
   const [date, setDate] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pct, setPct] = useState(0);
   const submit = async () => {
     setBusy(true);
+    setPct(0);
     try {
+      if (file) {
+        const dupe = await dupeFn({
+          data: {
+            subcontractorId: subId,
+            type,
+            assetName: asset || null,
+            inspectionDate: date || null,
+          },
+        });
+        if (dupe.hasCert) {
+          const parts = [type, asset || "asset", date || "same date"].join(" · ");
+          const ok = window.confirm(
+            `A certificate already exists for ${parts}. Upload another anyway?`,
+          );
+          if (!ok) {
+            toast.message("Upload cancelled");
+            setBusy(false);
+            return;
+          }
+        }
+      }
       let url: string | null = null;
-      if (file) url = await uploadCompliance(projectId, `registers/${subId}`, file);
+      if (file) {
+        try {
+          url = await uploadCompliance(projectId, `registers/${subId}`, file, setPct);
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Certificate upload failed", {
+            description: "The register entry was not saved. Try a smaller file or check your connection.",
+          });
+          setBusy(false);
+          setPct(0);
+          return;
+        }
+      }
       await fn({
         data: {
           subcontractorId: subId,
@@ -560,6 +595,7 @@ function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: 
       setAsset("");
       setDate("");
       setFile(null);
+      setPct(0);
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
@@ -594,7 +630,7 @@ function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: 
         </label>
         <label className="block md:col-span-3">
           <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
-            Certificate (PDF / Image)
+            Certificate (PDF / Image · max {MAX_UPLOAD_MB}MB)
           </span>
           <input
             type="file"
@@ -603,6 +639,7 @@ function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: 
             className="block w-full text-xs text-foreground/70 file:mr-3 file:rounded-md file:border-0 file:bg-alert/20 file:px-3 file:py-2 file:text-[0.65rem] file:font-bold file:uppercase file:tracking-widest file:text-alert hover:file:bg-alert/30"
           />
           {file && <p className="mt-1 font-mono text-[0.65rem] text-foreground/50">{file.name}</p>}
+          {busy && file && <ProgressBar pct={pct} />}
         </label>
       </div>
       <button type="button" onClick={submit} disabled={busy} className={primaryBtn("mt-4")}>
@@ -612,6 +649,7 @@ function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: 
     </AccordionCard>
   );
 }
+
 
 function AddToolboxTalk({ subId, onSaved }: { subId: string; onSaved: () => void }) {
   const fn = useServerFn(addToolboxTalk);
