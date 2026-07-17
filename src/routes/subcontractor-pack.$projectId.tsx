@@ -499,6 +499,10 @@ function AddLabour({ subId, projectId, onSaved }: { subId: string; projectId: st
       toast.error("Worker name required");
       return;
     }
+    const verify = window.confirm(
+      `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Competency Card: ${file ? file.name : "none attached"}\n\nAdd to labour roster?`,
+    );
+    if (!verify) return;
     setBusy(true);
     setPct(0);
     try {
@@ -529,7 +533,9 @@ function AddLabour({ subId, projectId, onSaved }: { subId: string; projectId: st
         }
       }
       await fn({ data: { subcontractorId: subId, name, role: role || null, competencyCardUrl: url } });
-      toast.success("Worker added");
+      toast.success(`${name.trim()} added to labour roster`, {
+        description: role.trim() ? `Role: ${role.trim()}` : undefined,
+      });
       setName("");
       setRole("");
       setFile(null);
