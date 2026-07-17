@@ -44,6 +44,10 @@ function NewOrgPage() {
   const [contactPhone, setContactPhone] = useState("");
   const [registeredAddress, setRegisteredAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [pmEmail, setPmEmail] = useState("");
+  const [sub1Email, setSub1Email] = useState("");
+  const [sub2Email, setSub2Email] = useState("");
+
 
   useEffect(() => {
     (async () => {
