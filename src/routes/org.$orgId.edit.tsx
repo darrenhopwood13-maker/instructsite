@@ -129,17 +129,30 @@ function EditOrgPage() {
           Edit Organisation
         </h1>
 
-        {isOwner === false && (
-          <div className="mt-6 flex items-start gap-3 rounded-md border border-alert/50 bg-alert/10 p-4 text-sm text-foreground">
-            <AlertCircle size={16} className="mt-0.5 shrink-0 text-alert" />
-            <div>
-              <p className="font-bold uppercase tracking-widest text-alert">Access denied</p>
-              <p className="mt-1 text-foreground/80">Only the founder can edit organisations.</p>
+        {isOwner === false ? (
+          <div className="mt-6 space-y-4">
+            <div className="flex items-start gap-3 rounded-md border border-alert/50 bg-alert/10 p-4 text-sm text-foreground">
+              <AlertCircle size={16} className="mt-0.5 shrink-0 text-alert" />
+              <div>
+                <p className="font-bold uppercase tracking-widest text-alert">Access denied</p>
+                <p className="mt-1 text-foreground/80">
+                  Only the account founder can edit an organisation.
+                </p>
+              </div>
             </div>
+            <Link
+              to="/org/$orgId"
+              params={{ orgId }}
+              className="glass-btn inline-flex rounded-xl px-4 py-2.5 text-sm uppercase tracking-wider"
+            >
+              Back to Organisation
+            </Link>
           </div>
-        )}
-
+        ) : (
         <form onSubmit={submit} className="glass-panel mt-6 space-y-6 p-6">
+          <Field label="Organisation Name" icon={<Building2 size={14} />} required>
+            <input
+              disabled={!isOwner}
           <Field label="Organisation Name" icon={<Building2 size={14} />} required>
             <input
               disabled={!isOwner}
