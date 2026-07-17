@@ -2,9 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Send, X, ZoomIn } from "lucide-react";
+import { ArrowLeft, Loader2, Send, X, ZoomIn, FileText } from "lucide-react";
 import { getSnag, updateSnagStatus, postSnagComment } from "@/lib/snags.functions";
 import { ReportView } from "./snags.new";
+import { ReportViewer } from "@/components/reports/ReportViewer";
+import { snagReportToMarkdown } from "@/lib/report-format";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 const STATUS_OPTIONS = [
