@@ -358,17 +358,70 @@ function AccordionCard({
   );
 }
 
-async function uploadCompliance(projectId: string, subfolder: string, file: File): Promise<string> {
+const MAX_UPLOAD_MB = 20;
+
+async function uploadCompliance(
+  projectId: string,
+  subfolder: string,
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<string> {
+  if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+    throw new Error(`File exceeds ${MAX_UPLOAD_MB}MB limit`);
+  }
   const user = await ensureOracleSession();
   const safe = file.name.replace(/[^\w.\-]+/g, "_");
   const path = `${user.id}/${projectId}/${subfolder}/${Date.now()}-${safe}`;
-  const { error } = await supabase.storage.from("compliance-docs").upload(path, file, {
-    contentType: file.type || "application/octet-stream",
-    upsert: false,
+
+  const { data: signed, error: signErr } = await supabase.storage
+    .from("compliance-docs")
+    .createSignedUploadUrl(path);
+  if (signErr || !signed) {
+    throw new Error(signErr?.message || "Could not prepare upload");
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", signed.signedUrl, true);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(100);
+        resolve();
+      } else {
+        reject(new Error(`Upload failed (${xhr.status}) — ${xhr.responseText?.slice(0, 160) || "storage error"}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Network error while uploading"));
+    xhr.onabort = () => reject(new Error("Upload aborted"));
+    xhr.send(file);
   });
-  if (error) throw new Error(error.message);
+
   return path;
 }
+
+function ProgressBar({ pct }: { pct: number }) {
+  return (
+    <div className="mt-2">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full bg-alert transition-all duration-150"
+          style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
+        />
+      </div>
+      <p className="mt-1 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/60">
+        Uploading · {pct}%
+      </p>
+    </div>
+  );
+}
+
 
 function DailyLogView({
   subId,
