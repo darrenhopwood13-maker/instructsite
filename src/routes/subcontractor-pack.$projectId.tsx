@@ -20,6 +20,7 @@ import {
   TOOLBOX_TOPIC_OPTIONS,
   REGISTER_TYPE_OPTIONS,
 } from "@/lib/subcontractor-pack.functions";
+import { generateWeeklyPackPdf } from "@/lib/weekly-pack-pdf";
 
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 
