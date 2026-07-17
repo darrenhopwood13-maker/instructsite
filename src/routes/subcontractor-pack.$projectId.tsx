@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { isOwnerEmail } from "@/lib/owner";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -65,9 +66,27 @@ function SubPackPage() {
   const [companyName, setCompanyName] = useState<string>("");
   const [companyLocked, setCompanyLocked] = useState(false);
 
+  const navigate = useNavigate();
   useEffect(() => {
-    ensureOracleSession().then(() => setReady(true));
-  }, []);
+    ensureOracleSession().then(async (user) => {
+      // Master admin / project admin / founder → jump straight to Master View.
+      const email = user?.email ?? null;
+      if (isOwnerEmail(email)) {
+        navigate({ to: "/subcontractor-pack/$projectId/manager", params: { projectId }, replace: true });
+        return;
+      }
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const roleSet = new Set((roles ?? []).map((r: any) => r.role));
+      if (roleSet.has("master_admin") || roleSet.has("project_admin") || roleSet.has("site_manager")) {
+        navigate({ to: "/subcontractor-pack/$projectId/manager", params: { projectId }, replace: true });
+        return;
+      }
+      setReady(true);
+    });
+  }, [projectId, navigate]);
 
   const getP = useServerFn(getProject);
   const getCoFn = useServerFn(getMyCompanyForProject);

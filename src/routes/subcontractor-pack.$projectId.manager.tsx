@@ -167,6 +167,18 @@ type TabKey = "labour" | "registers" | "talks" | "lookahead";
 function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string; onBack: () => void }) {
   const [tab, setTab] = useState<TabKey>("labour");
   const [downloading, setDownloading] = useState(false);
+  // Historical range — default to current week (Mon–Sun).
+  const today = new Date();
+  const day = today.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const [startDate, setStartDate] = useState<string>(iso(monday));
+  const [endDate, setEndDate] = useState<string>(iso(sunday));
+
   const getSig = useServerFn(getComplianceSignedUrl);
   const openDoc = async (path?: string | null) => {
     if (!path) return;
@@ -178,16 +190,34 @@ function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string
     }
   };
 
+  const filterByDate = <T,>(rows: T[]): T[] => {
+    if (!startDate && !endDate) return rows;
+    const from = startDate ? new Date(startDate + "T00:00:00").getTime() : -Infinity;
+    const to = endDate ? new Date(endDate + "T23:59:59").getTime() : Infinity;
+    return rows.filter((r) => {
+      const rec = r as { created_at?: string; date?: string; inspection_date?: string };
+      const raw = rec.date || rec.inspection_date || rec.created_at;
+      if (!raw) return true;
+      const t = new Date(raw).getTime();
+      return t >= from && t <= to;
+    });
+  };
+
+  const filteredWorkers = filterByDate<any>(sub.workers ?? []);
+  const filteredRegisters = filterByDate<any>(sub.registers ?? []);
+  const filteredTalks = filterByDate<any>(sub.toolboxTalks ?? []);
+  const filteredLookAheads = filterByDate<any>(sub.lookAheads ?? []);
+
   const download = async () => {
     setDownloading(true);
     try {
       const { filename } = await generateWeeklyPackPdf({
         projectName,
         companyName: sub.company_name,
-        workers: sub.workers ?? [],
-        registers: sub.registers ?? [],
-        toolboxTalks: sub.toolboxTalks ?? [],
-        lookAheads: sub.lookAheads ?? [],
+        workers: filteredWorkers,
+        registers: filteredRegisters,
+        toolboxTalks: filteredTalks,
+        lookAheads: filteredLookAheads,
         resolveUrl: async (path: string) => {
           const { url } = await getSig({ data: { path } });
           return url;
@@ -203,11 +233,14 @@ function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string
   };
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode; count: number }[] = [
-    { key: "labour", label: "Labour", icon: <HardHat size={13} />, count: sub.workers?.length ?? 0 },
-    { key: "registers", label: "Safety Registers", icon: <ShieldCheck size={13} />, count: sub.registers?.length ?? 0 },
-    { key: "talks", label: "Toolbox Talks", icon: <MessagesSquare size={13} />, count: sub.toolboxTalks?.length ?? 0 },
-    { key: "lookahead", label: "Look-Ahead", icon: <CalendarRange size={13} />, count: sub.lookAheads?.length ?? 0 },
+    { key: "labour", label: "Labour", icon: <HardHat size={13} />, count: filteredWorkers.length },
+    { key: "registers", label: "Safety Registers", icon: <ShieldCheck size={13} />, count: filteredRegisters.length },
+    { key: "talks", label: "Toolbox Talks", icon: <MessagesSquare size={13} />, count: filteredTalks.length },
+    { key: "lookahead", label: "Look-Ahead", icon: <CalendarRange size={13} />, count: filteredLookAheads.length },
   ];
+
+  const dateInputCls =
+    "rounded-md border border-white/15 bg-black/40 px-2 py-1.5 font-mono text-[0.7rem] text-foreground outline-none focus:border-alert";
 
   return (
     <div className="mt-8">
@@ -219,15 +252,24 @@ function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string
         >
           <ArrowLeft size={12} /> Directory
         </button>
-        <button
-          type="button"
-          onClick={download}
-          disabled={downloading}
-          className="inline-flex items-center gap-2 rounded-md border border-alert/60 bg-alert/15 px-4 py-2 text-[0.7rem] font-bold uppercase tracking-widest text-alert hover:bg-alert/25 disabled:opacity-60"
-        >
-          {downloading ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
-          {downloading ? "Generating…" : "Download Latest Weekly Pack"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-md border border-white/10 bg-black/30 px-2 py-1.5">
+            <CalendarRange size={12} className="text-alert" />
+            <span className="text-[0.55rem] font-bold uppercase tracking-widest text-foreground/60">From</span>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={dateInputCls} />
+            <span className="text-[0.55rem] font-bold uppercase tracking-widest text-foreground/60">To</span>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={dateInputCls} />
+          </div>
+          <button
+            type="button"
+            onClick={download}
+            disabled={downloading}
+            className="inline-flex items-center gap-2 rounded-md border border-alert/60 bg-alert/15 px-4 py-2 text-[0.7rem] font-bold uppercase tracking-widest text-alert hover:bg-alert/25 disabled:opacity-60"
+          >
+            {downloading ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
+            {downloading ? "Generating…" : "Download Pack For Range"}
+          </button>
+        </div>
       </div>
 
       <div className="glass-panel mt-4 p-6">
