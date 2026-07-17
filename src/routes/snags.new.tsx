@@ -212,6 +212,17 @@ function NewSnagPage() {
           </div>
         )}
       </div>
+      {report && (
+        <ReportViewer
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          kicker="Snag Report"
+          title={report.defectTitle}
+          subtitle={`${report.trade || "General"} · Severity ${report.severity}`}
+          category="Snag"
+          markdown={snagReportToMarkdown(report)}
+        />
+      )}
     </div>
   );
 }
