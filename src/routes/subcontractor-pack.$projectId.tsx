@@ -15,9 +15,12 @@ import {
   addToolboxTalk,
   addLookAhead,
   getComplianceSignedUrl,
+  checkWorkerDuplicate,
+  checkRegisterDuplicate,
   TOOLBOX_TOPIC_OPTIONS,
   REGISTER_TYPE_OPTIONS,
 } from "@/lib/subcontractor-pack.functions";
+
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 
 export const Route = createFileRoute("/subcontractor-pack/$projectId")({
