@@ -623,7 +623,7 @@
 /* Print styles for full-screen reports */
 @media print {
   body * { visibility: hidden !important; }
-  [data-report-print], [data-report-print] * { visibility: visible !important; }
-  [data-report-print] { position: absolute !important; inset: 0 !important; background: white !important; color: black !important; padding: 24px !important; }
+  [data-report-print-root, [data-report-print-root] * { visibility: visible !important; }
+  [data-report-print-root] { position: absolute !important; inset: 0 !important; background: white !important; color: black !important; padding: 24px !important; }
   [data-report-noprint] { display: none !important; }
 }
