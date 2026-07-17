@@ -237,6 +237,60 @@ function NewOrgPage() {
             />
           </Field>
 
+          <div className="rounded-lg border border-white/10 bg-black/30 p-4">
+            <p className="mb-1 flex items-center gap-2 text-[0.7rem] font-bold uppercase tracking-widest text-alert">
+              <UserPlus size={14} /> Invite Standard Members
+            </p>
+            <p className="mb-4 text-[0.7rem] text-foreground/60">
+              Every organisation has 3 standard seats: 1 Project Manager + 2 Subcontractors.
+              Emails are optional — you can send invites later from the edit page.
+            </p>
+
+            <label className="mb-3 block">
+              <span className="mb-1.5 flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
+                <User size={12} /> Project Manager Email
+              </span>
+              <input
+                type="email"
+                disabled={!isOwner}
+                className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2 text-sm text-foreground outline-none focus:border-alert disabled:opacity-50"
+                placeholder="pm@company.example"
+                value={pmEmail}
+                onChange={(e) => setPmEmail(e.target.value)}
+              />
+            </label>
+
+            <label className="mb-3 block">
+              <span className="mb-1.5 flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
+                <HardHat size={12} /> Subcontractor 1 Email
+              </span>
+              <input
+                type="email"
+                disabled={!isOwner}
+                className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2 text-sm text-foreground outline-none focus:border-alert disabled:opacity-50"
+                placeholder="sub1@company.example"
+                value={sub1Email}
+                onChange={(e) => setSub1Email(e.target.value)}
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
+                <HardHat size={12} /> Subcontractor 2 Email
+              </span>
+              <input
+                type="email"
+                disabled={!isOwner}
+                className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2 text-sm text-foreground outline-none focus:border-alert disabled:opacity-50"
+                placeholder="sub2@company.example"
+                value={sub2Email}
+                onChange={(e) => setSub2Email(e.target.value)}
+              />
+            </label>
+          </div>
+
+
+
           {err && (
             <div className="flex items-start gap-2 rounded-md border border-alert/50 bg-alert/10 p-3 text-sm text-foreground">
               <AlertCircle size={14} className="mt-0.5 shrink-0 text-alert" />
