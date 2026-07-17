@@ -363,3 +363,146 @@ export const updateOrg = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { orgId: data.orgId, slug };
   });
+
+/* ============================================================
+ * Invites & additional members
+ * ============================================================ */
+
+export type OrgInviteRow = {
+  id: string;
+  email: string;
+  role: "admin" | "subcontractor";
+  is_standard: boolean;
+  status: "pending" | "accepted" | "revoked";
+  token: string;
+  created_at: string;
+  accepted_at: string | null;
+};
+
+export const listOrgInvites = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ orgId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }): Promise<OrgInviteRow[]> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (!isOwnerFromClaims(context.claims)) {
+      // Non-founder: must be org admin
+      const { data: me } = await context.supabase
+        .from("org_members")
+        .select("role")
+        .eq("org_id", data.orgId)
+        .eq("user_id", context.userId)
+        .maybeSingle();
+      if (!me || me.role !== "admin") throw new Error("Forbidden");
+    }
+    const { data: rows, error } = await supabaseAdmin
+      .from("org_invites")
+      .select("id, email, role, is_standard, status, token, created_at, accepted_at")
+      .eq("org_id", data.orgId)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as OrgInviteRow[];
+  });
+
+const inviteMemberSchema = z.object({
+  orgId: z.string().uuid(),
+  email: z.string().trim().email().max(200),
+  role: z.enum(["admin", "subcontractor"]),
+});
+
+export const inviteOrgMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => inviteMemberSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    assertOwner(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Count standard members + pending standard invites
+    const [{ data: members }, { data: invites }] = await Promise.all([
+      supabaseAdmin
+        .from("org_members")
+        .select("role, is_standard")
+        .eq("org_id", data.orgId),
+      supabaseAdmin
+        .from("org_invites")
+        .select("role, is_standard, status")
+        .eq("org_id", data.orgId)
+        .eq("status", "pending"),
+    ]);
+
+    const stdPM =
+      (members ?? []).filter((m) => m.role === "admin" && m.is_standard).length +
+      (invites ?? []).filter((i) => i.role === "admin" && i.is_standard).length;
+    const stdSub =
+      (members ?? []).filter((m) => m.role === "subcontractor" && m.is_standard).length +
+      (invites ?? []).filter((i) => i.role === "subcontractor" && i.is_standard).length;
+
+    const stdComplete = stdPM >= 1 && stdSub >= 2;
+    const isStandard = !stdComplete;
+
+    if (isStandard) {
+      if (data.role === "admin" && stdPM >= 1) {
+        throw new Error("Standard Project Manager seat already used. Fill the remaining subcontractor seats first, then add additional members.");
+      }
+      if (data.role === "subcontractor" && stdSub >= 2) {
+        throw new Error("Both standard subcontractor seats are taken.");
+      }
+    }
+    // additional members are always allowed once std complete
+
+    const { data: inserted, error } = await supabaseAdmin
+      .from("org_invites")
+      .insert({
+        org_id: data.orgId,
+        email: data.email.toLowerCase(),
+        role: data.role,
+        is_standard: isStandard,
+        invited_by: context.userId,
+      })
+      .select("id, token")
+      .single();
+    if (error) throw new Error(error.message);
+    return { inviteId: inserted.id as string, token: inserted.token as string, isStandard };
+  });
+
+export const revokeOrgInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ inviteId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    assertOwner(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("org_invites")
+      .update({ status: "revoked" })
+      .eq("id", data.inviteId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const getInviteByToken = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ token: z.string().uuid() }).parse(i))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inv, error } = await supabaseAdmin
+      .from("org_invites")
+      .select("id, email, role, status, org_id, orgs:org_id(name, slug)")
+      .eq("token", data.token)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!inv) throw new Error("Invite not found");
+    return inv;
+  });
+
+export const acceptOrgInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ token: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: result, error } = await context.supabase.rpc("accept_org_invite", {
+      _token: data.token,
+    });
+    if (error) throw new Error(error.message);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const row = Array.isArray(result) ? (result[0] as any) : (result as any);
+    return { orgId: row?.org_id as string, role: row?.role as string };
+  });
+
