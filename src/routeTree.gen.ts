@@ -40,6 +40,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as OrgOrgIdIndexRouteImport } from './routes/org.$orgId.index'
 import { Route as OrgOrgIdEditRouteImport } from './routes/org.$orgId.edit'
+import { Route as JoinOrgInviteTokenRouteImport } from './routes/join-org.invite.$token'
 import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$drawingId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -203,6 +204,11 @@ const OrgOrgIdEditRoute = OrgOrgIdEditRouteImport.update({
   path: '/edit',
   getParentRoute: () => OrgOrgIdRoute,
 } as any)
+const JoinOrgInviteTokenRoute = JoinOrgInviteTokenRouteImport.update({
+  id: '/join-org/invite/$token',
+  path: '/join-org/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDrawingDrawingIdRoute = ApiDrawingDrawingIdRouteImport.update({
   id: '/api/drawing/$drawingId',
   path: '/api/drawing/$drawingId',
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
+  '/join-org/invite/$token': typeof JoinOrgInviteTokenRoute
   '/org/$orgId/edit': typeof OrgOrgIdEditRoute
   '/org/$orgId/': typeof OrgOrgIdIndexRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
@@ -301,6 +308,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
+  '/join-org/invite/$token': typeof JoinOrgInviteTokenRoute
   '/org/$orgId/edit': typeof OrgOrgIdEditRoute
   '/org/$orgId': typeof OrgOrgIdIndexRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
@@ -340,6 +348,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
+  '/join-org/invite/$token': typeof JoinOrgInviteTokenRoute
   '/org/$orgId/edit': typeof OrgOrgIdEditRoute
   '/org/$orgId/': typeof OrgOrgIdIndexRoute
   '/api/public/hooks/weather-snapshot': typeof ApiPublicHooksWeatherSnapshotRoute
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
+    | '/join-org/invite/$token'
     | '/org/$orgId/edit'
     | '/org/$orgId/'
     | '/api/public/hooks/weather-snapshot'
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
+    | '/join-org/invite/$token'
     | '/org/$orgId/edit'
     | '/org/$orgId'
     | '/api/public/hooks/weather-snapshot'
@@ -455,6 +466,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
+    | '/join-org/invite/$token'
     | '/org/$orgId/edit'
     | '/org/$orgId/'
     | '/api/public/hooks/weather-snapshot'
@@ -494,6 +506,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiDrawingDrawingIdRoute: typeof ApiDrawingDrawingIdRoute
+  JoinOrgInviteTokenRoute: typeof JoinOrgInviteTokenRoute
   ApiPublicHooksWeatherSnapshotRoute: typeof ApiPublicHooksWeatherSnapshotRoute
   ApiPublicWebhooksStripeRoute: typeof ApiPublicWebhooksStripeRoute
 }
@@ -717,6 +730,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgOrgIdEditRouteImport
       parentRoute: typeof OrgOrgIdRoute
     }
+    '/join-org/invite/$token': {
+      id: '/join-org/invite/$token'
+      path: '/join-org/invite/$token'
+      fullPath: '/join-org/invite/$token'
+      preLoaderRoute: typeof JoinOrgInviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/drawing/$drawingId': {
       id: '/api/drawing/$drawingId'
       path: '/api/drawing/$drawingId'
@@ -803,6 +823,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiDrawingDrawingIdRoute: ApiDrawingDrawingIdRoute,
+  JoinOrgInviteTokenRoute: JoinOrgInviteTokenRoute,
   ApiPublicHooksWeatherSnapshotRoute: ApiPublicHooksWeatherSnapshotRoute,
   ApiPublicWebhooksStripeRoute: ApiPublicWebhooksStripeRoute,
 }

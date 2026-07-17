@@ -503,10 +503,61 @@ export type Database = {
           },
         ]
       }
+      org_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          is_standard: boolean
+          org_id: string
+          role: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          is_standard?: boolean
+          org_id: string
+          role: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          is_standard?: boolean
+          org_id?: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_invites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_members: {
         Row: {
           created_at: string
           id: string
+          is_standard: boolean
           org_id: string
           role: string
           user_id: string
@@ -514,6 +565,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_standard?: boolean
           org_id: string
           role: string
           user_id: string
@@ -521,6 +573,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_standard?: boolean
           org_id?: string
           role?: string
           user_id?: string
@@ -1582,6 +1635,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_org_invite: {
+        Args: { _token: string }
+        Returns: {
+          org_id: string
+          role: string
+        }[]
+      }
       accept_subcontractor_invite: {
         Args: { _token_hash: string }
         Returns: {
