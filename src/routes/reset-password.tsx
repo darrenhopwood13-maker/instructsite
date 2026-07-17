@@ -111,15 +111,17 @@ function ResetPasswordPage() {
           {complete ? (
             <div className="mt-6 space-y-4">
               <div className="rounded-md border border-alert/45 bg-alert/10 px-3 py-2 text-sm text-foreground">
-                Password updated. You can now sign in with the new password.
+                {nextPath
+                  ? "Password set. Taking you to your invitation…"
+                  : "Password updated. You can now sign in with the new password."}
               </div>
               <button
                 type="button"
-                onClick={() => navigate({ to: "/auth", replace: true })}
+                onClick={() => navigate({ to: nextPath ?? "/auth", replace: true })}
                 className="glass-orange shimmer-btn inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
               >
                 <ArrowRight size={14} />
-                Back to sign in
+                {nextPath ? "Continue" : "Back to sign in"}
               </button>
             </div>
           ) : (
