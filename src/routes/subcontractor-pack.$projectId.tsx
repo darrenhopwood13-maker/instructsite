@@ -595,6 +595,10 @@ function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: 
   const [busy, setBusy] = useState(false);
   const [pct, setPct] = useState(0);
   const submit = async () => {
+    const verify = window.confirm(
+      `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Certificate: ${file ? file.name : "none attached"}\n\nAdd to ${type} register?`,
+    );
+    if (!verify) return;
     setBusy(true);
     setPct(0);
     try {
@@ -641,7 +645,9 @@ function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: 
           certificateUrl: url,
         },
       });
-      toast.success("Register entry saved");
+      toast.success(`${asset.trim() || "Asset"} added to ${type} register`, {
+        description: date ? `Inspection date: ${new Date(date).toLocaleDateString("en-GB")}` : undefined,
+      });
       setAsset("");
       setDate("");
       setFile(null);
