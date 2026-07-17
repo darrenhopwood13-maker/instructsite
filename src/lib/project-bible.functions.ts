@@ -79,11 +79,11 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
       const { data: rows, error } = await supabase
         .from("logistics_plans")
         .select(
-          "id,title,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status)",
+          "id,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status)",
         )
         .eq("project_id", data.projectId);
       if (error) throw new Error(error.message);
-      for (const row of rows ?? []) {
+      for (const row of (rows ?? []) as any[]) {
         const sd: any = Array.isArray(row.site_documents)
           ? row.site_documents[0]
           : row.site_documents;
@@ -91,7 +91,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
         docs.push({
           id: sd.id,
           source: "logistics",
-          title: row.title || sd.file_name,
+          title: sd.file_name,
           category: "Logistics",
           fileName: sd.file_name,
           mimeType: sd.mime_type,
