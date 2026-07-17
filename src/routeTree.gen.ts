@@ -13,7 +13,6 @@ import { Route as UnlockRouteImport } from './routes/unlock'
 import { Route as TrialEndedRouteImport } from './routes/trial-ended'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as OrgRouteImport } from './routes/org'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as ExperienceRouteImport } from './routes/experience'
@@ -22,6 +21,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SnagsIndexRouteImport } from './routes/snags.index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
+import { Route as OrgIndexRouteImport } from './routes/org.index'
 import { Route as SubcontractorsNewRouteImport } from './routes/subcontractors.new'
 import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontractor.$projectId'
 import { Route as SnagsNewRouteImport } from './routes/snags.new'
@@ -64,11 +64,6 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OrgRoute = OrgRouteImport.update({
-  id: '/org',
-  path: '/org',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const OracleRoute = OracleRouteImport.update({
   id: '/oracle',
   path: '/oracle',
@@ -107,6 +102,11 @@ const SnagsIndexRoute = SnagsIndexRouteImport.update({
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgIndexRoute = OrgIndexRouteImport.update({
+  id: '/org/',
+  path: '/org/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubcontractorsNewRoute = SubcontractorsNewRouteImport.update({
@@ -150,14 +150,14 @@ const ProgrammeProjectIdRoute = ProgrammeProjectIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrgNewRoute = OrgNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => OrgRoute,
+  id: '/org/new',
+  path: '/org/new',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OrgOrgIdRoute = OrgOrgIdRouteImport.update({
-  id: '/$orgId',
-  path: '/$orgId',
-  getParentRoute: () => OrgRoute,
+  id: '/org/$orgId',
+  path: '/org/$orgId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const JoinOrgSlugRoute = JoinOrgSlugRouteImport.update({
   id: '/join-org/$slug',
@@ -226,7 +226,6 @@ export interface FileRoutesByFullPath {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
-  '/org': typeof OrgRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -247,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/snags/new': typeof SnagsNewRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
+  '/org/': typeof OrgIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/snags/': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -262,7 +262,6 @@ export interface FileRoutesByTo {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
-  '/org': typeof OrgRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -283,6 +282,7 @@ export interface FileRoutesByTo {
   '/snags/new': typeof SnagsNewRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
+  '/org': typeof OrgIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/snags': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -299,7 +299,6 @@ export interface FileRoutesById {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
-  '/org': typeof OrgRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -320,6 +319,7 @@ export interface FileRoutesById {
   '/snags/new': typeof SnagsNewRoute
   '/subcontractor/$projectId': typeof SubcontractorProjectIdRoute
   '/subcontractors/new': typeof SubcontractorsNewRoute
+  '/org/': typeof OrgIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/snags/': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -337,7 +337,6 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
-    | '/org'
     | '/pricing'
     | '/reset-password'
     | '/trial-ended'
@@ -358,6 +357,7 @@ export interface FileRouteTypes {
     | '/snags/new'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
+    | '/org/'
     | '/projects/'
     | '/snags/'
     | '/.lovable/oauth/consent'
@@ -373,7 +373,6 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
-    | '/org'
     | '/pricing'
     | '/reset-password'
     | '/trial-ended'
@@ -394,6 +393,7 @@ export interface FileRouteTypes {
     | '/snags/new'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
+    | '/org'
     | '/projects'
     | '/snags'
     | '/.lovable/oauth/consent'
@@ -409,7 +409,6 @@ export interface FileRouteTypes {
     | '/experience'
     | '/mcp'
     | '/oracle'
-    | '/org'
     | '/pricing'
     | '/reset-password'
     | '/trial-ended'
@@ -430,6 +429,7 @@ export interface FileRouteTypes {
     | '/snags/new'
     | '/subcontractor/$projectId'
     | '/subcontractors/new'
+    | '/org/'
     | '/projects/'
     | '/snags/'
     | '/.lovable/oauth/consent'
@@ -446,7 +446,6 @@ export interface RootRouteChildren {
   ExperienceRoute: typeof ExperienceRoute
   McpRoute: typeof McpRoute
   OracleRoute: typeof OracleRoute
-  OrgRoute: typeof OrgRouteWithChildren
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TrialEndedRoute: typeof TrialEndedRoute
@@ -457,6 +456,8 @@ export interface RootRouteChildren {
   DabsProjectIdRoute: typeof DabsProjectIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
   JoinOrgSlugRoute: typeof JoinOrgSlugRoute
+  OrgOrgIdRoute: typeof OrgOrgIdRoute
+  OrgNewRoute: typeof OrgNewRoute
   ProgrammeProjectIdRoute: typeof ProgrammeProjectIdRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
@@ -465,6 +466,7 @@ export interface RootRouteChildren {
   SnagsNewRoute: typeof SnagsNewRoute
   SubcontractorProjectIdRoute: typeof SubcontractorProjectIdRoute
   SubcontractorsNewRoute: typeof SubcontractorsNewRoute
+  OrgIndexRoute: typeof OrgIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   SnagsIndexRoute: typeof SnagsIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -502,13 +504,6 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/org': {
-      id: '/org'
-      path: '/org'
-      fullPath: '/org'
-      preLoaderRoute: typeof OrgRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oracle': {
@@ -565,6 +560,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org/': {
+      id: '/org/'
+      path: '/org'
+      fullPath: '/org/'
+      preLoaderRoute: typeof OrgIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/subcontractors/new': {
@@ -625,17 +627,17 @@ declare module '@tanstack/react-router' {
     }
     '/org/new': {
       id: '/org/new'
-      path: '/new'
+      path: '/org/new'
       fullPath: '/org/new'
       preLoaderRoute: typeof OrgNewRouteImport
-      parentRoute: typeof OrgRoute
+      parentRoute: typeof rootRouteImport
     }
     '/org/$orgId': {
       id: '/org/$orgId'
-      path: '/$orgId'
+      path: '/org/$orgId'
       fullPath: '/org/$orgId'
       preLoaderRoute: typeof OrgOrgIdRouteImport
-      parentRoute: typeof OrgRoute
+      parentRoute: typeof rootRouteImport
     }
     '/join-org/$slug': {
       id: '/join-org/$slug'
@@ -717,18 +719,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface OrgRouteChildren {
-  OrgOrgIdRoute: typeof OrgOrgIdRoute
-  OrgNewRoute: typeof OrgNewRoute
-}
-
-const OrgRouteChildren: OrgRouteChildren = {
-  OrgOrgIdRoute: OrgOrgIdRoute,
-  OrgNewRoute: OrgNewRoute,
-}
-
-const OrgRouteWithChildren = OrgRoute._addFileChildren(OrgRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
@@ -736,7 +726,6 @@ const rootRouteChildren: RootRouteChildren = {
   ExperienceRoute: ExperienceRoute,
   McpRoute: McpRoute,
   OracleRoute: OracleRoute,
-  OrgRoute: OrgRouteWithChildren,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TrialEndedRoute: TrialEndedRoute,
@@ -748,6 +737,8 @@ const rootRouteChildren: RootRouteChildren = {
   DabsProjectIdRoute: DabsProjectIdRoute,
   InviteTokenRoute: InviteTokenRoute,
   JoinOrgSlugRoute: JoinOrgSlugRoute,
+  OrgOrgIdRoute: OrgOrgIdRoute,
+  OrgNewRoute: OrgNewRoute,
   ProgrammeProjectIdRoute: ProgrammeProjectIdRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
@@ -756,6 +747,7 @@ const rootRouteChildren: RootRouteChildren = {
   SnagsNewRoute: SnagsNewRoute,
   SubcontractorProjectIdRoute: SubcontractorProjectIdRoute,
   SubcontractorsNewRoute: SubcontractorsNewRoute,
+  OrgIndexRoute: OrgIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   SnagsIndexRoute: SnagsIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
