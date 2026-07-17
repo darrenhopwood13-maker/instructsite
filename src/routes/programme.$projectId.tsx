@@ -283,6 +283,7 @@ function ProgrammePage() {
   });
 
   const [draft, setDraft] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
   const range = rangeQ.data;
