@@ -499,6 +499,10 @@ function AddLabour({ subId, projectId, onSaved }: { subId: string; projectId: st
       toast.error("Worker name required");
       return;
     }
+    const verify = window.confirm(
+      `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Competency Card: ${file ? file.name : "none attached"}\n\nAdd to labour roster?`,
+    );
+    if (!verify) return;
     setBusy(true);
     setPct(0);
     try {
@@ -529,7 +533,9 @@ function AddLabour({ subId, projectId, onSaved }: { subId: string; projectId: st
         }
       }
       await fn({ data: { subcontractorId: subId, name, role: role || null, competencyCardUrl: url } });
-      toast.success("Worker added");
+      toast.success(`${name.trim()} added to labour roster`, {
+        description: role.trim() ? `Role: ${role.trim()}` : undefined,
+      });
       setName("");
       setRole("");
       setFile(null);
@@ -589,6 +595,10 @@ function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: 
   const [busy, setBusy] = useState(false);
   const [pct, setPct] = useState(0);
   const submit = async () => {
+    const verify = window.confirm(
+      `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Certificate: ${file ? file.name : "none attached"}\n\nAdd to ${type} register?`,
+    );
+    if (!verify) return;
     setBusy(true);
     setPct(0);
     try {
@@ -635,7 +645,9 @@ function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: 
           certificateUrl: url,
         },
       });
-      toast.success("Register entry saved");
+      toast.success(`${asset.trim() || "Asset"} added to ${type} register`, {
+        description: date ? `Inspection date: ${new Date(date).toLocaleDateString("en-GB")}` : undefined,
+      });
       setAsset("");
       setDate("");
       setFile(null);
@@ -706,10 +718,16 @@ function AddToolboxTalk({ subId, onSaved }: { subId: string; onSaved: () => void
       toast.error("Add at least one attendee");
       return;
     }
+    const verify = window.confirm(
+      `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}\n\nLog this talk?`,
+    );
+    if (!verify) return;
     setBusy(true);
     try {
       await fn({ data: { subcontractorId: subId, topic, attendees: list } });
-      toast.success("Toolbox talk logged");
+      toast.success(`Toolbox talk logged: ${topic}`, {
+        description: `${list.length} attendee${list.length === 1 ? "" : "s"} recorded`,
+      });
       setAttendees("");
       onSaved();
     } catch (e) {
@@ -763,12 +781,20 @@ function AddLookAhead({ subId, onSaved }: { subId: string; onSaved: () => void }
       toast.error("Work plan required");
       return;
     }
+    const flags = [highRisk ? "HIGH RISK" : null, permit ? "PERMIT REQUIRED" : null].filter(Boolean).join(" · ") || "none";
+    const preview = plan.trim().length > 180 ? plan.trim().slice(0, 180) + "…" : plan.trim();
+    const verify = window.confirm(
+      `Please verify this look-ahead:\n\n• Flags: ${flags}\n• Plan: ${preview}\n\nSave look-ahead?`,
+    );
+    if (!verify) return;
     setBusy(true);
     try {
       await fn({
         data: { subcontractorId: subId, workPlan: plan, isHighRisk: highRisk, permitRequired: permit },
       });
-      toast.success("Look-ahead saved");
+      toast.success("Look-ahead added to work plan", {
+        description: flags === "none" ? undefined : `Flags: ${flags}`,
+      });
       setPlan("");
       setHighRisk(false);
       setPermit(false);
