@@ -537,26 +537,44 @@ export type Database = {
       }
       orgs: {
         Row: {
+          company_number: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           created_by: string | null
           id: string
           name: string
+          notes: string | null
+          registered_address: string | null
           slug: string
           updated_at: string
         }
         Insert: {
+          company_number?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           name: string
+          notes?: string | null
+          registered_address?: string | null
           slug: string
           updated_at?: string
         }
         Update: {
+          company_number?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           name?: string
+          notes?: string | null
+          registered_address?: string | null
           slug?: string
           updated_at?: string
         }

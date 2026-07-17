@@ -30,6 +30,8 @@ import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
+import { Route as OrgNewRouteImport } from './routes/org.new'
+import { Route as OrgOrgIdRouteImport } from './routes/org.$orgId'
 import { Route as JoinOrgSlugRouteImport } from './routes/join-org.$slug'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
@@ -147,6 +149,16 @@ const ProgrammeProjectIdRoute = ProgrammeProjectIdRouteImport.update({
   path: '/programme/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrgNewRoute = OrgNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => OrgRoute,
+} as any)
+const OrgOrgIdRoute = OrgOrgIdRouteImport.update({
+  id: '/$orgId',
+  path: '/$orgId',
+  getParentRoute: () => OrgRoute,
+} as any)
 const JoinOrgSlugRoute = JoinOrgSlugRouteImport.update({
   id: '/join-org/$slug',
   path: '/join-org/$slug',
@@ -214,7 +226,7 @@ export interface FileRoutesByFullPath {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
-  '/org': typeof OrgRoute
+  '/org': typeof OrgRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -225,6 +237,8 @@ export interface FileRoutesByFullPath {
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join-org/$slug': typeof JoinOrgSlugRoute
+  '/org/$orgId': typeof OrgOrgIdRoute
+  '/org/new': typeof OrgNewRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -248,7 +262,7 @@ export interface FileRoutesByTo {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
-  '/org': typeof OrgRoute
+  '/org': typeof OrgRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -259,6 +273,8 @@ export interface FileRoutesByTo {
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join-org/$slug': typeof JoinOrgSlugRoute
+  '/org/$orgId': typeof OrgOrgIdRoute
+  '/org/new': typeof OrgNewRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -283,7 +299,7 @@ export interface FileRoutesById {
   '/experience': typeof ExperienceRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
-  '/org': typeof OrgRoute
+  '/org': typeof OrgRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/trial-ended': typeof TrialEndedRoute
@@ -294,6 +310,8 @@ export interface FileRoutesById {
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
   '/join-org/$slug': typeof JoinOrgSlugRoute
+  '/org/$orgId': typeof OrgOrgIdRoute
+  '/org/new': typeof OrgNewRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -330,6 +348,8 @@ export interface FileRouteTypes {
     | '/dabs/$projectId'
     | '/invite/$token'
     | '/join-org/$slug'
+    | '/org/$orgId'
+    | '/org/new'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -364,6 +384,8 @@ export interface FileRouteTypes {
     | '/dabs/$projectId'
     | '/invite/$token'
     | '/join-org/$slug'
+    | '/org/$orgId'
+    | '/org/new'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -398,6 +420,8 @@ export interface FileRouteTypes {
     | '/dabs/$projectId'
     | '/invite/$token'
     | '/join-org/$slug'
+    | '/org/$orgId'
+    | '/org/new'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -422,7 +446,7 @@ export interface RootRouteChildren {
   ExperienceRoute: typeof ExperienceRoute
   McpRoute: typeof McpRoute
   OracleRoute: typeof OracleRoute
-  OrgRoute: typeof OrgRoute
+  OrgRoute: typeof OrgRouteWithChildren
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TrialEndedRoute: typeof TrialEndedRoute
@@ -599,6 +623,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgrammeProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/org/new': {
+      id: '/org/new'
+      path: '/new'
+      fullPath: '/org/new'
+      preLoaderRoute: typeof OrgNewRouteImport
+      parentRoute: typeof OrgRoute
+    }
+    '/org/$orgId': {
+      id: '/org/$orgId'
+      path: '/$orgId'
+      fullPath: '/org/$orgId'
+      preLoaderRoute: typeof OrgOrgIdRouteImport
+      parentRoute: typeof OrgRoute
+    }
     '/join-org/$slug': {
       id: '/join-org/$slug'
       path: '/join-org/$slug'
@@ -679,6 +717,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface OrgRouteChildren {
+  OrgOrgIdRoute: typeof OrgOrgIdRoute
+  OrgNewRoute: typeof OrgNewRoute
+}
+
+const OrgRouteChildren: OrgRouteChildren = {
+  OrgOrgIdRoute: OrgOrgIdRoute,
+  OrgNewRoute: OrgNewRoute,
+}
+
+const OrgRouteWithChildren = OrgRoute._addFileChildren(OrgRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
@@ -686,7 +736,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExperienceRoute: ExperienceRoute,
   McpRoute: McpRoute,
   OracleRoute: OracleRoute,
-  OrgRoute: OrgRoute,
+  OrgRoute: OrgRouteWithChildren,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TrialEndedRoute: TrialEndedRoute,
