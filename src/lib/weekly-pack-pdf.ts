@@ -215,7 +215,103 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
     { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 22 }, 3: { cellWidth: 40 } } },
   );
 
+
+  // Appendix — Uploaded certificate / competency card images
+  type EvidenceItem = { title: string; subtitle: string; path: string };
+  const evidence: EvidenceItem[] = [
+    ...workers
+      .filter((w) => w.competency_card_url)
+      .map<EvidenceItem>((w) => ({
+        title: `Competency Card — ${w.name}`,
+        subtitle: w.role ? `Role: ${w.role}` : "Labour",
+        path: w.competency_card_url as string,
+      })),
+    ...registers
+      .filter((r) => r.certificate_url)
+      .map<EvidenceItem>((r) => ({
+        title: `${r.type} Certificate — ${r.asset_name || "Asset"}`,
+        subtitle: r.inspection_date ? `Inspected: ${new Date(r.inspection_date).toLocaleDateString("en-GB")}` : "Safety Register",
+        path: r.certificate_url as string,
+      })),
+  ];
+
+  if (evidence.length > 0) {
+    pdf.addPage();
+    pdf.setFillColor(11, 30, 63);
+    pdf.rect(0, 0, pageW, 16, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(12);
+    pdf.text("APPENDIX · UPLOADED EVIDENCE", margin, 10.5);
+    pdf.setTextColor(20, 20, 20);
+    y = 24;
+
+    for (const ev of evidence) {
+      const isHttp = /^https?:\/\//i.test(ev.path);
+      const url = isHttp ? ev.path : input.resolveUrl ? await input.resolveUrl(ev.path).catch(() => null) : null;
+      const img = url ? await fetchAsImage(url) : null;
+
+      // Reserve ~120mm per entry; new page if we can't fit
+      const pageH = pdf.internal.pageSize.getHeight();
+      if (y > pageH - 60) {
+        pdf.addPage();
+        y = 20;
+      }
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(10);
+      pdf.setTextColor(11, 30, 63);
+      pdf.text(ev.title, margin, y);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(90, 90, 90);
+      pdf.text(ev.subtitle, margin, y + 4);
+      y += 8;
+
+      if (img) {
+        const maxW = pageW - margin * 2;
+        const maxH = 110;
+        const ratio = img.width / img.height;
+        let w = maxW;
+        let h = w / ratio;
+        if (h > maxH) {
+          h = maxH;
+          w = h * ratio;
+        }
+        if (y + h > pageH - 20) {
+          pdf.addPage();
+          y = 20;
+        }
+        try {
+          pdf.addImage(img.dataUrl, img.format, margin, y, w, h, undefined, "FAST");
+          pdf.setDrawColor(200, 200, 200);
+          pdf.rect(margin, y, w, h);
+          y += h + 10;
+        } catch {
+          pdf.setTextColor(150, 30, 30);
+          pdf.setFontSize(8);
+          pdf.text("[ Unable to embed image ]", margin, y + 5);
+          y += 12;
+        }
+      } else {
+        pdf.setDrawColor(200, 200, 200);
+        pdf.rect(margin, y, pageW - margin * 2, 18);
+        pdf.setTextColor(120, 120, 120);
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "italic");
+        pdf.text(
+          "Non-image file (e.g. PDF) — original on file. Open from InstructSite Subcontractor Pack.",
+          margin + 3,
+          y + 11,
+        );
+        y += 24;
+      }
+      pdf.setTextColor(20, 20, 20);
+    }
+  }
+
   // Footer on every page
+
   const pageCount = (pdf as any).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     pdf.setPage(i);
