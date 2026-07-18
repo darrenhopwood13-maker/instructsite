@@ -44,15 +44,30 @@ function SiteManagerPage() {
 
   const qc = useQueryClient();
   const getP = useServerFn(getProject);
+  const rolesFn = useServerFn(getMyRoles);
   const drawingsFn = useServerFn(listProjectDrawings);
   const pinsFn = useServerFn(listLivePins);
   const closeFn = useServerFn(closeLivePin);
   const archivedFn = useServerFn(listArchivedToday);
 
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    enabled: ready,
+    staleTime: 60_000,
+  });
+  const roles = rolesQ.data?.roles ?? [];
+  const isMainContractor =
+    roles.includes("master_admin") ||
+    roles.includes("project_admin") ||
+    roles.includes("site_manager");
+  const roleGateReady = ready && !rolesQ.isLoading;
+  const allowLoad = roleGateReady && isMainContractor;
+
   const project = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => getP({ data: { projectId } }),
-    enabled: ready,
+    enabled: allowLoad,
   });
   const drawings = useQuery({
     queryKey: ["drawings", projectId],
