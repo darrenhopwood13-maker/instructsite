@@ -72,7 +72,7 @@ function SiteManagerPage() {
   const drawings = useQuery({
     queryKey: ["drawings", projectId],
     queryFn: () => drawingsFn({ data: { projectId } }),
-    enabled: ready,
+    enabled: allowLoad,
   });
 
   const drawingRows = useMemo(() => drawings.data ?? [], [drawings.data]);
@@ -85,14 +85,14 @@ function SiteManagerPage() {
     queryKey: ["live-pins", projectId, selectedDrawing],
     queryFn: () =>
       pinsFn({ data: { projectId, drawingId: selectedDrawing!, activeOnly: true } }),
-    enabled: ready && !!selectedDrawing,
+    enabled: allowLoad && !!selectedDrawing,
     refetchInterval: 8000,
   });
 
   const archivedToday = useQuery({
     queryKey: ["archived-today", projectId],
     queryFn: () => archivedFn({ data: { projectId } }),
-    enabled: ready,
+    enabled: allowLoad,
     refetchInterval: 30000,
   });
 
