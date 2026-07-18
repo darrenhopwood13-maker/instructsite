@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, AlertTriangle, Clock, Users, X, ShieldAlert, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
-import { getProject } from "@/lib/projects.functions";
+import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
 import { listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { listArchivedToday } from "@/lib/daily-diary.functions";
@@ -44,20 +44,35 @@ function SiteManagerPage() {
 
   const qc = useQueryClient();
   const getP = useServerFn(getProject);
+  const rolesFn = useServerFn(getMyRoles);
   const drawingsFn = useServerFn(listProjectDrawings);
   const pinsFn = useServerFn(listLivePins);
   const closeFn = useServerFn(closeLivePin);
   const archivedFn = useServerFn(listArchivedToday);
 
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    enabled: ready,
+    staleTime: 60_000,
+  });
+  const roles = rolesQ.data?.roles ?? [];
+  const isMainContractor =
+    roles.includes("master_admin") ||
+    roles.includes("project_admin") ||
+    roles.includes("site_manager");
+  const roleGateReady = ready && !rolesQ.isLoading;
+  const allowLoad = roleGateReady && isMainContractor;
+
   const project = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => getP({ data: { projectId } }),
-    enabled: ready,
+    enabled: allowLoad,
   });
   const drawings = useQuery({
     queryKey: ["drawings", projectId],
     queryFn: () => drawingsFn({ data: { projectId } }),
-    enabled: ready,
+    enabled: allowLoad,
   });
 
   const drawingRows = useMemo(() => drawings.data ?? [], [drawings.data]);
@@ -70,20 +85,20 @@ function SiteManagerPage() {
     queryKey: ["live-pins", projectId, selectedDrawing],
     queryFn: () =>
       pinsFn({ data: { projectId, drawingId: selectedDrawing!, activeOnly: true } }),
-    enabled: ready && !!selectedDrawing,
+    enabled: allowLoad && !!selectedDrawing,
     refetchInterval: 8000,
   });
 
   const archivedToday = useQuery({
     queryKey: ["archived-today", projectId],
     queryFn: () => archivedFn({ data: { projectId } }),
-    enabled: ready,
+    enabled: allowLoad,
     refetchInterval: 30000,
   });
 
   // Realtime — reactivate on any change
   useEffect(() => {
-    if (!ready) return;
+    if (!allowLoad) return;
     const ch = supabase
       .channel(`live-activity-${projectId}`)
       .on(
@@ -104,7 +119,7 @@ function SiteManagerPage() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [projectId, ready, qc]);
+  }, [projectId, allowLoad, qc]);
 
   // 1s tick to update elapsed timers + overtime detection
   const [now, setNow] = useState(() => Date.now());
@@ -140,6 +155,11 @@ function SiteManagerPage() {
     qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
   };
 
+  if (roleGateReady && !isMainContractor) {
+    return (
+      <AccessDeniedScreen message="The Site Manager Command Tower is restricted to the main contractor's site management team." />
+    );
+  }
   if (project.isError) {
     return <AccessDeniedScreen message={(project.error as Error)?.message} />;
   }

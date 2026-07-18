@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ClipboardList, LogOut, MapPin, ShieldAlert, X } from "lucide-react";
 import { toast } from "sonner";
-import { getProject } from "@/lib/projects.functions";
+import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listDabsDrawings, listProjectZones } from "@/lib/tier1-uploads.functions";
 import { createLivePin, listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
@@ -37,6 +37,19 @@ function DabsPage() {
   const pinsFn = useServerFn(listLivePins);
   const createFn = useServerFn(createLivePin);
   const closeFn = useServerFn(closeLivePin);
+  const rolesFn = useServerFn(getMyRoles);
+
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    enabled: ready,
+    staleTime: 60_000,
+  });
+  const roles = rolesQ.data?.roles ?? [];
+  const isMainContractor =
+    roles.includes("master_admin") ||
+    roles.includes("project_admin") ||
+    roles.includes("site_manager");
 
   const project = useQuery({
     queryKey: ["project", projectId],
@@ -271,15 +284,17 @@ function DabsPage() {
           </ul>
         </section>
 
-        <section className="mt-10">
-          <Link
-            to="/site-manager/$projectId"
-            params={{ projectId }}
-            className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
-          >
-            <ClipboardList size={14} /> Site Manager Command Tower
-          </Link>
-        </section>
+        {isMainContractor && (
+          <section className="mt-10">
+            <Link
+              to="/site-manager/$projectId"
+              params={{ projectId }}
+              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+            >
+              <ClipboardList size={14} /> Site Manager Command Tower
+            </Link>
+          </section>
+        )}
       </div>
 
       {pending && (

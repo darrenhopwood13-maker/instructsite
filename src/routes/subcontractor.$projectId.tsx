@@ -44,6 +44,16 @@ function toLocalInput(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function shortenTitle(raw: string | null | undefined, max: number): string {
+  const s = (raw ?? "").trim();
+  if (!s) return "";
+  if (s.length <= max) return s;
+  const slice = s.slice(0, max);
+  const lastSpace = slice.lastIndexOf(" ");
+  const cut = lastSpace > max * 0.6 ? slice.slice(0, lastSpace) : slice;
+  return `${cut.replace(/[\s—–-]+$/, "")}…`;
+}
+
 function SubcontractorCockpit() {
   const { projectId } = Route.useParams();
   const qc = useQueryClient();
@@ -275,34 +285,36 @@ function SubcontractorCockpit() {
             >
               {ctx.data?.projectName ?? "Loading project…"}
             </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.65rem] text-foreground/70">
-              {ctx.data?.projectNumber && (
-                <span className="font-mono text-alert">#{ctx.data.projectNumber}</span>
-              )}
-              <span className="truncate">{ctx.data?.companyName ?? "—"}</span>
-              <span className="text-foreground/40">·</span>
-              <span className="truncate">{ctx.data?.email ?? welcome}</span>
+            <div className="mt-1 flex min-w-0 flex-col gap-0.5 text-[0.65rem] text-foreground/70 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
+              <div className="flex min-w-0 items-center gap-2">
+                {ctx.data?.projectNumber && (
+                  <span className="shrink-0 font-mono text-alert">#{ctx.data.projectNumber}</span>
+                )}
+                <span className="min-w-0 truncate">{ctx.data?.companyName ?? "—"}</span>
+              </div>
+              <span className="hidden text-foreground/40 sm:inline">·</span>
+              <span className="min-w-0 truncate">{ctx.data?.email ?? welcome}</span>
             </div>
           </div>
           <div className="grid grid-cols-2 divide-x divide-white/10 text-[0.65rem]">
-            <div className="p-3">
+            <div className="min-w-0 p-3">
               <div className="text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/50">
                 Live Date
               </div>
-              <div className="mt-1 font-mono text-sm text-foreground">
+              <div className="mt-1 truncate font-mono text-sm text-foreground">
                 {liveClock.toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "short" })}
               </div>
-              <div className="font-mono text-[0.7rem] text-foreground/60">
+              <div className="truncate font-mono text-[0.7rem] text-foreground/60">
                 {liveClock.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>
-            <div className="p-3">
+            <div className="min-w-0 p-3">
               <div className="flex items-center gap-1 text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/50">
-                <Cloud size={10} /> Weather
+                <Cloud size={10} className="shrink-0" /> Weather
               </div>
               {weather.data ? (
                 <>
-                  <div className="mt-1 font-mono text-sm text-foreground">
+                  <div className="mt-1 truncate font-mono text-sm text-foreground">
                     {weather.data.temperature_c != null
                       ? `${Math.round(Number(weather.data.temperature_c))}°C`
                       : "—"}
@@ -428,12 +440,22 @@ function SubcontractorCockpit() {
               <span className="block text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
                 Active Drawing
               </span>
-              <span className="block truncate text-sm font-bold text-foreground">
-                {selectedDrawingRow
-                  ? `${selectedDrawingRow.drawing_no ?? "DWG"} — ${selectedDrawingRow.title ?? ""}`
-                  : "Select Drawing"}
-              </span>
-              <span className="block truncate text-[0.65rem] text-foreground/50">
+              {selectedDrawingRow ? (
+                <>
+                  <span className="block truncate font-mono text-sm font-bold text-foreground">
+                    {selectedDrawingRow.drawing_no ?? "DWG"}
+                    {selectedDrawingRow.revision ? ` · Rev ${selectedDrawingRow.revision}` : ""}
+                  </span>
+                  <span className="block truncate text-[0.7rem] text-foreground/70">
+                    {shortenTitle(selectedDrawingRow.title, 32)}
+                  </span>
+                </>
+              ) : (
+                <span className="block truncate text-sm font-bold text-foreground">
+                  Select Drawing
+                </span>
+              )}
+              <span className="block truncate text-[0.6rem] text-foreground/50">
                 Tap to browse {drawingRows.length} drawing{drawingRows.length === 1 ? "" : "s"}
               </span>
             </span>
@@ -712,7 +734,7 @@ function SubcontractorCockpit() {
               )}
               {drawingRows.map((d: any) => {
                 const active = d.id === selectedDrawing;
-                const title = d.title ?? d.site_documents?.file_name ?? "Untitled";
+                const title = shortenTitle(d.title ?? d.site_documents?.file_name ?? "Untitled", 34);
                 return (
                   <button
                     key={d.id}
