@@ -65,13 +65,19 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       data.tier === "baseline"
         ? process.env.STRIPE_PRICE_BASELINE
         : process.env.STRIPE_PRICE_STRUCTURE;
-    if (!priceId) {
-      throw new Error(
-        `Stripe price for ${data.tier} is not configured. Set STRIPE_PRICE_${data.tier.toUpperCase()}.`,
-      );
-    }
     const secret = process.env.STRIPE_SECRET_KEY;
-    if (!secret) throw new Error("Stripe is not configured.");
+
+    if (!priceId || !secret) {
+      console.warn(
+        `[stripe] Stripe not configured for tier ${data.tier} — returning baseline tier fallback`,
+      );
+      return {
+        url: null,
+        tier: "baseline" as const,
+        status: "trialing" as const,
+        stripeConfigured: false,
+      };
+    }
 
     const { default: Stripe } = await import("stripe");
     const stripe = new Stripe(secret, { apiVersion: "2024-06-20" as any });
