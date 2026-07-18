@@ -734,7 +734,7 @@ function SubcontractorCockpit() {
               )}
               {drawingRows.map((d: any) => {
                 const active = d.id === selectedDrawing;
-                const title = d.title ?? d.site_documents?.file_name ?? "Untitled";
+                const title = shortenTitle(d.title ?? d.site_documents?.file_name ?? "Untitled", 34);
                 return (
                   <button
                     key={d.id}
