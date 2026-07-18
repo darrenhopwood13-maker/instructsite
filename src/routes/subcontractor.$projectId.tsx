@@ -44,6 +44,16 @@ function toLocalInput(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function shortenTitle(raw: string | null | undefined, max: number): string {
+  const s = (raw ?? "").trim();
+  if (!s) return "";
+  if (s.length <= max) return s;
+  const slice = s.slice(0, max);
+  const lastSpace = slice.lastIndexOf(" ");
+  const cut = lastSpace > max * 0.6 ? slice.slice(0, lastSpace) : slice;
+  return `${cut.replace(/[\s—–-]+$/, "")}…`;
+}
+
 function SubcontractorCockpit() {
   const { projectId } = Route.useParams();
   const qc = useQueryClient();
