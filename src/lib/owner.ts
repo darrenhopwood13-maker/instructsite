@@ -1,4 +1,7 @@
-export const OWNER_EMAIL = "darrenhopwood13@gmail.com";
+export const OWNER_EMAIL = process.env.OWNER_EMAIL || "darrenhopwood13@gmail.com";
+if (typeof process !== 'undefined' && !process.env.OWNER_EMAIL) {
+  console.warn("[owner] OWNER_EMAIL not set, using fallback");
+}
 
 export function isOwnerEmail(email: string | null | undefined): boolean {
   return !!email && email.trim().toLowerCase() === OWNER_EMAIL;
