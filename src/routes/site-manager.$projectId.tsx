@@ -155,6 +155,11 @@ function SiteManagerPage() {
     qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
   };
 
+  if (roleGateReady && !isMainContractor) {
+    return (
+      <AccessDeniedScreen message="The Site Manager Command Tower is restricted to the main contractor's site management team." />
+    );
+  }
   if (project.isError) {
     return <AccessDeniedScreen message={(project.error as Error)?.message} />;
   }
