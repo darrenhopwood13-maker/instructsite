@@ -1,21 +1,44 @@
-## Fix: ambiguous `org_id` in `accept_org_invite`
+Cache Supabase config in `auth-middleware.ts` to avoid re-reading env vars on every server function call.
 
-**Root cause (confirmed from db function list):** The `accept_org_invite(_token uuid)` RPC declares `RETURNS TABLE(org_id uuid, role text)`. Its final `RETURN QUERY SELECT v_inv.org_id, v_inv.role;` is fine, but the earlier `INSERT INTO public.org_members(org_id, user_id, role, is_standard) VALUES (v_inv.org_id, ...)` — and the `UPDATE public.org_invites ... WHERE id = v_inv.id` context — makes Postgres see `org_id` as ambiguous between the output column name and the table column. This throws at accept time, right after the PM sets a password and lands on `/join-org/invite/$token`.
+## What will change
+- `src/integrations/supabase/auth-middleware.ts` (auto-generated, but edits requested explicitly).
+- Add module-level cache variables `_cachedUrl` and `_cachedKey`.
+- Add a `getSupabaseConfig()` helper that populates the cache on first call.
+- Replace the two inline `process.env` reads inside the middleware handler with a destructured call to `getSupabaseConfig()`.
+- Leave validation, client creation, token parsing, and context injection unchanged.
 
-### Change
+## Plan
+1. Add at the top of the file (after imports):
 
-Ship a migration that replaces the function with a version that:
-1. Renames the OUT columns to avoid the name clash: `RETURNS TABLE(out_org_id uuid, out_role text)`.
-2. Keeps all internal references qualified via `v_inv.*`.
-3. Returns `SELECT v_inv.org_id, v_inv.role`.
+   ```ts
+   let _cachedUrl: string | null = null;
+   let _cachedKey: string | null = null;
 
-Then update the one caller (`acceptOrgInvite` in `src/lib/orgs.functions.ts`) to read `out_org_id` / `out_role` from the RPC result (it currently reads `row.org_id` / `row.role`).
+   function getSupabaseConfig() {
+     if (!_cachedUrl || !_cachedKey) {
+       _cachedUrl = process.env.SUPABASE_URL ?? null;
+       _cachedKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? null;
+     }
+     return { url: _cachedUrl, key: _cachedKey };
+   }
+   ```
 
-### Technical details
+2. Inside the `requireSupabaseAuth` middleware handler, replace:
 
-- Migration: `CREATE OR REPLACE FUNCTION public.accept_org_invite(_token uuid) RETURNS TABLE(out_org_id uuid, out_role text) ...` with the same body, `SECURITY DEFINER`, `search_path=public`.
-- Code: in `acceptOrgInvite`, map `row.out_org_id → orgId`, `row.out_role → role`. No UI changes needed; the invite accept page already navigates on success.
+   ```ts
+   const SUPABASE_URL = process.env.SUPABASE_URL;
+   const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+   ```
 
-### Not changing
+   with:
 
-- No changes to `org_invites` / `org_members` schema, RLS, or the reset-password → invite redirect flow.
+   ```ts
+   const { url: SUPABASE_URL, key: SUPABASE_PUBLISHABLE_KEY } = getSupabaseConfig();
+   ```
+
+3. Verify the build/typecheck passes and the middleware still rejects missing env vars as before.
+
+## Notes
+- No new imports or dependencies.
+- No behaviour change; only reduces redundant env lookups per request.
+- The file header says it is auto-generated, so this edit could be overwritten if the integration is regenerated. Given the request explicitly targets this file, we will apply the change directly.
