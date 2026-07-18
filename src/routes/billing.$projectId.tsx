@@ -50,8 +50,16 @@ function BillingPage() {
           ? `${window.location.origin}/billing/${projectId}`
           : `/billing/${projectId}`;
       const res = await coFn({ data: { projectId, tier, returnUrl } });
-      if (res?.url) window.location.href = res.url;
-      else throw new Error("Stripe session did not return a URL.");
+      if (res?.url) {
+        window.location.href = res.url;
+        return;
+      }
+      if (res?.stripeConfigured === false) {
+        toast.info("Billing is not configured yet. You are on the Baseline plan.");
+        setLoadingTier(null);
+        return;
+      }
+      throw new Error("Stripe session did not return a URL.");
     } catch (err) {
       toast.error((err as Error).message);
       setLoadingTier(null);
