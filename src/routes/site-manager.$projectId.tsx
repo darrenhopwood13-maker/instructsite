@@ -98,7 +98,7 @@ function SiteManagerPage() {
 
   // Realtime — reactivate on any change
   useEffect(() => {
-    if (!ready) return;
+    if (!allowLoad) return;
     const ch = supabase
       .channel(`live-activity-${projectId}`)
       .on(
@@ -119,7 +119,7 @@ function SiteManagerPage() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [projectId, ready, qc]);
+  }, [projectId, allowLoad, qc]);
 
   // 1s tick to update elapsed timers + overtime detection
   const [now, setNow] = useState(() => Date.now());
