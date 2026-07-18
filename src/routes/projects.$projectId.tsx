@@ -162,14 +162,15 @@ function ProjectDetail() {
             >
               <CalendarDays size={14} /> Randall Diary
             </Link>
-            <Link
-
-              to="/site-manager/$projectId"
-              params={{ projectId }}
-              className="glass-orange inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
-            >
-              <ShieldAlert size={14} /> Site Manager
-            </Link>
+            {isMainContractor && (
+              <Link
+                to="/site-manager/$projectId"
+                params={{ projectId }}
+                className="glass-orange inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+              >
+                <ShieldAlert size={14} /> Site Manager
+              </Link>
+            )}
           </div>
         </div>
 
