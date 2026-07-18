@@ -284,15 +284,17 @@ function DabsPage() {
           </ul>
         </section>
 
-        <section className="mt-10">
-          <Link
-            to="/site-manager/$projectId"
-            params={{ projectId }}
-            className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
-          >
-            <ClipboardList size={14} /> Site Manager Command Tower
-          </Link>
-        </section>
+        {isMainContractor && (
+          <section className="mt-10">
+            <Link
+              to="/site-manager/$projectId"
+              params={{ projectId }}
+              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+            >
+              <ClipboardList size={14} /> Site Manager Command Tower
+            </Link>
+          </section>
+        )}
       </div>
 
       {pending && (
