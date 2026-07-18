@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ClipboardList, LogOut, MapPin, ShieldAlert, X } from "lucide-react";
 import { toast } from "sonner";
-import { getProject } from "@/lib/projects.functions";
+import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listDabsDrawings, listProjectZones } from "@/lib/tier1-uploads.functions";
 import { createLivePin, listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
