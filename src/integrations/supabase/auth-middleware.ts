@@ -4,7 +4,16 @@ import { getRequest } from '@tanstack/react-start/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
+let _cachedUrl: string | null = null;
+let _cachedKey: string | null = null;
 
+function getSupabaseConfig() {
+  if (!_cachedUrl || !_cachedKey) {
+    _cachedUrl = process.env.SUPABASE_URL ?? null;
+    _cachedKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? null;
+  }
+  return { url: _cachedUrl, key: _cachedKey };
+}
 
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
@@ -33,8 +42,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server(
   async ({ next }) => {
     
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+    const { url: SUPABASE_URL, key: SUPABASE_PUBLISHABLE_KEY } = getSupabaseConfig();
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       const missing = [
