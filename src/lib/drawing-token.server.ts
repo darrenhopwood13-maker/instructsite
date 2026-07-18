@@ -28,8 +28,11 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 export function getDrawingAccessSecret(): string {
-  const secret = process.env.LOVABLE_API_KEY;
+  const secret = process.env.DRAWING_TOKEN_SECRET || process.env.LOVABLE_API_KEY;
   if (!secret) throw new Error("Secure drawing links are unavailable.");
+  if (!process.env.DRAWING_TOKEN_SECRET) {
+    console.warn("[drawing-token] DRAWING_TOKEN_SECRET not set, falling back to LOVABLE_API_KEY");
+  }
   return secret;
 }
 
