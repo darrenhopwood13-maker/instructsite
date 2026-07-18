@@ -37,6 +37,19 @@ function DabsPage() {
   const pinsFn = useServerFn(listLivePins);
   const createFn = useServerFn(createLivePin);
   const closeFn = useServerFn(closeLivePin);
+  const rolesFn = useServerFn(getMyRoles);
+
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    enabled: ready,
+    staleTime: 60_000,
+  });
+  const roles = rolesQ.data?.roles ?? [];
+  const isMainContractor =
+    roles.includes("master_admin") ||
+    roles.includes("project_admin") ||
+    roles.includes("site_manager");
 
   const project = useQuery({
     queryKey: ["project", projectId],
