@@ -49,6 +49,8 @@ function ProjectDetail() {
   const isAdmin =
     rolesQ.data?.roles?.includes("master_admin") ||
     rolesQ.data?.roles?.includes("project_admin");
+  const isMainContractor =
+    isAdmin || rolesQ.data?.roles?.includes("site_manager");
 
 
   const project = useQuery({
