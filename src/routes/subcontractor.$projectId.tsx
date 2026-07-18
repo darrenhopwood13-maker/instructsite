@@ -440,12 +440,22 @@ function SubcontractorCockpit() {
               <span className="block text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
                 Active Drawing
               </span>
-              <span className="block truncate text-sm font-bold text-foreground">
-                {selectedDrawingRow
-                  ? `${selectedDrawingRow.drawing_no ?? "DWG"} — ${selectedDrawingRow.title ?? ""}`
-                  : "Select Drawing"}
-              </span>
-              <span className="block truncate text-[0.65rem] text-foreground/50">
+              {selectedDrawingRow ? (
+                <>
+                  <span className="block truncate font-mono text-sm font-bold text-foreground">
+                    {selectedDrawingRow.drawing_no ?? "DWG"}
+                    {selectedDrawingRow.revision ? ` · Rev ${selectedDrawingRow.revision}` : ""}
+                  </span>
+                  <span className="block truncate text-[0.7rem] text-foreground/70">
+                    {shortenTitle(selectedDrawingRow.title, 32)}
+                  </span>
+                </>
+              ) : (
+                <span className="block truncate text-sm font-bold text-foreground">
+                  Select Drawing
+                </span>
+              )}
+              <span className="block truncate text-[0.6rem] text-foreground/50">
                 Tap to browse {drawingRows.length} drawing{drawingRows.length === 1 ? "" : "s"}
               </span>
             </span>
