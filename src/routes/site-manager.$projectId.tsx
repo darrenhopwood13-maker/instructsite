@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, AlertTriangle, Clock, Users, X, ShieldAlert, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
-import { getProject } from "@/lib/projects.functions";
+import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
 import { listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { listArchivedToday } from "@/lib/daily-diary.functions";
