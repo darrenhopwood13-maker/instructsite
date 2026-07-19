@@ -485,6 +485,8 @@ export const oracleScan = createServerFn({ method: "POST" })
       "- FRIBA — Royal Institute of British Architects",
       "- FIStructE — Institution of Structural Engineers",
       "- FBIID — British Institute of Interior Design",
+      "- FENSA — Fenestration Self-Assessment Scheme (windows, doors, glazing — Building Regs Part L/F/Q)",
+      "- NICEIC — National Inspection Council for Electrical Installation Contracting (Part P, BS 7671)",
       "",
       "## Multi-Trade Expertise (hands-on)",
       "Deep, practical knowledge of: bricklaying and masonry, joinery and carpentry (1st/2nd fix), plumbing and drainage, electrical (Part P, BS 7671), structural works (steel, concrete, timber frame), roofing, plastering, groundworks, and MEP coordination.",
