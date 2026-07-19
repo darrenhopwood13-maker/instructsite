@@ -5,16 +5,16 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 const SnagReport = z.object({
-  defectTitle: z.string().default(""),
-  description: z.string().default(""),
-  cause: z.string().default(""),
-  rectificationOptionA: z.string().default(""),
-  rectificationOptionB: z.string().default(""),
-  tradesmanHack: z.string().default(""),
-  regulatoryCitations: z.array(z.string()).default([]),
-  hsNotes: z.string().default(""),
-  severity: z.enum(["low", "medium", "high", "critical"]).default("medium"),
-  trade: z.string().default(""),
+  defectTitle: z.string(),
+  description: z.string(),
+  cause: z.string(),
+  rectificationOptionA: z.string(),
+  rectificationOptionB: z.string(),
+  tradesmanHack: z.string(),
+  regulatoryCitations: z.array(z.string()),
+  hsNotes: z.string(),
+  severity: z.enum(["low", "medium", "high", "critical"]),
+  trade: z.string(),
 });
 export type SnagReportT = z.infer<typeof SnagReport>;
 
