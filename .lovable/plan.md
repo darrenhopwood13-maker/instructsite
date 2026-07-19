@@ -1,23 +1,17 @@
-## Fix Snag scan (upload does nothing)
+Most of this work is already in place — the full Oracle persona is live in `src/lib/snags.functions.ts` (`analyzeSnag`), the `oracleScan` server function exists in `src/lib/oracle.functions.ts` with the correct Zod schema (no `.default()` calls) and `Output` / `NoObjectGeneratedError` imports, and the "Site Scan" tile with camera/upload flow and `ReportViewer` rendering is already wired into `src/pages/Oracle.tsx`.
 
-Two bugs in `src/lib/snags.functions.ts` → `analyzeSnag`:
+The only gap versus your spec is the fellowship list: the current prompts list 6 bodies (FCIOB, FRICS, FICE, FRIBA, FIStructE, FBIID). Your spec adds two more — **FENSA** and **NEIC** — and says the Oracle must cite the relevant body inline.
 
-### 1. Provider rejects system role
-Current code puts the Oracle prompt inside `messages` as `{ role: "system", content: systemPrompt }`. The gateway returns: *"Invalid prompt: System messages are not allowed in the prompt or messages fields. Use the instructions option instead."*
+## Changes
 
-Fix: pass it via AI SDK's top-level `system` parameter on `generateText`, leaving only the user (text + image) message in `messages`.
+1. `**src/lib/snags.functions.ts**` — in the `systemPrompt` inside `analyzeSnag`, extend the "Fellowships" block to include:
+  - `FENSA — Fenestration Self-Assessment Scheme (windows, doors, glazing — Building Regs Part L/F/Q compliance)`
+  - `NICEIC — National Inspection Council for Electrical Installation Contracting (Part P, BS 7671)`
+   (Assuming "NEIC" in the brief is NICEIC — the standard UK electrical body. Flag if you actually meant something else.) Update the inline-citation guidance sentence to mention FENSA (glazing/fenestration) and NICEIC (electrical) alongside the existing bodies.
+2. `**src/lib/oracle.functions.ts**` — same two additions to the `system` prompt inside `oracleScan`, and extend rule 4 to include FENSA and NICEIC in the "cite the relevant fellowship body inline" list.
 
-### 2. `NoObjectGeneratedError` reference crashes the catch block
-The catch block calls `NoObjectGeneratedError.isInstance(error)`. At runtime the named export isn't defined in this bundle, producing "NoObjectGeneratedError is not defined" — which masks the real error and shows the user nothing useful.
+No schema, UI, or wiring changes — the Zod schemas are already defaults-free and the Oracle page already renders the scan result.
 
-Fix: drop the `NoObjectGeneratedError` import and its salvage branch. Rely on `Output.object({ schema })` for structured output; on failure just clean up the uploaded photo and throw the underlying message.
+## Question before I build
 
-### Files
-- `src/lib/snags.functions.ts`
-  - Remove `NoObjectGeneratedError` from the `ai` import.
-  - `analyzeSnag`: move `systemPrompt` from a `messages` entry to `system: systemPrompt` on `generateText`.
-  - Replace the `NoObjectGeneratedError.isInstance(...)` block with straight cleanup + rethrow.
-
-### Verification
-- Re-upload a snag photo from `/snags/new`; expect the Oracle report to render.
-- If the model call fails, the toast should now show the real gateway error instead of a `ReferenceError`.
+"NEIC" isn't a standard UK body — did you mean **NICEIC** (electrical contracting)? I'll use NICEIC unless you say otherwise. i mean **NICEIC** (electrical contracting
