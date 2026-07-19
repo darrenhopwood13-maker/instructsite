@@ -749,23 +749,9 @@ export const splitAndRegisterDrawingPack = createServerFn({ method: "POST" })
             .update({ extraction_status: "complete" })
             .eq("id", sd.id);
 
-          // Upsert every zone the Oracle spotted on this sheet.
-          const zoneCandidates: { name: string; level: string | null }[] = [];
-          if (meta.zone) zoneCandidates.push({ name: meta.zone, level: meta.level || null });
-          for (const z of meta.zones ?? []) {
-            if (z?.name) zoneCandidates.push({ name: z.name, level: z.level || meta.level || null });
-          }
-          for (const z of zoneCandidates) {
-            await supabase.from("work_zones").upsert(
-              {
-                project_id: data.projectId,
-                name: z.name,
-                level: z.level,
-                source: "drawing",
-              },
-              { onConflict: "project_id,name,level", ignoreDuplicates: true },
-            );
-          }
+          // Zones are no longer auto-created from pack extraction. Oracle
+          // allocates work zones only when a drawing is added to DABS.
+
 
           results.push({ pageNumber, drawingId: pd.id, status: "complete" });
 
