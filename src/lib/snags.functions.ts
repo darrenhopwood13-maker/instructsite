@@ -149,9 +149,9 @@ export const analyzeSnag = createServerFn({ method: "POST" })
     try {
       const { output } = await generateText({
         model: gateway("openai/gpt-4o"),
+        system: systemPrompt,
         output: Output.object({ schema: SnagReport }),
         messages: [
-          { role: "system", content: systemPrompt },
           {
             role: "user",
             content: [
@@ -167,20 +167,6 @@ export const analyzeSnag = createServerFn({ method: "POST" })
       });
       return { report: output, photoPath };
     } catch (error) {
-      if (NoObjectGeneratedError.isInstance(error)) {
-        // salvage
-        const raw = error.text ?? "";
-        let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-        const start = cleaned.search(/[{[]/);
-        const end = cleaned.lastIndexOf("}");
-        if (start !== -1 && end !== -1 && end > start) cleaned = cleaned.substring(start, end + 1);
-        try {
-          const parsed = SnagReport.parse(JSON.parse(cleaned));
-          return { report: parsed, photoPath };
-        } catch {
-          // fall through
-        }
-      }
       // Clean up the orphan upload if AI failed
       await supabaseAdmin.storage.from("snag-photos").remove([photoPath]).catch(() => {});
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
