@@ -9,86 +9,51 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as ExperienceRouteImport } from './routes/experience'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as OracleRouteImport } from './routes/oracle'
-import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as TrialEndedRouteImport } from './routes/trial-ended'
 import { Route as UnlockRouteImport } from './routes/unlock'
-import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
-import { Route as BillingProjectIdRouteImport } from './routes/billing.$projectId'
-import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
-import { Route as InviteTokenRouteImport } from './routes/invite.$token'
-import { Route as JoinOrgSlugRouteImport } from './routes/join-org.$slug'
-import { Route as OrgIndexRouteImport } from './routes/org.index'
-import { Route as OrgOrgIdRouteImport } from './routes/org.$orgId'
-import { Route as OrgNewRouteImport } from './routes/org.new'
-import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
-import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
-import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
-import { Route as ProjectsNewRouteImport } from './routes/projects.new'
-import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
+import { Route as TrialEndedRouteImport } from './routes/trial-ended'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as OracleRouteImport } from './routes/oracle'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as ExperienceRouteImport } from './routes/experience'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as SnagsIndexRouteImport } from './routes/snags.index'
-import { Route as SnagsSnagIdRouteImport } from './routes/snags.$snagId'
-import { Route as SnagsNewRouteImport } from './routes/snags.new'
-import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontractor.$projectId'
+import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
+import { Route as OrgIndexRouteImport } from './routes/org.index'
 import { Route as SubcontractorsNewRouteImport } from './routes/subcontractors.new'
-import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
-import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
-import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$drawingId'
-import { Route as JoinOrgInviteTokenRouteImport } from './routes/join-org.invite.$token'
-import { Route as OrgOrgIdIndexRouteImport } from './routes/org.$orgId.index'
-import { Route as OrgOrgIdEditRouteImport } from './routes/org.$orgId.edit'
-import { Route as ProjectsProjectIdBibleRouteImport } from './routes/projects_.$projectId.bible'
+import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontractor.$projectId'
+import { Route as SnagsNewRouteImport } from './routes/snags.new'
+import { Route as SnagsSnagIdRouteImport } from './routes/snags.$snagId'
+import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
+import { Route as ProjectsNewRouteImport } from './routes/projects.new'
+import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
+import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
+import { Route as OrgNewRouteImport } from './routes/org.new'
+import { Route as OrgOrgIdRouteImport } from './routes/org.$orgId'
+import { Route as JoinOrgSlugRouteImport } from './routes/join-org.$slug'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
+import { Route as BillingProjectIdRouteImport } from './routes/billing.$projectId'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as SubcontractorPackProjectIdIndexRouteImport } from './routes/subcontractor-pack.$projectId.index'
+import { Route as OrgOrgIdIndexRouteImport } from './routes/org.$orgId.index'
 import { Route as SubcontractorPackProjectIdManagerRouteImport } from './routes/subcontractor-pack.$projectId.manager'
-import { Route as ApiPublicHooksWeatherSnapshotRouteImport } from './routes/api/public/hooks/weather-snapshot'
-import { Route as ApiPublicWebhooksStripeRouteImport } from './routes/api/public/webhooks/stripe'
+import { Route as ProjectsProjectIdBibleRouteImport } from './routes/projects_.$projectId.bible'
+import { Route as OrgOrgIdEditRouteImport } from './routes/org.$orgId.edit'
+import { Route as JoinOrgInviteTokenRouteImport } from './routes/join-org.invite.$token'
+import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$drawingId'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
+import { Route as ApiPublicWebhooksStripeRouteImport } from './routes/api/public/webhooks/stripe'
+import { Route as ApiPublicHooksWeatherSnapshotRouteImport } from './routes/api/public/hooks/weather-snapshot'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExperienceRoute = ExperienceRouteImport.update({
-  id: '/experience',
-  path: '/experience',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OracleRoute = OracleRouteImport.update({
-  id: '/oracle',
-  path: '/oracle',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
+const UnlockRoute = UnlockRouteImport.update({
+  id: '/unlock',
+  path: '/unlock',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TrialEndedRoute = TrialEndedRouteImport.update({
@@ -96,81 +61,44 @@ const TrialEndedRoute = TrialEndedRouteImport.update({
   path: '/trial-ended',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UnlockRoute = UnlockRouteImport.update({
-  id: '/unlock',
-  path: '/unlock',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const Char91DotmcpChar93ListToolsRoute =
-  Char91DotmcpChar93ListToolsRouteImport.update({
-    id: '/.mcp/list-tools',
-    path: '/.mcp/list-tools',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const Char91DotwellKnownChar93OauthProtectedResourceRoute =
-  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
-    id: '/.well-known/oauth-protected-resource',
-    path: '/.well-known/oauth-protected-resource',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const BillingProjectIdRoute = BillingProjectIdRouteImport.update({
-  id: '/billing/$projectId',
-  path: '/billing/$projectId',
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DabsProjectIdRoute = DabsProjectIdRouteImport.update({
-  id: '/dabs/$projectId',
-  path: '/dabs/$projectId',
+const OracleRoute = OracleRouteImport.update({
+  id: '/oracle',
+  path: '/oracle',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InviteTokenRoute = InviteTokenRouteImport.update({
-  id: '/invite/$token',
-  path: '/invite/$token',
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JoinOrgSlugRoute = JoinOrgSlugRouteImport.update({
-  id: '/join-org/$slug',
-  path: '/join-org/$slug',
+const ExperienceRoute = ExperienceRouteImport.update({
+  id: '/experience',
+  path: '/experience',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OrgIndexRoute = OrgIndexRouteImport.update({
-  id: '/org/',
-  path: '/org/',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OrgOrgIdRoute = OrgOrgIdRouteImport.update({
-  id: '/org/$orgId',
-  path: '/org/$orgId',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OrgNewRoute = OrgNewRouteImport.update({
-  id: '/org/new',
-  path: '/org/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProgrammeProjectIdRoute = ProgrammeProjectIdRouteImport.update({
-  id: '/programme/$projectId',
-  path: '/programme/$projectId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
-  id: '/projects/',
-  path: '/projects/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
-  id: '/projects/$projectId',
-  path: '/projects/$projectId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProjectsNewRoute = ProjectsNewRouteImport.update({
-  id: '/projects/new',
-  path: '/projects/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SiteManagerProjectIdRoute = SiteManagerProjectIdRouteImport.update({
-  id: '/site-manager/$projectId',
-  path: '/site-manager/$projectId',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SnagsIndexRoute = SnagsIndexRouteImport.update({
@@ -178,19 +106,14 @@ const SnagsIndexRoute = SnagsIndexRouteImport.update({
   path: '/snags/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SnagsSnagIdRoute = SnagsSnagIdRouteImport.update({
-  id: '/snags/$snagId',
-  path: '/snags/$snagId',
+const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SnagsNewRoute = SnagsNewRouteImport.update({
-  id: '/snags/new',
-  path: '/snags/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SubcontractorProjectIdRoute = SubcontractorProjectIdRouteImport.update({
-  id: '/subcontractor/$projectId',
-  path: '/subcontractor/$projectId',
+const OrgIndexRoute = OrgIndexRouteImport.update({
+  id: '/org/',
+  path: '/org/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubcontractorsNewRoute = SubcontractorsNewRouteImport.update({
@@ -198,9 +121,118 @@ const SubcontractorsNewRoute = SubcontractorsNewRouteImport.update({
   path: '/subcontractors/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
+const SubcontractorProjectIdRoute = SubcontractorProjectIdRouteImport.update({
+  id: '/subcontractor/$projectId',
+  path: '/subcontractor/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SnagsNewRoute = SnagsNewRouteImport.update({
+  id: '/snags/new',
+  path: '/snags/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SnagsSnagIdRoute = SnagsSnagIdRouteImport.update({
+  id: '/snags/$snagId',
+  path: '/snags/$snagId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SiteManagerProjectIdRoute = SiteManagerProjectIdRouteImport.update({
+  id: '/site-manager/$projectId',
+  path: '/site-manager/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsNewRoute = ProjectsNewRouteImport.update({
+  id: '/projects/new',
+  path: '/projects/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgrammeProjectIdRoute = ProgrammeProjectIdRouteImport.update({
+  id: '/programme/$projectId',
+  path: '/programme/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgNewRoute = OrgNewRouteImport.update({
+  id: '/org/new',
+  path: '/org/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgOrgIdRoute = OrgOrgIdRouteImport.update({
+  id: '/org/$orgId',
+  path: '/org/$orgId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinOrgSlugRoute = JoinOrgSlugRouteImport.update({
+  id: '/join-org/$slug',
+  path: '/join-org/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DabsProjectIdRoute = DabsProjectIdRouteImport.update({
+  id: '/dabs/$projectId',
+  path: '/dabs/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BillingProjectIdRoute = BillingProjectIdRouteImport.update({
+  id: '/billing/$projectId',
+  path: '/billing/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SubcontractorPackProjectIdIndexRoute =
+  SubcontractorPackProjectIdIndexRouteImport.update({
+    id: '/subcontractor-pack/$projectId/',
+    path: '/subcontractor-pack/$projectId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const OrgOrgIdIndexRoute = OrgOrgIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OrgOrgIdRoute,
+} as any)
+const SubcontractorPackProjectIdManagerRoute =
+  SubcontractorPackProjectIdManagerRouteImport.update({
+    id: '/subcontractor-pack/$projectId/manager',
+    path: '/subcontractor-pack/$projectId/manager',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ProjectsProjectIdBibleRoute = ProjectsProjectIdBibleRouteImport.update({
+  id: '/projects_/$projectId/bible',
+  path: '/projects/$projectId/bible',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgOrgIdEditRoute = OrgOrgIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => OrgOrgIdRoute,
+} as any)
+const JoinOrgInviteTokenRoute = JoinOrgInviteTokenRouteImport.update({
+  id: '/join-org/invite/$token',
+  path: '/join-org/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDrawingDrawingIdRoute = ApiDrawingDrawingIdRouteImport.update({
+  id: '/api/drawing/$drawingId',
+  path: '/api/drawing/$drawingId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
@@ -209,47 +241,15 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiDrawingDrawingIdRoute = ApiDrawingDrawingIdRouteImport.update({
-  id: '/api/drawing/$drawingId',
-  path: '/api/drawing/$drawingId',
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JoinOrgInviteTokenRoute = JoinOrgInviteTokenRouteImport.update({
-  id: '/join-org/invite/$token',
-  path: '/join-org/invite/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrgOrgIdIndexRoute = OrgOrgIdIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => OrgOrgIdRoute,
-} as any)
-const OrgOrgIdEditRoute = OrgOrgIdEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => OrgOrgIdRoute,
-} as any)
-const ProjectsProjectIdBibleRoute = ProjectsProjectIdBibleRouteImport.update({
-  id: '/projects_/$projectId/bible',
-  path: '/projects/$projectId/bible',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SubcontractorPackProjectIdIndexRoute =
-  SubcontractorPackProjectIdIndexRouteImport.update({
-    id: '/subcontractor-pack/$projectId/',
-    path: '/subcontractor-pack/$projectId/',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const SubcontractorPackProjectIdManagerRoute =
-  SubcontractorPackProjectIdManagerRouteImport.update({
-    id: '/subcontractor-pack/$projectId/manager',
-    path: '/subcontractor-pack/$projectId/manager',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksWeatherSnapshotRoute =
-  ApiPublicHooksWeatherSnapshotRouteImport.update({
-    id: '/api/public/hooks/weather-snapshot',
-    path: '/api/public/hooks/weather-snapshot',
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicWebhooksStripeRoute = ApiPublicWebhooksStripeRouteImport.update({
@@ -257,10 +257,10 @@ const ApiPublicWebhooksStripeRoute = ApiPublicWebhooksStripeRouteImport.update({
   path: '/api/public/webhooks/stripe',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LovableEmailQueueProcessRoute =
-  LovableEmailQueueProcessRouteImport.update({
-    id: '/lovable/email/queue/process',
-    path: '/lovable/email/queue/process',
+const ApiPublicHooksWeatherSnapshotRoute =
+  ApiPublicHooksWeatherSnapshotRouteImport.update({
+    id: '/api/public/hooks/weather-snapshot',
+    path: '/api/public/hooks/weather-snapshot',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -568,60 +568,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/experience': {
-      id: '/experience'
-      path: '/experience'
-      fullPath: '/experience'
-      preLoaderRoute: typeof ExperienceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/oracle': {
-      id: '/oracle'
-      path: '/oracle'
-      fullPath: '/oracle'
-      preLoaderRoute: typeof OracleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
+    '/unlock': {
+      id: '/unlock'
+      path: '/unlock'
+      fullPath: '/unlock'
+      preLoaderRoute: typeof UnlockRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/trial-ended': {
@@ -631,109 +582,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrialEndedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/unlock': {
-      id: '/unlock'
-      path: '/unlock'
-      fullPath: '/unlock'
-      preLoaderRoute: typeof UnlockRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.mcp/list-tools': {
-      id: '/.mcp/list-tools'
-      path: '/.mcp/list-tools'
-      fullPath: '/.mcp/list-tools'
-      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+    '/oracle': {
+      id: '/oracle'
+      path: '/oracle'
+      fullPath: '/oracle'
+      preLoaderRoute: typeof OracleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/billing/$projectId': {
-      id: '/billing/$projectId'
-      path: '/billing/$projectId'
-      fullPath: '/billing/$projectId'
-      preLoaderRoute: typeof BillingProjectIdRouteImport
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dabs/$projectId': {
-      id: '/dabs/$projectId'
-      path: '/dabs/$projectId'
-      fullPath: '/dabs/$projectId'
-      preLoaderRoute: typeof DabsProjectIdRouteImport
+    '/experience': {
+      id: '/experience'
+      path: '/experience'
+      fullPath: '/experience'
+      preLoaderRoute: typeof ExperienceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/invite/$token': {
-      id: '/invite/$token'
-      path: '/invite/$token'
-      fullPath: '/invite/$token'
-      preLoaderRoute: typeof InviteTokenRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/join-org/$slug': {
-      id: '/join-org/$slug'
-      path: '/join-org/$slug'
-      fullPath: '/join-org/$slug'
-      preLoaderRoute: typeof JoinOrgSlugRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/org/': {
-      id: '/org/'
-      path: '/org'
-      fullPath: '/org/'
-      preLoaderRoute: typeof OrgIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/org/$orgId': {
-      id: '/org/$orgId'
-      path: '/org/$orgId'
-      fullPath: '/org/$orgId'
-      preLoaderRoute: typeof OrgOrgIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/org/new': {
-      id: '/org/new'
-      path: '/org/new'
-      fullPath: '/org/new'
-      preLoaderRoute: typeof OrgNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/programme/$projectId': {
-      id: '/programme/$projectId'
-      path: '/programme/$projectId'
-      fullPath: '/programme/$projectId'
-      preLoaderRoute: typeof ProgrammeProjectIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/projects/': {
-      id: '/projects/'
-      path: '/projects'
-      fullPath: '/projects/'
-      preLoaderRoute: typeof ProjectsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/projects/$projectId': {
-      id: '/projects/$projectId'
-      path: '/projects/$projectId'
-      fullPath: '/projects/$projectId'
-      preLoaderRoute: typeof ProjectsProjectIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/projects/new': {
-      id: '/projects/new'
-      path: '/projects/new'
-      fullPath: '/projects/new'
-      preLoaderRoute: typeof ProjectsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/site-manager/$projectId': {
-      id: '/site-manager/$projectId'
-      path: '/site-manager/$projectId'
-      fullPath: '/site-manager/$projectId'
-      preLoaderRoute: typeof SiteManagerProjectIdRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/snags/': {
@@ -743,25 +645,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SnagsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/snags/$snagId': {
-      id: '/snags/$snagId'
-      path: '/snags/$snagId'
-      fullPath: '/snags/$snagId'
-      preLoaderRoute: typeof SnagsSnagIdRouteImport
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/snags/new': {
-      id: '/snags/new'
-      path: '/snags/new'
-      fullPath: '/snags/new'
-      preLoaderRoute: typeof SnagsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/subcontractor/$projectId': {
-      id: '/subcontractor/$projectId'
-      path: '/subcontractor/$projectId'
-      fullPath: '/subcontractor/$projectId'
-      preLoaderRoute: typeof SubcontractorProjectIdRouteImport
+    '/org/': {
+      id: '/org/'
+      path: '/org'
+      fullPath: '/org/'
+      preLoaderRoute: typeof OrgIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/subcontractors/new': {
@@ -771,53 +666,109 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubcontractorsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.lovable/oauth/consent': {
-      id: '/.lovable/oauth/consent'
-      path: '/.lovable/oauth/consent'
-      fullPath: '/.lovable/oauth/consent'
-      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+    '/subcontractor/$projectId': {
+      id: '/subcontractor/$projectId'
+      path: '/subcontractor/$projectId'
+      fullPath: '/subcontractor/$projectId'
+      preLoaderRoute: typeof SubcontractorProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.mcp/invoke-tool/$tool': {
-      id: '/.mcp/invoke-tool/$tool'
-      path: '/.mcp/invoke-tool/$tool'
-      fullPath: '/.mcp/invoke-tool/$tool'
-      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+    '/snags/new': {
+      id: '/snags/new'
+      path: '/snags/new'
+      fullPath: '/snags/new'
+      preLoaderRoute: typeof SnagsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/drawing/$drawingId': {
-      id: '/api/drawing/$drawingId'
-      path: '/api/drawing/$drawingId'
-      fullPath: '/api/drawing/$drawingId'
-      preLoaderRoute: typeof ApiDrawingDrawingIdRouteImport
+    '/snags/$snagId': {
+      id: '/snags/$snagId'
+      path: '/snags/$snagId'
+      fullPath: '/snags/$snagId'
+      preLoaderRoute: typeof SnagsSnagIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/join-org/invite/$token': {
-      id: '/join-org/invite/$token'
-      path: '/join-org/invite/$token'
-      fullPath: '/join-org/invite/$token'
-      preLoaderRoute: typeof JoinOrgInviteTokenRouteImport
+    '/site-manager/$projectId': {
+      id: '/site-manager/$projectId'
+      path: '/site-manager/$projectId'
+      fullPath: '/site-manager/$projectId'
+      preLoaderRoute: typeof SiteManagerProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/org/$orgId/': {
-      id: '/org/$orgId/'
-      path: '/'
-      fullPath: '/org/$orgId/'
-      preLoaderRoute: typeof OrgOrgIdIndexRouteImport
-      parentRoute: typeof OrgOrgIdRoute
+    '/projects/new': {
+      id: '/projects/new'
+      path: '/projects/new'
+      fullPath: '/projects/new'
+      preLoaderRoute: typeof ProjectsNewRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/org/$orgId/edit': {
-      id: '/org/$orgId/edit'
-      path: '/edit'
-      fullPath: '/org/$orgId/edit'
-      preLoaderRoute: typeof OrgOrgIdEditRouteImport
-      parentRoute: typeof OrgOrgIdRoute
+    '/projects/$projectId': {
+      id: '/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof ProjectsProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/projects_/$projectId/bible': {
-      id: '/projects_/$projectId/bible'
-      path: '/projects/$projectId/bible'
-      fullPath: '/projects/$projectId/bible'
-      preLoaderRoute: typeof ProjectsProjectIdBibleRouteImport
+    '/programme/$projectId': {
+      id: '/programme/$projectId'
+      path: '/programme/$projectId'
+      fullPath: '/programme/$projectId'
+      preLoaderRoute: typeof ProgrammeProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org/new': {
+      id: '/org/new'
+      path: '/org/new'
+      fullPath: '/org/new'
+      preLoaderRoute: typeof OrgNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org/$orgId': {
+      id: '/org/$orgId'
+      path: '/org/$orgId'
+      fullPath: '/org/$orgId'
+      preLoaderRoute: typeof OrgOrgIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join-org/$slug': {
+      id: '/join-org/$slug'
+      path: '/join-org/$slug'
+      fullPath: '/join-org/$slug'
+      preLoaderRoute: typeof JoinOrgSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dabs/$projectId': {
+      id: '/dabs/$projectId'
+      path: '/dabs/$projectId'
+      fullPath: '/dabs/$projectId'
+      preLoaderRoute: typeof DabsProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/billing/$projectId': {
+      id: '/billing/$projectId'
+      path: '/billing/$projectId'
+      fullPath: '/billing/$projectId'
+      preLoaderRoute: typeof BillingProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/subcontractor-pack/$projectId/': {
@@ -827,6 +778,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubcontractorPackProjectIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/org/$orgId/': {
+      id: '/org/$orgId/'
+      path: '/'
+      fullPath: '/org/$orgId/'
+      preLoaderRoute: typeof OrgOrgIdIndexRouteImport
+      parentRoute: typeof OrgOrgIdRoute
+    }
     '/subcontractor-pack/$projectId/manager': {
       id: '/subcontractor-pack/$projectId/manager'
       path: '/subcontractor-pack/$projectId/manager'
@@ -834,11 +792,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubcontractorPackProjectIdManagerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/weather-snapshot': {
-      id: '/api/public/hooks/weather-snapshot'
-      path: '/api/public/hooks/weather-snapshot'
-      fullPath: '/api/public/hooks/weather-snapshot'
-      preLoaderRoute: typeof ApiPublicHooksWeatherSnapshotRouteImport
+    '/projects_/$projectId/bible': {
+      id: '/projects_/$projectId/bible'
+      path: '/projects/$projectId/bible'
+      fullPath: '/projects/$projectId/bible'
+      preLoaderRoute: typeof ProjectsProjectIdBibleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org/$orgId/edit': {
+      id: '/org/$orgId/edit'
+      path: '/edit'
+      fullPath: '/org/$orgId/edit'
+      preLoaderRoute: typeof OrgOrgIdEditRouteImport
+      parentRoute: typeof OrgOrgIdRoute
+    }
+    '/join-org/invite/$token': {
+      id: '/join-org/invite/$token'
+      path: '/join-org/invite/$token'
+      fullPath: '/join-org/invite/$token'
+      preLoaderRoute: typeof JoinOrgInviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/drawing/$drawingId': {
+      id: '/api/drawing/$drawingId'
+      path: '/api/drawing/$drawingId'
+      fullPath: '/api/drawing/$drawingId'
+      preLoaderRoute: typeof ApiDrawingDrawingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/webhooks/stripe': {
@@ -848,11 +848,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksStripeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lovable/email/queue/process': {
-      id: '/lovable/email/queue/process'
-      path: '/lovable/email/queue/process'
-      fullPath: '/lovable/email/queue/process'
-      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+    '/api/public/hooks/weather-snapshot': {
+      id: '/api/public/hooks/weather-snapshot'
+      path: '/api/public/hooks/weather-snapshot'
+      fullPath: '/api/public/hooks/weather-snapshot'
+      preLoaderRoute: typeof ApiPublicHooksWeatherSnapshotRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
