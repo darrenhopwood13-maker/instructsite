@@ -342,7 +342,7 @@ export const listProjectZones = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("work_zones")
-      .select("id,name,level,source,status")
+      .select("id,name,level,source,status,drawing_id")
       .eq("project_id", data.projectId)
       .order("name");
     if (error) throw new Error(error.message);
