@@ -436,14 +436,14 @@ export const askProjectOracle = createServerFn({ method: "POST" })
  * Uses GPT-4o Vision for rich visual understanding with structured response.
  */
 const PhotoScanSchema = z.object({
-  assessmentTitle: z.string().default(""),
-  summary: z.string().default(""),
-  keyFindings: z.array(z.string()).default([]),
-  regulatoryReferences: z.array(z.string()).default([]),
-  recommendations: z.array(z.string()).default([]),
-  riskFlags: z.array(z.string()).default([]),
-  tradeInvolved: z.string().default(""),
-  priority: z.enum(["low", "medium", "high", "critical"]).default("medium"),
+  assessmentTitle: z.string(),
+  summary: z.string(),
+  keyFindings: z.array(z.string()),
+  regulatoryReferences: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  riskFlags: z.array(z.string()),
+  tradeInvolved: z.string(),
+  priority: z.enum(["low", "medium", "high", "critical"]),
 });
 
 export const oracleScan = createServerFn({ method: "POST" })
