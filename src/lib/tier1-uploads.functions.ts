@@ -203,20 +203,10 @@ export const registerTier1Document = createServerFn({ method: "POST" })
             extraction_status: "complete",
           })
           .eq("site_document_id", sd.id);
-        for (const z of meta.zones ?? []) {
-          if (!z?.name) continue;
-          await supabase
-            .from("work_zones")
-            .upsert(
-              {
-                project_id: data.projectId,
-                name: z.name,
-                level: z.level ?? null,
-                source: "logistics",
-              },
-              { onConflict: "project_id,name,level", ignoreDuplicates: true },
-            );
-        }
+        // extracted_zones JSON is kept on logistics_plans so Oracle can use it
+        // as context when allocating zones for a DABS-flagged drawing. We no
+        // longer upsert into work_zones on upload.
+
         extractionStatus = "complete";
       } else {
         extractionStatus = "complete";
