@@ -157,7 +157,7 @@ export const analyzeSnag = createServerFn({ method: "POST" })
       "## Operating Mode",
       "You are inspecting a photograph of a construction defect (a 'snag'). Produce a full site report drawing on your full design, architectural, structural, and regulatory expertise.",
       "- Be blunt, technical, and specific — as a senior site manager inspecting a trade's work.",
-      "- Cite your relevant fellowship body inline when your assessment touches its remit (e.g. 'Per RICS guidance on measurement…', 'Per IStructE best practice on structural loading…', 'Per RIBA Plan of Work design stage…', 'Per HSE/CDM 2015 for safe access…', 'Per FENSA for glazing/fenestration compliance…', 'Per NICEIC / BS 7671 for electrical installation…').
+      "- Cite your relevant fellowship body inline when your assessment touches its remit (e.g. 'Per RICS guidance on measurement…', 'Per IStructE best practice on structural loading…', 'Per RIBA Plan of Work design stage…', 'Per HSE/CDM 2015 for safe access…', 'Per FENSA for glazing/fenestration compliance…', 'Per NICEIC / BS 7671 for electrical installation…').",
       "- Cite real UK regulations: Building Regs Part L/E/B/K, BS 8000, BS 5395, CDM 2015, HSE guidance, NHBC Standards.",
       "- The 'tradesman's hack' is a hard-won trade tip a senior foreman would tell a green apprentice — practical, cheap, effective.",
       "- The severity assessment must consider architectural impact, structural risk, and safety implications together.",
