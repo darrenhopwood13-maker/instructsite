@@ -23,6 +23,7 @@ import {
   createDrawingDirectLinks,
   getDrawingPreview,
   setDrawingInDabs,
+  allocateZonesForDabsDrawing,
 } from "@/lib/tier1-uploads.functions";
 import { deleteDrawing } from "@/lib/admin.functions";
 import { getMyRoles } from "@/lib/projects.functions";
