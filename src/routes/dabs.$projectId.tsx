@@ -195,13 +195,17 @@ function DabsPage() {
               className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
             >
               <option value="">— Select zone —</option>
-              {zones.data?.map((z: any) => (
-                <option key={z.id} value={z.id} disabled={z.status === "closed"}>
-                  {z.name}
-                  {z.level ? ` · ${z.level}` : ""}
-                  {z.status === "closed" ? " — CLOSED" : ""}
-                </option>
-              ))}
+              {(zones.data ?? [])
+                .filter((z: any) =>
+                  !selectedDrawing ? true : !z.drawing_id || z.drawing_id === selectedDrawing,
+                )
+                .map((z: any) => (
+                  <option key={z.id} value={z.id} disabled={z.status === "closed"}>
+                    {z.name}
+                    {z.level ? ` · ${z.level}` : ""}
+                    {z.status === "closed" ? " — CLOSED" : ""}
+                  </option>
+                ))}
             </select>
           </label>
           <label className="block">
