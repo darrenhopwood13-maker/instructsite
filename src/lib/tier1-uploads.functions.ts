@@ -185,20 +185,9 @@ export const registerTier1Document = createServerFn({ method: "POST" })
             extraction_status: "complete",
           })
           .eq("site_document_id", sd.id);
-        for (const z of meta.zones ?? []) {
-          if (!z?.name) continue;
-          await supabase
-            .from("work_zones")
-            .upsert(
-              {
-                project_id: data.projectId,
-                name: z.name,
-                level: z.level ?? meta.level ?? null,
-                source: "drawing",
-              },
-              { onConflict: "project_id,name,level", ignoreDuplicates: true },
-            );
-        }
+        // Work zones are no longer auto-created on upload — Oracle allocates
+        // them when the drawing is explicitly added to DABS.
+
         extractionStatus = "complete";
       } else if (data.docType === "logistics") {
         const meta = await aiJson<{
