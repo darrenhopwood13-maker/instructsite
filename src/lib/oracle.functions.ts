@@ -430,3 +430,115 @@ export const askProjectOracle = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Oracle Scan — upload a photo of anything on site and get the full Oracle
+ * identity (30yr site manager + all 6 fellowships) to analyse it.
+ * Uses GPT-4o Vision for rich visual understanding with structured response.
+ */
+const PhotoScanSchema = z.object({
+  assessmentTitle: z.string().default(""),
+  summary: z.string().default(""),
+  keyFindings: z.array(z.string()).default([]),
+  regulatoryReferences: z.array(z.string()).default([]),
+  recommendations: z.array(z.string()).default([]),
+  riskFlags: z.array(z.string()).default([]),
+  tradeInvolved: z.string().default(""),
+  priority: z.enum(["low", "medium", "high", "critical"]).default("medium"),
+});
+
+export const oracleScan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        fileName: z.string(),
+        mimeType: z.string(),
+        dataBase64: z.string().min(1),
+        scanContext: z.string().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
+    if (!/^image\//i.test(data.mimeType)) {
+      throw new Error("Please upload an image file.");
+    }
+
+    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
+    const gateway = createLovableAiGatewayProvider(apiKey);
+    const dataUrl = `data:${data.mimeType};base64,${data.dataBase64}`;
+
+    const system = [
+      "# IDENTITY — THE ORACLE (Site Scan Mode)",
+      "You are The Oracle: the most qualified site manager, HSE director, design manager, architect, and engineer in the history of the construction industry — distilled into a single advisor.",
+      "",
+      "## Career (30 years, top-tier)",
+      "- 30 years of top-tier construction experience across residential, commercial, civils, heritage, and high-risk projects.",
+      "- 15 of those 30 years served specifically as a Senior Construction Health, Safety and Environment (HSE) Officer.",
+      "",
+      "## Fellowships (decorated across all major UK governing bodies)",
+      "You are a full Fellow of each of the following and speak with their authority:",
+      "- FCIOB — Chartered Institute of Building",
+      "- FRICS — Royal Institution of Chartered Surveyors",
+      "- FICE — Institution of Civil Engineers",
+      "- FRIBA — Royal Institute of British Architects",
+      "- FIStructE — Institution of Structural Engineers",
+      "- FBIID — British Institute of Interior Design",
+      "",
+      "## Multi-Trade Expertise (hands-on)",
+      "Deep, practical knowledge of: bricklaying and masonry, joinery and carpentry (1st/2nd fix), plumbing and drainage, electrical (Part P, BS 7671), structural works (steel, concrete, timber frame), roofing, plastering, groundworks, and MEP coordination.",
+      "",
+      "## Operating Rules",
+      "1. You are analysing a photograph taken on a construction site. It could be anything: a defect, a work-in-progress, site conditions, a drawing, a material, or a safety concern.",
+      "2. Assess what you see through the lens of all your fellowships — design quality (RIBA), structural integrity (IStructE), measurement/standards (RICS), programme/management (CIOB), interior fit-out (BIID), safety (HSE).",
+      "3. Be blunt and honest. If something looks wrong, say so. If it looks good, say that too.",
+      "4. Cite the relevant fellowship body inline when your assessment touches its remit.",
+      "5. Reference real UK regulations where applicable.",
+      "6. Never hedge on safety.",
+    ].join("\n");
+
+    const contextLine = data.scanContext
+      ? `\nAdditional context from the user: ${data.scanContext}`
+      : "";
+
+    try {
+      const { output } = await generateText({
+        model: gateway("openai/gpt-4o"),
+        output: Output.object({ schema: PhotoScanSchema }),
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text:
+                  `As The Oracle, scan this site photo with your full 30 years of expertise across all six fellowships.${contextLine}\n\nReturn a JSON report with: assessmentTitle (6–10 words capturing the key finding), summary (3–5 sentences covering what you see and its significance), keyFindings (array of specific observations, 3–6 items), regulatoryReferences (array of relevant UK regs, standards, and fellowship guidance), recommendations (array of actionable next steps, 2–5 items), riskFlags (array of any safety/quality/design risks identified), tradeInvolved (which trade is responsible if applicable), priority (low/medium/high/critical).`,
+              },
+              { type: "image", image: dataUrl },
+            ],
+          },
+        ],
+      });
+      return { report: output };
+    } catch (error) {
+      if (NoObjectGeneratedError.isInstance(error)) {
+        const raw = error.text ?? "";
+        let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+        const start = cleaned.search(/[{[]/);
+        const end = cleaned.lastIndexOf("}");
+        if (start !== -1 && end !== -1 && end > start) cleaned = cleaned.substring(start, end + 1);
+        try {
+          const parsed = PhotoScanSchema.parse(JSON.parse(cleaned));
+          return { report: parsed };
+        } catch {
+          // fall through
+        }
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const msg = (error as any)?.message || "Oracle Scan failed.";
+      throw new Error(msg);
+    }
+  });
+

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Loader2, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Wrench, ShieldAlert, ShoppingBag, FileSearch, ClipboardCheck, Brain, Camera, Scan, Loader2, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { runOracleCommand } from "@/lib/oracle.functions";
+import { runOracleCommand, oracleScan } from "@/lib/oracle.functions";
 import { ProjectBibleUpload } from "@/components/oracle/ProjectBibleUpload";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { ReportViewer } from "@/components/reports/ReportViewer";
@@ -20,6 +20,7 @@ const COMMANDS = [
   { key: "drawing",      label: "Drawing Q&A",           sub: "Symbols, datums, MBC details",     icon: FileSearch,     desc: "Query technical drawings",           image: cmdDrawing,      accent: "from-sky-400/20 to-blue-700/30" },
   { key: "snag",         label: "Snag Master",           sub: "RICS-standard rectification",      icon: ClipboardCheck, desc: "Defect capture & tracking",          image: cmdSnag,         accent: "from-emerald-400/20 to-green-700/30" },
   { key: "assist",       label: "AI Assist",             sub: "Cross-trade problem solving",      icon: Brain,          desc: "On-site knowledge co-pilot",         image: cmdAssist,       accent: "from-lime-400/30 to-emerald-700/40" },
+  { key: "scan",         label: "Site Scan",             sub: "Snap & analyse anything on site",  icon: Scan,           desc: "Oracle analyses any site photo",     image: cmdSnag,         accent: "from-purple-400/20 to-violet-700/30" },
 ];
 const PROCESSING_STEPS = [
   "Locking on to project context…",
@@ -84,12 +85,53 @@ function OracleProcessing({ label }: { label: string }) {
 
 const OraclePage = () => {
   const invokeOracle = useServerFn(runOracleCommand);
+  const invokeScan = useServerFn(oracleScan);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeLabel, setActiveLabel] = useState<string>("");
   const [answer, setAnswer] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | undefined>(undefined);
+
+  // Site Scan state
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const uploadRef = useRef<HTMLInputElement>(null);
+  const [scanPreview, setScanPreview] = useState<string | null>(null);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanReport, setScanReport] = useState<any>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [showScanUi, setShowScanUi] = useState(false);
+
+  async function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => {
+        const s = String(r.result || "");
+        resolve(s.split(",")[1] ?? "");
+      };
+      r.onerror = () => reject(new Error("Read failed"));
+      r.readAsDataURL(file);
+    });
+  }
+
+  const handleScanFile = async (file: File) => {
+    setScanError(null);
+    setScanReport(null);
+    setScanLoading(true);
+    setActiveLabel("Site Scan");
+    setDialogOpen(true);
+    try {
+      const dataBase64 = await fileToBase64(file);
+      const res = await invokeScan({
+        data: { fileName: file.name, mimeType: file.type || "image/jpeg", dataBase64 },
+      });
+      setScanReport(res.report);
+    } catch (e: any) {
+      setScanError(e?.message || "Oracle Scan failed.");
+    } finally {
+      setScanLoading(false);
+    }
+  };
 
   const handleInvoke = async (cmd: { key: string; label: string }) => {
     setLoadingKey(cmd.key);
@@ -137,14 +179,6 @@ const OraclePage = () => {
     }
   };
 
-  const closeDialog = () => {
-    setDialogOpen(false);
-    setAnswer("");
-    setError(null);
-  };
-
-  const bodyMarkdown = error ? `## Error\n\n${error}` : answer;
-
   return (
     <div className="relative min-h-screen overflow-hidden bg-background p-6">
       <div className="aurora-bg" />
@@ -168,12 +202,20 @@ const OraclePage = () => {
           {COMMANDS.map((cmd, idx) => {
             const Icon = cmd.icon;
             const isLoading = loadingKey === cmd.key;
+            const isScan = cmd.key === "scan";
             return (
               <button
                 key={cmd.key}
                 type="button"
-                disabled={loadingKey !== null}
-                onClick={() => handleInvoke(cmd)}
+                disabled={loadingKey !== null || scanLoading}
+                onClick={() => {
+                  if (isScan) {
+                    setShowScanUi(true);
+                    cameraRef.current?.click();
+                  } else {
+                    handleInvoke(cmd);
+                  }
+                }}
                 className="cmd-tile shine animate-fade-up h-36 text-left disabled:cursor-not-allowed disabled:opacity-60"
                 style={{ animationDelay: `${idx * 60}ms` }}
               >
@@ -202,20 +244,156 @@ const OraclePage = () => {
           })}
         </div>
 
+        {/* Site Scan photo UI (hidden file inputs) */}
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files?.[0]) {
+              setScanPreview(URL.createObjectURL(e.target.files[0]));
+              handleScanFile(e.target.files[0]);
+            }
+          }}
+        />
+        <input
+          ref={uploadRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files?.[0]) {
+              setScanPreview(URL.createObjectURL(e.target.files[0]));
+              handleScanFile(e.target.files[0]);
+            }
+          }}
+        />
+
+        {showScanUi && !scanLoading && !scanReport && !scanError && (
+          <div className="mt-8 glass-btn rounded-2xl border border-dashed border-white/20 p-10 text-center">
+            <Camera className="mx-auto h-12 w-12 text-foreground/50" />
+            <p className="mt-4 text-sm uppercase tracking-widest text-foreground/70">Snap or upload a site photo</p>
+            <p className="mt-2 text-xs text-muted-foreground">The Oracle will analyse it with full design, architectural, structural and regulatory expertise.</p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => cameraRef.current?.click()}
+                className="glass-orange inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm uppercase tracking-widest"
+              >
+                <Camera className="h-4 w-4" /> Take Photo
+              </button>
+              <button
+                type="button"
+                onClick={() => uploadRef.current?.click()}
+                className="glass-btn inline-flex items-center gap-2 rounded-lg border border-white/15 px-5 py-3 text-sm uppercase tracking-widest"
+              >
+                Upload from device
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowScanUi(false)}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-3 text-xs uppercase tracking-widest text-foreground/70 hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {scanPreview && (scanLoading || scanReport || scanError) && (
+          <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+            <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+              <img src={scanPreview} alt="Site scan" className="h-full w-full object-cover" />
+            </div>
+            <div>
+              {scanLoading && (
+                <div className="glass-btn flex items-center gap-3 rounded-2xl border border-white/10 p-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-alert" />
+                  <div>
+                    <p className="text-sm uppercase tracking-widest text-foreground">The Oracle is scanning…</p>
+                    <p className="text-xs text-muted-foreground">Analysing across all six fellowships.</p>
+                  </div>
+                </div>
+              )}
+              {scanError && !scanLoading && (
+                <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-5">
+                  <p className="flex items-center gap-2 text-sm text-red-200"><ShieldAlert className="h-4 w-4" /> {scanError}</p>
+                  <button
+                    type="button"
+                    onClick={() => { setScanPreview(null); setShowScanUi(true); cameraRef.current?.click(); }}
+                    className="glass-btn mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-xs uppercase tracking-widest"
+                  >Try another photo</button>
+                </div>
+              )}
+              {scanReport && !scanLoading && (
+                <div className="glass-btn rounded-xl border border-white/10 p-4">
+                  <p className="text-[0.65rem] uppercase tracking-[0.35em] text-alert">Assessment</p>
+                  <h3 className="mt-1 text-xl font-extrabold text-foreground">{scanReport.assessmentTitle}</h3>
+                  {scanReport.tradeInvolved && (
+                    <span className="mt-2 inline-block rounded-full border border-white/15 px-2 py-0.5 text-[0.65rem] uppercase tracking-widest text-foreground/70">
+                      {scanReport.tradeInvolved}
+                    </span>
+                  )}
+                  <p className="mt-4 text-sm leading-relaxed text-foreground/90">{scanReport.summary}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <ProjectBibleUpload />
       </div>
 
       <ReportViewer
         open={dialogOpen}
-        onClose={closeDialog}
-        kicker="Oracle Response"
-        title={activeLabel || "Oracle"}
-        subtitle={loadingKey ? "Processing…" : undefined}
+        onClose={() => {
+          setDialogOpen(false);
+          setAnswer("");
+          setError(null);
+          setScanReport(null);
+          setScanError(null);
+          setScanPreview(null);
+          setShowScanUi(false);
+        }}
+        kicker={scanReport ? "Oracle Site Scan" : "Oracle Response"}
+        title={scanReport ? scanReport.assessmentTitle || "Site Scan" : activeLabel || "Oracle"}
+        subtitle={
+          scanReport
+            ? `${scanReport.tradeInvolved || "General"} · Priority: ${scanReport.priority} · ${scanReport.keyFindings?.length || 0} findings`
+            : loadingKey || scanLoading ? "Processing…" : undefined
+        }
         category="Oracle"
-        markdown={bodyMarkdown}
+        markdown={
+          scanReport
+            ? [
+                `# ${scanReport.assessmentTitle}`,
+                "",
+                `**Trade:** ${scanReport.tradeInvolved || "General"}  |  **Priority:** ${scanReport.priority}`,
+                "",
+                "## Summary",
+                scanReport.summary || "—",
+                "",
+                "## Key Findings",
+                ...(scanReport.keyFindings || []).map((f: string) => `- ${f}`),
+                "",
+                "## Recommendations",
+                ...(scanReport.recommendations || []).map((r: string) => `- ${r}`),
+                "",
+                "## Risk Flags",
+                ...(scanReport.riskFlags?.length ? (scanReport.riskFlags as string[]).map((f: string) => `- ⚠️ ${f}`) : ["None identified."]),
+                "",
+                "## Regulatory References",
+                ...(scanReport.regulatoryReferences?.length ? (scanReport.regulatoryReferences as string[]).map((r: string) => `- § ${r}`) : ["None cited."]),
+              ].join("\n")
+            : error
+              ? `## Error\n\n${error}`
+              : answer
+        }
         projectId={projectId}
       >
-        {loadingKey !== null ? (
+        {loadingKey !== null || scanLoading ? (
           <div className="glass-panel relative overflow-hidden p-6">
             <div className="flex items-center gap-3">
               <span className="relative flex h-11 w-11 items-center justify-center">
