@@ -117,7 +117,7 @@ export const analyzeSnag = createServerFn({ method: "POST" })
       throw new Error("Please upload an image file.");
     }
 
-    const orgId = await getMyOrgId(context.supabase, context.userId);
+    const orgId = await getMyOrgId(context.supabase, context.userId, context.claims);
 
     // Upload photo to snag-photos/{orgId}/{uuid}.ext via admin client (still stored under org folder for RLS)
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -201,7 +201,7 @@ export const createSnag = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const orgId = await getMyOrgId(context.supabase, context.userId);
+    const orgId = await getMyOrgId(context.supabase, context.userId, context.claims);
     const { data: row, error } = await context.supabase
       .from("snags")
       .insert({
@@ -255,7 +255,7 @@ export const postSnagComment = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const orgId = await getMyOrgId(context.supabase, context.userId);
+    const orgId = await getMyOrgId(context.supabase, context.userId, context.claims);
     const { error } = await context.supabase.from("snag_comments").insert({
       snag_id: data.snagId,
       org_id: orgId,
