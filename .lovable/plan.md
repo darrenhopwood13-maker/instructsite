@@ -1,78 +1,73 @@
 ## Goal
 
-1. Make `/subcontractor/$projectId` (the Subcontractor Cockpit) behave properly on phone-sized screens — no clipped drawing names, no horizontal overflow, no cramped header.
-2. Ensure subcontractors and subcontractor-side Project Managers cannot reach or link into the Site Manager Command Tower (`/site-manager/$projectId`). That area is for the main contractor's site manager, project admin, and master admin only.
+Make DABS opt-in per drawing, and shift work-zone allocation to an Oracle step that runs when a drawing is added to DABS — not at project creation or blanket upload extraction.
 
-## Scope (files that change)
+## Current behaviour (verified)
 
-- `src/routes/subcontractor.$projectId.tsx` — mobile layout tweaks, drawing-name shortening.
-- `src/routes/site-manager.$projectId.tsx` — hard role gate at page level.
-- `src/routes/dabs.$projectId.tsx` — hide "Site Manager Command Tower" link for anyone who is not main-contractor staff.
-- `src/routes/projects.$projectId.tsx` — hide the "Site Manager" header link on the project page for non-main-contractor users (defence-in-depth; the page itself already gates by role).
-- `src/routes/dashboard.tsx` — the "Enter Command Tower" project-card CTA already lives behind an admin gate (master_admin / project_admin), so no change there.
+- `project_drawings.in_dabs` defaults to `false`; `listDabsDrawings` already filters `in_dabs = true`. On this project 1 of 12 drawings is in DABS, so the filter works.
+- The "Add to DABS" button lives inside `DrawingCanvas` (Project Drawings viewer) — easy to miss, and the same canvas is reused on the DABS page which makes the workflow confusing.
+- Every drawing / logistics upload auto-extracts `work_zones` for the whole project regardless of whether it's ever added to DABS (`src/lib/tier1-uploads.functions.ts` lines ~176–230 and ~770–785). Result: the project accumulates zones from sheets that never enter DABS.
+- The DABS pin form's "Work Zone / Level" dropdown pulls every `work_zones` row for the project, so those noise zones surface there.
 
-Nothing changes in server functions or the database — the site-manager route already reads project data through RLS; we're just adding a clean client-side role check and access screen so the wrong users don't land there in the first place.
+## Changes
 
-## Part A — Subcontractor Cockpit responsive fixes
+### 1. Stop auto-creating work zones on upload
 
-Current problems observed in the file:
+In `src/lib/tier1-uploads.functions.ts`:
 
-- Header meta row concatenates project number, company, email inline; on ≤360 px widths the row wraps awkwardly and truncates mid-word.
-- The two-column grid (Live Date / Weather) is fixed `grid-cols-2` with a vertical divider — tight on small phones and pushes text under the divider.
-- Active Drawing button shows `{drawing_no} — {title}` on one line with `truncate`; long titles cut mid-word with no rev info visible.
-- Drawing sheet list items show `drawing_no · Rev X` on one line and title on another, both `truncate` — but the whole row uses `p-3` + 40 px icon, so on small phones the title becomes ~15 chars.
+- In the drawing extraction path, keep extracting title-block metadata (drawing_no, revision, title, level, zone) but remove the `work_zones` upsert loop for `meta.zones`.
+- In the logistics extraction path, still store `extracted_zones` JSON on `logistics_plans` (so Oracle can read it later), but remove the `work_zones` upsert loop.
+- In the bulk "extractDrawingPack" path (~line 770), remove the `work_zones` upsert.
 
-Fixes:
+Net effect: uploads no longer populate `work_zones`. Only Oracle's Add-to-DABS step does.
 
-1. Convert the header meta line to a two-line stack on mobile: line 1 = `#projectNumber` (mono) + company name (`truncate`, `min-w-0`); line 2 = email (`truncate`, muted). Promote to inline row at `sm:`.
-2. Add `min-w-0` to every flex text container in the header, active-shift card, and drawing selector button (already partially applied — audit and complete). Icons get `shrink-0`.
-3. Live Date / Weather grid: keep `grid-cols-2` but drop `divide-x` on mobile (use a bottom border between rows when it stacks) and reduce label tracking so text fits. Alternatively promote to two stacked cards at `<sm` and side-by-side at `sm:`.
-4. Drawing-name shortening — apply everywhere the drawing appears (Active Drawing button line 431-435, sheet list line 734-740, and the smaller "Full DABS View" area if it reappears):
-   - Introduce a small `formatDrawingLabel(d, { maxTitleChars })` helper local to the file that returns `{ code, title }` where `code = drawing_no || "DWG"` and `title` is trimmed to `maxTitleChars` with an ellipsis (word-boundary aware, e.g. 28 chars on mobile, 48 on `sm:`).
-   - Render `code` as its own line (mono, bold) and `title` on a second line with `truncate` — never concatenated with `—` on mobile. Concatenated single-line form is fine from `sm:` up.
-5. Bottom padding: add `pb-[max(env(safe-area-inset-bottom),5rem)]` on the outer scroll container so the Oracle FAB doesn't cover the "Full DABS View" link on iOS.
-6. Sanity pass with the responsive-layout rules from house style: every text container in a flex row gets `min-w-0`; every fixed icon/avatar gets `shrink-0`; single-line headings get `truncate`.
+### 2. New Oracle server function: allocate zones for a DABS drawing
 
-No layout/logic beyond that — the page's information architecture stays identical.
+Add `allocateZonesForDabsDrawing(drawingId)` in `src/lib/tier1-uploads.functions.ts` (auth + `is_project_admin` gate, same pattern as `setDrawingInDabs`):
 
-## Part B — Lock down the Site Manager Command Tower
+- Fetch the drawing text (reuse `downloadDocText`) + any `logistics_plans.extracted_zones` for the project as context.
+- Call the AI gateway with a prompt: "This drawing is now a live DABS work sheet. Identify the work zones / grid areas / levels a site manager would pin activities to. Return `{ zones: [{ name, level? }] }`. Do not invent zones — only what's shown on the sheet or corroborated by the logistics plan."
+- Upsert results into `work_zones` with `source = 'oracle'` and a new column `drawing_id` (see §3) so zones are scoped to the drawing that produced them.
+- Return `{ zones: [...] }` for a toast.
 
-Definition of "main-contractor staff" for this app:
+### 3. Migration: link zones to the drawing that produced them
 
-- `user_roles.role` in `('master_admin', 'project_admin', 'site_manager')`, OR
-- `project_members.role_on_project` = `'project_admin'` for this project (via `is_project_admin`).
+- Add nullable `drawing_id uuid references public.project_drawings(id) on delete cascade` to `public.work_zones`.
+- Optional: `source` already exists — no change.
+- Backfill is not needed; existing zones stay project-scoped (drawing_id null).
+- RLS: existing project-scoped policies continue to work; no new policy needed.
 
-Subcontractors and subcontractor-side org PMs are NOT in that set — org PMs are admins of their subcontractor org, not of the main-contractor project.
+### 4. Wire allocation into "Add to DABS"
 
-Changes:
+In `src/components/project/DrawingCanvas.tsx` `handleToggleDabs`:
 
-1. **`site-manager.$projectId.tsx` — page-level gate.**
-   Fetch `getMyRoles()` alongside the existing `getProject` query. Compute:
-   ```ts
-   const roles = rolesQ.data?.roles ?? [];
-   const isMainContractor =
-     roles.includes("master_admin") ||
-     roles.includes("project_admin") ||
-     roles.includes("site_manager");
-   ```
-   Before rendering the tower, if `ready && !rolesQ.isLoading && !isMainContractor`, render `<AccessDeniedScreen message="The Site Manager Command Tower is restricted to the main contractor's site management team." />`. This runs before any of the tower queries fire.
+- After `setDabsFn` resolves with `inDabs: true`, call the new `allocateZonesForDabsDrawing`.
+- Toast: "Added to DABS · Oracle mapped N work zone(s)."
+- On `inDabs: false`, no allocation call. (Zones with that drawing_id can stay; they were real. We do not auto-delete.)
+- Invalidate `["zones", projectId]` so DABS/pin form refresh.
 
-2. **`dabs.$projectId.tsx` — hide the entry button.**
-   Reuse `getMyRoles` (already imported elsewhere in the app; add the query here). Wrap the `<Link to="/site-manager/$projectId">` block (lines 274-282) in `{isMainContractor && ( … )}`. Subs still see everything else on DABS.
+### 5. DABS-side polish (so the rule is obvious)
 
-3. **`projects.$projectId.tsx` — hide the "Site Manager" header pill.**
-   Same `isMainContractor` check; wrap the Link at lines 163-170. Project page itself remains accessible to members.
+`src/routes/dabs.$projectId.tsx`:
 
-4. **Dashboard.** No change — the "Enter Command Tower" card CTA is only rendered inside the `/dashboard` page, which already refuses to render for anyone lacking `master_admin` / `project_admin`.
+- When `drawings.data` is empty, replace the drawing canvas with an empty-state card: "No drawings in DABS yet. Open Active Project Drawings, pick a sheet, and press 'Add to DABS'. Oracle will allocate the work zones automatically." Include a Link back to `/projects/$projectId`.
+- Pass `hideInternalSelector` **is already false** — keep the selector, but the list is guaranteed filtered because it comes from `listDabsDrawings`.
+- Optionally scope the Work Zone dropdown to zones tied to the currently-selected DABS drawing: `zones.filter(z => z.drawing_id === selectedDrawing || z.drawing_id === null)`. This keeps legacy zones visible but foregrounds the Oracle-allocated ones for this sheet.
 
-## Technical notes
+### 6. Remove zone step from project creation flow
 
-- No DB migration. Server-side RLS on `projects`/`live_site_activity` already tolerates unauthorised access with an error, but that produces a broken tower UI rather than a clean denial — the new client gate gives the right UX and stops needless queries.
-- `getMyRoles` returns `{ roles: string[] }` and is safe to call from any authenticated route via `useServerFn` + `useQuery`, matching the pattern used in `src/routes/dashboard.tsx`.
-- All responsive changes stay within Tailwind utility classes already used in the project (`glass-panel`, `min-w-0`, `shrink-0`, `truncate`, `sm:` breakpoints). No new components.
+Confirm `src/routes/projects.new.tsx` does not seed `work_zones` directly (spot-check during implementation). If it does, delete that block — zones are now Oracle-driven.
+
+## Files touched
+
+- `src/lib/tier1-uploads.functions.ts` — remove auto-upserts, add `allocateZonesForDabsDrawing`.
+- `src/components/project/DrawingCanvas.tsx` — call allocator after Add to DABS.
+- `src/routes/dabs.$projectId.tsx` — empty state + optional zone scoping.
+- `src/routes/projects.new.tsx` — remove any zone-creation step if present.
+- Migration: `work_zones.drawing_id` FK.
 
 ## Out of scope
 
-- No changes to the subcontractor pack (`/subcontractor-pack/...`) — the user's message names the "cockpit" specifically.
-- No changes to server functions or RLS policies.
-- No visual redesign; only responsive polish and access gating.
+- No change to `listDabsDrawings` (already correct).
+- No mass-clear of existing `work_zones` rows.
+- No change to the pin-drop UI beyond the zone dropdown scoping.

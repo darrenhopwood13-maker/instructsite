@@ -195,13 +195,17 @@ function DabsPage() {
               className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
             >
               <option value="">— Select zone —</option>
-              {zones.data?.map((z: any) => (
-                <option key={z.id} value={z.id} disabled={z.status === "closed"}>
-                  {z.name}
-                  {z.level ? ` · ${z.level}` : ""}
-                  {z.status === "closed" ? " — CLOSED" : ""}
-                </option>
-              ))}
+              {(zones.data ?? [])
+                .filter((z: any) =>
+                  !selectedDrawing ? true : !z.drawing_id || z.drawing_id === selectedDrawing,
+                )
+                .map((z: any) => (
+                  <option key={z.id} value={z.id} disabled={z.status === "closed"}>
+                    {z.name}
+                    {z.level ? ` · ${z.level}` : ""}
+                    {z.status === "closed" ? " — CLOSED" : ""}
+                  </option>
+                ))}
             </select>
           </label>
           <label className="block">
@@ -218,27 +222,47 @@ function DabsPage() {
         </div>
 
         <section className="mt-6">
-          <DrawingCanvas
-            drawings={drawingRows as never}
-            selectedId={selectedDrawing}
-            onSelect={setSelectedDrawing}
-            onLockOracle={() => {}}
-            pins={(pins.data ?? []) as never}
-            pinMode="drop"
-            onDropPin={handleDrop}
-            onPinClick={(pin) => {
-              const dur = Math.round(
-                (Date.now() - new Date(pin.start_time ?? pin.scheduled_finish!).getTime()) / 60000,
-              );
-              toast(`${pin.trade_package ?? "Pin"} · ${pin.operative_count} ops · ${dur} min`, {
-                action: {
-                  label: "Close",
-                  onClick: () => closePin(pin.id),
-                },
-              });
-            }}
-          />
+          {drawings.isSuccess && drawingRows.length === 0 ? (
+            <div className="glass-panel p-8 text-center">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-alert">
+                No drawings in DABS yet
+              </h3>
+              <p className="mt-2 text-xs text-foreground/60">
+                Open the Active Project Drawings and toggle a sheet into DABS.
+                Oracle will map the work zones for that sheet automatically.
+              </p>
+              <Link
+                to="/projects/$projectId"
+                params={{ projectId }}
+                className="mt-4 inline-flex items-center gap-2 rounded-md border border-white/20 px-4 py-2 text-[0.65rem] uppercase tracking-widest hover:border-alert hover:text-alert"
+              >
+                Go to Project Drawings
+              </Link>
+            </div>
+          ) : (
+            <DrawingCanvas
+              drawings={drawingRows as never}
+              selectedId={selectedDrawing}
+              onSelect={setSelectedDrawing}
+              onLockOracle={() => {}}
+              pins={(pins.data ?? []) as never}
+              pinMode="drop"
+              onDropPin={handleDrop}
+              onPinClick={(pin) => {
+                const dur = Math.round(
+                  (Date.now() - new Date(pin.start_time ?? pin.scheduled_finish!).getTime()) / 60000,
+                );
+                toast(`${pin.trade_package ?? "Pin"} · ${pin.operative_count} ops · ${dur} min`, {
+                  action: {
+                    label: "Close",
+                    onClick: () => closePin(pin.id),
+                  },
+                });
+              }}
+            />
+          )}
         </section>
+
 
         <section className="mt-6">
           <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">

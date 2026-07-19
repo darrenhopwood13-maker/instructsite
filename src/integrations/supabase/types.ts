@@ -1959,6 +1959,7 @@ export type Database = {
       work_zones: {
         Row: {
           created_at: string
+          drawing_id: string | null
           id: string
           level: string | null
           name: string
@@ -1968,6 +1969,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          drawing_id?: string | null
           id?: string
           level?: string | null
           name: string
@@ -1977,6 +1979,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          drawing_id?: string | null
           id?: string
           level?: string | null
           name?: string
@@ -1985,6 +1988,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "work_zones_drawing_id_fkey"
+            columns: ["drawing_id"]
+            isOneToOne: false
+            referencedRelation: "project_drawings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "work_zones_project_id_fkey"
             columns: ["project_id"]

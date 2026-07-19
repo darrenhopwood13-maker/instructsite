@@ -23,6 +23,7 @@ import {
   createDrawingDirectLinks,
   getDrawingPreview,
   setDrawingInDabs,
+  allocateZonesForDabsDrawing,
 } from "@/lib/tier1-uploads.functions";
 import { deleteDrawing } from "@/lib/admin.functions";
 import { getMyRoles } from "@/lib/projects.functions";
@@ -89,6 +90,7 @@ export function DrawingCanvas({
   const rolesFn = useServerFn(getMyRoles);
   const deleteFn = useServerFn(deleteDrawing);
   const setDabsFn = useServerFn(setDrawingInDabs);
+  const allocateZonesFn = useServerFn(allocateZonesForDabsDrawing);
   const qc = useQueryClient();
   const roles = useQuery({
     queryKey: ["my-roles"],
@@ -105,15 +107,32 @@ export function DrawingCanvas({
     try {
       const next = !selected.in_dabs;
       await setDabsFn({ data: { drawingId: selected.id, inDabs: next } });
-      toast.success(next ? "Added to DABS." : "Removed from DABS.");
+      if (next) {
+        try {
+          const res = await allocateZonesFn({ data: { drawingId: selected.id } });
+          toast.success(
+            `Added to DABS · Oracle mapped ${res?.allocated ?? 0} work zone${
+              (res?.allocated ?? 0) === 1 ? "" : "s"
+            }.`,
+          );
+        } catch (e: any) {
+          toast.warning(
+            `Added to DABS · Oracle zone allocation failed: ${e?.message ?? "unknown error"}`,
+          );
+        }
+      } else {
+        toast.success("Removed from DABS.");
+      }
       qc.invalidateQueries({ queryKey: ["drawings"] });
       qc.invalidateQueries({ queryKey: ["dabs-drawings"] });
+      qc.invalidateQueries({ queryKey: ["zones"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to update DABS availability.");
     } finally {
       setTogglingDabs(false);
     }
   };
+
 
 
   const links = useQuery<DrawingLinks>({
