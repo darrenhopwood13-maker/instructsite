@@ -305,6 +305,74 @@ export const setDrawingInDabs = createServerFn({ method: "POST" })
     return { ok: true, inDabs: data.inDabs };
   });
 
+export const allocateZonesForDabsDrawing = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ drawingId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: dwg, error: dErr } = await supabase
+      .from("project_drawings")
+      .select("id,project_id,site_document_id,drawing_no,title,level")
+      .eq("id", data.drawingId)
+      .maybeSingle();
+    if (dErr) throw new Error(dErr.message);
+    if (!dwg) throw new Error("Drawing not found");
+
+    const { data: isAdmin, error: rErr } = await supabase.rpc("is_project_admin", {
+      _project_id: dwg.project_id,
+      _user_id: userId,
+    });
+    if (rErr) throw new Error(rErr.message);
+    if (!isAdmin) throw new Error("Only project admins can allocate DABS zones.");
+
+    // Pull drawing text + any logistics zones as extra context.
+    let drawingText = "";
+    try {
+      if (dwg.site_document_id) {
+        drawingText = await downloadDocText(supabase, dwg.site_document_id);
+      }
+    } catch {
+      drawingText = "";
+    }
+
+    const { data: logistics } = await supabase
+      .from("logistics_plans")
+      .select("extracted_zones")
+      .eq("project_id", dwg.project_id);
+    const logisticsZones = (logistics ?? [])
+      .flatMap((l: any) => (Array.isArray(l.extracted_zones) ? l.extracted_zones : []))
+      .filter((z: any) => z?.name);
+
+    let zones: { name: string; level?: string | null }[] = [];
+    try {
+      const meta = await aiJson<{ zones?: { name: string; level?: string | null }[] }>(
+        `This drawing "${dwg.drawing_no ?? ""} ${dwg.title ?? ""}" is now a live DABS work sheet. Identify the work zones / grid areas / levels a site manager would pin activities to. Return {"zones":[{"name":string,"level":string|null}]}. Do NOT invent zones — only what's shown on the sheet or corroborated by the logistics plan. Logistics-plan zones for cross-reference: ${JSON.stringify(logisticsZones).slice(0, 2000)}`,
+        drawingText || `Drawing ${dwg.drawing_no ?? ""} — ${dwg.title ?? ""} (level ${dwg.level ?? "?"})`,
+      );
+      zones = (meta.zones ?? []).filter((z) => z?.name);
+    } catch {
+      zones = [];
+    }
+
+    let inserted = 0;
+    for (const z of zones) {
+      const { error: upErr } = await supabase.from("work_zones").upsert(
+        {
+          project_id: dwg.project_id,
+          drawing_id: dwg.id,
+          name: z.name,
+          level: z.level ?? dwg.level ?? null,
+          source: "oracle",
+        },
+        { onConflict: "project_id,name,level", ignoreDuplicates: true },
+      );
+      if (!upErr) inserted += 1;
+    }
+    return { zones, allocated: inserted };
+  });
+
+
+
 
 export const listProjectLogistics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
