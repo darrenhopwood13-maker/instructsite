@@ -506,8 +506,8 @@ export const oracleScan = createServerFn({ method: "POST" })
       const { output } = await generateText({
         model: gateway("openai/gpt-4o"),
         output: Output.object({ schema: PhotoScanSchema }),
+        system,
         messages: [
-          { role: "system", content: system },
           {
             role: "user",
             content: [
