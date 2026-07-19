@@ -1,0 +1,2 @@
+ALTER TABLE public.work_zones ADD COLUMN IF NOT EXISTS drawing_id uuid REFERENCES public.project_drawings(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_work_zones_drawing_id ON public.work_zones(drawing_id);
