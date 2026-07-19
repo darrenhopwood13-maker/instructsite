@@ -466,7 +466,7 @@ export const oracleScan = createServerFn({ method: "POST" })
     }
 
     const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
-    const gateway = createLovableAiGatewayProvider(apiKey);
+    const gateway = createLovableAiGatewayProvider(apiKey, undefined, { structuredOutputs: true });
     const dataUrl = `data:${data.mimeType};base64,${data.dataBase64}`;
 
     const system = [
