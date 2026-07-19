@@ -18,15 +18,30 @@ const SnagReport = z.object({
 });
 export type SnagReportT = z.infer<typeof SnagReport>;
 
-async function getMyOrgId(supabase: any, userId: string): Promise<string> {
+async function getMyOrgId(supabase: any, userId: string, claims?: any): Promise<string> {
   const { data, error } = await supabase
     .from("org_members")
     .select("org_id")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("You are not a member of an organisation.");
-  return data.org_id as string;
+  if (data?.org_id) return data.org_id as string;
+
+  // Founder fallback: founder isn't required to be an org member.
+  const { isOwnerFromClaims } = await import("@/lib/owner");
+  if (isOwnerFromClaims(claims)) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: firstOrg } = await supabaseAdmin
+      .from("orgs")
+      .select("id")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (firstOrg?.id) return firstOrg.id as string;
+    throw new Error("No organisation exists yet. Create one first.");
+  }
+
+  throw new Error("You are not a member of an organisation.");
 }
 
 /** List snags for the caller's org, optionally filtered by status. */
