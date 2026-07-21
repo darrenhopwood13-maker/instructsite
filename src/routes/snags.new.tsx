@@ -60,7 +60,9 @@ function NewSnagPage() {
       setPhotoPath(res.photoPath);
     } catch (e) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setError((e as any)?.message || "The Foreman couldn't read that photo.");
+      const msg = (e as any)?.message || String(e);
+      // Show the real server error — hides technical stack traces but preserves the actionable message
+      setError(msg.includes("{") ? "The Oracle couldn't process that photo. Please try again with a clearer image." : msg);
     } finally {
       setLoading(false);
     }

@@ -124,10 +124,43 @@ export const analyzeSnag = createServerFn({ method: "POST" })
     const ext = (data.fileName.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
     const photoPath = `${orgId}/${crypto.randomUUID()}.${ext || "jpg"}`;
     const buf = Buffer.from(data.dataBase64, "base64");
-    const { error: upErr } = await supabaseAdmin.storage
-      .from("snag-photos")
-      .upload(photoPath, buf, { contentType: data.mimeType, upsert: false });
-    if (upErr) throw new Error(`Photo upload failed: ${upErr.message}`);
+
+    // Auto-create the snag-photos bucket if it doesn't exist (first-use setup)
+    // This covers cases where the SQL migration hasn't been applied yet.
+    const bucketName = "snag-photos";
+    try {
+      const { error: upErr } = await supabaseAdmin.storage
+        .from(bucketName)
+        .upload(photoPath, buf, { contentType: data.mimeType, upsert: false });
+      if (upErr) throw upErr;
+    } catch (upErr: any) {
+      // If the bucket doesn't exist, create it and retry once
+      if (upErr?.message?.includes("bucket") || upErr?.message?.includes("not found") || upErr?.statusCode === 404) {
+        console.warn(`[SnagAnalyze] Bucket "${bucketName}" not found — attempting to create it`);
+        const { error: createErr } = await supabaseAdmin.storage.createBucket(bucketName, {
+          public: false,
+          fileSizeLimit: 10485760, // 10 MB
+          allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/heic"],
+        });
+        if (createErr) {
+          // Non-admin might not have bucket creation perms — try inserting via raw SQL
+          console.warn(`[SnagAnalyze] createBucket failed, trying raw SQL: ${createErr.message}`);
+          const { error: sqlErr } = await supabaseAdmin.rpc("exec_sql", {
+            sql: `INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types) VALUES ('${bucketName}', '${bucketName}', false, 10485760, ARRAY['image/jpeg','image/png','image/webp','image/heic']::text[]) ON CONFLICT (id) DO NOTHING;`,
+          });
+          if (sqlErr) {
+            throw new Error(`Storage bucket "${bucketName}" not found and auto-creation failed. Ask your admin to run the snag-photos migration in the Supabase dashboard SQL editor:\n\nINSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types) VALUES ('${bucketName}', '${bucketName}', false, 10485760, ARRAY['image/jpeg','image/png','image/webp','image/heic']::text[]) ON CONFLICT (id) DO NOTHING;`);
+          }
+        }
+        // Retry the upload after creating the bucket
+        const { error: retryErr } = await supabaseAdmin.storage
+          .from(bucketName)
+          .upload(photoPath, buf, { contentType: data.mimeType, upsert: false });
+        if (retryErr) throw new Error(`Photo upload failed: ${retryErr.message}`);
+      } else {
+        throw new Error(`Photo upload failed: ${upErr?.message || String(upErr)}`);
+      }
+    }
 
     const gateway = createLovableAiGatewayProvider(key);
     const dataUrl = `data:${data.mimeType};base64,${data.dataBase64}`;
