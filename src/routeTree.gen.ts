@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ViewerRouteImport } from './routes/viewer'
 import { Route as UnlockRouteImport } from './routes/unlock'
 import { Route as TrialEndedRouteImport } from './routes/trial-ended'
+import { Route as ToolingRouteImport } from './routes/tooling'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OracleRouteImport } from './routes/oracle'
@@ -36,6 +38,7 @@ import { Route as JoinOrgSlugRouteImport } from './routes/join-org.$slug'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as DabsProjectIdRouteImport } from './routes/dabs.$projectId'
 import { Route as BillingProjectIdRouteImport } from './routes/billing.$projectId'
+import { Route as ApiOracleStreamRouteImport } from './routes/api/oracle-stream'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as SubcontractorPackProjectIdIndexRouteImport } from './routes/subcontractor-pack.$projectId.index'
@@ -51,6 +54,11 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as ApiPublicWebhooksStripeRouteImport } from './routes/api/public/webhooks/stripe'
 import { Route as ApiPublicHooksWeatherSnapshotRouteImport } from './routes/api/public/hooks/weather-snapshot'
 
+const ViewerRoute = ViewerRouteImport.update({
+  id: '/viewer',
+  path: '/viewer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UnlockRoute = UnlockRouteImport.update({
   id: '/unlock',
   path: '/unlock',
@@ -59,6 +67,11 @@ const UnlockRoute = UnlockRouteImport.update({
 const TrialEndedRoute = TrialEndedRouteImport.update({
   id: '/trial-ended',
   path: '/trial-ended',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolingRoute = ToolingRouteImport.update({
+  id: '/tooling',
+  path: '/tooling',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -186,6 +199,11 @@ const BillingProjectIdRoute = BillingProjectIdRouteImport.update({
   path: '/billing/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOracleStreamRoute = ApiOracleStreamRouteImport.update({
+  id: '/api/oracle-stream',
+  path: '/api/oracle-stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
     id: '/.well-known/oauth-protected-resource',
@@ -273,10 +291,13 @@ export interface FileRoutesByFullPath {
   '/oracle': typeof OracleRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tooling': typeof ToolingRoute
   '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
+  '/viewer': typeof ViewerRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/api/oracle-stream': typeof ApiOracleStreamRoute
   '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -316,10 +337,13 @@ export interface FileRoutesByTo {
   '/oracle': typeof OracleRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tooling': typeof ToolingRoute
   '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
+  '/viewer': typeof ViewerRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/api/oracle-stream': typeof ApiOracleStreamRoute
   '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -359,10 +383,13 @@ export interface FileRoutesById {
   '/oracle': typeof OracleRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tooling': typeof ToolingRoute
   '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
+  '/viewer': typeof ViewerRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/api/oracle-stream': typeof ApiOracleStreamRoute
   '/billing/$projectId': typeof BillingProjectIdRoute
   '/dabs/$projectId': typeof DabsProjectIdRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -404,10 +431,13 @@ export interface FileRouteTypes {
     | '/oracle'
     | '/pricing'
     | '/reset-password'
+    | '/tooling'
     | '/trial-ended'
     | '/unlock'
+    | '/viewer'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/api/oracle-stream'
     | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
@@ -447,10 +477,13 @@ export interface FileRouteTypes {
     | '/oracle'
     | '/pricing'
     | '/reset-password'
+    | '/tooling'
     | '/trial-ended'
     | '/unlock'
+    | '/viewer'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/api/oracle-stream'
     | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
@@ -489,10 +522,13 @@ export interface FileRouteTypes {
     | '/oracle'
     | '/pricing'
     | '/reset-password'
+    | '/tooling'
     | '/trial-ended'
     | '/unlock'
+    | '/viewer'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/api/oracle-stream'
     | '/billing/$projectId'
     | '/dabs/$projectId'
     | '/invite/$token'
@@ -533,10 +569,13 @@ export interface RootRouteChildren {
   OracleRoute: typeof OracleRoute
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ToolingRoute: typeof ToolingRoute
   TrialEndedRoute: typeof TrialEndedRoute
   UnlockRoute: typeof UnlockRoute
+  ViewerRoute: typeof ViewerRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ApiOracleStreamRoute: typeof ApiOracleStreamRoute
   BillingProjectIdRoute: typeof BillingProjectIdRoute
   DabsProjectIdRoute: typeof DabsProjectIdRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -568,6 +607,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/viewer': {
+      id: '/viewer'
+      path: '/viewer'
+      fullPath: '/viewer'
+      preLoaderRoute: typeof ViewerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/unlock': {
       id: '/unlock'
       path: '/unlock'
@@ -580,6 +626,13 @@ declare module '@tanstack/react-router' {
       path: '/trial-ended'
       fullPath: '/trial-ended'
       preLoaderRoute: typeof TrialEndedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tooling': {
+      id: '/tooling'
+      path: '/tooling'
+      fullPath: '/tooling'
+      preLoaderRoute: typeof ToolingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -757,6 +810,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BillingProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/oracle-stream': {
+      id: '/api/oracle-stream'
+      path: '/api/oracle-stream'
+      fullPath: '/api/oracle-stream'
+      preLoaderRoute: typeof ApiOracleStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.well-known/oauth-protected-resource': {
       id: '/.well-known/oauth-protected-resource'
       path: '/.well-known/oauth-protected-resource'
@@ -881,11 +941,14 @@ const rootRouteChildren: RootRouteChildren = {
   OracleRoute: OracleRoute,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ToolingRoute: ToolingRoute,
   TrialEndedRoute: TrialEndedRoute,
   UnlockRoute: UnlockRoute,
+  ViewerRoute: ViewerRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ApiOracleStreamRoute: ApiOracleStreamRoute,
   BillingProjectIdRoute: BillingProjectIdRoute,
   DabsProjectIdRoute: DabsProjectIdRoute,
   InviteTokenRoute: InviteTokenRoute,

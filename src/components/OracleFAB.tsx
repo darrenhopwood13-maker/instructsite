@@ -27,13 +27,13 @@ export function OracleFAB() {
   // Hide on marketing/auth surfaces AND on the home page — user is
   // signed-out landing, not inside a project.
   if (path === "/" || HIDE_PREFIXES.some((p) => path.startsWith(p))) return null;
-  // Hide on Oracle itself — button navigates there.
-  if (path === "/oracle") return null;
+  // Hide on The Oracle itself — button navigates there.
+  if (path === "/tooling" || path === "/viewer") return null;
 
   return (
     <Link
-      to="/oracle"
-      aria-label="Open Oracle AI"
+      to="/tooling"
+      aria-label="Open The Oracle"
       className="oracle-fab fixed z-[60] grid place-items-center rounded-full text-white shadow-[0_16px_36px_-8px_rgba(139,92,246,0.65)] transition hover:scale-105 active:scale-95"
       style={{
         right: "max(1rem, env(safe-area-inset-right))",
