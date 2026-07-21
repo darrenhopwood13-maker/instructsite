@@ -143,15 +143,9 @@ export const analyzeSnag = createServerFn({ method: "POST" })
           allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/heic"],
         });
         if (createErr) {
-          // Non-admin might not have bucket creation perms — try inserting via raw SQL
-          console.warn(`[SnagAnalyze] createBucket failed, trying raw SQL: ${createErr.message}`);
-          const { error: sqlErr } = await supabaseAdmin.rpc("exec_sql", {
-            sql: `INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types) VALUES ('${bucketName}', '${bucketName}', false, 10485760, ARRAY['image/jpeg','image/png','image/webp','image/heic']::text[]) ON CONFLICT (id) DO NOTHING;`,
-          });
-          if (sqlErr) {
-            throw new Error(`Storage bucket "${bucketName}" not found and auto-creation failed. Ask your admin to run the snag-photos migration in the Supabase dashboard SQL editor:\n\nINSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types) VALUES ('${bucketName}', '${bucketName}', false, 10485760, ARRAY['image/jpeg','image/png','image/webp','image/heic']::text[]) ON CONFLICT (id) DO NOTHING;`);
-          }
+          throw new Error(`Storage bucket "${bucketName}" not found and auto-creation failed: ${createErr.message}`);
         }
+
         // Retry the upload after creating the bucket
         const { error: retryErr } = await supabaseAdmin.storage
           .from(bucketName)
