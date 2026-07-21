@@ -53,8 +53,9 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, 
   };
 
   return (
-    <section className="rounded-2xl border border-border bg-card/95 backdrop-blur-xl overflow-hidden flex flex-col min-h-[340px] shadow-lg">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5 bg-background/60">
+    <section className="rounded-2xl border border-sky-200 bg-sky-50 backdrop-blur-xl overflow-hidden flex flex-col min-h-[340px] shadow-lg">
+      <div className="flex items-center justify-between border-b border-sky-200 px-4 py-2.5 bg-white/60">
+
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="flex gap-1.5 shrink-0">
             <span className="h-2 w-2 rounded-full bg-alert animate-pulse" />
