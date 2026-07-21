@@ -87,13 +87,38 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-5 max-h-[65vh]">
         {!output && !isStreaming && (
           <div className="text-sm">
-            <div className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase mb-2">
+            <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase mb-2">
               ▸ Ready · Awaiting Input
             </div>
-            <p className="text-foreground font-display text-lg mb-2">Site manager, what's the call?</p>
-            <p className="text-muted-foreground">
+            <p className="text-slate-900 font-display text-lg mb-2">Site manager, what's the call?</p>
+            <p className="text-slate-700">
               Attach a drawing or photo, add any context, then choose an action below.
             </p>
+            {imageDataUrl && (
+              <div className="mt-4 rounded-xl border border-sky-200 bg-white p-2 flex items-center gap-3">
+                <img
+                  src={imageDataUrl}
+                  alt={fileName ?? "attached"}
+                  className="h-20 w-20 rounded-lg object-cover border border-sky-200"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase mb-1">
+                    ▸ Attached
+                  </div>
+                  <div className="text-sm text-slate-800 truncate">{fileName ?? "image"}</div>
+                </div>
+                {onRemoveImage && (
+                  <button
+                    type="button"
+                    onClick={onRemoveImage}
+                    className="text-slate-500 hover:text-alert p-1.5 rounded-md hover:bg-alert/10"
+                    aria-label="Remove image"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
