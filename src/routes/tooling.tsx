@@ -144,19 +144,25 @@ function ToolingPage() {
           isStreaming={isStreaming}
           activeFunction={activeFunction ? ACTION_LABELS[activeFunction] : null}
           onReset={reset}
+          imageDataUrl={imageDataUrl}
+          fileName={fileName}
+          onRemoveImage={() => {
+            setImageDataUrl(null);
+            setFileName(null);
+          }}
+          footer={
+            <ScanUpload
+              imageDataUrl={imageDataUrl}
+              onImage={(d, n) => {
+                setImageDataUrl(d);
+                setFileName(n);
+              }}
+              fileName={fileName}
+            />
+          }
         />
 
-        <div className="space-y-3">
-          <ScanUpload
-            imageDataUrl={imageDataUrl}
-            onImage={(d, n) => {
-              setImageDataUrl(d);
-              setFileName(n);
-            }}
-            fileName={fileName}
-          />
-          <PromptInput value={question} onChange={setQuestion} disabled={isStreaming} />
-        </div>
+        <PromptInput value={question} onChange={setQuestion} disabled={isStreaming} />
 
         <ActionGrid onSelect={runOracle} disabled={isStreaming} active={activeFunction} loading={isStreaming} />
       </main>
