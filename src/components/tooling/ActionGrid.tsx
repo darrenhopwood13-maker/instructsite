@@ -46,8 +46,8 @@ interface Props {
 
 export const ActionGrid = ({ onSelect, disabled, active, loading = false }: Props) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-      {ACTIONS.map(({ key, label, sub, code, image, premium }) => {
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {ACTIONS.map(({ key, label, sub, image, premium }) => {
         const isActive = active === key;
         const isLoading = loading && isActive;
         return (
@@ -58,60 +58,50 @@ export const ActionGrid = ({ onSelect, disabled, active, loading = false }: Prop
             onClick={() => onSelect(key)}
             aria-busy={isLoading}
             className={cn(
-              "group relative aspect-[4/5] sm:aspect-[3/4] text-left rounded-2xl overflow-hidden",
-              "border border-white/10 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.6)]",
-              "transition-all duration-300 will-change-transform",
-              "hover:border-primary/70 hover:-translate-y-1 hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.7)]",
+              "group relative aspect-[16/9] text-left rounded-2xl overflow-hidden",
+              "border border-border shadow-md",
+              "transition-all duration-300",
+              "hover:-translate-y-0.5 hover:shadow-xl hover:border-primary/60",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
               "disabled:opacity-50 disabled:pointer-events-none",
-              premium && "border-alert/50 hover:border-alert",
               isActive && !premium && "ring-2 ring-primary",
               isActive && premium && "ring-2 ring-alert",
             )}
           >
-            {/* Cinematic backdrop */}
             <img
               src={image}
               alt=""
               loading="lazy"
-              width={1280}
-              height={832}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              style={{ filter: "brightness(1.15) saturate(1.05)" }}
             />
-            {/* Legibility gradients */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/20" />
-            <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-transparent" />
+            {/* Softer legibility gradient — bottom only */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
 
-            {/* Code / status */}
+            {/* Corner badge */}
             <span
               className={cn(
-                "absolute top-3 right-3 font-mono text-[10px] tracking-widest px-1.5 py-0.5 rounded-md border backdrop-blur",
+                "absolute top-2.5 left-2.5 h-7 w-7 grid place-items-center rounded-lg backdrop-blur",
                 premium
-                  ? "text-alert border-alert/50 bg-black/40"
-                  : "text-primary border-primary/40 bg-black/40",
+                  ? "bg-alert/25 border border-alert/60 text-alert-foreground"
+                  : "bg-emerald-500/30 border border-emerald-400/60 text-white",
               )}
             >
-              {isLoading ? "● RUN" : code}
+              {isLoading ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : premium ? (
+                <span className="text-[10px] font-bold">✦</span>
+              ) : (
+                <span className="text-[10px] font-bold">◆</span>
+              )}
             </span>
 
-            {premium && !isLoading && (
-              <span className="absolute top-3 left-3 font-mono text-[10px] tracking-widest text-alert bg-black/40 border border-alert/50 rounded-md px-1.5 py-0.5 backdrop-blur">
-                ✦ PRO
-              </span>
-            )}
-
-            {isLoading && (
-              <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-mono tracking-widest text-primary bg-black/50 border border-primary/50 rounded-md px-2 py-0.5 backdrop-blur">
-                <Loader2 size={11} className="animate-spin" /> RUNNING
-              </span>
-            )}
-
             {/* Text block */}
-            <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-              <div className="font-display text-[15px] sm:text-[17px] leading-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
+            <div className="absolute inset-x-0 bottom-0 p-3">
+              <div className="font-display font-bold text-[15px] sm:text-base leading-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
                 {label}
               </div>
-              <div className="text-[11.5px] sm:text-xs mt-1 leading-snug text-white/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] line-clamp-2">
+              <div className="text-[11px] sm:text-[12px] mt-0.5 leading-snug text-white/85 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] line-clamp-1">
                 {isLoading ? "The Oracle is analysing…" : sub}
               </div>
             </div>

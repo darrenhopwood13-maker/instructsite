@@ -146,7 +146,7 @@ function ToolingPage() {
           onReset={reset}
         />
 
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="space-y-3">
           <ScanUpload
             imageDataUrl={imageDataUrl}
             onImage={(d, n) => {
@@ -158,15 +158,7 @@ function ToolingPage() {
           <PromptInput value={question} onChange={setQuestion} disabled={isStreaming} />
         </div>
 
-        <div>
-          <div className="flex items-center gap-3 mb-3 px-1">
-            <span className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
-              ▸ Actions
-            </span>
-            <span className="h-px flex-1 bg-gradient-to-r from-primary/40 to-transparent" />
-          </div>
-          <ActionGrid onSelect={runOracle} disabled={isStreaming} active={activeFunction} loading={isStreaming} />
-        </div>
+        <ActionGrid onSelect={runOracle} disabled={isStreaming} active={activeFunction} loading={isStreaming} />
       </main>
     </div>
   );
