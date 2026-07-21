@@ -4,7 +4,7 @@ import { Fragment, type ReactNode } from "react";
 // Handles: paragraphs, bullet lists (-, *, •), bold **x**, italic *x*, inline code `x`, links [t](u).
 
 const renderInline = (text: string) => {
-  const nodes: (string | JSX.Element)[] = [];
+  const nodes: ReactNode[] = [];
   const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|\*[^*\n]+\*)/g;
   let last = 0;
   let key = 0;
@@ -30,7 +30,7 @@ const renderInline = (text: string) => {
 
 export const OracleMarkdown = ({ children }: { children: string }) => {
   const lines = children.replace(/\r\n/g, "\n").split("\n");
-  const blocks: JSX.Element[] = [];
+  const blocks: ReactNode[] = [];
   let listBuf: string[] = [];
   let paraBuf: string[] = [];
   let key = 0;
