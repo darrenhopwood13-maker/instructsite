@@ -30,7 +30,12 @@ export default defineConfig({
         "@supabase/supabase-js",
         "zod",
         "lucide-react",
+        "react-markdown",
+        "remark-gfm",
+        "style-to-js",
+        "style-to-object",
       ],
+
     },
     plugins: [mcpPlugin()],
   },
