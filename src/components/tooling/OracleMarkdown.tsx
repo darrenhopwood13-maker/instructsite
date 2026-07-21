@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 
 // Lightweight, dependency-free markdown renderer tuned for Oracle output.
 // Handles: paragraphs, bullet lists (-, *, •), bold **x**, italic *x*, inline code `x`, links [t](u).
