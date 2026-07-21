@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { OracleMarkdown } from "./OracleMarkdown";
 import { ChevronDown, AlertTriangle, HardHat } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -65,8 +64,8 @@ const ByOthersCards = ({ body }: { body: string }) => {
   const items = useMemo(() => parseByOthers(body), [body]);
   if (items.length === 0) {
     return (
-      <div className="prose prose-invert max-w-none text-sm">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+      <div className="text-sm">
+        <OracleMarkdown>{body}</OracleMarkdown>
       </div>
     );
   }
@@ -97,8 +96,8 @@ const SectionBlock = ({ section, defaultOpen }: { section: Section; defaultOpen:
 
   if (!section.heading) {
     return (
-      <div className="prose prose-invert max-w-none text-[15px] mb-3">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.body}</ReactMarkdown>
+      <div className="text-[15px] mb-3">
+        <OracleMarkdown>{section.body}</OracleMarkdown>
       </div>
     );
   }
@@ -143,8 +142,8 @@ const SectionBlock = ({ section, defaultOpen }: { section: Section; defaultOpen:
           {section.isByOthers ? (
             <ByOthersCards body={section.body} />
           ) : (
-            <div className="prose prose-invert max-w-none text-[14.5px]">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.body}</ReactMarkdown>
+            <div className="text-[14.5px]">
+              <OracleMarkdown>{section.body}</OracleMarkdown>
             </div>
           )}
         </div>
