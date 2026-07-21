@@ -62,8 +62,8 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, 
             <span className="h-2 w-2 rounded-full bg-primary/60" />
             <span className="h-2 w-2 rounded-full bg-white/20" />
           </span>
-          <Sparkles size={14} className="text-primary shrink-0" />
-          <span className="font-display text-sm text-foreground truncate">The Oracle</span>
+          <Sparkles size={14} className="text-[hsl(22_100%_50%)] shrink-0" />
+          <span className="font-display text-sm text-slate-900 truncate">The Oracle</span>
           {activeFunction && (
             <span className="font-mono text-[10px] uppercase tracking-widest text-alert border border-alert/40 px-1.5 py-0.5 rounded-md truncate">
               {activeFunction}
