@@ -166,6 +166,11 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, 
 
         {output && <ToolingResults markdown={output} />}
       </div>
+      {footer && (
+        <div className="border-t border-sky-200 bg-white/70 px-4 py-3">
+          {footer}
+        </div>
+      )}
     </section>
   );
 };
