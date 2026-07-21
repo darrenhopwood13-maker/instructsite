@@ -574,7 +574,7 @@ function AuthNav() {
             <Camera className="h-3.5 w-3.5" />
             Snag Master
           </Link>
-          <Link to="/oracle" className="glass-orange rounded-lg px-4 py-2 text-sm">
+          <Link to="/tooling" className="glass-orange rounded-lg px-4 py-2 text-sm">
             AI Tooling
           </Link>
           <button
