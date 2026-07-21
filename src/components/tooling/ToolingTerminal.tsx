@@ -18,7 +18,7 @@ interface Props {
 
 const STEPS = ["Reading input", "Analysing", "Generating", "Finalising"];
 
-export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset }: Props) => {
+export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, imageDataUrl, fileName, onRemoveImage, footer }: Props) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [stepIdx, setStepIdx] = useState(0);
 
