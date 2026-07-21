@@ -1,12 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import OraclePage from "@/pages/Oracle";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/oracle")({
-  head: () => ({
-    meta: [
-      { title: "Oracle" },
-      { name: "description", content: "Oracle tooling for AI-powered site operations." },
-    ],
-  }),
-  component: OraclePage,
+  beforeLoad: () => {
+    throw redirect({ to: "/tooling" });
+  },
 });
