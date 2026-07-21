@@ -10,6 +10,10 @@ interface Props {
   isStreaming: boolean;
   activeFunction: string | null;
   onReset: () => void;
+  imageDataUrl?: string | null;
+  fileName?: string | null;
+  onRemoveImage?: () => void;
+  footer?: React.ReactNode;
 }
 
 const STEPS = ["Reading input", "Analysing", "Generating", "Finalising"];
