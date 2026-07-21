@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Copy, RotateCcw, Sparkles, Check, Loader2 } from "lucide-react";
+import { Copy, RotateCcw, Sparkles, Check, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -10,11 +10,15 @@ interface Props {
   isStreaming: boolean;
   activeFunction: string | null;
   onReset: () => void;
+  imageDataUrl?: string | null;
+  fileName?: string | null;
+  onRemoveImage?: () => void;
+  footer?: React.ReactNode;
 }
 
 const STEPS = ["Reading input", "Analysing", "Generating", "Finalising"];
 
-export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset }: Props) => {
+export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, imageDataUrl, fileName, onRemoveImage, footer }: Props) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [stepIdx, setStepIdx] = useState(0);
 
@@ -49,16 +53,17 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset }
   };
 
   return (
-    <section className="rounded-2xl border border-border bg-card/95 backdrop-blur-xl overflow-hidden flex flex-col min-h-[340px] shadow-lg">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5 bg-background/60">
+    <section className="rounded-2xl border border-sky-200 bg-sky-50 backdrop-blur-xl overflow-hidden flex flex-col min-h-[340px] shadow-lg">
+      <div className="flex items-center justify-between border-b border-sky-200 px-4 py-2.5 bg-white/60">
+
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="flex gap-1.5 shrink-0">
             <span className="h-2 w-2 rounded-full bg-alert animate-pulse" />
             <span className="h-2 w-2 rounded-full bg-primary/60" />
             <span className="h-2 w-2 rounded-full bg-white/20" />
           </span>
-          <Sparkles size={14} className="text-primary shrink-0" />
-          <span className="font-display text-sm text-foreground truncate">The Oracle</span>
+          <Sparkles size={14} className="text-[hsl(22_100%_50%)] shrink-0" />
+          <span className="font-display text-sm text-slate-900 truncate">The Oracle</span>
           {activeFunction && (
             <span className="font-mono text-[10px] uppercase tracking-widest text-alert border border-alert/40 px-1.5 py-0.5 rounded-md truncate">
               {activeFunction}
@@ -82,13 +87,38 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset }
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-5 max-h-[65vh]">
         {!output && !isStreaming && (
           <div className="text-sm">
-            <div className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase mb-2">
+            <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase mb-2">
               ▸ Ready · Awaiting Input
             </div>
-            <p className="text-foreground font-display text-lg mb-2">Site manager, what's the call?</p>
-            <p className="text-muted-foreground">
+            <p className="text-slate-900 font-display text-lg mb-2">Site manager, what's the call?</p>
+            <p className="text-slate-700">
               Attach a drawing or photo, add any context, then choose an action below.
             </p>
+            {imageDataUrl && (
+              <div className="mt-4 rounded-xl border border-sky-200 bg-white p-2 flex items-center gap-3">
+                <img
+                  src={imageDataUrl}
+                  alt={fileName ?? "attached"}
+                  className="h-20 w-20 rounded-lg object-cover border border-sky-200"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase mb-1">
+                    ▸ Attached
+                  </div>
+                  <div className="text-sm text-slate-800 truncate">{fileName ?? "image"}</div>
+                </div>
+                {onRemoveImage && (
+                  <button
+                    type="button"
+                    onClick={onRemoveImage}
+                    className="text-slate-500 hover:text-alert p-1.5 rounded-md hover:bg-alert/10"
+                    aria-label="Remove image"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -136,6 +166,11 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset }
 
         {output && <ToolingResults markdown={output} />}
       </div>
+      {footer && (
+        <div className="border-t border-sky-200 bg-white/70 px-4 py-3">
+          {footer}
+        </div>
+      )}
     </section>
   );
 };
