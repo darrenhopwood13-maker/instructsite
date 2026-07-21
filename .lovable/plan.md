@@ -1,36 +1,57 @@
-## What's broken
+## Tooling cockpit — cinematic redesign
 
-`/tooling` (and any page rendering `ToolingResults.tsx` / `ui/markdown.tsx`) crashes at load with:
+Scope: visual only, on `/tooling`. No changes to Oracle logic, streaming, prompts or routes.
 
-```
-SyntaxError: The requested module '/node_modules/style-to-js/cjs/index.js' does not provide an export named 'default'
-```
+### 1. Cinematic image-backed action buttons
+`src/components/tooling/ActionGrid.tsx` — replace the flat glass tiles with hyper-realistic cinematic image tiles, one image per action:
 
-That module is a transitive dep of `react-markdown@10`. It ships an ESM build with a real `default` export and a CJS build without one. Vite's dep-optimizer occasionally resolves the CJS entry when `style-to-js` isn't pre-bundled, and the ESM `import defaultFn from 'style-to-js'` in `react-markdown`'s chain then fails at runtime — exactly what the console shows. That kills the route and the root error boundary shows "This page didn't load".
+| # | Action | Image concept (generated, `standard` quality) |
+|---|---|---|
+| 01 | Installation Sequence | timber-frame soleplate at dawn, taut string line, blueprint overlay |
+| 02 | Safety Auditor | high-vis helmet + harness on scaffold edge, low sun |
+| 03 | Procurement | luxury stone slabs in bonded warehouse, forklift bokeh |
+| 04 | Drawing Q&A | architect's hand on a set of A1 drawings, drafting lamp |
+| 05 | Snag Master | macro of a hairline defect on plaster, torchlight raking |
+| 06 | Ask The Oracle | Mayfair townhouse at blue hour, glowing site cabin |
 
-Nothing on the server side is at fault; the earlier `snags.functions.ts` typecheck fix is unrelated.
+Tile structure:
+- Full-bleed image background, 16:10-ish aspect on mobile, taller on md.
+- Dark cinematic gradient overlay (bottom-heavy) for legibility.
+- Corner code chip (`01`–`06`), icon badge, title + sub in the design system's `--foreground` on gradient.
+- Hover: subtle zoom + brightness lift, primary ring on focus.
+- Loading: image dims, spinner overlay, `● RUN` chip.
 
-## Fix
+### 2. Orange buttons upgraded to match the rest of the app
+`ScanUpload.tsx` — the Scan / Upload / View / Remove buttons currently use raw `bg-alert` (orange). Swap them to the same shadcn `Button` component and variants used elsewhere in the app (`variant="default"` primary, `variant="secondary"` and `variant="outline"` for secondary actions), so they match Snags / DABS / Subcontractor Pack.
 
-Force Vite to pre-bundle `style-to-js` (and its sibling `style-to-object`) so the ESM entry is always used.
+Also add a third capture path:
+- **Scan** — existing camera input (kept).
+- **Capture** — new dedicated capture-image button using `getUserMedia` to open a lightweight in-page camera modal, snap → return dataURL, close. Falls back to the camera file input on unsupported browsers.
+- **Upload** — existing file picker.
+- **View** — existing viewer link.
 
-1. Edit `vite.config.ts` — add to `optimizeDeps.include`:
-   - `style-to-js`
-   - `style-to-object`
-   - `react-markdown`
-   - `remark-gfm`
-   (Including the parents guarantees the resolver walks them through the ESM path.)
-2. Restart the dev server so the optimizer re-runs (delete `node_modules/.vite` cache as part of the restart).
-3. Reload `/tooling` and confirm the cockpit renders and streams.
+All four use the same button component and match the app's primary/secondary styling. No raw `bg-alert` on this page.
 
-If pre-bundling alone doesn't clear it, fall back to pinning a resolution: add `"overrides": { "style-to-js": "1.1.16" }` in `package.json` and reinstall — 1.1.16 is the last version whose CJS build still exposed `default`.
+### 3. Readable text boxes
+`PromptInput.tsx` and the file-name row in `ScanUpload.tsx` — currently `bg-transparent` / `bg-white/5`, which disappears against the mesh background. Change to a solid, readable surface using existing tokens:
+- Card wrapper: `bg-card` with `border-border`, subtle inner shadow.
+- Textarea: `bg-background` (or `bg-input`), `text-foreground`, `placeholder:text-muted-foreground`.
+- File-name / status pill: `bg-secondary` with `text-secondary-foreground`.
 
-## Verification
+Same treatment applied consistently so every input sits on an opaque surface.
 
-- Preview `/tooling` loads without the error boundary.
-- Console is free of the `style-to-js` SyntaxError.
-- Trigger one Oracle action; markdown output renders (headings, lists, "BY OTHERS" cards).
+### 4. Terminal panel polish (light touch)
+`ToolingTerminal.tsx` — nudge the panel background to `bg-card/95` with `backdrop-blur` so streaming output is high-contrast against the mesh backdrop. No structural changes.
 
-## Out of scope
+### Files touched
+- `src/components/tooling/ActionGrid.tsx` — cinematic tiles.
+- `src/components/tooling/ScanUpload.tsx` — Button component, add Capture, drop raw orange.
+- `src/components/tooling/PromptInput.tsx` — solid surface + readable text.
+- `src/components/tooling/ToolingTerminal.tsx` — opaque panel.
+- `src/assets/tooling/*.jpg` — 6 new cinematic images (generated once at `standard` quality, imported as ES6 assets).
+- (New) `src/components/tooling/CaptureCameraDialog.tsx` — in-page camera capture modal.
 
-No changes to Oracle prompts, streaming route, viewer, or UI layout.
+### Out of scope
+- Oracle prompts, streaming route, viewer, markdown renderer.
+- Any other page.
+- Auth / RLS / server functions.
