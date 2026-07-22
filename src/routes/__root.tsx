@@ -568,6 +568,10 @@ function AuthNav() {
           )}
 
           <ProjectBibleNavLink />
+          <Link to="/manual" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
+            <LifeBuoy className="h-3.5 w-3.5" />
+            Manual
+          </Link>
           <NotificationBell />
 
           <Link to="/snags" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
