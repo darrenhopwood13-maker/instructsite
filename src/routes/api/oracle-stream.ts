@@ -32,7 +32,7 @@ const PROMPTS: Record<string, string> = {
   installation_sequence: `${BASE_PERSONA}
 
 TASK: INSTALLATION SEQUENCE
-Analyse the supplied drawing/photo (or the user's description) and produce a step-by-step build order.
+Analyse the supplied drawing/photo/PDF (or the user's description) and produce a step-by-step build order.
 
 OUTPUT MUST FOLLOW THIS EXACT STRUCTURE — in this order. Use ## for each section heading. Keep BY OTHERS first.
 
@@ -62,7 +62,7 @@ One decisive recommendation.`,
   safety_auditor: `${BASE_PERSONA}
 
 TASK: SAFETY AUDITOR
-Audit the drawing/photo/scenario for site safety and statutory risk.
+Audit the drawing/photo/PDF/scenario for site safety and statutory risk.
 - BSR / Building Safety Act 2022 implications first if HRB-relevant.
 - CDM 2015 dutyholder gaps, working at height, lifting ops (LOLER), fire stopping (Part B), edge protection, MEWP / scaff, exclusion zones.
 - Sections (each as ##): ## Immediate Risks, ## Statutory Flags, ## Required RAMS & Permits, ## Site Call.`,
@@ -76,7 +76,7 @@ Assess lead times and procurement risk for the items shown / asked about. Assume
   drawing_qa: `${BASE_PERSONA}
 
 TASK: DRAWING Q&A
-Answer the user's specific technical question against the supplied drawing/photo.
+Answer the user's specific technical question against the supplied drawing/photo/PDF.
 - If the drawing doesn't show the answer, say so plainly and state what view/section is needed.
 - Cite zones / grids / detail refs visible on the drawing.
 - Sections (each as ##): ## Answer, ## Reasoning, ## What to Check On Site.`,
@@ -95,6 +95,20 @@ General high-level site logic, problem solving, and Clerk of Works reasoning.
 - Use ## headers per section. Always finish with a ## Site Call section.`,
 };
 
+const MAX_PDF_CHARS = 40_000;
+
+async function extractPdfText(base64: string): Promise<{ text: string; pageCount: number }> {
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+  const { extractText, getDocumentProxy } = await import("unpdf");
+  const pdf = await getDocumentProxy(bytes);
+  const { text, totalPages } = await extractText(pdf, { mergePages: true });
+  const merged = Array.isArray(text) ? text.join("\n") : text;
+  return { text: merged.replace(/\s+/g, " ").trim(), pageCount: totalPages ?? 0 };
+}
+
 export const Route = createFileRoute("/api/oracle-stream")({
   server: {
     handlers: {
@@ -107,14 +121,20 @@ export const Route = createFileRoute("/api/oracle-stream")({
           });
         }
 
-        let body: { buttonFunction?: string; base64Image?: string | null; userQuestion?: string };
+        let body: {
+          buttonFunction?: string;
+          base64Image?: string | null;
+          pdfBase64?: string | null;
+          pdfFileName?: string | null;
+          userQuestion?: string;
+        };
         try {
           body = await request.json();
         } catch {
           return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
         }
 
-        const { buttonFunction, base64Image, userQuestion } = body;
+        const { buttonFunction, base64Image, pdfBase64, pdfFileName, userQuestion } = body;
         if (!buttonFunction || !PROMPTS[buttonFunction]) {
           return new Response(JSON.stringify({ error: "Invalid buttonFunction" }), {
             status: 400,
@@ -122,11 +142,32 @@ export const Route = createFileRoute("/api/oracle-stream")({
           });
         }
 
-        const userText =
+        let pdfWarning: string | null = null;
+        let pdfBlock: string | null = null;
+        if (pdfBase64 && typeof pdfBase64 === "string") {
+          try {
+            const { text, pageCount } = await extractPdfText(pdfBase64);
+            if (!text) {
+              pdfWarning =
+                "This PDF has no selectable text (likely scanned). Export a text-based PDF or attach as an image.";
+            } else {
+              const truncated = text.length > MAX_PDF_CHARS;
+              const clip = truncated ? text.slice(0, MAX_PDF_CHARS) : text;
+              pdfBlock = `[Attached PDF: ${pdfFileName ?? "document.pdf"}, ${pageCount} page${pageCount === 1 ? "" : "s"}${truncated ? ", truncated" : ""}]\n\n${clip}`;
+            }
+          } catch (err) {
+            console.error("PDF extract failed:", err);
+            pdfWarning = "Could not read the PDF text — try re-exporting or attach as an image.";
+          }
+        }
+
+        const baseText =
           userQuestion?.trim() ||
-          (base64Image
-            ? "Analyse the attached drawing/photo per the task brief above."
+          (base64Image || pdfBlock
+            ? "Analyse the attached material per the task brief above."
             : "Provide your standard analysis per the task brief above.");
+
+        const userText = pdfBlock ? `${baseText}\n\n${pdfBlock}` : baseText;
 
         const userContent: Array<Record<string, unknown>> = [{ type: "text", text: userText }];
         if (base64Image && typeof base64Image === "string" && base64Image.startsWith("data:")) {
@@ -163,12 +204,13 @@ export const Route = createFileRoute("/api/oracle-stream")({
           });
         }
 
-        return new Response(upstream.body, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-          },
-        });
+        const headers: Record<string, string> = {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+        };
+        if (pdfWarning) headers["x-oracle-warning"] = pdfWarning;
+
+        return new Response(upstream.body, { headers });
       },
     },
   },

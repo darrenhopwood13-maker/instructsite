@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Copy, RotateCcw, Sparkles, Check, Loader2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Copy, RotateCcw, Sparkles, Check, Loader2, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ interface Props {
   activeFunction: string | null;
   onReset: () => void;
   imageDataUrl?: string | null;
+  pdfBase64?: string | null;
   fileName?: string | null;
   onRemoveImage?: () => void;
   footer?: React.ReactNode;
@@ -18,7 +19,73 @@ interface Props {
 
 const STEPS = ["Reading input", "Analysing", "Generating", "Finalising"];
 
-export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, imageDataUrl, fileName, onRemoveImage, footer }: Props) => {
+function AttachmentPreview({
+  imageDataUrl,
+  pdfBase64,
+  fileName,
+  onRemove,
+}: {
+  imageDataUrl?: string | null;
+  pdfBase64?: string | null;
+  fileName: string | null;
+  onRemove?: () => void;
+}) {
+  const pdfObjectUrl = useMemo(() => {
+    if (!pdfBase64) return null;
+    const bin = atob(pdfBase64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    return URL.createObjectURL(blob);
+  }, [pdfBase64]);
+
+  useEffect(() => () => {
+    if (pdfObjectUrl) URL.revokeObjectURL(pdfObjectUrl);
+  }, [pdfObjectUrl]);
+
+  return (
+    <div className="mt-4 rounded-xl border border-sky-200 bg-white p-2">
+      <div className="flex items-center gap-3">
+        {imageDataUrl ? (
+          <img
+            src={imageDataUrl}
+            alt={fileName ?? "attached"}
+            className="h-20 w-20 rounded-lg object-cover border border-sky-200"
+          />
+        ) : (
+          <div className="h-20 w-20 rounded-lg border border-sky-200 bg-sky-50 grid place-items-center text-alert">
+            <FileText size={28} />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase mb-1">
+            ▸ Attached {pdfBase64 ? "· PDF" : ""}
+          </div>
+          <div className="text-sm text-slate-800 truncate">{fileName ?? "attachment"}</div>
+        </div>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-slate-500 hover:text-alert p-1.5 rounded-md hover:bg-alert/10"
+            aria-label="Remove attachment"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+      {pdfObjectUrl && (
+        <iframe
+          title={fileName ?? "PDF preview"}
+          src={pdfObjectUrl}
+          className="mt-2 h-56 w-full rounded-lg border border-sky-200 bg-white"
+        />
+      )}
+    </div>
+  );
+}
+
+export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, imageDataUrl, pdfBase64, fileName, onRemoveImage, footer }: Props) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [stepIdx, setStepIdx] = useState(0);
 
@@ -92,32 +159,15 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, 
             </div>
             <p className="text-slate-900 font-display text-lg mb-2">Site manager, what's the call?</p>
             <p className="text-slate-700">
-              Attach a drawing or photo, add any context, then choose an action below.
+              Attach a drawing, photo or PDF, add any context, then choose an action below.
             </p>
-            {imageDataUrl && (
-              <div className="mt-4 rounded-xl border border-sky-200 bg-white p-2 flex items-center gap-3">
-                <img
-                  src={imageDataUrl}
-                  alt={fileName ?? "attached"}
-                  className="h-20 w-20 rounded-lg object-cover border border-sky-200"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="font-mono text-[10px] tracking-widest text-slate-500 uppercase mb-1">
-                    ▸ Attached
-                  </div>
-                  <div className="text-sm text-slate-800 truncate">{fileName ?? "image"}</div>
-                </div>
-                {onRemoveImage && (
-                  <button
-                    type="button"
-                    onClick={onRemoveImage}
-                    className="text-slate-500 hover:text-alert p-1.5 rounded-md hover:bg-alert/10"
-                    aria-label="Remove image"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
+            {(imageDataUrl || pdfBase64) && (
+              <AttachmentPreview
+                imageDataUrl={imageDataUrl}
+                pdfBase64={pdfBase64}
+                fileName={fileName ?? null}
+                onRemove={onRemoveImage}
+              />
             )}
           </div>
         )}

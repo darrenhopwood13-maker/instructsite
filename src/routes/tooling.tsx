@@ -22,6 +22,7 @@ export const Route = createFileRoute("/tooling")({
 
 function ToolingPage() {
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [pdfBase64, setPdfBase64] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [question, setQuestion] = useState("");
   const [output, setOutput] = useState("");
@@ -31,6 +32,12 @@ function ToolingPage() {
   const reset = () => {
     setOutput("");
     setActiveFunction(null);
+  };
+
+  const clearAttachment = () => {
+    setImageDataUrl(null);
+    setPdfBase64(null);
+    setFileName(null);
   };
 
   const runOracle = async (fn: FunctionKey) => {
@@ -48,7 +55,13 @@ function ToolingPage() {
       const resp = await fetch("/api/oracle-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ buttonFunction: fn, base64Image: imageDataUrl, userQuestion: question }),
+        body: JSON.stringify({
+          buttonFunction: fn,
+          base64Image: imageDataUrl,
+          pdfBase64,
+          pdfFileName: pdfBase64 ? fileName : null,
+          userQuestion: question,
+        }),
       });
 
       if (!resp.ok) {
@@ -65,6 +78,9 @@ function ToolingPage() {
         setIsStreaming(false);
         return;
       }
+
+      const warning = resp.headers.get("x-oracle-warning");
+      if (warning) toast.warning("PDF notice", { description: warning });
 
       if (!resp.body) {
         toast.error("No stream from The Oracle.");
@@ -145,16 +161,19 @@ function ToolingPage() {
           activeFunction={activeFunction ? ACTION_LABELS[activeFunction] : null}
           onReset={reset}
           imageDataUrl={imageDataUrl}
+          pdfBase64={pdfBase64}
           fileName={fileName}
-          onRemoveImage={() => {
-            setImageDataUrl(null);
-            setFileName(null);
-          }}
+          onRemoveImage={clearAttachment}
           footer={
             <ScanUpload
               imageDataUrl={imageDataUrl}
+              pdfBase64={pdfBase64}
               onImage={(d, n) => {
                 setImageDataUrl(d);
+                setFileName(n);
+              }}
+              onPdf={(b, n) => {
+                setPdfBase64(b);
                 setFileName(n);
               }}
               fileName={fileName}
