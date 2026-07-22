@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -10,23 +10,17 @@ import {
   Download,
   Trash2,
   Undo2,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url,
-).toString();
+const PdfViewer = lazy(() => import("@/components/tooling/PdfViewer"));
 
 type Stroke = { points: { x: number; y: number }[]; color: string; width: number };
 
 const COLORS = ["#FACC15", "#22C55E", "#EF4444", "#38BDF8", "#111827"];
+
+
 
 export const Route = createFileRoute("/viewer")({
   head: () => ({
