@@ -245,14 +245,14 @@ function NewOrgPage() {
               <UserPlus size={14} /> Invite Standard Members
             </p>
             <p className="mb-4 text-[0.7rem] text-foreground/60">
-              Every organisation has 4 standard seats: 1 Organisation Admin + 1 Project Manager + 2 Subcontractors.
+              Every organisation has 4 standard seats: 1 Project Admin + 1 Project Manager (also Org Admin) + 2 Subcontractors.
               Invitees get an email with a magic link — they set their own password on first use.
               Emails are optional; you can send invites later from the edit page.
             </p>
 
             <label className="mb-3 block">
               <span className="mb-1.5 flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
-                <Shield size={12} /> Organisation Admin Email
+                <Shield size={12} /> Project Admin Email
                 <span className="ml-1 text-[0.6rem] font-normal normal-case tracking-normal text-foreground/40">
                   (full project + subcontractor rights)
                 </span>
@@ -269,7 +269,7 @@ function NewOrgPage() {
 
             <label className="mb-3 block">
               <span className="mb-1.5 flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
-                <User size={12} /> Project Manager Email
+                <User size={12} /> Project Manager Email <span className="ml-1 text-[0.6rem] font-normal normal-case tracking-normal text-foreground/40">(also Org Admin)</span>
               </span>
               <input
                 type="email"

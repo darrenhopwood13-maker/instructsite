@@ -19,9 +19,9 @@ function roleLabel(role: string): string {
     case "qs":
       return "QS";
     case "admin":
-      return "Org Admin";
+      return "Project Admin";
     case "pm":
-      return "Project Manager";
+      return "Project Manager / Org Admin";
     default:
       return role.replace(/_/g, " ");
   }

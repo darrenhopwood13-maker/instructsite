@@ -392,7 +392,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
           Members & Invites
         </p>
         <p className="mt-1 text-xs text-foreground/60">
-          Standard seats: 1 Organisation Admin + 1 Project Manager + 2 Subcontractors. Additional
+          Standard seats: 1 Project Admin + 1 Project Manager (also Org Admin) + 2 Subcontractors. Additional
           members unlock once all 4 standard seats are used.
         </p>
       </div>
@@ -430,8 +430,8 @@ function MembersPanel({ orgId }: { orgId: string }) {
                     }
                     className="rounded-md border border-white/15 bg-black/40 px-2 py-1 text-[0.65rem] uppercase tracking-widest text-foreground outline-none focus:border-alert disabled:opacity-50"
                   >
-                    <option value="admin">Org Admin</option>
-                    <option value="pm">Project Manager</option>
+                    <option value="admin">Project Admin</option>
+                    <option value="pm">Project Manager / Org Admin</option>
                     <option value="subcontractor">Subcontractor</option>
                   </select>
                   <button
@@ -466,7 +466,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
               <div className="flex items-center gap-2">
                 <span className="text-foreground/80">{i.email}</span>
                 <span className="rounded bg-alert/20 px-2 py-0.5 text-[0.6rem] uppercase tracking-widest text-alert">
-                  {i.role === "admin" ? "Org Admin" : i.role === "pm" ? "PM" : "Sub"}
+                  {i.role === "admin" ? "Project Admin" : i.role === "pm" ? "PM / Org Admin" : "Sub"}
                 </span>
                 {!i.is_standard && (
                   <span className="rounded bg-white/10 px-2 py-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/70">
@@ -516,8 +516,8 @@ function MembersPanel({ orgId }: { orgId: string }) {
             onChange={(e) => setRole(e.target.value as "admin" | "pm" | "subcontractor")}
             className="rounded-md border border-white/15 bg-black/40 px-3 py-2 text-sm text-foreground outline-none focus:border-alert"
           >
-            <option value="admin">Organisation Admin</option>
-            <option value="pm">Project Manager</option>
+            <option value="admin">Project Admin</option>
+            <option value="pm">Project Manager / Org Admin</option>
             <option value="subcontractor">Subcontractor</option>
           </select>
           <button
