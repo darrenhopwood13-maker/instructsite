@@ -466,7 +466,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
               <div className="flex items-center gap-2">
                 <span className="text-foreground/80">{i.email}</span>
                 <span className="rounded bg-alert/20 px-2 py-0.5 text-[0.6rem] uppercase tracking-widest text-alert">
-                  {i.role === "admin" ? "Org Admin" : i.role === "pm" ? "PM" : "Sub"}
+                  {i.role === "admin" ? "Project Admin" : i.role === "pm" ? "PM / Org Admin" : "Sub"}
                 </span>
                 {!i.is_standard && (
                   <span className="rounded bg-white/10 px-2 py-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/70">
