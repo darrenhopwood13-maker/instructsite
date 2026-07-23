@@ -77,8 +77,9 @@ function NewOrgPage() {
     setSaving(true);
     setErr(null);
     try {
-      const invites: { email: string; role: "admin" | "subcontractor" }[] = [];
-      if (pmEmail.trim()) invites.push({ email: pmEmail.trim(), role: "admin" });
+      const invites: { email: string; role: "admin" | "pm" | "subcontractor" }[] = [];
+      if (adminEmail.trim()) invites.push({ email: adminEmail.trim(), role: "admin" });
+      if (pmEmail.trim()) invites.push({ email: pmEmail.trim(), role: "pm" });
       if (sub1Email.trim()) invites.push({ email: sub1Email.trim(), role: "subcontractor" });
       if (sub2Email.trim()) invites.push({ email: sub2Email.trim(), role: "subcontractor" });
 
