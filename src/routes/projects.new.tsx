@@ -167,7 +167,8 @@ function NewProject() {
     }
   };
 
-  const canSubmit = name.trim().length > 0 && siteAddress.trim().length > 0 && !saving;
+  const canCreate = orgs.length > 0;
+  const canSubmit = name.trim().length > 0 && siteAddress.trim().length > 0 && orgId.length > 0 && !saving;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,6 +184,7 @@ function NewProject() {
       ].filter(Boolean);
       const { id } = await create({
         data: {
+          orgId,
           name: name.trim(),
           siteAddress: siteAddress.trim(),
           scopeBrief: briefParts.join("\n\n"),
