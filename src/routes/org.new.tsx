@@ -14,6 +14,7 @@ import {
   User,
   UserPlus,
   HardHat,
+  Shield,
 } from "lucide-react";
 import { createOrg, getMyOrg } from "@/lib/orgs.functions";
 import { slugify } from "@/lib/owner";
