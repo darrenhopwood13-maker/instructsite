@@ -60,6 +60,7 @@ function NewProject() {
   const nav = useNavigate();
   const create = useServerFn(createProject);
   const rolesFn = useServerFn(getMyRoles);
+  const orgsFn = useServerFn(listMyOrgsForProjectCreation);
   const register = useServerFn(registerTier1Document);
   const extract = useServerFn(extractProjectFromDrawing);
 
@@ -76,6 +77,8 @@ function NewProject() {
   const [drawingFiles, setDrawingFiles] = useState<File[]>([]);
   const [logisticsFiles, setLogisticsFiles] = useState<File[]>([]);
   const [ramsFiles, setRamsFiles] = useState<File[]>([]);
+  const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([]);
+  const [orgId, setOrgId] = useState<string>("");
 
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -87,8 +90,10 @@ function NewProject() {
     (async () => {
       try {
         await ensureOracleSession();
-        const r = await rolesFn();
+        const [r, o] = await Promise.all([rolesFn(), orgsFn()]);
         setIsMaster(r.roles.includes("master_admin"));
+        setOrgs(o);
+        if (o.length === 1) setOrgId(o[0].id);
       } catch (e) {
         setErr(humanizeError(e));
         setIsMaster(false);
@@ -96,7 +101,7 @@ function NewProject() {
         setReady(true);
       }
     })();
-  }, [rolesFn]);
+  }, [rolesFn, orgsFn]);
 
   const flashFilled = (keys: string[]) => {
     const map: Record<string, boolean> = {};
