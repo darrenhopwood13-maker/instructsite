@@ -76,7 +76,7 @@ function AcceptInvitePage() {
           <p className="mt-2 text-sm text-foreground/70">
             You've been invited as{" "}
             <span className="font-bold uppercase text-alert">
-              {inv?.role === "admin" ? "Project Manager" : "Subcontractor"}
+              {inv?.role === "admin" ? "Organisation Admin" : inv?.role === "pm" ? "Project Manager" : "Subcontractor"}
             </span>
             .
           </p>
