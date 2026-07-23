@@ -70,7 +70,11 @@ export const getMyOrg = createServerFn({ method: "GET" })
     if (!data) return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const org = data.orgs as any;
-    return { role: data.role as "admin" | "subcontractor", orgId: data.org_id as string, org };
+    return {
+      role: data.role as "admin" | "pm" | "subcontractor",
+      orgId: data.org_id as string,
+      org,
+    };
   });
 
 /** All orgs with no admin yet — used by the claim screen. */
