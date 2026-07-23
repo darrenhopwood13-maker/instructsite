@@ -224,13 +224,13 @@ function NewProject() {
           Drop a GA drawing pack for instant AI auto-fill, or complete the fields manually.
         </p>
 
-        {ready && isMaster === false && (
+        {ready && !canCreate && (
           <div className="mt-6 flex items-start gap-3 rounded-md border border-alert/50 bg-alert/10 p-4 text-sm text-foreground">
             <AlertCircle size={16} className="mt-0.5 shrink-0 text-alert" />
             <div>
               <p className="font-bold uppercase tracking-widest text-alert">Access denied</p>
               <p className="mt-1 text-foreground/80">
-                Only Master Admins can onboard new projects.
+                You need to be an Organisation Admin (or Founder) to onboard new projects.
               </p>
             </div>
           </div>
@@ -238,7 +238,7 @@ function NewProject() {
 
         {/* AI Instant Setup */}
         <AiDropZone
-          disabled={!isMaster || scanning}
+          disabled={!canCreate || scanning}
           scanning={scanning}
           progress={scanProgress}
           message={scanMsg}
@@ -246,10 +246,26 @@ function NewProject() {
         />
 
         <form onSubmit={submit} className="glass-panel mt-6 space-y-6 p-6">
+          <Field label="Organisation" icon={<Building2 size={14} />} required>
+            <select
+              disabled={!canCreate}
+              className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
+              value={orgId}
+              onChange={(e) => setOrgId(e.target.value)}
+            >
+              <option value="">Select organisation…</option>
+              {orgs.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
           <Field label="Project Name" icon={<Building2 size={14} />} required flash={autoFilled.name}>
             <input
               autoFocus
-              disabled={!isMaster}
+              disabled={!canCreate}
               className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
               placeholder="e.g. Riverside Tower Phase 2"
               value={name}
