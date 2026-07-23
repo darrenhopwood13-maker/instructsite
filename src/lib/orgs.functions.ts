@@ -485,19 +485,25 @@ export const inviteOrgMember = createServerFn({ method: "POST" })
         .eq("status", "pending"),
     ]);
 
-    const stdPM =
+    const stdAdmin =
       (members ?? []).filter((m) => m.role === "admin" && m.is_standard).length +
       (invites ?? []).filter((i) => i.role === "admin" && i.is_standard).length;
+    const stdPM =
+      (members ?? []).filter((m) => m.role === "pm" && m.is_standard).length +
+      (invites ?? []).filter((i) => i.role === "pm" && i.is_standard).length;
     const stdSub =
       (members ?? []).filter((m) => m.role === "subcontractor" && m.is_standard).length +
       (invites ?? []).filter((i) => i.role === "subcontractor" && i.is_standard).length;
 
-    const stdComplete = stdPM >= 1 && stdSub >= 2;
+    const stdComplete = stdAdmin >= 1 && stdPM >= 1 && stdSub >= 2;
     const isStandard = !stdComplete;
 
     if (isStandard) {
-      if (data.role === "admin" && stdPM >= 1) {
-        throw new Error("Standard Project Manager seat already used. Fill the remaining subcontractor seats first, then add additional members.");
+      if (data.role === "admin" && stdAdmin >= 1) {
+        throw new Error("Standard Organisation Admin seat already used.");
+      }
+      if (data.role === "pm" && stdPM >= 1) {
+        throw new Error("Standard Project Manager seat already used.");
       }
       if (data.role === "subcontractor" && stdSub >= 2) {
         throw new Error("Both standard subcontractor seats are taken.");
