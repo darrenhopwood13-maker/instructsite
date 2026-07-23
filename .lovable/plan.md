@@ -1,76 +1,53 @@
+# Add Organisation Admin role
 
-# instructSite User Manual — Plan
+Today, org invites accept only two roles: `admin` (currently labelled "Project Manager") and `subcontractor`. There's no seat with full org-wide rights (create/delete projects, invite subcontractors, manage org). Founder is the only one who can currently do that.
 
-Deliver one comprehensive manual in two forms: a branded PDF you can download/print/share, and an in-app `/manual` page that mirrors it with search and deep-links into the actual screens. Screenshots are captured live from the running app while signed in as the founder.
+We'll introduce a new role `org_admin` — a separate standard seat, invited from the same "New Organisation" and "Edit Organisation" screens, with full project + subcontractor management rights inside their org.
 
-## What the manual covers (in order)
+## Roles after change
 
-1. **The Big Picture** — what instructSite is, who does what (Founder, Master/Project Admin, Site Manager, PM, Subcontractor), and the top-nav map (Projects vs Organisations, Snag Master, Project Bible, AI Tooling, Notifications).
-2. **Setting up an Organisation** (Founder only) — where the button lives, every field explained, what happens on save.
-3. **Inviting people to an Organisation** — the 3 standard seats (1 PM + 2 Subs), invite emails, magic link → password → accept invite flow, common errors.
-4. **Creating a Project inside an Org & inviting Subcontractors** — New Project form, scope brief, then adding subcontractors to that project.
-5. **Project Scope, Drawings, Logistics Plans, RAMS** — where each lives on the Project page, who can upload, what formats, how they appear in the Project Bible.
-6. **Adding Drawings to DABS to create Work Zones** — opening DABS, picking a project drawing, drawing zones, saving, who sees them.
-7. **Adding a Programme to Randall's Diary** — uploading the programme PDF, what Randall extracts, editing days, troubleshooting a failed parse.
-8. **Bonus quick-refs** — Snag Master (scan → report → Project Bible), AI Tooling cockpit (Scan/Upload/View + Oracle), Notifications bell, Weekly Subcontractor Pack.
+- `org_admin` (new) — 1 standard seat. Full rights inside the org: create/edit/delete projects, invite subcontractors, manage members/invites, edit org details. Cannot touch other orgs.
+- `admin` (Project Manager) — 1 standard seat. Existing behaviour: PM on projects they're assigned to. No org-level admin rights.
+- `subcontractor` — 2 standard seats. Unchanged.
 
-Each section uses the same repeating block so it's genuinely fool-proof:
+Total standard seats per org becomes 1 + 1 + 2 = 4.
 
-```text
-WHO   – which role(s) can do this
-WHERE – exact path + which button, with a screenshot
-WHEN  – at what stage of the project lifecycle
-HOW   – numbered steps, one action per step
-HINT  – yellow callout: gotchas, e.g. "Founder sees Organisation, everyone else sees Projects"
-IF IT BREAKS – common error + fix
-```
+## Database (single migration)
 
-## How screenshots are captured
+1. Widen check constraints:
+   - `org_members_role_check` → `('org_admin','admin','subcontractor')`
+   - `org_invites_role_check` → same
+2. Update `enforce_org_member_caps()` trigger to also cap `org_admin` at 1 standard seat, and include it in the "all standard seats claimed" precondition for non-standard members (now requires 1 org_admin + 1 admin + 2 subs).
+3. Update `org_admin_count(_org_id)` if used anywhere for gating (verify; currently only counts `role='admin'` — leave for PM count; add helper `is_org_admin_role(_org_id,_user_id)` returning true when user is `org_admin`, so RLS policies can grant full write access).
+4. Extend RLS policies on `projects`, `subcontractor_invites`, `subcontractors`, `project_members`, `org_invites`, `org_members` so `org_admin` of the owning org has the same rights as founder within that org (create/update/delete). Founder path stays intact.
 
-Playwright drives the live preview at `http://localhost:8080`, signed in as the founder using the injected Supabase session. For each step the script:
+## Server functions (`src/lib/orgs.functions.ts`)
 
-1. Navigates to the target route.
-2. Waits for the key element (button, form, panel).
-3. Screenshots the viewport (1280×1800) or the specific element.
-4. Saves to `/tmp/manual/shots/NN_slug.png`.
+- `inviteRowSchema` / `inviteMemberSchema`: accept `"org_admin" | "admin" | "subcontractor"`.
+- `createOrg`: seat validation becomes `orgAdminCount ≤ 1`, `pmCount ≤ 1`, `subCount ≤ 2`.
+- `listOrgInvites` / other permission checks: treat `org_admin` as equivalent to founder for that org.
+- `getMyOrg` return type: `role: "org_admin" | "admin" | "subcontractor"`.
+- Add gating helper `isOrgAdmin(context, orgId)` used by project/subcontractor mutation server fns to allow org_admins alongside founder.
 
-Founder-only screens (Organisations, New Org, Director Portfolio) are captured as the founder. Role-restricted screens where the founder view differs (e.g. Subcontractor Cockpit) get a short note explaining what a subcontractor would see instead, using an existing test account if needed.
+## Related server fns that must accept org_admin
 
-Every generated PNG is inspected before it goes into the PDF — blurry, half-loaded, or wrong-page shots get re-taken.
+Audit and update authorization in: `src/lib/projects.functions.ts`, `src/lib/subcontractors.functions.ts` (assertProjectAdmin path), `src/lib/orgs.functions.ts` invite/remove member fns, and any `is_project_admin`/founder-only gate that should also pass for that org's `org_admin`.
 
-## PDF generation
+## UI
 
-Python + ReportLab, using the instructSite brand:
+- `src/routes/org.new.tsx`: add an "Organisation Admin Email" field (with `Shield` icon) above the PM field. Include it in the `invites` array with `role: "org_admin"`. Update the helper copy: "Every organisation has 4 standard seats: 1 Org Admin + 1 Project Manager + 2 Subcontractors."
+- `src/routes/org.$orgId.edit.tsx`: same new field + display org_admin invite/member rows with a distinct label + badge.
+- `src/routes/org.$orgId.index.tsx` and members list: render "Org Admin" label for the new role.
+- `src/lib/ensure-oracle-session.ts` `routeForRoles`: no change needed (all roles already route to `/projects`), but ensure org_admin can reach `/org/$orgId/edit` and `/projects/new` — gated by server fns above.
 
-- Cover page: Zen Dots title "instructSite — Operator's Manual", navy `#0B1E3F` background, orange `#FF7A00` accent, version + date.
-- Body: Inter for text, Space Grotesk for headings, orange section dividers, WHO/WHERE/WHEN/HOW blocks styled as cards, yellow HINT callouts, red IF-IT-BREAKS callouts.
-- Screenshots embedded inline with numbered captions.
-- Table of contents with page numbers, and a role-based quick-reference index at the back ("If you are a Subcontractor, read sections 1, 3, 5, 8").
-- Output written to `/mnt/documents/instructSite-manual.pdf` and surfaced with a `<presentation-artifact>` tag so you can download it immediately.
-- Full visual QA pass: render every page to JPG, read each one, fix any overflow / clipping / broken layout before delivery.
+## Out of scope
 
-## In-app `/manual` page
+- No changes to `user_roles` app_role enum (that's project-level roles: master_admin/site_manager/etc.). Org role lives only in `org_members.role`.
+- No email template changes; existing invite email flow reused.
 
-New route `src/routes/manual.tsx`:
+## Verification
 
-- Same content as the PDF, rendered as React with the existing glass-panel styling.
-- Left-hand sticky table of contents; sections use anchor IDs so links are shareable.
-- Search box that filters section titles + body text client-side.
-- Each "WHERE" block includes a live `<Link>` straight to the screen it describes (e.g. WHERE for "New Organisation" links to `/org/new`).
-- A prominent "Download PDF" button at the top pointing at the generated PDF URL.
-- Header nav gets a small "Manual" link next to "Project Bible" so it's always one click away.
-- Route is public within the app (any signed-in user); founder-only sections carry a small badge but are still visible so everyone understands the full system.
-
-## Technical notes
-
-- New files: `src/routes/manual.tsx`, `src/components/manual/*` (ManualSection, HintBox, StepList, ScreenshotFigure), plus a generator script at `scripts/build-manual-pdf.py` and the Playwright capture script at `scripts/capture-manual-shots.py`.
-- Screenshots that ship in the app go through `lovable-assets create` so they're served from the CDN, not committed as binaries.
-- No changes to backend logic, RLS, or any existing feature — this is documentation + one new page + one new header link.
-- Content is written from a fresh walk-through of the real UI, not from memory, so anything that no longer exists gets flagged and either corrected or omitted.
-
-## Deliverables at the end
-
-1. `instructSite-manual.pdf` in your Files (downloadable, printable).
-2. `/manual` route inside the app with the same content, searchable, deep-linked.
-3. A "Manual" link in the top nav.
-4. A short summary of anything I found in the walk-through that looked stale or broken, so you can decide whether to fix it separately.
+- Migration applies cleanly; trigger accepts 1 org_admin + 1 admin + 2 subs and rejects a second org_admin.
+- Founder creates an org with all 4 invite emails; each invitee sets a password and lands in the org with the right role.
+- Signed in as org_admin: can create a project, invite a subcontractor, edit org details. Signed in as PM (`admin`): cannot delete projects or edit org details.
+- Signed in as org_admin of Org A: cannot see/modify Org B.
