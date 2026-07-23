@@ -344,9 +344,11 @@ export const createOrg = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    // Enforce the 1-PM + 2-Sub standard cap on the invites payload
-    const pmCount = data.invites.filter((r) => r.role === "admin").length;
+    // Enforce the standard cap: 1 Org Admin + 1 PM + 2 Subcontractors
+    const adminCount = data.invites.filter((r) => r.role === "admin").length;
+    const pmCount = data.invites.filter((r) => r.role === "pm").length;
     const subCount = data.invites.filter((r) => r.role === "subcontractor").length;
+    if (adminCount > 1) throw new Error("Only 1 Organisation Admin can be invited as a standard seat.");
     if (pmCount > 1) throw new Error("Only 1 Project Manager can be invited as a standard seat.");
     if (subCount > 2) throw new Error("Only 2 Subcontractors can be invited as standard seats.");
 
