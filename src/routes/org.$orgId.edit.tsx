@@ -382,7 +382,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
             >
               <span className="font-mono text-foreground/80">{m.user_id.slice(0, 12)}…</span>
               <span className="uppercase tracking-widest text-foreground/50">
-                {m.role === "admin" ? "Project Manager" : "Subcontractor"}
+                {m.role === "admin" ? "Organisation Admin" : m.role === "pm" ? "Project Manager" : "Subcontractor"}
               </span>
             </div>
           ))}
