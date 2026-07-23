@@ -39,9 +39,9 @@ function AcceptInvitePage() {
   async function accept() {
     setState("joining");
     try {
-      const { orgId } = await acceptFn({ data: { token } });
+      await acceptFn({ data: { token } });
       setState("done");
-      setTimeout(() => navigate({ to: "/org/$orgId", params: { orgId } }), 1200);
+      setTimeout(() => navigate({ to: "/projects" }), 1200);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setState("error");
