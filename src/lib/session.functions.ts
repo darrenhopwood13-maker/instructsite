@@ -20,7 +20,7 @@ export const getSessionContext = createServerFn({ method: "GET" })
     const isFounder = isOwnerFromClaims(claims);
 
     const [{ data: profile }, { data: rolesRows }, { data: orgRow }] = await Promise.all([
-      supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+      supabase.from("profiles").select("full_name").eq("user_id", userId).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", userId),
       supabase
         .from("org_members")
