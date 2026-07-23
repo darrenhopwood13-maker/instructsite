@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle, Clock, Users, X, ShieldAlert, ClipboardList } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Clock, Users, X, ShieldAlert, ClipboardList, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
@@ -148,6 +148,8 @@ function SiteManagerPage() {
   const [activePin, setActivePin] = useState<PinRecord | null>(null);
   const [permitPin, setPermitPin] = useState<PinRecord | null>(null);
   const [forcePin, setForcePin] = useState<PinRecord | null>(null);
+  const [bimOpen, setBimOpen] = useState(false);
+  const [qsOpen, setQsOpen] = useState(true);
 
   const closePin = async (pinId: string) => {
     await closeFn({ data: { pinId } });
@@ -232,21 +234,30 @@ function SiteManagerPage() {
           <StatCard label="Archived Today" value={String(archivedToday.data?.count ?? 0)} />
         </section>
 
-        <section className="mt-10">
+        <CollapsibleSection
+          label="BIM / IFC Model"
+          description="View, upload, and map IFC models to project zones"
+          open={bimOpen}
+          onToggle={() => setBimOpen(!bimOpen)}
+        >
           <ClientOnly fallback={<div className="glass-panel h-[560px] animate-pulse" />}>
             <BimModelViewer projectId={projectId} />
           </ClientOnly>
-        </section>
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            <BimModelUploader projectId={projectId} />
+            <BimMappingEditor projectId={projectId} />
+          </div>
+        </CollapsibleSection>
 
-        <section className="mt-6 grid gap-4 lg:grid-cols-2">
-          <BimModelUploader projectId={projectId} />
-          <BimMappingEditor projectId={projectId} />
-        </section>
 
-
-        <section className="mt-10">
+        <CollapsibleSection
+          label="QS Verification Queue"
+          description="Verified quantities, diary reconciliation, and sign-off requests"
+          open={qsOpen}
+          onToggle={() => setQsOpen(!qsOpen)}
+        >
           <QsVerificationQueue projectId={projectId} />
-        </section>
+        </CollapsibleSection>
 
         <section className="mt-8">
           <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
@@ -422,5 +433,45 @@ function StatCard({
         {value}
       </p>
     </div>
+  );
+}
+
+function CollapsibleSection({
+  label,
+  description,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string;
+  description: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mt-10">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/30 px-5 py-4 text-left transition hover:bg-black/50"
+      >
+        <div className="min-w-0">
+          <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
+            {label}
+          </h2>
+          <p className="mt-0.5 text-[0.6rem] text-foreground/50">
+            {description}
+          </p>
+        </div>
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-foreground/50 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {open && <div className="mt-6">{children}</div>}
+    </section>
   );
 }
