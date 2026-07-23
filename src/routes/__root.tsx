@@ -582,6 +582,22 @@ function AuthNav() {
           <Link to="/tooling" className="glass-orange rounded-lg px-4 py-2 text-sm">
             AI Tooling
           </Link>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <a
+              href="https://www.instructsite.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open instructSite in a new tab"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open instructSite
+            </a>
+          </Button>
           <button
             type="button"
             onClick={signOut}
@@ -591,9 +607,27 @@ function AuthNav() {
           </button>
         </>
       ) : (
-        <Link to="/auth" className="glass-orange rounded-lg px-4 py-2 text-sm uppercase tracking-widest">
-          Sign in
-        </Link>
+        <>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <a
+              href="https://www.instructsite.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open instructSite in a new tab"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open instructSite
+            </a>
+          </Button>
+          <Link to="/auth" className="glass-orange rounded-lg px-4 py-2 text-sm uppercase tracking-widest">
+            Sign in
+          </Link>
+        </>
       )}
     </div>
   );
