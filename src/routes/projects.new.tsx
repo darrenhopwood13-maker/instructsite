@@ -111,7 +111,7 @@ function NewProject() {
   };
 
   const runAiScan = async (file: File) => {
-    if (!isMaster || scanning) return;
+    if (!canCreate || scanning) return;
     setErr(null);
     setScanning(true);
     setScanMsg("InstructBrain Oracle is dissecting drawing pack data…");
