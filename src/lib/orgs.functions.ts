@@ -462,7 +462,7 @@ export const listOrgInvites = createServerFn({ method: "GET" })
 const inviteMemberSchema = z.object({
   orgId: z.string().uuid(),
   email: z.string().trim().email().max(200),
-  role: z.enum(["admin", "subcontractor"]),
+  role: z.enum(["admin", "pm", "subcontractor"]),
 });
 
 export const inviteOrgMember = createServerFn({ method: "POST" })
