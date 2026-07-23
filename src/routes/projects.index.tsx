@@ -117,7 +117,7 @@ function ProjectsPage() {
           ))}
           {projects.data && projects.data.length === 0 && (
             <div className="glass-panel col-span-full p-8 text-center text-sm text-foreground/60">
-              No projects yet. {isMaster ? "Click 'New Project' to begin onboarding." : "Ask your Master Admin to onboard a project."}
+              No projects yet. {canCreate ? "Click 'New Project' to begin onboarding." : "Ask your Organisation Admin to onboard a project."}
             </div>
           )}
         </div>
