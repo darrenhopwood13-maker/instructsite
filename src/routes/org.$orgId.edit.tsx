@@ -26,6 +26,8 @@ import {
   inviteOrgMember,
   revokeOrgInvite,
   listOrgMembersFor,
+  removeOrgMember,
+  updateOrgMemberRole,
 } from "@/lib/orgs.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
@@ -296,6 +298,8 @@ function MembersPanel({ orgId }: { orgId: string }) {
   const membersFn = useServerFn(listOrgMembersFor);
   const inviteFn = useServerFn(inviteOrgMember);
   const revokeFn = useServerFn(revokeOrgInvite);
+  const removeFn = useServerFn(removeOrgMember);
+  const updateRoleFn = useServerFn(updateOrgMemberRole);
 
   const invites = useQuery({
     queryKey: ["org-invites", orgId],
@@ -311,6 +315,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [rowBusy, setRowBusy] = useState<string | null>(null);
 
   const pendingInvites = (invites.data ?? []).filter((i) => i.status === "pending");
   const stdAdminFilled =
@@ -345,6 +350,31 @@ function MembersPanel({ orgId }: { orgId: string }) {
     invites.refetch();
   }
 
+  async function removeMember(id: string) {
+    if (!window.confirm("Remove this member from the organisation?")) return;
+    setRowBusy(id);
+    try {
+      await removeFn({ data: { memberId: id } });
+      await members.refetch();
+    } catch (e2) {
+      alert(e2 instanceof Error ? e2.message : String(e2));
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
+  async function changeRole(id: string, newRole: "admin" | "pm" | "subcontractor") {
+    setRowBusy(id);
+    try {
+      await updateRoleFn({ data: { memberId: id, role: newRole } });
+      await members.refetch();
+    } catch (e2) {
+      alert(e2 instanceof Error ? e2.message : String(e2));
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
   function inviteLink(token: string) {
     return `${window.location.origin}/join-org/invite/${token}`;
   }
@@ -375,19 +405,50 @@ function MembersPanel({ orgId }: { orgId: string }) {
           {(members.data ?? []).length === 0 && (
             <p className="text-xs text-foreground/50">No members joined yet.</p>
           )}
-          {(members.data ?? []).map((m) => (
-            <div
-              key={m.id}
-              className="flex items-center justify-between rounded-md border border-white/10 bg-black/30 p-2 text-xs"
-            >
-              <span className="font-mono text-foreground/80">{m.user_id.slice(0, 12)}…</span>
-              <span className="uppercase tracking-widest text-foreground/50">
-                {m.role === "admin" ? "Organisation Admin" : m.role === "pm" ? "Project Manager" : "Subcontractor"}
-              </span>
-            </div>
-          ))}
+          {(members.data ?? []).map((m) => {
+            const displayName =
+              m.full_name?.trim() ||
+              m.email ||
+              `${m.user_id.slice(0, 8)}…`;
+            return (
+              <div
+                key={m.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-white/10 bg-black/30 p-2 text-xs"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-foreground">{displayName}</p>
+                  {m.email && m.full_name && (
+                    <p className="truncate text-[0.65rem] text-foreground/50">{m.email}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={m.role}
+                    disabled={rowBusy === m.id}
+                    onChange={(e) =>
+                      changeRole(m.id, e.target.value as "admin" | "pm" | "subcontractor")
+                    }
+                    className="rounded-md border border-white/15 bg-black/40 px-2 py-1 text-[0.65rem] uppercase tracking-widest text-foreground outline-none focus:border-alert disabled:opacity-50"
+                  >
+                    <option value="admin">Org Admin</option>
+                    <option value="pm">Project Manager</option>
+                    <option value="subcontractor">Subcontractor</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => removeMember(m.id)}
+                    disabled={rowBusy === m.id}
+                    className="inline-flex items-center gap-1 rounded-md border border-alert/40 px-2 py-1 text-[0.65rem] uppercase tracking-widest text-alert hover:bg-alert/10 disabled:opacity-50"
+                  >
+                    <X size={11} /> Remove
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
+
 
       <div>
         <p className="mb-2 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/60">

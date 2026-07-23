@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Plus, FolderOpen, MapPin, ShieldAlert } from "lucide-react";
-import { listMyProjects, getMyRoles } from "@/lib/projects.functions";
+import { listMyProjects, getMyRoles, listMyOrgsForProjectCreation } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 export const Route = createFileRoute("/projects/")({
@@ -23,6 +23,7 @@ function ProjectsPage() {
   }, []);
   const listFn = useServerFn(listMyProjects);
   const rolesFn = useServerFn(getMyRoles);
+  const orgsFn = useServerFn(listMyOrgsForProjectCreation);
 
   const projects = useQuery({
     queryKey: ["projects"],
@@ -34,8 +35,14 @@ function ProjectsPage() {
     queryFn: () => rolesFn(),
     enabled: ready,
   });
+  const creatableOrgs = useQuery({
+    queryKey: ["creatable-orgs"],
+    queryFn: () => orgsFn(),
+    enabled: ready,
+  });
 
   const isMaster = roles.data?.roles.includes("master_admin");
+  const canCreate = isMaster || (creatableOrgs.data?.length ?? 0) > 0;
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
@@ -54,7 +61,7 @@ function ProjectsPage() {
               Active Projects
             </h1>
           </div>
-          {isMaster && (
+          {canCreate && (
             <Link
               to="/projects/new"
               className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
@@ -110,7 +117,7 @@ function ProjectsPage() {
           ))}
           {projects.data && projects.data.length === 0 && (
             <div className="glass-panel col-span-full p-8 text-center text-sm text-foreground/60">
-              No projects yet. {isMaster ? "Click 'New Project' to begin onboarding." : "Ask your Master Admin to onboard a project."}
+              No projects yet. {canCreate ? "Click 'New Project' to begin onboarding." : "Ask your Organisation Admin to onboard a project."}
             </div>
           )}
         </div>
