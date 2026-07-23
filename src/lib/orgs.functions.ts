@@ -427,7 +427,7 @@ export const updateOrg = createServerFn({ method: "POST" })
 export type OrgInviteRow = {
   id: string;
   email: string;
-  role: "admin" | "subcontractor";
+  role: "admin" | "pm" | "subcontractor";
   is_standard: boolean;
   status: "pending" | "accepted" | "revoked";
   token: string;
