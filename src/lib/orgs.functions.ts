@@ -180,9 +180,32 @@ export const removeOrgMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ memberId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    assertOwner(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
       .from("org_members")
       .delete()
+      .eq("id", data.memberId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const updateOrgMemberRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        memberId: z.string().uuid(),
+        role: z.enum(["admin", "pm", "subcontractor"]),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    assertOwner(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("org_members")
+      .update({ role: data.role })
       .eq("id", data.memberId);
     if (error) throw new Error(error.message);
     return { ok: true };
