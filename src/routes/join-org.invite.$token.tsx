@@ -39,9 +39,13 @@ function AcceptInvitePage() {
   async function accept() {
     setState("joining");
     try {
-      await acceptFn({ data: { token } });
+      const result = await acceptFn({ data: { token } });
       setState("done");
-      setTimeout(() => navigate({ to: "/projects" }), 1200);
+      // Org Admins & PMs land on project creation on first login; subs go to their pack.
+      const role = result?.role ?? inv?.role;
+      const dest =
+        role === "admin" || role === "pm" ? "/projects/new" : "/projects";
+      setTimeout(() => navigate({ to: dest }), 1000);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setState("error");
