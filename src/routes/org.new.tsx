@@ -245,7 +245,7 @@ function NewOrgPage() {
               <UserPlus size={14} /> Invite Standard Members
             </p>
             <p className="mb-4 text-[0.7rem] text-foreground/60">
-              Every organisation has 4 standard seats: 1 Organisation Admin + 1 Project Manager + 2 Subcontractors.
+              Every organisation has 4 standard seats: 1 Project Admin + 1 Project Manager (also Org Admin) + 2 Subcontractors.
               Invitees get an email with a magic link — they set their own password on first use.
               Emails are optional; you can send invites later from the edit page.
             </p>
