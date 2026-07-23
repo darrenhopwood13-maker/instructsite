@@ -186,7 +186,14 @@ function OrgDetailPage() {
                 key={m.id}
                 className="glass-btn flex items-center justify-between rounded-xl border border-white/10 p-3"
               >
-                <p className="text-sm text-foreground">{m.user_id.slice(0, 8)}…</p>
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-foreground">
+                    {m.full_name || m.email || "Pending sign-in"}
+                  </p>
+                  {m.full_name && m.email && (
+                    <p className="truncate text-[0.65rem] text-foreground/50">{m.email}</p>
+                  )}
+                </div>
                 <p className="text-[0.65rem] uppercase tracking-widest text-foreground/50">{m.role}</p>
               </div>
             ))}
