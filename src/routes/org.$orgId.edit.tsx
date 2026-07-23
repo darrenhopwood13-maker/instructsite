@@ -362,8 +362,8 @@ function MembersPanel({ orgId }: { orgId: string }) {
           Members & Invites
         </p>
         <p className="mt-1 text-xs text-foreground/60">
-          Standard seats: 1 Project Manager + 2 Subcontractors. Additional members unlock once all
-          3 standard seats are used.
+          Standard seats: 1 Organisation Admin + 1 Project Manager + 2 Subcontractors. Additional
+          members unlock once all 4 standard seats are used.
         </p>
       </div>
 
