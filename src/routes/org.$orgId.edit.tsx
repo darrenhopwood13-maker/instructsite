@@ -430,8 +430,8 @@ function MembersPanel({ orgId }: { orgId: string }) {
                     }
                     className="rounded-md border border-white/15 bg-black/40 px-2 py-1 text-[0.65rem] uppercase tracking-widest text-foreground outline-none focus:border-alert disabled:opacity-50"
                   >
-                    <option value="admin">Org Admin</option>
-                    <option value="pm">Project Manager</option>
+                    <option value="admin">Project Admin</option>
+                    <option value="pm">Project Manager / Org Admin</option>
                     <option value="subcontractor">Subcontractor</option>
                   </select>
                   <button
