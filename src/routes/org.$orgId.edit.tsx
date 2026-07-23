@@ -452,10 +452,11 @@ function MembersPanel({ orgId }: { orgId: string }) {
           />
           <select
             value={role}
-            onChange={(e) => setRole(e.target.value as "admin" | "subcontractor")}
+            onChange={(e) => setRole(e.target.value as "admin" | "pm" | "subcontractor")}
             className="rounded-md border border-white/15 bg-black/40 px-3 py-2 text-sm text-foreground outline-none focus:border-alert"
           >
-            <option value="admin">Project Manager</option>
+            <option value="admin">Organisation Admin</option>
+            <option value="pm">Project Manager</option>
             <option value="subcontractor">Subcontractor</option>
           </select>
           <button
