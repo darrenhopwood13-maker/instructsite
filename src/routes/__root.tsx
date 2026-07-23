@@ -13,6 +13,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { Camera, BookOpen, LifeBuoy, ExternalLink } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { UserContextChip } from "@/components/layout/UserContextChip";
 import { Button } from "@/components/ui/button";
 
 import appCss from "../styles.css?url";
@@ -598,13 +599,7 @@ function AuthNav() {
               Open instructSite
             </a>
           </Button>
-          <button
-            type="button"
-            onClick={signOut}
-            className="rounded-lg border border-white/15 px-3 py-2 text-xs uppercase tracking-widest text-foreground/70 hover:border-white/40 hover:text-foreground"
-          >
-            Sign out
-          </button>
+          <UserContextChip />
         </>
       ) : (
         <>

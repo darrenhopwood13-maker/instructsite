@@ -14,7 +14,7 @@ import {
   Users,
   HardHat,
 } from "lucide-react";
-import { createProject, getMyRoles } from "@/lib/projects.functions";
+import { createProject, getMyRoles, listMyOrgsForProjectCreation } from "@/lib/projects.functions";
 import { registerTier1Document } from "@/lib/tier1-uploads.functions";
 import { extractProjectFromDrawing } from "@/lib/ai-extract-project.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
@@ -60,6 +60,7 @@ function NewProject() {
   const nav = useNavigate();
   const create = useServerFn(createProject);
   const rolesFn = useServerFn(getMyRoles);
+  const orgsFn = useServerFn(listMyOrgsForProjectCreation);
   const register = useServerFn(registerTier1Document);
   const extract = useServerFn(extractProjectFromDrawing);
 
@@ -76,6 +77,8 @@ function NewProject() {
   const [drawingFiles, setDrawingFiles] = useState<File[]>([]);
   const [logisticsFiles, setLogisticsFiles] = useState<File[]>([]);
   const [ramsFiles, setRamsFiles] = useState<File[]>([]);
+  const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([]);
+  const [orgId, setOrgId] = useState<string>("");
 
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -87,8 +90,10 @@ function NewProject() {
     (async () => {
       try {
         await ensureOracleSession();
-        const r = await rolesFn();
+        const [r, o] = await Promise.all([rolesFn(), orgsFn()]);
         setIsMaster(r.roles.includes("master_admin"));
+        setOrgs(o);
+        if (o.length === 1) setOrgId(o[0].id);
       } catch (e) {
         setErr(humanizeError(e));
         setIsMaster(false);
@@ -96,7 +101,7 @@ function NewProject() {
         setReady(true);
       }
     })();
-  }, [rolesFn]);
+  }, [rolesFn, orgsFn]);
 
   const flashFilled = (keys: string[]) => {
     const map: Record<string, boolean> = {};
@@ -106,7 +111,7 @@ function NewProject() {
   };
 
   const runAiScan = async (file: File) => {
-    if (!isMaster || scanning) return;
+    if (!canCreate || scanning) return;
     setErr(null);
     setScanning(true);
     setScanMsg("InstructBrain Oracle is dissecting drawing pack data…");
@@ -162,7 +167,8 @@ function NewProject() {
     }
   };
 
-  const canSubmit = name.trim().length > 0 && siteAddress.trim().length > 0 && !saving;
+  const canCreate = orgs.length > 0;
+  const canSubmit = name.trim().length > 0 && siteAddress.trim().length > 0 && orgId.length > 0 && !saving;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,6 +184,7 @@ function NewProject() {
       ].filter(Boolean);
       const { id } = await create({
         data: {
+          orgId,
           name: name.trim(),
           siteAddress: siteAddress.trim(),
           scopeBrief: briefParts.join("\n\n"),
@@ -217,13 +224,13 @@ function NewProject() {
           Drop a GA drawing pack for instant AI auto-fill, or complete the fields manually.
         </p>
 
-        {ready && isMaster === false && (
+        {ready && !canCreate && (
           <div className="mt-6 flex items-start gap-3 rounded-md border border-alert/50 bg-alert/10 p-4 text-sm text-foreground">
             <AlertCircle size={16} className="mt-0.5 shrink-0 text-alert" />
             <div>
               <p className="font-bold uppercase tracking-widest text-alert">Access denied</p>
               <p className="mt-1 text-foreground/80">
-                Only Master Admins can onboard new projects.
+                You need to be an Organisation Admin (or Founder) to onboard new projects.
               </p>
             </div>
           </div>
@@ -231,7 +238,7 @@ function NewProject() {
 
         {/* AI Instant Setup */}
         <AiDropZone
-          disabled={!isMaster || scanning}
+          disabled={!canCreate || scanning}
           scanning={scanning}
           progress={scanProgress}
           message={scanMsg}
@@ -239,10 +246,26 @@ function NewProject() {
         />
 
         <form onSubmit={submit} className="glass-panel mt-6 space-y-6 p-6">
+          <Field label="Organisation" icon={<Building2 size={14} />} required>
+            <select
+              disabled={!canCreate}
+              className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
+              value={orgId}
+              onChange={(e) => setOrgId(e.target.value)}
+            >
+              <option value="">Select organisation…</option>
+              {orgs.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
           <Field label="Project Name" icon={<Building2 size={14} />} required flash={autoFilled.name}>
             <input
               autoFocus
-              disabled={!isMaster}
+              disabled={!canCreate}
               className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
               placeholder="e.g. Riverside Tower Phase 2"
               value={name}
@@ -253,7 +276,7 @@ function NewProject() {
           <Field label="Full Site Address" icon={<MapPin size={14} />} required flash={autoFilled.addr}>
             <textarea
               rows={2}
-              disabled={!isMaster}
+              disabled={!canCreate}
               className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
               placeholder="Street, city, postcode"
               value={siteAddress}
@@ -264,7 +287,7 @@ function NewProject() {
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Client / End User" icon={<Users size={14} />} flash={autoFilled.client}>
               <input
-                disabled={!isMaster}
+                disabled={!canCreate}
                 className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
                 placeholder="e.g. Riverside Developments Ltd"
                 value={clientName}
@@ -273,7 +296,7 @@ function NewProject() {
             </Field>
             <Field label="Main Contractor" icon={<HardHat size={14} />} flash={autoFilled.mc}>
               <input
-                disabled={!isMaster}
+                disabled={!canCreate}
                 className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
                 placeholder="e.g. BuildCo Construction"
                 value={mainContractor}
@@ -285,7 +308,7 @@ function NewProject() {
           <Field label="Project Brief / Scope of Works" icon={<FileText size={14} />} flash={autoFilled.brief}>
             <textarea
               rows={5}
-              disabled={!isMaster}
+              disabled={!canCreate}
               className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
               placeholder="Scope, contract value, key trades, high-risk activities, key dates…"
               value={scopeBrief}
@@ -301,21 +324,21 @@ function NewProject() {
               <QueuedDropZone
                 title="GA Drawings"
                 subtitle="PDF drawings / plans"
-                disabled={!isMaster || saving}
+                disabled={!canCreate || saving}
                 files={drawingFiles}
                 onFiles={setDrawingFiles}
               />
               <QueuedDropZone
                 title="Site Logistics"
                 subtitle="Logistics plan files"
-                disabled={!isMaster || saving}
+                disabled={!canCreate || saving}
                 files={logisticsFiles}
                 onFiles={setLogisticsFiles}
               />
               <QueuedDropZone
                 title="Master RAMS"
                 subtitle="RAMS documents"
-                disabled={!isMaster || saving}
+                disabled={!canCreate || saving}
                 files={ramsFiles}
                 onFiles={setRamsFiles}
               />
@@ -338,7 +361,7 @@ function NewProject() {
             </Link>
             <button
               type="submit"
-              disabled={!canSubmit || !isMaster}
+              disabled={!canSubmit || !canCreate}
               className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm uppercase tracking-wider disabled:opacity-40"
             >
               {saving ? (

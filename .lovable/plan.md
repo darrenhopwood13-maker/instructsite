@@ -1,53 +1,84 @@
-# Add Organisation Admin role
+# Scope projects to orgs + global user context chip
 
-Today, org invites accept only two roles: `admin` (currently labelled "Project Manager") and `subcontractor`. There's no seat with full org-wide rights (create/delete projects, invite subcontractors, manage org). Founder is the only one who can currently do that.
+Two connected changes: make every project belong to an organisation (so org admins actually own their projects), and add a persistent header chip that shows the signed-in user's name, role, org, current project and a live date on every page.
 
-We'll introduce a new role `org_admin` — a separate standard seat, invited from the same "New Organisation" and "Edit Organisation" screens, with full project + subcontractor management rights inside their org.
+---
 
-## Roles after change
+## 1. Projects are scoped to an organisation
 
-- `org_admin` (new) — 1 standard seat. Full rights inside the org: create/edit/delete projects, invite subcontractors, manage members/invites, edit org details. Cannot touch other orgs.
-- `admin` (Project Manager) — 1 standard seat. Existing behaviour: PM on projects they're assigned to. No org-level admin rights.
-- `subcontractor` — 2 standard seats. Unchanged.
+The `projects` table already has a nullable `org_id` column referencing `orgs`. We'll make it required and enforce it end-to-end.
 
-Total standard seats per org becomes 1 + 1 + 2 = 4.
+### Database migration
 
-## Database (single migration)
+- Backfill any existing `projects.org_id IS NULL` rows by picking the creator's first org membership. Rows with no resolvable org (founder-created without an org) get assigned to a dedicated "Founder Sandbox" org, auto-created if missing.
+- `ALTER TABLE public.projects ALTER COLUMN org_id SET NOT NULL`.
+- Add index on `projects(org_id)`.
+- Replace `projects` RLS SELECT/INSERT/UPDATE/DELETE policies so access is granted when the caller is:
+  - a member of `projects.org_id` (via `org_members`), OR
+  - a project member (existing `project_members` path), OR
+  - the founder / `master_admin`.
+- INSERT policy also requires the caller to be an admin (`role in ('org_admin','admin')`) of the target `org_id`, or a `master_admin`.
+- Cascade delete stays as-is (`ON DELETE CASCADE` from orgs).
 
-1. Widen check constraints:
-   - `org_members_role_check` → `('org_admin','admin','subcontractor')`
-   - `org_invites_role_check` → same
-2. Update `enforce_org_member_caps()` trigger to also cap `org_admin` at 1 standard seat, and include it in the "all standard seats claimed" precondition for non-standard members (now requires 1 org_admin + 1 admin + 2 subs).
-3. Update `org_admin_count(_org_id)` if used anywhere for gating (verify; currently only counts `role='admin'` — leave for PM count; add helper `is_org_admin_role(_org_id,_user_id)` returning true when user is `org_admin`, so RLS policies can grant full write access).
-4. Extend RLS policies on `projects`, `subcontractor_invites`, `subcontractors`, `project_members`, `org_invites`, `org_members` so `org_admin` of the owning org has the same rights as founder within that org (create/update/delete). Founder path stays intact.
+### Server functions (`src/lib/projects.functions.ts`)
 
-## Server functions (`src/lib/orgs.functions.ts`)
+- `createProject`: add required `orgId: z.string().uuid()` input. Authorisation becomes: `master_admin` OR org admin (`org_admin` role in `org_members` for that org). Insert with `org_id: data.orgId`. Also insert an `org_members` row for the creator if missing.
+- `listMyProjects`: unchanged shape but include `org_id` and org name in the select; RLS handles scoping.
+- `getProject`: include `org_id` + org name.
+- Add `listMyOrgsForProjectCreation()` returning `{ id, name, role }[]` for the current user's org memberships where they can create projects (org_admin or founder-of-all).
 
-- `inviteRowSchema` / `inviteMemberSchema`: accept `"org_admin" | "admin" | "subcontractor"`.
-- `createOrg`: seat validation becomes `orgAdminCount ≤ 1`, `pmCount ≤ 1`, `subCount ≤ 2`.
-- `listOrgInvites` / other permission checks: treat `org_admin` as equivalent to founder for that org.
-- `getMyOrg` return type: `role: "org_admin" | "admin" | "subcontractor"`.
-- Add gating helper `isOrgAdmin(context, orgId)` used by project/subcontractor mutation server fns to allow org_admins alongside founder.
+### UI
 
-## Related server fns that must accept org_admin
+- `src/routes/projects.new.tsx`: add an **Organisation** select (required) at the top of the form. Founder sees all orgs; org admins see only their orgs; PMs/subs cannot access this route.
+- `src/routes/projects.index.tsx`: group or badge each project card by its organisation name.
+- `/org/$orgId` detail page: list the org's projects with a "New project in this org" shortcut that pre-selects the org.
 
-Audit and update authorization in: `src/lib/projects.functions.ts`, `src/lib/subcontractors.functions.ts` (assertProjectAdmin path), `src/lib/orgs.functions.ts` invite/remove member fns, and any `is_project_admin`/founder-only gate that should also pass for that org's `org_admin`.
+---
 
-## UI
+## 2. Global user context chip in the top bar
 
-- `src/routes/org.new.tsx`: add an "Organisation Admin Email" field (with `Shield` icon) above the PM field. Include it in the `invites` array with `role: "org_admin"`. Update the helper copy: "Every organisation has 4 standard seats: 1 Org Admin + 1 Project Manager + 2 Subcontractors."
-- `src/routes/org.$orgId.edit.tsx`: same new field + display org_admin invite/member rows with a distinct label + badge.
-- `src/routes/org.$orgId.index.tsx` and members list: render "Org Admin" label for the new role.
-- `src/lib/ensure-oracle-session.ts` `routeForRoles`: no change needed (all roles already route to `/projects`), but ensure org_admin can reach `/org/$orgId/edit` and `/projects/new` — gated by server fns above.
+A single component rendered inside `src/routes/__root.tsx` header, visible on every route when signed in.
+
+### Data
+
+New server fn `getSessionContext()` (in `src/lib/session.functions.ts`, `requireSupabaseAuth`) returning:
+
+```
+{ userId, fullName, email, roles: string[], org: { id, name } | null, isFounder }
+```
+
+Sources: `profiles.full_name` (fallback to email local-part), `user_roles`, `org_members` + `orgs`, founder check via `OWNER_EMAIL`.
+
+Current project is derived client-side from the active route params (`projects.$projectId`, `dabs.$projectId`, `programme.$projectId`, `projects_.$projectId.bible`, `subcontractor-pack.$projectId.*`, `site-manager.$projectId`, `billing.$projectId`, `subcontractor.$projectId`). A tiny `useCurrentProjectId()` hook reads `useMatches()` for a `projectId` param; when present, a lightweight query fetches `{ id, name }` via existing `getProject`.
+
+### Component: `src/components/layout/UserContextChip.tsx`
+
+- Left cluster: initials avatar + full name + a caret; on click opens a dropdown with:
+  - Roles (badges: Founder / Org Admin / PM / Subcontractor / etc.)
+  - Organisation name (link to `/org/$orgId` if org admin, else read-only)
+  - Current project name (link to project home) or "No project selected"
+  - Divider → Account / Sign out
+- Right cluster: live date+time (updates every 30s via `useEffect` + `setInterval`), formatted as `Thu 23 Jul 2026 · 14:32` using `Intl.DateTimeFormat("en-GB")`.
+- Mobile (<640px): collapses to avatar + short date; full details inside the dropdown.
+- Styled with existing glass tokens (navy/orange) to match the rest of the shell; no new colour tokens.
+
+### Wiring
+
+- `src/routes/__root.tsx`: replace the current name/email display in the signed-in nav cluster with `<UserContextChip />`. Keep the existing Manual / Open instructSite / Sign out buttons. Signed-out state is unchanged.
+- Data fetched via TanStack Query with a 60s `staleTime`; invalidated on `SIGNED_IN` / `SIGNED_OUT` / `USER_UPDATED` (already wired in `__root`).
+- SSR-safe: date renders after hydration to avoid mismatch (`useHydrated`).
+
+---
+
+## Technical details
+
+- Founder identity comes from `src/lib/owner.ts` (`OWNER_EMAIL`). No new env vars.
+- Migration order per project rules: `ALTER` after backfill; new policies added with matching GRANT already in place for `projects`.
+- Types regenerate after migration approval, so server-fn edits land in a follow-up edit batch.
+- No changes to `dabs`, `programme`, `snags` flows — they continue to key off `project_id`; RLS on `projects` is what enforces org isolation transitively (child tables already filter by `project_id`).
 
 ## Out of scope
 
-- No changes to `user_roles` app_role enum (that's project-level roles: master_admin/site_manager/etc.). Org role lives only in `org_members.role`.
-- No email template changes; existing invite email flow reused.
-
-## Verification
-
-- Migration applies cleanly; trigger accepts 1 org_admin + 1 admin + 2 subs and rejects a second org_admin.
-- Founder creates an org with all 4 invite emails; each invitee sets a password and lands in the org with the right role.
-- Signed in as org_admin: can create a project, invite a subcontractor, edit org details. Signed in as PM (`admin`): cannot delete projects or edit org details.
-- Signed in as org_admin of Org A: cannot see/modify Org B.
+- Moving existing projects between orgs (can add later as an org-admin action).
+- Per-org billing / subscription split.
+- Changing subcontractor or DABS RLS — those already inherit via project membership.
