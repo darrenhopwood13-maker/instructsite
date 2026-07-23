@@ -11,8 +11,9 @@ import {
   isRedirect,
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Camera, BookOpen, LifeBuoy } from "lucide-react";
+import { Camera, BookOpen, LifeBuoy, ExternalLink } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { Button } from "@/components/ui/button";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
