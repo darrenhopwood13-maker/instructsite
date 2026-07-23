@@ -23,6 +23,7 @@ function ProjectsPage() {
   }, []);
   const listFn = useServerFn(listMyProjects);
   const rolesFn = useServerFn(getMyRoles);
+  const orgsFn = useServerFn(listMyOrgsForProjectCreation);
 
   const projects = useQuery({
     queryKey: ["projects"],
@@ -34,8 +35,14 @@ function ProjectsPage() {
     queryFn: () => rolesFn(),
     enabled: ready,
   });
+  const creatableOrgs = useQuery({
+    queryKey: ["creatable-orgs"],
+    queryFn: () => orgsFn(),
+    enabled: ready,
+  });
 
   const isMaster = roles.data?.roles.includes("master_admin");
+  const canCreate = isMaster || (creatableOrgs.data?.length ?? 0) > 0;
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
@@ -54,7 +61,7 @@ function ProjectsPage() {
               Active Projects
             </h1>
           </div>
-          {isMaster && (
+          {canCreate && (
             <Link
               to="/projects/new"
               className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
