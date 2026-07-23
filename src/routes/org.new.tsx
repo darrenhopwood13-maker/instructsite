@@ -245,10 +245,27 @@ function NewOrgPage() {
               <UserPlus size={14} /> Invite Standard Members
             </p>
             <p className="mb-4 text-[0.7rem] text-foreground/60">
-              Every organisation has 3 standard seats: 1 Project Manager + 2 Subcontractors.
+              Every organisation has 4 standard seats: 1 Organisation Admin + 1 Project Manager + 2 Subcontractors.
               Invitees get an email with a magic link — they set their own password on first use.
               Emails are optional; you can send invites later from the edit page.
             </p>
+
+            <label className="mb-3 block">
+              <span className="mb-1.5 flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
+                <Shield size={12} /> Organisation Admin Email
+                <span className="ml-1 text-[0.6rem] font-normal normal-case tracking-normal text-foreground/40">
+                  (full project + subcontractor rights)
+                </span>
+              </span>
+              <input
+                type="email"
+                disabled={!isOwner}
+                className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2 text-sm text-foreground outline-none focus:border-alert disabled:opacity-50"
+                placeholder="orgadmin@company.example"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+              />
+            </label>
 
             <label className="mb-3 block">
               <span className="mb-1.5 flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
