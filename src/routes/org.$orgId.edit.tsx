@@ -26,6 +26,8 @@ import {
   inviteOrgMember,
   revokeOrgInvite,
   listOrgMembersFor,
+  removeOrgMember,
+  updateOrgMemberRole,
 } from "@/lib/orgs.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
