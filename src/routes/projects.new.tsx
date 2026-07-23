@@ -276,7 +276,7 @@ function NewProject() {
           <Field label="Full Site Address" icon={<MapPin size={14} />} required flash={autoFilled.addr}>
             <textarea
               rows={2}
-              disabled={!isMaster}
+              disabled={!canCreate}
               className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
               placeholder="Street, city, postcode"
               value={siteAddress}
@@ -287,7 +287,7 @@ function NewProject() {
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Client / End User" icon={<Users size={14} />} flash={autoFilled.client}>
               <input
-                disabled={!isMaster}
+                disabled={!canCreate}
                 className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
                 placeholder="e.g. Riverside Developments Ltd"
                 value={clientName}
@@ -296,7 +296,7 @@ function NewProject() {
             </Field>
             <Field label="Main Contractor" icon={<HardHat size={14} />} flash={autoFilled.mc}>
               <input
-                disabled={!isMaster}
+                disabled={!canCreate}
                 className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
                 placeholder="e.g. BuildCo Construction"
                 value={mainContractor}
@@ -308,7 +308,7 @@ function NewProject() {
           <Field label="Project Brief / Scope of Works" icon={<FileText size={14} />} flash={autoFilled.brief}>
             <textarea
               rows={5}
-              disabled={!isMaster}
+              disabled={!canCreate}
               className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 text-foreground outline-none focus:border-alert disabled:opacity-50"
               placeholder="Scope, contract value, key trades, high-risk activities, key dates…"
               value={scopeBrief}
@@ -324,21 +324,21 @@ function NewProject() {
               <QueuedDropZone
                 title="GA Drawings"
                 subtitle="PDF drawings / plans"
-                disabled={!isMaster || saving}
+                disabled={!canCreate || saving}
                 files={drawingFiles}
                 onFiles={setDrawingFiles}
               />
               <QueuedDropZone
                 title="Site Logistics"
                 subtitle="Logistics plan files"
-                disabled={!isMaster || saving}
+                disabled={!canCreate || saving}
                 files={logisticsFiles}
                 onFiles={setLogisticsFiles}
               />
               <QueuedDropZone
                 title="Master RAMS"
                 subtitle="RAMS documents"
-                disabled={!isMaster || saving}
+                disabled={!canCreate || saving}
                 files={ramsFiles}
                 onFiles={setRamsFiles}
               />
@@ -361,7 +361,7 @@ function NewProject() {
             </Link>
             <button
               type="submit"
-              disabled={!canSubmit || !isMaster}
+              disabled={!canSubmit || !canCreate}
               className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm uppercase tracking-wider disabled:opacity-40"
             >
               {saving ? (
