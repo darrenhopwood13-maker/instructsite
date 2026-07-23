@@ -70,7 +70,11 @@ export const getMyOrg = createServerFn({ method: "GET" })
     if (!data) return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const org = data.orgs as any;
-    return { role: data.role as "admin" | "subcontractor", orgId: data.org_id as string, org };
+    return {
+      role: data.role as "admin" | "pm" | "subcontractor",
+      orgId: data.org_id as string,
+      org,
+    };
   });
 
 /** All orgs with no admin yet — used by the claim screen. */
@@ -275,7 +279,7 @@ export const listOrgMembersFor = createServerFn({ method: "GET" })
 
 const inviteRowSchema = z.object({
   email: z.string().trim().email().max(200),
-  role: z.enum(["admin", "subcontractor"]),
+  role: z.enum(["admin", "pm", "subcontractor"]),
 });
 
 const createOrgSchema = z.object({
@@ -340,9 +344,11 @@ export const createOrg = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    // Enforce the 1-PM + 2-Sub standard cap on the invites payload
-    const pmCount = data.invites.filter((r) => r.role === "admin").length;
+    // Enforce the standard cap: 1 Org Admin + 1 PM + 2 Subcontractors
+    const adminCount = data.invites.filter((r) => r.role === "admin").length;
+    const pmCount = data.invites.filter((r) => r.role === "pm").length;
     const subCount = data.invites.filter((r) => r.role === "subcontractor").length;
+    if (adminCount > 1) throw new Error("Only 1 Organisation Admin can be invited as a standard seat.");
     if (pmCount > 1) throw new Error("Only 1 Project Manager can be invited as a standard seat.");
     if (subCount > 2) throw new Error("Only 2 Subcontractors can be invited as standard seats.");
 
@@ -421,7 +427,7 @@ export const updateOrg = createServerFn({ method: "POST" })
 export type OrgInviteRow = {
   id: string;
   email: string;
-  role: "admin" | "subcontractor";
+  role: "admin" | "pm" | "subcontractor";
   is_standard: boolean;
   status: "pending" | "accepted" | "revoked";
   token: string;
@@ -456,7 +462,7 @@ export const listOrgInvites = createServerFn({ method: "GET" })
 const inviteMemberSchema = z.object({
   orgId: z.string().uuid(),
   email: z.string().trim().email().max(200),
-  role: z.enum(["admin", "subcontractor"]),
+  role: z.enum(["admin", "pm", "subcontractor"]),
 });
 
 export const inviteOrgMember = createServerFn({ method: "POST" })
@@ -479,19 +485,25 @@ export const inviteOrgMember = createServerFn({ method: "POST" })
         .eq("status", "pending"),
     ]);
 
-    const stdPM =
+    const stdAdmin =
       (members ?? []).filter((m) => m.role === "admin" && m.is_standard).length +
       (invites ?? []).filter((i) => i.role === "admin" && i.is_standard).length;
+    const stdPM =
+      (members ?? []).filter((m) => m.role === "pm" && m.is_standard).length +
+      (invites ?? []).filter((i) => i.role === "pm" && i.is_standard).length;
     const stdSub =
       (members ?? []).filter((m) => m.role === "subcontractor" && m.is_standard).length +
       (invites ?? []).filter((i) => i.role === "subcontractor" && i.is_standard).length;
 
-    const stdComplete = stdPM >= 1 && stdSub >= 2;
+    const stdComplete = stdAdmin >= 1 && stdPM >= 1 && stdSub >= 2;
     const isStandard = !stdComplete;
 
     if (isStandard) {
-      if (data.role === "admin" && stdPM >= 1) {
-        throw new Error("Standard Project Manager seat already used. Fill the remaining subcontractor seats first, then add additional members.");
+      if (data.role === "admin" && stdAdmin >= 1) {
+        throw new Error("Standard Organisation Admin seat already used.");
+      }
+      if (data.role === "pm" && stdPM >= 1) {
+        throw new Error("Standard Project Manager seat already used.");
       }
       if (data.role === "subcontractor" && stdSub >= 2) {
         throw new Error("Both standard subcontractor seats are taken.");

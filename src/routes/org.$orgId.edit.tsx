@@ -307,19 +307,22 @@ function MembersPanel({ orgId }: { orgId: string }) {
   });
 
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "subcontractor">("subcontractor");
+  const [role, setRole] = useState<"admin" | "pm" | "subcontractor">("subcontractor");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   const pendingInvites = (invites.data ?? []).filter((i) => i.status === "pending");
-  const stdPMFilled =
+  const stdAdminFilled =
     (members.data ?? []).some((m) => m.role === "admin") ||
     pendingInvites.some((i) => i.role === "admin" && i.is_standard);
+  const stdPMFilled =
+    (members.data ?? []).some((m) => m.role === "pm") ||
+    pendingInvites.some((i) => i.role === "pm" && i.is_standard);
   const stdSubCount =
     (members.data ?? []).filter((m) => m.role === "subcontractor").length +
     pendingInvites.filter((i) => i.role === "subcontractor" && i.is_standard).length;
-  const stdComplete = stdPMFilled && stdSubCount >= 2;
+  const stdComplete = stdAdminFilled && stdPMFilled && stdSubCount >= 2;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -359,8 +362,8 @@ function MembersPanel({ orgId }: { orgId: string }) {
           Members & Invites
         </p>
         <p className="mt-1 text-xs text-foreground/60">
-          Standard seats: 1 Project Manager + 2 Subcontractors. Additional members unlock once all
-          3 standard seats are used.
+          Standard seats: 1 Organisation Admin + 1 Project Manager + 2 Subcontractors. Additional
+          members unlock once all 4 standard seats are used.
         </p>
       </div>
 
@@ -379,7 +382,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
             >
               <span className="font-mono text-foreground/80">{m.user_id.slice(0, 12)}…</span>
               <span className="uppercase tracking-widest text-foreground/50">
-                {m.role === "admin" ? "Project Manager" : "Subcontractor"}
+                {m.role === "admin" ? "Organisation Admin" : m.role === "pm" ? "Project Manager" : "Subcontractor"}
               </span>
             </div>
           ))}
@@ -402,7 +405,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
               <div className="flex items-center gap-2">
                 <span className="text-foreground/80">{i.email}</span>
                 <span className="rounded bg-alert/20 px-2 py-0.5 text-[0.6rem] uppercase tracking-widest text-alert">
-                  {i.role === "admin" ? "PM" : "Sub"}
+                  {i.role === "admin" ? "Org Admin" : i.role === "pm" ? "PM" : "Sub"}
                 </span>
                 {!i.is_standard && (
                   <span className="rounded bg-white/10 px-2 py-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/70">
@@ -449,10 +452,11 @@ function MembersPanel({ orgId }: { orgId: string }) {
           />
           <select
             value={role}
-            onChange={(e) => setRole(e.target.value as "admin" | "subcontractor")}
+            onChange={(e) => setRole(e.target.value as "admin" | "pm" | "subcontractor")}
             className="rounded-md border border-white/15 bg-black/40 px-3 py-2 text-sm text-foreground outline-none focus:border-alert"
           >
-            <option value="admin">Project Manager</option>
+            <option value="admin">Organisation Admin</option>
+            <option value="pm">Project Manager</option>
             <option value="subcontractor">Subcontractor</option>
           </select>
           <button
