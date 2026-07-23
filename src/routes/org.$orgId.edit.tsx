@@ -307,19 +307,22 @@ function MembersPanel({ orgId }: { orgId: string }) {
   });
 
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "subcontractor">("subcontractor");
+  const [role, setRole] = useState<"admin" | "pm" | "subcontractor">("subcontractor");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   const pendingInvites = (invites.data ?? []).filter((i) => i.status === "pending");
-  const stdPMFilled =
+  const stdAdminFilled =
     (members.data ?? []).some((m) => m.role === "admin") ||
     pendingInvites.some((i) => i.role === "admin" && i.is_standard);
+  const stdPMFilled =
+    (members.data ?? []).some((m) => m.role === "pm") ||
+    pendingInvites.some((i) => i.role === "pm" && i.is_standard);
   const stdSubCount =
     (members.data ?? []).filter((m) => m.role === "subcontractor").length +
     pendingInvites.filter((i) => i.role === "subcontractor" && i.is_standard).length;
-  const stdComplete = stdPMFilled && stdSubCount >= 2;
+  const stdComplete = stdAdminFilled && stdPMFilled && stdSubCount >= 2;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
