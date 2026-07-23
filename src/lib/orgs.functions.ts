@@ -279,7 +279,7 @@ export const listOrgMembersFor = createServerFn({ method: "GET" })
 
 const inviteRowSchema = z.object({
   email: z.string().trim().email().max(200),
-  role: z.enum(["admin", "subcontractor"]),
+  role: z.enum(["admin", "pm", "subcontractor"]),
 });
 
 const createOrgSchema = z.object({
