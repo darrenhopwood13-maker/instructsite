@@ -274,7 +274,37 @@ export const listOrgMembersFor = createServerFn({ method: "GET" })
       .eq("org_id", data.orgId)
       .order("created_at");
     if (error) throw new Error(error.message);
-    return members ?? [];
+    const rows = members ?? [];
+    const userIds = rows.map((m) => m.user_id);
+    const nameById = new Map<string, string>();
+    const emailById = new Map<string, string>();
+    if (userIds.length) {
+      const { data: profs } = await supabaseAdmin
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", userIds);
+      (profs ?? []).forEach((p: { user_id: string; full_name: string | null }) => {
+        if (p.full_name) nameById.set(p.user_id, p.full_name);
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const adminAuth = (supabaseAdmin.auth as any).admin;
+      await Promise.all(
+        userIds.map(async (uid) => {
+          try {
+            const { data: u } = await adminAuth.getUserById(uid);
+            const email = u?.user?.email as string | undefined;
+            if (email) emailById.set(uid, email);
+          } catch {
+            /* ignore */
+          }
+        }),
+      );
+    }
+    return rows.map((m) => ({
+      ...m,
+      full_name: nameById.get(m.user_id) ?? null,
+      email: emailById.get(m.user_id) ?? null,
+    }));
   });
 
 const inviteRowSchema = z.object({
