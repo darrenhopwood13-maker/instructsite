@@ -1419,7 +1419,7 @@ export type Database = {
           longitude: number | null
           master_admin_id: string | null
           name: string
-          org_id: string | null
+          org_id: string
           project_admin_id: string | null
           project_number: string | null
           scope_brief: string | null
@@ -1434,7 +1434,7 @@ export type Database = {
           longitude?: number | null
           master_admin_id?: string | null
           name: string
-          org_id?: string | null
+          org_id: string
           project_admin_id?: string | null
           project_number?: string | null
           scope_brief?: string | null
@@ -1449,7 +1449,7 @@ export type Database = {
           longitude?: number | null
           master_admin_id?: string | null
           name?: string
-          org_id?: string | null
+          org_id?: string
           project_admin_id?: string | null
           project_number?: string | null
           scope_brief?: string | null
