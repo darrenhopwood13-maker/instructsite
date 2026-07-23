@@ -269,7 +269,7 @@ function NewOrgPage() {
 
             <label className="mb-3 block">
               <span className="mb-1.5 flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-foreground/70">
-                <User size={12} /> Project Manager Email
+                <User size={12} /> Project Manager Email <span className="ml-1 text-[0.6rem] font-normal normal-case tracking-normal text-foreground/40">(also Org Admin)</span>
               </span>
               <input
                 type="email"
