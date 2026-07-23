@@ -496,20 +496,14 @@ export const inviteOrgMember = createServerFn({ method: "POST" })
       (invites ?? []).filter((i) => i.role === "subcontractor" && i.is_standard).length;
 
     const stdComplete = stdAdmin >= 1 && stdPM >= 1 && stdSub >= 2;
-    const isStandard = !stdComplete;
-
+    // Mark as standard only if that role's standard slot is still open.
+    // Otherwise treat as an additional (non-standard) seat instead of erroring.
+    let isStandard = !stdComplete;
     if (isStandard) {
-      if (data.role === "admin" && stdAdmin >= 1) {
-        throw new Error("Standard Organisation Admin seat already used.");
-      }
-      if (data.role === "pm" && stdPM >= 1) {
-        throw new Error("Standard Project Manager seat already used.");
-      }
-      if (data.role === "subcontractor" && stdSub >= 2) {
-        throw new Error("Both standard subcontractor seats are taken.");
-      }
+      if (data.role === "admin" && stdAdmin >= 1) isStandard = false;
+      else if (data.role === "pm" && stdPM >= 1) isStandard = false;
+      else if (data.role === "subcontractor" && stdSub >= 2) isStandard = false;
     }
-    // additional members are always allowed once std complete
 
     const { data: inserted, error } = await supabaseAdmin
       .from("org_invites")
