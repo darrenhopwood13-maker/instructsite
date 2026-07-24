@@ -262,32 +262,30 @@ export function ReportViewer(props: ReportViewerProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex flex-col bg-background/95 backdrop-blur-md"
+      className="fixed inset-0 z-[80] flex flex-col text-white"
+      style={{ background: "linear-gradient(180deg, #0B1E3F 0%, #0A1733 60%, #081228 100%)" }}
       data-report-viewer
       role="dialog"
       aria-modal="true"
       aria-label={title}
     >
-      <div className="aurora-bg pointer-events-none" />
-      <div className="grain-overlay pointer-events-none" />
-
       {/* Top bar */}
       <header
-        className="relative z-[1] flex flex-wrap items-start justify-between gap-4 border-b border-white/10 bg-black/40 px-6 py-4 md:px-10"
+        className="relative z-[1] flex flex-wrap items-start justify-between gap-4 border-b border-white/15 bg-black/30 px-6 py-4 md:px-10"
         data-report-toolbar
       >
         <div className="min-w-0">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.35em] text-alert">
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.35em] text-orange-400">
             {kicker}
           </p>
           <h2
-            className="mt-1 truncate text-2xl font-extrabold uppercase tracking-tight text-foreground md:text-3xl"
+            className="mt-1 truncate text-2xl font-extrabold uppercase tracking-tight text-white md:text-3xl"
             style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
           >
             {title}
           </h2>
           {subtitle && (
-            <p className="mt-1 text-xs text-foreground/60">{subtitle}</p>
+            <p className="mt-1 text-xs text-white/70">{subtitle}</p>
           )}
         </div>
 
@@ -295,21 +293,21 @@ export function ReportViewer(props: ReportViewerProps) {
           <button
             type="button"
             onClick={handlePdf}
-            className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs uppercase tracking-widest text-white hover:bg-white/20"
           >
             <Download className="h-3.5 w-3.5" /> PDF
           </button>
           <button
             type="button"
             onClick={handleShare}
-            className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs uppercase tracking-widest text-white hover:bg-white/20"
           >
             <Share2 className="h-3.5 w-3.5" /> Share
           </button>
           <button
             type="button"
             onClick={handlePrint}
-            className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs uppercase tracking-widest text-white hover:bg-white/20"
           >
             <Printer className="h-3.5 w-3.5" /> Print
           </button>
@@ -318,7 +316,7 @@ export function ReportViewer(props: ReportViewerProps) {
             onClick={handleAddToBible}
             disabled={!canBible || bibleState === "saving" || bibleState === "saved"}
             title={canBible ? "File this report in the Project Bible" : "Link this report to a project to file it"}
-            className="glass-orange inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs uppercase tracking-widest text-white hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {bibleState === "saving" ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -333,7 +331,7 @@ export function ReportViewer(props: ReportViewerProps) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="glass-btn ml-1 inline-flex h-9 w-9 items-center justify-center rounded-lg"
+            className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/20"
           >
             <X className="h-4 w-4" />
           </button>
@@ -341,17 +339,17 @@ export function ReportViewer(props: ReportViewerProps) {
       </header>
 
       {bibleError && (
-        <div className="relative z-[1] border-b border-alert/40 bg-alert/10 px-6 py-2 text-xs text-alert md:px-10">
+        <div className="relative z-[1] border-b border-orange-400/40 bg-orange-500/10 px-6 py-2 text-xs text-orange-200 md:px-10">
           {bibleError}
         </div>
       )}
 
       {/* Body */}
       <main
-        className="relative z-[1] flex-1 overflow-y-auto px-4 py-6 md:px-10 md:py-8"
+        className="relative z-[1] flex-1 overflow-y-auto px-4 py-6 text-white md:px-10 md:py-8"
         data-report-print-root
       >
-        <div ref={bodyRef} className="mx-auto grid max-w-5xl gap-4">
+        <div ref={bodyRef} className="mx-auto grid max-w-5xl gap-4 text-white">
           {children ?? (
             (sections ?? []).length === 0 ? (
               <ReportSectionCard title="Report">
