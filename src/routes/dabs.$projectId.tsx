@@ -10,6 +10,8 @@ import { createLivePin, listLivePins, closeLivePin } from "@/lib/live-activity.f
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
+import { PinInfoModal } from "@/components/project/PinInfoModal";
+import { pinColor, pinKey } from "@/lib/pin-color";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 
