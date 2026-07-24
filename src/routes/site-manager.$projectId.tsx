@@ -18,6 +18,7 @@ import { ForceCheckoutModal } from "@/components/project/ForceCheckoutModal";
 import { ClientOnly } from "@tanstack/react-router";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { PinInfoModal } from "@/components/project/PinInfoModal";
+import { pinColor, pinKey } from "@/lib/pin-color";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 
