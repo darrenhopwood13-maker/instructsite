@@ -37,7 +37,8 @@ export function OracleFAB() {
       className="oracle-fab fixed z-[60] grid place-items-center rounded-full text-white shadow-[0_16px_36px_-8px_rgba(139,92,246,0.65)] transition hover:scale-105 active:scale-95"
       style={{
         right: "max(1rem, env(safe-area-inset-right))",
-        bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 1rem))",
+        // Sit above the mobile bottom tab bar (h ~ 4rem + safe inset).
+        bottom: "calc(env(safe-area-inset-bottom) + 5.25rem)",
         width: "3.5rem",
         height: "3.5rem",
         background:
