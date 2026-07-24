@@ -262,11 +262,26 @@ function DabsPage() {
             Active Shifts on This Sheet
           </h2>
           <ul className="mt-3 space-y-3">
-            {(pins.data ?? []).map((p: any) => (
-              <li key={p.id} className="glass-panel p-4">
+            {(pins.data ?? []).map((p: any) => {
+              const palette = pinColor(pinKey(p));
+              return (
+              <li
+                key={p.id}
+                className="glass-panel border-l-4 p-4"
+                style={{ borderLeftColor: palette.hex }}
+              >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-foreground">
+                  <button
+                    type="button"
+                    onClick={() => setInfoPinId(p.id)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <p className="flex items-center gap-2 text-sm font-bold text-foreground">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: palette.hex, boxShadow: `0 0 0 3px ${palette.ring}` }}
+                        aria-hidden
+                      />
                       {p.trade_package ?? "Untagged"} · {p.operative_count} operatives
                     </p>
                     <p className="mt-0.5 flex items-center gap-1 text-[0.6rem] uppercase tracking-widest text-foreground/50">
@@ -274,7 +289,7 @@ function DabsPage() {
                       {new Date(p.start_time).toLocaleTimeString()} · finish{" "}
                       {new Date(p.scheduled_finish).toLocaleTimeString()}
                     </p>
-                  </div>
+                  </button>
                   <button
                     type="button"
                     onClick={() => closePin(p.id)}
@@ -292,7 +307,8 @@ function DabsPage() {
                   <LogOut size={14} /> Close Out Today's Shift / Complete Daily Diary
                 </button>
               </li>
-            ))}
+              );
+            })}
             {(pins.data ?? []).length === 0 && (
               <li className="glass-panel p-4 text-center text-xs text-foreground/50">
                 No active shifts on this sheet.
