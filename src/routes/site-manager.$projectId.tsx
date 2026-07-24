@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle, Clock, Users, X, ShieldAlert, ClipboardList, ChevronDown } from "lucide-react";
+import { ArrowLeft, AlertTriangle, ClipboardList, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
