@@ -28,6 +28,7 @@ import { createLivePin, listLivePins } from "@/lib/live-activity.functions";
 import { askProjectOracle } from "@/lib/oracle.functions";
 import { getProjectWeather } from "@/lib/weather.functions";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
+import { pinColor, pinKey } from "@/lib/pin-color";
 import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 
