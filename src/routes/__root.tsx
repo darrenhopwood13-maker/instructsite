@@ -10,13 +10,16 @@ import {
   redirect,
   isRedirect,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Camera, BookOpen, LifeBuoy, ExternalLink } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { UserContextChip } from "@/components/layout/UserContextChip";
+import { Button } from "@/components/ui/button";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getGateStatus } from "../lib/gate.functions";
 import { OracleFAB } from "@/components/OracleFAB";
-import { AppShell } from "@/components/layout/AppShell";
 
 
 function NotFoundComponent() {
@@ -502,13 +505,150 @@ function RootComponent() {
           </g>
         </svg>
       </div>
-      <AppShell>
-        <Outlet />
-      </AppShell>
+      <div className="relative z-10">
+        <header className="border-b border-white/10 bg-background/70 backdrop-blur">
+          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
+            <Link to="/" className="flex items-baseline gap-0.5 text-lg font-extrabold tracking-tight">
+              <span style={{ color: "#ff7a00" }}>instruct</span>
+              <span className="text-white">Site</span>
+            </Link>
+            <AuthNav />
+          </nav>
+        </header>
+        <main>
+          <Outlet />
+        </main>
+      </div>
       <OracleFAB />
     </QueryClientProvider>
   );
 }
 
+function AuthNav() {
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    let unsub: (() => void) | undefined;
+    const OWNER = "darrenhopwood13@gmail.com";
+    const apply = (email: string | null | undefined) => {
+      if (!mounted) return;
+      setSignedIn(!!email);
+      setIsOwner((email ?? "").trim().toLowerCase() === OWNER);
+    };
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.auth.getUser().then(({ data }) => apply(data?.user?.email));
+      const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+        apply(session?.user?.email);
+      });
+      unsub = () => sub.subscription.unsubscribe();
+    });
+    return () => {
+      mounted = false;
+      unsub?.();
+    };
+  }, []);
+
+  const signOut = async () => {
+    const { supabase } = await import("@/integrations/supabase/client");
+    await supabase.auth.signOut();
+    window.location.assign("/");
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      {signedIn ? (
+        <>
+          {isOwner ? (
+            <Link to="/org" className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
+              Organisation
+            </Link>
+          ) : (
+            <Link to="/projects" className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
+              Projects
+            </Link>
+          )}
+
+          <ProjectBibleNavLink />
+          <Link to="/manual" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
+            <LifeBuoy className="h-3.5 w-3.5" />
+            Manual
+          </Link>
+          <NotificationBell />
+
+          <Link to="/snags" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
+            <Camera className="h-3.5 w-3.5" />
+            Snag Master
+          </Link>
+          <Link to="/tooling" className="glass-orange rounded-lg px-4 py-2 text-sm">
+            AI Tooling
+          </Link>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <a
+              href="https://www.instructsite.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open instructSite in a new tab"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open instructSite
+            </a>
+          </Button>
+          <UserContextChip />
+        </>
+      ) : (
+        <>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <a
+              href="https://www.instructsite.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open instructSite in a new tab"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open instructSite
+            </a>
+          </Button>
+          <Link to="/auth" className="glass-orange rounded-lg px-4 py-2 text-sm uppercase tracking-widest">
+            Sign in
+          </Link>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ProjectBibleNavLink() {
+  const matches = useMatches();
+  let projectId: string | undefined;
+  for (const m of matches) {
+    const p = (m.params as { projectId?: string } | undefined)?.projectId;
+    if (p) {
+      projectId = p;
+      break;
+    }
+  }
+  if (!projectId) return null;
+  return (
+    <Link
+      to="/projects/$projectId/bible"
+      params={{ projectId }}
+      className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
+    >
+      <BookOpen className="h-3.5 w-3.5" />
+      Project Bible
+    </Link>
+  );
+}
 
 
