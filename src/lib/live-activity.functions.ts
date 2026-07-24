@@ -126,3 +126,65 @@ export const managerForceCheckout = createServerFn({ method: "POST" })
     return { diaryId: diaryId as unknown as string };
   });
 
+export const getPinDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ pinId: z.string().uuid() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: pin, error } = await context.supabase
+      .from("live_site_activity")
+      .select(
+        "id,project_id,drawing_id,zone_id,subcontractor_id,trade_package,operative_count,start_time,scheduled_finish,x_pct,y_pct,status,notes,permit_required,permit_status,high_risk_flags,activity_id,created_at,work_zones(name,level),project_drawings(drawing_no,title)",
+      )
+      .eq("id", data.pinId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!pin) throw new Error("Pin not found");
+
+    // Look up the subcontractor's display name from their profile.
+    let subcontractorName: string | null = null;
+    if (pin.subcontractor_id) {
+      const { data: prof } = await context.supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", pin.subcontractor_id)
+        .maybeSingle();
+      subcontractorName = prof?.full_name ?? null;
+    }
+
+    // Look up the company name via an accepted subcontractor invite on this project.
+    let companyName: string | null = null;
+    if (pin.subcontractor_id && pin.project_id) {
+      const { data: inv } = await context.supabase
+        .from("subcontractor_invites")
+        .select("company_name")
+        .eq("project_id", pin.project_id)
+        .eq("accepted_by", pin.subcontractor_id)
+        .not("accepted_at", "is", null)
+        .order("accepted_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      companyName = inv?.company_name ?? null;
+    }
+
+    // Active permits (either directly linked to the activity, or currently open on this project).
+    let permits: Array<{
+      id: string;
+      permit_type: string;
+      status: string;
+      valid_from: string | null;
+      valid_to: string | null;
+    }> = [];
+    if (pin.activity_id) {
+      const { data: rows } = await context.supabase
+        .from("permits")
+        .select("id,permit_type,status,valid_from,valid_to")
+        .eq("activity_id", pin.activity_id)
+        .order("valid_from", { ascending: false });
+      permits = (rows ?? []) as never;
+    }
+
+    return { pin, subcontractorName, companyName, permits };
+  });
+

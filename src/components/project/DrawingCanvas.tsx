@@ -27,6 +27,7 @@ import {
 } from "@/lib/tier1-uploads.functions";
 import { deleteDrawing } from "@/lib/admin.functions";
 import { getMyRoles } from "@/lib/projects.functions";
+import { pinColor, pinKey } from "@/lib/pin-color";
 
 type Drawing = {
   id: string;
@@ -953,20 +954,26 @@ function PinOverlay({
                 </span>
               </span>
             ) : (
-              <span
-                className={`relative flex h-4 w-4 items-center justify-center ${isActive ? "scale-125" : ""} transition-transform`}
-              >
-                <span
-                  className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
-                    overtime ? "bg-red-500" : "bg-orange-400"
-                  }`}
-                />
-                <span
-                  className={`relative inline-flex h-3 w-3 rounded-full border-2 border-white shadow-lg ${
-                    overtime ? "bg-red-600" : "bg-orange-500"
-                  }`}
-                />
-              </span>
+              (() => {
+                const palette = pinColor(pinKey(pin as never));
+                return (
+                  <span
+                    className={`relative flex h-4 w-4 items-center justify-center ${isActive ? "scale-125" : ""} transition-transform`}
+                  >
+                    <span
+                      className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
+                      style={{ backgroundColor: overtime ? "#ef4444" : palette.hex }}
+                    />
+                    <span
+                      className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white shadow-lg"
+                      style={{
+                        backgroundColor: overtime ? "#dc2626" : palette.hex,
+                        boxShadow: `0 0 8px ${overtime ? "rgba(239,68,68,0.9)" : palette.ring}`,
+                      }}
+                    />
+                  </span>
+                );
+              })()
             )}
           </button>
         );

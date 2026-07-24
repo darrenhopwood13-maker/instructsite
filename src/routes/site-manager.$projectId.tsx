@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle, Clock, Users, X, ShieldAlert, ClipboardList, ChevronDown } from "lucide-react";
+import { ArrowLeft, AlertTriangle, ClipboardList, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
@@ -17,6 +17,8 @@ import { PermitSignOffModal } from "@/components/project/PermitSignOffModal";
 import { ForceCheckoutModal } from "@/components/project/ForceCheckoutModal";
 import { ClientOnly } from "@tanstack/react-router";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
+import { PinInfoModal } from "@/components/project/PinInfoModal";
+import { pinColor, pinKey } from "@/lib/pin-color";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 
@@ -28,12 +30,6 @@ export const Route = createFileRoute("/site-manager/$projectId")({
   component: SiteManagerPage,
 });
 
-function formatDuration(ms: number) {
-  const mins = Math.max(0, Math.floor(ms / 60000));
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
 
 function SiteManagerPage() {
   const { projectId } = Route.useParams();
@@ -266,20 +262,33 @@ function SiteManagerPage() {
           <ul className="mt-3 space-y-2">
             {(pins.data ?? []).map((p: any) => {
               const isOT = new Date(p.scheduled_finish).getTime() < now;
+              const palette = pinColor(pinKey(p));
               return (
                 <li
                   key={p.id}
-                  className={`glass-panel flex items-center justify-between gap-3 p-3 ${isOT ? "border-red-500" : ""}`}
+                  className={`glass-panel flex items-center justify-between gap-3 border-l-4 p-3 ${isOT ? "border-red-500" : ""}`}
+                  style={isOT ? undefined : { borderLeftColor: palette.hex }}
                 >
-                  <div className="min-w-0">
-                    <p className="text-sm text-foreground">
-                      {p.trade_package ?? "Untagged"} · {p.operative_count} ops
-                    </p>
-                    <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
-                      Started {new Date(p.start_time).toLocaleTimeString()} · finish{" "}
-                      {new Date(p.scheduled_finish).toLocaleTimeString()}
-                    </p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActivePin(p as PinRecord)}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  >
+                    <span
+                      className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: palette.hex, boxShadow: `0 0 0 3px ${palette.ring}` }}
+                      aria-hidden
+                    />
+                    <span className="min-w-0">
+                      <p className="text-sm text-foreground">
+                        {p.trade_package ?? "Untagged"} · {p.operative_count} ops
+                      </p>
+                      <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                        Started {new Date(p.start_time).toLocaleTimeString()} · finish{" "}
+                        {new Date(p.scheduled_finish).toLocaleTimeString()}
+                      </p>
+                    </span>
+                  </button>
                   {isOT && (
                     <span className="rounded-sm bg-red-600 px-2 py-1 font-mono text-[0.6rem] font-bold uppercase tracking-widest text-white">
                       Overtime
@@ -298,88 +307,37 @@ function SiteManagerPage() {
       </div>
 
       {activePin && (
-        <div className="fixed bottom-6 right-6 z-40 w-80 rounded-lg border-2 border-alert bg-black/90 p-4 shadow-2xl backdrop-blur">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-[0.6rem] font-bold uppercase tracking-[0.28em] text-alert">
-                Crew HUD
-              </p>
-              <h4 className="mt-0.5 truncate text-base font-extrabold text-foreground">
-                {activePin.trade_package ?? "Untagged Crew"}
-              </h4>
-            </div>
-            <button
-              type="button"
-              onClick={() => setActivePin(null)}
-              className="rounded-sm border border-white/15 p-1 text-foreground/60 hover:text-foreground"
-            >
-              <X size={12} />
-            </button>
-          </div>
-          <div className="mt-3 space-y-1.5 text-xs text-foreground/80">
-            <p className="flex items-center gap-1.5">
-              <Users size={12} className="text-alert" /> {activePin.operative_count} operatives
-            </p>
-            <p className="flex items-center gap-1.5">
-              <Clock size={12} className="text-alert" />
-              Elapsed{" "}
-              {activePin.start_time
-                ? formatDuration(now - new Date(activePin.start_time).getTime())
-                : "—"}
-            </p>
-            <p className="text-[0.6rem] uppercase tracking-widest text-foreground/50">
-              Zone: {activePin.work_zones?.name ?? "—"}
-              {activePin.work_zones?.level ? ` · ${activePin.work_zones.level}` : ""}
-            </p>
-            <p className="text-[0.6rem] uppercase tracking-widest text-foreground/50">
-              Scheduled finish {activePin.scheduled_finish ? new Date(activePin.scheduled_finish).toLocaleString() : "—"}
-            </p>
-            {activePin.scheduled_finish &&
-              new Date(activePin.scheduled_finish).getTime() < now && (
-                <p className="mt-2 rounded-sm border border-red-500 bg-red-600/20 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-red-400">
-                  Overtime · resource delay
-                </p>
-              )}
-          </div>
-          {activePin.permit_required && activePin.permit_status !== "active" && (
-            <div className="mt-3 rounded-md border-2 border-amber-400 bg-amber-400/10 p-2.5">
-              <p className="flex items-center gap-1.5 font-mono text-[0.6rem] font-bold uppercase tracking-widest text-amber-300">
-                <ShieldAlert size={12} /> Permit Required
-              </p>
-              {activePin.high_risk_flags && activePin.high_risk_flags.length > 0 && (
-                <p className="mt-1 text-[0.6rem] uppercase tracking-widest text-amber-200/80">
-                  {activePin.high_risk_flags.map((f) => f.replace(/_/g, " ")).join(" · ")}
-                </p>
+        <PinInfoModal
+          pinId={activePin.id}
+          onClose={() => setActivePin(null)}
+          actions={
+            <div className="space-y-2">
+              {activePin.permit_required && activePin.permit_status !== "active" && (
+                <button
+                  type="button"
+                  onClick={() => setPermitPin(activePin)}
+                  className="w-full rounded-md bg-amber-400 px-3 py-2 text-[0.65rem] font-extrabold uppercase tracking-widest text-black shadow hover:bg-amber-300"
+                >
+                  Review & Issue Permit to Work
+                </button>
               )}
               <button
                 type="button"
-                onClick={() => setPermitPin(activePin)}
-                className="mt-2 w-full rounded-md bg-amber-400 px-3 py-2 text-[0.65rem] font-extrabold uppercase tracking-widest text-black shadow hover:bg-amber-300"
+                onClick={() => setForcePin(activePin)}
+                className="w-full rounded-md border-2 border-alert bg-alert/10 px-3 py-2 text-[0.65rem] font-extrabold uppercase tracking-widest text-alert shadow-[3px_3px_0_0_rgba(0,0,0,0.4)] hover:bg-alert hover:text-black"
               >
-                Review & Issue Permit to Work
+                Force Checkout & Close Daily Diary
+              </button>
+              <button
+                type="button"
+                onClick={() => closePin(activePin.id)}
+                className="w-full rounded-md border border-white/15 px-3 py-1.5 text-[0.65rem] uppercase tracking-widest text-foreground/70 hover:border-alert hover:text-alert"
+              >
+                Clear Crew Out
               </button>
             </div>
-          )}
-          {activePin.permit_status === "active" && (
-            <p className="mt-3 rounded-sm border border-emerald-500/50 bg-emerald-500/10 px-2 py-1 text-center font-mono text-[0.6rem] font-bold uppercase tracking-widest text-emerald-400">
-              Permit Active
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => setForcePin(activePin)}
-            className="mt-3 w-full rounded-md border-2 border-alert bg-alert/10 px-3 py-2 text-[0.65rem] font-extrabold uppercase tracking-widest text-alert shadow-[3px_3px_0_0_rgba(0,0,0,0.4)] hover:bg-alert hover:text-black"
-          >
-            Force Checkout & Close Daily Diary
-          </button>
-          <button
-            type="button"
-            onClick={() => closePin(activePin.id)}
-            className="mt-2 w-full rounded-md border border-white/15 px-3 py-1.5 text-[0.65rem] uppercase tracking-widest text-foreground/70 hover:border-alert hover:text-alert"
-          >
-            Clear Crew Out
-          </button>
-        </div>
+          }
+        />
       )}
 
       {permitPin && (

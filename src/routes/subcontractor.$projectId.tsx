@@ -28,6 +28,7 @@ import { createLivePin, listLivePins } from "@/lib/live-activity.functions";
 import { askProjectOracle } from "@/lib/oracle.functions";
 import { getProjectWeather } from "@/lib/weather.functions";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
+import { pinColor, pinKey } from "@/lib/pin-color";
 import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 
@@ -360,8 +361,22 @@ function SubcontractorCockpit() {
                 </p>
               </div>
             ) : (
-              <div className="glass-panel border-2 border-emerald-400 bg-emerald-500/10 p-4">
+              <div
+                className="glass-panel border-2 p-4"
+                style={{
+                  borderColor: pinColor(pinKey(myActivePin as never)).hex,
+                  backgroundColor: pinColor(pinKey(myActivePin as never)).soft,
+                }}
+              >
                 <div className="flex items-center gap-2 text-[0.6rem] font-bold uppercase tracking-[0.3em] text-emerald-300">
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{
+                      backgroundColor: pinColor(pinKey(myActivePin as never)).hex,
+                      boxShadow: `0 0 0 3px ${pinColor(pinKey(myActivePin as never)).ring}`,
+                    }}
+                    aria-hidden
+                  />
                   <Timer size={12} /> Active shift
                 </div>
                 <p className="mt-1 font-mono text-3xl font-black tabular-nums text-emerald-100">
