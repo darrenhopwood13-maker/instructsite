@@ -10,16 +10,13 @@ import {
   redirect,
   isRedirect,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
-import { Camera, BookOpen, LifeBuoy, ExternalLink } from "lucide-react";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { UserContextChip } from "@/components/layout/UserContextChip";
-import { Button } from "@/components/ui/button";
+import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getGateStatus } from "../lib/gate.functions";
 import { OracleFAB } from "@/components/OracleFAB";
+import { AppShell } from "@/components/layout/AppShell";
 
 
 function NotFoundComponent() {
