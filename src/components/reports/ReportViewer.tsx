@@ -149,21 +149,21 @@ function ReportSectionCard({
   return (
     <details
       open={defaultOpen}
-      className="group glass-panel overflow-hidden rounded-2xl border border-white/10 open:shadow-lg"
+      className="group overflow-hidden rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-sm open:shadow-lg"
     >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 hover:bg-white/[0.03]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 hover:bg-white/[0.08]">
         <div className="flex items-center gap-3">
-          <span className="h-1.5 w-1.5 rounded-full bg-alert" />
+          <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
           <h3
-            className="text-sm font-extrabold uppercase tracking-[0.25em] text-foreground"
+            className="text-sm font-extrabold uppercase tracking-[0.25em] text-white"
             style={{ fontFamily: "'Inter Tight', 'Inter', sans-serif" }}
           >
             {title}
           </h3>
         </div>
-        <span className="text-foreground/50 transition-transform group-open:rotate-180">▾</span>
+        <span className="text-white/60 transition-transform group-open:rotate-180">▾</span>
       </summary>
-      <div className="border-t border-white/10 px-5 py-4">{children}</div>
+      <div className="border-t border-white/15 px-5 py-4 text-white">{children}</div>
     </details>
   );
 }
