@@ -29,12 +29,6 @@ export const Route = createFileRoute("/site-manager/$projectId")({
   component: SiteManagerPage,
 });
 
-function formatDuration(ms: number) {
-  const mins = Math.max(0, Math.floor(ms / 60000));
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
 
 function SiteManagerPage() {
   const { projectId } = Route.useParams();
