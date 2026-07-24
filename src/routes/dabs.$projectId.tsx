@@ -87,6 +87,7 @@ function DabsPage() {
 
   const [pending, setPending] = useState<{ xPct: number; yPct: number } | null>(null);
   const [checkoutPin, setCheckoutPin] = useState<any | null>(null);
+  const [infoPinId, setInfoPinId] = useState<string | null>(null);
   const [operatives, setOperatives] = useState(1);
   const [taskNotes, setTaskNotes] = useState("");
   const [startTime, setStartTime] = useState(() => toLocalInput(new Date()));
