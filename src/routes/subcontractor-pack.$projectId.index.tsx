@@ -600,11 +600,11 @@ function AddLabour({ subId, projectId, onSaved }: { subId: string; projectId: st
         </label>
         <label className="block md:col-span-2">
           <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
-            Competency Card (PDF / Image · max {MAX_UPLOAD_MB}MB)
+            Competency Card (PDF / Image / Photo / Doc · max {MAX_UPLOAD_MB}MB)
           </span>
           <input
             type="file"
-            accept="application/pdf,image/*"
+            accept="application/pdf,image/*,.heic,.heif,.txt,.doc,.docx,.xls,.xlsx"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="block w-full text-xs text-foreground/70 file:mr-3 file:rounded-md file:border-0 file:bg-alert/20 file:px-3 file:py-2 file:text-[0.65rem] file:font-bold file:uppercase file:tracking-widest file:text-alert hover:file:bg-alert/30"
           />
@@ -722,11 +722,11 @@ function AddRegister({ subId, projectId, onSaved }: { subId: string; projectId: 
         </label>
         <label className="block md:col-span-3">
           <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
-            Certificate (PDF / Image · max {MAX_UPLOAD_MB}MB)
+            Certificate (PDF / Image / Photo / Doc · max {MAX_UPLOAD_MB}MB)
           </span>
           <input
             type="file"
-            accept="application/pdf,image/*"
+            accept="application/pdf,image/*,.heic,.heif,.txt,.doc,.docx,.xls,.xlsx"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="block w-full text-xs text-foreground/70 file:mr-3 file:rounded-md file:border-0 file:bg-alert/20 file:px-3 file:py-2 file:text-[0.65rem] file:font-bold file:uppercase file:tracking-widest file:text-alert hover:file:bg-alert/30"
           />

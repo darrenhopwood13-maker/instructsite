@@ -206,12 +206,12 @@ export function DropZone({
           Drop files or click to browse
         </div>
         <div className="text-[0.7rem] uppercase tracking-widest text-foreground/50">
-          PDF · Multi-file supported
+          PDF · Image · Photo · Doc · CAD — multi-file
         </div>
         <input
           type="file"
           multiple
-          accept="application/pdf,image/*"
+          accept="application/pdf,image/*,.heic,.heif,.txt,.csv,.tsv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.dwg,.dxf,.rvt,.ifc,.xml,.json"
           className="hidden"
           onChange={(e) => {
             handleFiles(e.target.files);

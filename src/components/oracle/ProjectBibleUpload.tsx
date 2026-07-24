@@ -15,7 +15,8 @@ type UploadItem = {
 };
 
 const BUCKET = "project-bible";
-const ACCEPT = "application/pdf,image/*,text/plain";
+const ACCEPT =
+  "application/pdf,image/*,.heic,.heif,text/plain,.txt,.csv,.tsv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.dwg,.dxf,.rvt,.ifc,.xml,.json";
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -132,7 +133,7 @@ export function ProjectBibleUpload() {
         <div className="font-display text-lg font-bold text-foreground">
           Drop files here, or click to browse
         </div>
-        <div className="text-sm text-foreground/60">PDF, PNG, JPG, TXT · up to your storage limit</div>
+        <div className="text-sm text-foreground/60">PDF · Image · Photo · Doc · CAD · Text</div>
         <input
           id="project-bible-input"
           type="file"
