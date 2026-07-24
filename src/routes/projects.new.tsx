@@ -464,15 +464,15 @@ function AiDropZone({
         >
           <UploadCloud size={26} className="text-sky-300" />
           <span className="mt-3 text-sm font-extrabold uppercase tracking-wider text-foreground">
-            Drop a GA PDF or title-block image
+            Drop a GA PDF, drawing, photo or image
           </span>
           <span className="mt-1 text-[0.65rem] uppercase tracking-widest text-foreground/50">
-            PDF · PNG · JPG — single file
+            PDF · PNG · JPG · HEIC · Doc — single file
           </span>
           <input
             type="file"
             disabled={disabled}
-            accept="application/pdf,image/*"
+            accept="application/pdf,image/*,.heic,.heif,.txt,.doc,.docx,.dwg,.dxf"
             className="hidden"
             onChange={(e) => {
               pick(e.target.files);
