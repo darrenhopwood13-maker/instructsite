@@ -583,7 +583,7 @@ function QueuedDropZone({
           type="file"
           multiple
           disabled={disabled}
-          accept="application/pdf,image/*"
+          accept="application/pdf,image/*,.heic,.heif,.txt,.csv,.tsv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.dwg,.dxf,.rvt,.ifc,.xml,.json"
           className="hidden"
           onChange={(e) => {
             addFiles(e.target.files);
