@@ -261,20 +261,33 @@ function SiteManagerPage() {
           <ul className="mt-3 space-y-2">
             {(pins.data ?? []).map((p: any) => {
               const isOT = new Date(p.scheduled_finish).getTime() < now;
+              const palette = pinColor(pinKey(p));
               return (
                 <li
                   key={p.id}
-                  className={`glass-panel flex items-center justify-between gap-3 p-3 ${isOT ? "border-red-500" : ""}`}
+                  className={`glass-panel flex items-center justify-between gap-3 border-l-4 p-3 ${isOT ? "border-red-500" : ""}`}
+                  style={isOT ? undefined : { borderLeftColor: palette.hex }}
                 >
-                  <div className="min-w-0">
-                    <p className="text-sm text-foreground">
-                      {p.trade_package ?? "Untagged"} · {p.operative_count} ops
-                    </p>
-                    <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
-                      Started {new Date(p.start_time).toLocaleTimeString()} · finish{" "}
-                      {new Date(p.scheduled_finish).toLocaleTimeString()}
-                    </p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActivePin(p as PinRecord)}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  >
+                    <span
+                      className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: palette.hex, boxShadow: `0 0 0 3px ${palette.ring}` }}
+                      aria-hidden
+                    />
+                    <span className="min-w-0">
+                      <p className="text-sm text-foreground">
+                        {p.trade_package ?? "Untagged"} · {p.operative_count} ops
+                      </p>
+                      <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                        Started {new Date(p.start_time).toLocaleTimeString()} · finish{" "}
+                        {new Date(p.scheduled_finish).toLocaleTimeString()}
+                      </p>
+                    </span>
+                  </button>
                   {isOT && (
                     <span className="rounded-sm bg-red-600 px-2 py-1 font-mono text-[0.6rem] font-bold uppercase tracking-widest text-white">
                       Overtime
