@@ -446,6 +446,10 @@ function DabsPage() {
           onClose={() => setCheckoutPin(null)}
         />
       )}
+
+      {infoPinId && (
+        <PinInfoModal pinId={infoPinId} onClose={() => setInfoPinId(null)} />
+      )}
     </div>
   );
 }
