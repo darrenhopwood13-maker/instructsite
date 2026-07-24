@@ -133,7 +133,7 @@ export function ProjectBibleUpload() {
         <div className="font-display text-lg font-bold text-foreground">
           Drop files here, or click to browse
         </div>
-        <div className="text-sm text-foreground/60">PDF, PNG, JPG, TXT · up to your storage limit</div>
+        <div className="text-sm text-foreground/60">PDF · Image · Photo · Doc · CAD · Text</div>
         <input
           id="project-bible-input"
           type="file"
