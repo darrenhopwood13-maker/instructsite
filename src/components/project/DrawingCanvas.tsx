@@ -27,6 +27,7 @@ import {
 } from "@/lib/tier1-uploads.functions";
 import { deleteDrawing } from "@/lib/admin.functions";
 import { getMyRoles } from "@/lib/projects.functions";
+import { pinColor, pinKey } from "@/lib/pin-color";
 
 type Drawing = {
   id: string;
