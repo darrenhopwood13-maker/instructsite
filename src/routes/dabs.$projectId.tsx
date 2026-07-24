@@ -251,17 +251,7 @@ function DabsPage() {
               pins={(pins.data ?? []) as never}
               pinMode="drop"
               onDropPin={handleDrop}
-              onPinClick={(pin) => {
-                const dur = Math.round(
-                  (Date.now() - new Date(pin.start_time ?? pin.scheduled_finish!).getTime()) / 60000,
-                );
-                toast(`${pin.trade_package ?? "Pin"} · ${pin.operative_count} ops · ${dur} min`, {
-                  action: {
-                    label: "Close",
-                    onClick: () => closePin(pin.id),
-                  },
-                });
-              }}
+              onPinClick={(pin) => setInfoPinId(pin.id)}
             />
           )}
         </section>
