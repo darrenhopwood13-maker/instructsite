@@ -103,7 +103,7 @@ function MarkdownBody({ md }: { md: string }) {
     const line = lines[i];
     if (/^\s*###\s+/.test(line)) {
       blocks.push(
-        <h4 key={key++} className="mt-4 text-sm font-bold uppercase tracking-widest text-foreground/80">
+        <h4 key={key++} className="mt-4 text-sm font-bold uppercase tracking-widest text-white/90">
           {line.replace(/^\s*###\s+/, "")}
         </h4>,
       );
@@ -115,7 +115,7 @@ function MarkdownBody({ md }: { md: string }) {
         i++;
       }
       blocks.push(
-        <ul key={key++} className="mt-2 list-disc space-y-1 pl-6 text-sm leading-relaxed text-foreground/90">
+        <ul key={key++} className="mt-2 list-disc space-y-1 pl-6 text-sm leading-relaxed text-white">
           {items.map((it, idx) => <li key={idx}><InlineMd text={it} /></li>)}
         </ul>,
       );
@@ -128,7 +128,7 @@ function MarkdownBody({ md }: { md: string }) {
         i++;
       }
       blocks.push(
-        <p key={key++} className="mt-2 text-sm leading-relaxed text-foreground/90">
+        <p key={key++} className="mt-2 text-sm leading-relaxed text-white">
           <InlineMd text={buf.join(" ")} />
         </p>,
       );
