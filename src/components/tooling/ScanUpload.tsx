@@ -118,7 +118,7 @@ export const ScanUpload = ({ imageDataUrl, pdfBase64, onImage, onPdf, fileName }
   return (
     <div className="flex items-start justify-around gap-3 py-1">
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onChange} />
-      <input ref={uploadInputRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={onChange} />
+      <input ref={uploadInputRef} type="file" accept="application/pdf,image/*,.heic,.heif,.txt,.csv,.tsv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.dwg,.dxf,.rvt,.ifc,.xml,.json" className="hidden" onChange={onChange} />
 
       <OrangeBtn label="Scan" onClick={() => cameraInputRef.current?.click()}>
         <Camera size={22} strokeWidth={2.2} />
