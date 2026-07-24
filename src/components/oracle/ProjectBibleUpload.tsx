@@ -15,7 +15,8 @@ type UploadItem = {
 };
 
 const BUCKET = "project-bible";
-const ACCEPT = "application/pdf,image/*,text/plain";
+const ACCEPT =
+  "application/pdf,image/*,.heic,.heif,text/plain,.txt,.csv,.tsv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.dwg,.dxf,.rvt,.ifc,.xml,.json";
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
