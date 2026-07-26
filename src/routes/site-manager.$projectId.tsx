@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle, ClipboardList, ChevronDown } from "lucide-react";
+import { ArrowLeft, AlertTriangle, ClipboardList, ChevronDown, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
@@ -194,13 +194,20 @@ function SiteManagerPage() {
           Realtime spatial overlay of active site labor · click any pin for the HUD popover.
         </p>
 
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-3">
           <Link
             to="/subcontractor-pack/$projectId/manager"
             params={{ projectId }}
             className="inline-flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-alert hover:bg-alert hover:text-black transition-colors"
           >
             <ClipboardList size={14} /> Subcontractors Weekly Pack
+          </Link>
+          <Link
+            to="/my-diary/$projectId"
+            params={{ projectId }}
+            className="inline-flex items-center gap-2 rounded-md border-2 border-white/20 bg-black/40 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-foreground/80 hover:border-alert hover:text-alert transition-colors"
+          >
+            <BookOpen size={14} /> My Site Diary
           </Link>
         </div>
 
