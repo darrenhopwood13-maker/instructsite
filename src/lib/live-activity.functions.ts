@@ -10,6 +10,7 @@ export const createLivePin = createServerFn({ method: "POST" })
         projectId: z.string().uuid(),
         drawingId: z.string().uuid().nullable().optional(),
         zoneId: z.string().uuid().nullable().optional(),
+        workfaceId: z.string().uuid().nullable().optional(),
         tradePackage: z.string().trim().max(120).optional(),
         operativeCount: z.number().int().min(1).max(500),
         startTime: z.string().datetime(),
@@ -27,6 +28,7 @@ export const createLivePin = createServerFn({ method: "POST" })
         project_id: data.projectId,
         drawing_id: data.drawingId ?? null,
         zone_id: data.zoneId ?? null,
+        workface_id: data.workfaceId ?? null,
         subcontractor_id: context.userId,
         trade_package: data.tradePackage ?? null,
         operative_count: data.operativeCount,
@@ -71,9 +73,7 @@ export const listLivePins = createServerFn({ method: "GET" })
 
 export const closeLivePin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) =>
-    z.object({ pinId: z.string().uuid() }).parse(i),
-  )
+  .inputValidator((i: unknown) => z.object({ pinId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("live_site_activity")
@@ -89,15 +89,23 @@ export const issuePinPermit = createServerFn({ method: "POST" })
     z
       .object({
         pinId: z.string().uuid(),
-        validHours: z.number().int().min(1).max(24 * 30).default(8),
+        validHours: z
+          .number()
+          .int()
+          .min(1)
+          .max(24 * 30)
+          .default(8),
       })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { data: permitId, error } = await context.supabase.rpc("issue_pin_permit" as never, {
-      _pin_id: data.pinId,
-      _valid_hours: data.validHours,
-    } as never);
+    const { data: permitId, error } = await context.supabase.rpc(
+      "issue_pin_permit" as never,
+      {
+        _pin_id: data.pinId,
+        _valid_hours: data.validHours,
+      } as never,
+    );
     if (error) throw new Error(error.message);
     return { permitId: permitId as unknown as string };
   });
@@ -128,9 +136,7 @@ export const managerForceCheckout = createServerFn({ method: "POST" })
 
 export const getPinDetail = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) =>
-    z.object({ pinId: z.string().uuid() }).parse(i),
-  )
+  .inputValidator((i: unknown) => z.object({ pinId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { data: pin, error } = await context.supabase
       .from("live_site_activity")
@@ -187,4 +193,3 @@ export const getPinDetail = createServerFn({ method: "GET" })
 
     return { pin, subcontractorName, companyName, permits };
   });
-

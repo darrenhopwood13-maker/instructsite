@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle, ClipboardList, ChevronDown } from "lucide-react";
+import { ArrowLeft, AlertTriangle, ClipboardList, ChevronDown, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
@@ -25,8 +26,14 @@ import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 import { supabase } from "@/integrations/supabase/client";
 
+const siteManagerSearchSchema = z.object({
+  locatePinId: z.string().uuid().optional(),
+  locateDrawingId: z.string().uuid().optional(),
+});
+
 export const Route = createFileRoute("/site-manager/$projectId")({
   head: () => ({ meta: [{ title: "Site Manager · Command Tower" }] }),
+  validateSearch: siteManagerSearchSchema,
   component: SiteManagerPage,
 });
 
@@ -72,10 +79,19 @@ function SiteManagerPage() {
   });
 
   const drawingRows = useMemo(() => drawings.data ?? [], [drawings.data]);
+  const search = Route.useSearch();
   const [selectedDrawing, setSelectedDrawing] = useState<string | null>(null);
   useEffect(() => {
-    if (!selectedDrawing && drawingRows.length) setSelectedDrawing(drawingRows[0].id);
-  }, [drawingRows, selectedDrawing]);
+    if (selectedDrawing) return;
+    // A "Locate on Command Tower" link takes priority over the default
+    // first-drawing selection, so arriving from My Diary lands on the
+    // right sheet.
+    if (search.locateDrawingId) {
+      setSelectedDrawing(search.locateDrawingId);
+    } else if (drawingRows.length) {
+      setSelectedDrawing(drawingRows[0].id);
+    }
+  }, [drawingRows, selectedDrawing, search.locateDrawingId]);
 
   const pins = useQuery({
     queryKey: ["live-pins", projectId, selectedDrawing],
@@ -142,6 +158,15 @@ function SiteManagerPage() {
   }, [overtime]);
 
   const [activePin, setActivePin] = useState<PinRecord | null>(null);
+
+  // "Locate on Command Tower" — once the pins for the located drawing
+  // have loaded, auto-select the one the link pointed at and open its
+  // info modal, same as if the manager had clicked it themselves.
+  useEffect(() => {
+    if (!search.locatePinId || !pins.data) return;
+    const found = (pins.data as PinRecord[]).find((p) => p.id === search.locatePinId);
+    if (found) setActivePin(found);
+  }, [search.locatePinId, pins.data]);
   const [permitPin, setPermitPin] = useState<PinRecord | null>(null);
   const [forcePin, setForcePin] = useState<PinRecord | null>(null);
   const [bimOpen, setBimOpen] = useState(false);
@@ -194,13 +219,20 @@ function SiteManagerPage() {
           Realtime spatial overlay of active site labor · click any pin for the HUD popover.
         </p>
 
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-3">
           <Link
             to="/subcontractor-pack/$projectId/manager"
             params={{ projectId }}
             className="inline-flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-alert hover:bg-alert hover:text-black transition-colors"
           >
             <ClipboardList size={14} /> Subcontractors Weekly Pack
+          </Link>
+          <Link
+            to="/my-diary/$projectId"
+            params={{ projectId }}
+            className="inline-flex items-center gap-2 rounded-md border-2 border-white/20 bg-black/40 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-foreground/80 hover:border-alert hover:text-alert transition-colors"
+          >
+            <BookOpen size={14} /> My Site Diary
           </Link>
         </div>
 

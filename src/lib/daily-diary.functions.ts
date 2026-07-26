@@ -17,20 +17,18 @@ export const submitDailyDiary = createServerFn({ method: "POST" })
     const { data: pin, error: pinErr } = await context.supabase
       .from("live_site_activity")
       .select(
-        "id, project_id, subcontractor_id, drawing_id, zone_id, trade_package, operative_count, start_time, scheduled_finish, status",
+        "id, project_id, subcontractor_id, drawing_id, zone_id, workface_id, trade_package, operative_count, start_time, scheduled_finish, status",
       )
       .eq("id", data.liveActivityId)
       .single();
     if (pinErr || !pin) throw new Error("Active pin not found.");
     if (pin.subcontractor_id !== context.userId)
       throw new Error("You can only close out your own shift.");
-    if (pin.status !== "active")
-      throw new Error("This shift has already been closed out.");
+    if (pin.status !== "active") throw new Error("This shift has already been closed out.");
 
     const checkoutTime = new Date();
     const hours =
-      Math.max(0, checkoutTime.getTime() - new Date(pin.start_time).getTime()) /
-      3_600_000;
+      Math.max(0, checkoutTime.getTime() - new Date(pin.start_time).getTime()) / 3_600_000;
 
     const { data: diary, error: insErr } = await context.supabase
       .from("daily_site_diaries")
@@ -40,6 +38,7 @@ export const submitDailyDiary = createServerFn({ method: "POST" })
         subcontractor_id: context.userId,
         drawing_id: pin.drawing_id,
         zone_id: pin.zone_id,
+        workface_id: pin.workface_id,
         trade_package: pin.trade_package,
         operative_count: pin.operative_count,
         start_time: pin.start_time,
@@ -66,14 +65,12 @@ export const submitDailyDiary = createServerFn({ method: "POST" })
 
 export const listQsQueue = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) =>
-    z.object({ projectId: z.string().uuid() }).parse(i),
-  )
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("daily_site_diaries")
       .select(
-        "id, trade_package, operative_count, hours_logged, progress_status, completion_pct, notes, checkout_time, qs_status, ifc_synced, photo_urls, zone_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
+        "id, trade_package, operative_count, hours_logged, progress_status, completion_pct, manager_completion_pct, manager_notes, manager_photo_urls, inspected_by, inspected_at, notes, checkout_time, qs_status, ifc_synced, photo_urls, zone_id, workface_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
       )
       .eq("project_id", data.projectId)
       .order("checkout_time", { ascending: false })
@@ -101,9 +98,7 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
       "site_manager",
     ];
     const checks = await Promise.all(
-      roles.map((r) =>
-        context.supabase.rpc("has_role", { _user_id: context.userId, _role: r }),
-      ),
+      roles.map((r) => context.supabase.rpc("has_role", { _user_id: context.userId, _role: r })),
     );
     const authorised = checks.some((c) => c.data === true);
     if (!authorised) {
@@ -129,12 +124,9 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const listArchivedToday = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) =>
-    z.object({ projectId: z.string().uuid() }).parse(i),
-  )
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
@@ -149,19 +141,29 @@ export const listArchivedToday = createServerFn({ method: "GET" })
 
 export const listZoneCompletion = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) =>
-    z.object({ projectId: z.string().uuid() }).parse(i),
-  )
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    // NOTE: this was previously unused anywhere in the UI, and returned
+    // raw completion_pct (the subcontractor's unverified claim) rather
+    // than the manager-authorised figure everything else in the app now
+    // uses (see workface_approved_completion() / manager_authorise_diary()
+    // in the Step 3 / Step 5 migrations). Fixed here before anything
+    // starts consuming it, so a future zone-summary view doesn't
+    // silently inherit the old, un-inspected numbers.
     const { data: rows, error } = await context.supabase
       .from("daily_site_diaries")
-      .select("zone_id, completion_pct, qs_status, ifc_synced, work_zones(name, level)")
+      .select(
+        "zone_id, completion_pct, manager_completion_pct, qs_status, ifc_synced, work_zones(name, level)",
+      )
       .eq("project_id", data.projectId)
       .not("zone_id", "is", null)
       .order("checkout_time", { ascending: false })
       .limit(500);
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    return (rows ?? []).map((r) => ({
+      ...r,
+      authorised_completion_pct: r.manager_completion_pct ?? r.completion_pct,
+    }));
   });
 
 export const signDiaryPhotos = createServerFn({ method: "POST" })
@@ -189,4 +191,80 @@ export const signDiaryPhotos = createServerFn({ method: "POST" })
       path: data.paths[i],
       url: s.error ? null : s.signedUrl,
     }));
+  });
+
+// Manager inspection & sign-off (Step 5). Replaces a plain "approve" with
+// a genuine manager-assessed completion percentage, notes, and photo
+// evidence captured on inspection — distinct from the subcontractor's own
+// checkout claim in completion_pct, which is left untouched for
+// comparison. See manager_authorise_diary() in the migration for the
+// authoritative logic; this just validates input and wraps the RPC.
+export const managerAuthoriseDiary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        diaryId: z.string().uuid(),
+        managerCompletionPct: z.number().int().min(0).max(100),
+        managerNotes: z.string().trim().max(2000).optional(),
+        managerPhotoUrls: z.array(z.string().trim().max(500)).max(20).optional(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc(
+      "manager_authorise_diary" as never,
+      {
+        _diary_id: data.diaryId,
+        _manager_completion_pct: data.managerCompletionPct,
+        _manager_notes: data.managerNotes ?? null,
+        _manager_photo_urls: data.managerPhotoUrls ?? [],
+      } as never,
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Corrects an already-approved diary's manager-authorised percentage.
+// Requires a reason and is logged to diary_amendments — see
+// amend_approved_diary() in the migration. This is the ONLY sanctioned
+// way to change an approved day's figures; a plain update bypasses the
+// audit trail.
+export const amendApprovedDiary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        diaryId: z.string().uuid(),
+        newManagerCompletionPct: z.number().int().min(0).max(100),
+        reason: z.string().trim().min(1).max(1000),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc(
+      "amend_approved_diary" as never,
+      {
+        _diary_id: data.diaryId,
+        _new_manager_completion_pct: data.newManagerCompletionPct,
+        _reason: data.reason,
+      } as never,
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listDiaryAmendments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ diaryId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("diary_amendments")
+      .select(
+        "id, reason, previous_manager_completion_pct, new_manager_completion_pct, previous_qs_status, new_qs_status, created_at, changed_by",
+      )
+      .eq("diary_id", data.diaryId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return rows ?? [];
   });

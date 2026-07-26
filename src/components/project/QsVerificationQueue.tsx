@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, XCircle, ImageIcon, X } from "lucide-react";
+import { CheckCircle2, XCircle, ImageIcon, X, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
   listQsQueue,
   setDiaryQsStatus,
   signDiaryPhotos,
+  managerAuthoriseDiary,
 } from "@/lib/daily-diary.functions";
 
 type DiaryRow = {
@@ -16,6 +17,7 @@ type DiaryRow = {
   hours_logged: number | null;
   progress_status: string | null;
   completion_pct: number | null;
+  manager_completion_pct: number | null;
   notes: string | null;
   qs_status: string | null;
   photo_urls: string[] | null;
@@ -42,30 +44,28 @@ function DiaryPhotoGrid({
 
   return (
     <div className="mt-2 grid grid-cols-4 gap-1.5 sm:grid-cols-6">
-      {(q.data ?? paths.map((p) => ({ path: p, url: null }))).map(
-        (item, i) => (
-          <button
-            key={item.path + i}
-            type="button"
-            onClick={() => item.url && onOpen(item.url, i)}
-            disabled={!item.url}
-            className="group relative aspect-square overflow-hidden rounded-sm border border-white/15 bg-black/50 transition hover:border-alert focus:outline-none focus:ring-2 focus:ring-alert disabled:opacity-40"
-          >
-            {item.url ? (
-              <img
-                src={item.url}
-                alt={`Diary evidence ${i + 1}`}
-                loading="lazy"
-                className="h-full w-full object-cover transition group-hover:scale-105"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-foreground/40">
-                <ImageIcon size={14} />
-              </div>
-            )}
-          </button>
-        ),
-      )}
+      {(q.data ?? paths.map((p) => ({ path: p, url: null }))).map((item, i) => (
+        <button
+          key={item.path + i}
+          type="button"
+          onClick={() => item.url && onOpen(item.url, i)}
+          disabled={!item.url}
+          className="group relative aspect-square overflow-hidden rounded-sm border border-white/15 bg-black/50 transition hover:border-alert focus:outline-none focus:ring-2 focus:ring-alert disabled:opacity-40"
+        >
+          {item.url ? (
+            <img
+              src={item.url}
+              alt={`Diary evidence ${i + 1}`}
+              loading="lazy"
+              className="h-full w-full object-cover transition group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-foreground/40">
+              <ImageIcon size={14} />
+            </div>
+          )}
+        </button>
+      ))}
     </div>
   );
 }
@@ -119,26 +119,154 @@ function PhotoLightbox({
   );
 }
 
+function InspectionModal({
+  diary,
+  onClose,
+  onAuthorised,
+}: {
+  diary: DiaryRow;
+  onClose: () => void;
+  onAuthorised: () => void;
+}) {
+  const authoriseFn = useServerFn(managerAuthoriseDiary);
+  const claimed = diary.completion_pct ?? 0;
+  const [pct, setPct] = useState(claimed);
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await authoriseFn({
+        data: {
+          diaryId: diary.id,
+          managerCompletionPct: pct,
+          managerNotes: notes.trim() || undefined,
+        },
+      });
+      toast.success("Authorised — pushed to IFC as manager-verified evidence.");
+      onAuthorised();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to authorise.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="glass-panel w-full max-w-md border-l-4 border-l-alert p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="inline-flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.28em] text-alert">
+              <ClipboardCheck size={13} /> Manager Sign-Off
+            </p>
+            <p className="mt-1 text-sm font-bold text-foreground">
+              {diary.trade_package ?? "Untagged"} · {diary.work_zones?.name ?? "no zone"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-sm border border-white/20 p-1 text-foreground/60 hover:text-foreground"
+            aria-label="Close"
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        <p className="mt-3 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/50">
+          Subcontractor claimed <span className="text-alert">{claimed}%</span> complete
+        </p>
+
+        <label className="mt-3 block">
+          <span className="text-[0.6rem] font-bold uppercase tracking-widest text-foreground/60">
+            Your verified completion — {pct}%
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={pct}
+            onChange={(e) => setPct(Number(e.target.value))}
+            className="mt-2 w-full accent-alert"
+          />
+        </label>
+
+        <label className="mt-3 block">
+          <span className="text-[0.6rem] font-bold uppercase tracking-widest text-foreground/60">
+            Inspection notes (optional)
+          </span>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            placeholder="What you found on site — any discrepancy from the claim, access issues, quality notes…"
+            className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-2.5 py-2 text-xs text-foreground outline-none focus:border-alert"
+          />
+        </label>
+
+        {pct !== claimed && (
+          <p className="mt-2 rounded-sm border border-amber-400/40 bg-amber-400/5 px-2 py-1.5 text-[0.65rem] text-amber-300">
+            This differs from the subcontractor's claim of {claimed}% — your figure is what counts
+            toward progress once authorised.
+          </p>
+        )}
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={submit}
+            disabled={busy}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border-2 border-green-500 bg-green-500/10 px-3 py-2 text-[0.6rem] font-bold uppercase tracking-widest text-green-400 hover:bg-green-500/20 disabled:opacity-40"
+          >
+            <CheckCircle2 size={13} /> {busy ? "Authorising…" : "Authorise & Approve"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-white/15 px-3 py-2 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-white/30"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function QsVerificationQueue({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const listFn = useServerFn(listQsQueue);
   const setStatusFn = useServerFn(setDiaryQsStatus);
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
+  const [inspecting, setInspecting] = useState<DiaryRow | null>(null);
 
   const q = useQuery({
     queryKey: ["qs-queue", projectId],
     queryFn: () => listFn({ data: { projectId } }),
   });
 
-  const decide = async (diaryId: string, status: "approved" | "rejected") => {
+  const reject = async (diaryId: string) => {
     try {
-      await setStatusFn({ data: { diaryId, status } });
-      toast.success(status === "approved" ? "Approved — pushed to IFC." : "Rejected.");
+      await setStatusFn({ data: { diaryId, status: "rejected" } });
+      toast.success("Rejected.");
       qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
-      qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to update diary.");
     }
+  };
+
+  const onAuthorised = () => {
+    setInspecting(null);
+    qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
+    qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
   };
 
   const rows = (q.data ?? []) as DiaryRow[];
@@ -161,8 +289,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-foreground">
-                    {r.trade_package ?? "Untagged"} · {r.operative_count} ops ·{" "}
-                    {r.hours_logged}h
+                    {r.trade_package ?? "Untagged"} · {r.operative_count} ops · {r.hours_logged}h
                   </p>
                   <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
                     {r.work_zones?.name ?? "no zone"}
@@ -200,14 +327,14 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => decide(r.id, "approved")}
+                    onClick={() => setInspecting(r)}
                     className="inline-flex items-center gap-1 rounded-md border-2 border-green-500 bg-green-500/10 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-green-400 hover:bg-green-500/20"
                   >
-                    <CheckCircle2 size={12} /> Approve
+                    <CheckCircle2 size={12} /> Inspect & Authorise
                   </button>
                   <button
                     type="button"
-                    onClick={() => decide(r.id, "rejected")}
+                    onClick={() => reject(r.id)}
                     className="inline-flex items-center gap-1 rounded-md border border-white/15 px-3 py-1.5 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-red-500 hover:text-red-400"
                   >
                     <XCircle size={12} /> Reject
@@ -236,7 +363,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                 className="flex items-center justify-between rounded-sm border border-white/10 bg-black/20 px-2 py-1.5 text-[0.65rem] text-foreground/70"
               >
                 <span className="truncate">
-                  {r.trade_package ?? "Untagged"} · {r.completion_pct}%
+                  {r.trade_package ?? "Untagged"} · {r.manager_completion_pct ?? r.completion_pct}%
                 </span>
                 <span
                   className={`font-mono uppercase tracking-widest ${
@@ -249,6 +376,14 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
             ))}
           </ul>
         </details>
+      )}
+
+      {inspecting && (
+        <InspectionModal
+          diary={inspecting}
+          onClose={() => setInspecting(null)}
+          onAuthorised={onAuthorised}
+        />
       )}
 
       {lightbox && (

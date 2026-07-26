@@ -9,6 +9,7 @@ import { listMyProjects } from "@/lib/projects.functions";
 import { createSubcontractorInvite } from "@/lib/subcontractors.functions";
 import { getSubcontractorSeatUsage } from "@/lib/subscriptions.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { TRADE_PACKAGES as TRADE_OPTIONS } from "@/lib/trade-packages";
 
 export const Route = createFileRoute("/subcontractors/new")({
   head: () => ({
@@ -23,29 +24,6 @@ export const Route = createFileRoute("/subcontractors/new")({
   }),
   component: RegisterPartnerPage,
 });
-
-const TRADE_OPTIONS = [
-  "Groundworks",
-  "Concrete Frame",
-  "Steel Frame",
-  "Cladding",
-  "Roofing",
-  "Windows & Curtain Wall",
-  "Mechanical",
-  "Electrical",
-  "Plumbing",
-  "Drylining & Plaster",
-  "Joinery & Carpentry",
-  "Painting & Decorating",
-  "Flooring",
-  "Ceilings",
-  "Lifts",
-  "Fire Protection",
-  "Landscaping",
-  "Demolition",
-  "Scaffolding",
-  "Cleaning",
-];
 
 interface FormState {
   projectId: string;
@@ -264,7 +242,7 @@ function RegisterPartnerPage() {
                   label="Trade Package"
                   value={form.tradePackage}
                   onChange={(v) => setField("tradePackage", v)}
-                  options={TRADE_OPTIONS}
+                  options={[...TRADE_OPTIONS]}
                   required
                 />
                 <Field
