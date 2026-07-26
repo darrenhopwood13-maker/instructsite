@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays } from "lucide-react";
+import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays, Users, LayoutGrid, UploadCloud } from "lucide-react";
 import { getProject } from "@/lib/projects.functions";
 import {
   listProjectDrawings,
@@ -21,6 +21,7 @@ import { WorkfaceRegisterPanel } from "@/components/admin/WorkfaceRegisterPanel"
 import { getMyRoles } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { CollapsibleSection } from "@/components/layout/CollapsibleSection";
 
 
 export const Route = createFileRoute("/projects/$projectId")({
@@ -181,63 +182,60 @@ function ProjectDetail() {
         />
 
         {isAdmin && (
-          <section className="mt-8">
-            <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
-              Project Administration
-            </p>
-            <h2
-              className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          <div className="mt-8">
+            <CollapsibleSection
+              icon={<Users size={16} />}
+              title="Subcontractor & Trade Directory"
+              summary="Registration · Package Managers · Workfaces"
+              defaultOpen={false}
             >
-              Subcontractor & Trade Directory
-            </h2>
-            <p className="mt-1.5 max-w-2xl text-xs text-foreground/60">
-              Register trade companies, generate one-time secure invite tokens, and
-              distribute QR codes for on-site onboarding.
-            </p>
-            <div className="mt-5">
+              <p className="mb-4 max-w-2xl text-xs text-foreground/60">
+                Register trade companies, generate one-time secure invite tokens, and
+                distribute QR codes for on-site onboarding.
+              </p>
               <TradeDirectoryPanel projectId={projectId} />
               <WorkfaceRegisterPanel projectId={projectId} />
-            </div>
-          </section>
+            </CollapsibleSection>
+          </div>
         )}
 
-        <ZoneMatrixBoard projectId={projectId} />
-
-
-
-
-
+        <div className="mt-8">
+          <CollapsibleSection
+            icon={<LayoutGrid size={16} />}
+            title="Zone Progress Matrix"
+            summary="2D fallback viewport"
+            defaultOpen={false}
+          >
+            <ZoneMatrixBoard projectId={projectId} />
+          </CollapsibleSection>
+        </div>
 
         {/* Upload engine row — symmetric 2-col */}
-        <section className="mt-10">
-          <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
-            Tier-1 Operational Documents
-          </p>
-          <h2
-            className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+        <div className="mt-6">
+          <CollapsibleSection
+            icon={<UploadCloud size={16} />}
+            title="Upload Engine"
+            summary="GA Drawings · Site Logistics"
+            defaultOpen={true}
           >
-            Upload Engine
-          </h2>
-
-          <div className="mt-5 grid auto-rows-fr gap-4 md:grid-cols-2">
-            <DropZone
-              projectId={projectId}
-              docType="drawing"
-              title="GA Drawings"
-              subtitle="Title blocks auto-parsed → 'Active Project Drawings' dropdown."
-              onUploaded={refresh}
-            />
-            <DropZone
-              projectId={projectId}
-              docType="logistics"
-              title="Site Logistics"
-              subtitle="Zones & levels extracted for spatial mapping."
-              onUploaded={refresh}
-            />
-          </div>
-        </section>
+            <div className="grid auto-rows-fr gap-4 md:grid-cols-2">
+              <DropZone
+                projectId={projectId}
+                docType="drawing"
+                title="GA Drawings"
+                subtitle="Title blocks auto-parsed → 'Active Project Drawings' dropdown."
+                onUploaded={refresh}
+              />
+              <DropZone
+                projectId={projectId}
+                docType="logistics"
+                title="Site Logistics"
+                subtitle="Zones & levels extracted for spatial mapping."
+                onUploaded={refresh}
+              />
+            </div>
+          </CollapsibleSection>
+        </div>
 
         {/* Drawing viewer — full width, tall */}
         <section className="mt-8">

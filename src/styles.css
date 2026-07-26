@@ -525,6 +525,17 @@
 }
 
 /* ============ Cinematic command tiles (from instructSite) ============ */
+@keyframes collapse-down {
+  from { height: 0; opacity: 0.4; }
+  to   { height: var(--radix-collapsible-content-height); opacity: 1; }
+}
+@keyframes collapse-up {
+  from { height: var(--radix-collapsible-content-height); opacity: 1; }
+  to   { height: 0; opacity: 0; }
+}
+.animate-collapse-down { animation: collapse-down .22s cubic-bezier(.2,.8,.2,1); }
+.animate-collapse-up { animation: collapse-up .18s cubic-bezier(.4,0,1,1); }
+
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }

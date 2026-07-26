@@ -2,15 +2,19 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, PlusCircle, ShieldAlert, Trash2, Lock, Unlock, ChevronDown, ChevronUp } from "lucide-react";
-import { getMyRoles } from "@/lib/projects.functions";
 import {
-  deleteProject,
-  createWorkZone,
-  setWorkZoneStatus,
-} from "@/lib/admin.functions";
+  AlertTriangle,
+  PlusCircle,
+  ShieldAlert,
+  Trash2,
+  Lock,
+  Unlock,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { getMyRoles } from "@/lib/projects.functions";
+import { deleteProject, createWorkZone, setWorkZoneStatus } from "@/lib/admin.functions";
 import { toast } from "sonner";
-
 
 type Zone = { id: string; name: string; level?: string | null; source?: string; status?: string };
 
@@ -33,7 +37,7 @@ export function MasterAdminHUD({
   });
   const isMaster = roles.data?.roles?.includes("master_admin");
 
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [zoneName, setZoneName] = useState("");
@@ -67,7 +71,6 @@ export function MasterAdminHUD({
     }
   };
 
-
   const runCreateZone = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!zoneName.trim()) return;
@@ -99,17 +102,27 @@ export function MasterAdminHUD({
   };
 
   return (
-    <div className="mt-6 rounded-xl border-2 border-alert bg-gradient-to-br from-alert/15 via-black/85 to-black/95 p-4 shadow-[0_0_45px_rgba(255,80,0,0.25)]">
+    <div
+      className={`mt-6 overflow-hidden rounded-xl border transition-all duration-300 ${
+        expanded
+          ? "border-2 border-alert bg-gradient-to-br from-alert/15 via-black/85 to-black/95 shadow-[0_0_45px_rgba(255,80,0,0.25)]"
+          : "border-white/10 bg-[#0f2444]"
+      }`}
+    >
       <button
         type="button"
         onClick={() => setExpanded((x) => !x)}
-        className="flex w-full items-center justify-between gap-2"
+        className={`flex w-full items-center justify-between gap-2 p-4 text-left transition-colors ${
+          !expanded && "hover:bg-white/[0.03]"
+        }`}
       >
         <div className="flex items-center gap-2">
-          <ShieldAlert className="text-alert" size={18} />
+          <ShieldAlert className={expanded ? "text-alert" : "text-foreground/50"} size={18} />
           <h3
-            className="font-mono text-sm font-black uppercase tracking-[0.3em] text-alert"
-            style={{ textShadow: "0 0 12px rgba(255,120,0,0.6)" }}
+            className={`font-mono text-sm font-black uppercase tracking-[0.3em] ${
+              expanded ? "text-alert" : "text-foreground/70"
+            }`}
+            style={expanded ? { textShadow: "0 0 12px rgba(255,120,0,0.6)" } : undefined}
           >
             Master Admin Command HUD
           </h3>
@@ -117,12 +130,12 @@ export function MasterAdminHUD({
         {expanded ? (
           <ChevronUp size={16} className="text-alert" />
         ) : (
-          <ChevronDown size={16} className="text-alert" />
+          <ChevronDown size={16} className="text-foreground/40" />
         )}
       </button>
 
       {expanded && (
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <div className="grid gap-4 p-4 pt-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
           {/* Destructive column */}
           <div className="rounded-lg border border-alert/50 bg-black/60 p-3">
             <p className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.28em] text-alert">
@@ -180,7 +193,9 @@ export function MasterAdminHUD({
                     className="flex items-center justify-between gap-2 border-b border-white/8 px-2.5 py-1.5 last:border-b-0"
                   >
                     <div className="min-w-0">
-                      <p className={`truncate font-mono text-xs ${closed ? "text-foreground/40 line-through" : "text-foreground/90"}`}>
+                      <p
+                        className={`truncate font-mono text-xs ${closed ? "text-foreground/40 line-through" : "text-foreground/90"}`}
+                      >
                         {z.name}
                         {z.level ? ` · ${z.level}` : ""}
                       </p>
@@ -209,10 +224,6 @@ export function MasterAdminHUD({
         </div>
       )}
 
-
-
-
-
       {confirmOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur"
@@ -229,9 +240,9 @@ export function MasterAdminHUD({
               </h4>
             </div>
             <p className="mt-3 text-sm text-foreground/80">
-              This will permanently delete <span className="font-mono text-alert">{projectName}</span>
-              {" "}and every related record — drawings, zones, RAMS, DABS activities, permits.
-              This action cannot be undone.
+              This will permanently delete{" "}
+              <span className="font-mono text-alert">{projectName}</span> and every related record —
+              drawings, zones, RAMS, DABS activities, permits. This action cannot be undone.
             </p>
             <label className="mt-4 block">
               <span className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.25em] text-foreground/60">
