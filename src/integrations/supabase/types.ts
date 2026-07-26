@@ -170,6 +170,50 @@ export type Database = {
           },
         ]
       }
+      diary_amendments: {
+        Row: {
+          changed_by: string
+          created_at: string
+          diary_id: string
+          id: string
+          new_manager_completion_pct: number | null
+          new_qs_status: string | null
+          previous_manager_completion_pct: number | null
+          previous_qs_status: string | null
+          reason: string
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          diary_id: string
+          id?: string
+          new_manager_completion_pct?: number | null
+          new_qs_status?: string | null
+          previous_manager_completion_pct?: number | null
+          previous_qs_status?: string | null
+          reason: string
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          diary_id?: string
+          id?: string
+          new_manager_completion_pct?: number | null
+          new_qs_status?: string | null
+          previous_manager_completion_pct?: number | null
+          previous_qs_status?: string | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diary_amendments_diary_id_fkey"
+            columns: ["diary_id"]
+            isOneToOne: false
+            referencedRelation: "daily_site_diaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_site_diaries: {
         Row: {
           checkout_time: string
@@ -180,8 +224,13 @@ export type Database = {
           hours_logged: number
           id: string
           ifc_synced: boolean
+          inspected_at: string | null
+          inspected_by: string | null
           live_activity_id: string | null
+          manager_completion_pct: number | null
           manager_force_closed: boolean
+          manager_notes: string | null
+          manager_photo_urls: string[]
           notes: string | null
           operative_count: number
           photo_urls: string[]
@@ -205,8 +254,13 @@ export type Database = {
           hours_logged: number
           id?: string
           ifc_synced?: boolean
+          inspected_at?: string | null
+          inspected_by?: string | null
           live_activity_id?: string | null
+          manager_completion_pct?: number | null
           manager_force_closed?: boolean
+          manager_notes?: string | null
+          manager_photo_urls?: string[]
           notes?: string | null
           operative_count: number
           photo_urls?: string[]
@@ -230,8 +284,13 @@ export type Database = {
           hours_logged?: number
           id?: string
           ifc_synced?: boolean
+          inspected_at?: string | null
+          inspected_by?: string | null
           live_activity_id?: string | null
+          manager_completion_pct?: number | null
           manager_force_closed?: boolean
+          manager_notes?: string | null
+          manager_photo_urls?: string[]
           notes?: string | null
           operative_count?: number
           photo_urls?: string[]
@@ -2291,6 +2350,23 @@ export type Database = {
       is_package_manager: {
         Args: { _invite_id: string; _user_id: string }
         Returns: boolean
+      }
+      manager_authorise_diary: {
+        Args: {
+          _diary_id: string
+          _manager_completion_pct: number
+          _manager_notes?: string
+          _manager_photo_urls?: string[]
+        }
+        Returns: undefined
+      }
+      amend_approved_diary: {
+        Args: {
+          _diary_id: string
+          _new_manager_completion_pct: number
+          _reason: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

@@ -70,7 +70,7 @@ export const listQsQueue = createServerFn({ method: "GET" })
     const { data: rows, error } = await context.supabase
       .from("daily_site_diaries")
       .select(
-        "id, trade_package, operative_count, hours_logged, progress_status, completion_pct, notes, checkout_time, qs_status, ifc_synced, photo_urls, zone_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
+        "id, trade_package, operative_count, hours_logged, progress_status, completion_pct, manager_completion_pct, manager_notes, manager_photo_urls, inspected_by, inspected_at, notes, checkout_time, qs_status, ifc_synced, photo_urls, zone_id, workface_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
       )
       .eq("project_id", data.projectId)
       .order("checkout_time", { ascending: false })
@@ -179,4 +179,80 @@ export const signDiaryPhotos = createServerFn({ method: "POST" })
       path: data.paths[i],
       url: s.error ? null : s.signedUrl,
     }));
+  });
+
+// Manager inspection & sign-off (Step 5). Replaces a plain "approve" with
+// a genuine manager-assessed completion percentage, notes, and photo
+// evidence captured on inspection — distinct from the subcontractor's own
+// checkout claim in completion_pct, which is left untouched for
+// comparison. See manager_authorise_diary() in the migration for the
+// authoritative logic; this just validates input and wraps the RPC.
+export const managerAuthoriseDiary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        diaryId: z.string().uuid(),
+        managerCompletionPct: z.number().int().min(0).max(100),
+        managerNotes: z.string().trim().max(2000).optional(),
+        managerPhotoUrls: z.array(z.string().trim().max(500)).max(20).optional(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc(
+      "manager_authorise_diary" as never,
+      {
+        _diary_id: data.diaryId,
+        _manager_completion_pct: data.managerCompletionPct,
+        _manager_notes: data.managerNotes ?? null,
+        _manager_photo_urls: data.managerPhotoUrls ?? [],
+      } as never,
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Corrects an already-approved diary's manager-authorised percentage.
+// Requires a reason and is logged to diary_amendments — see
+// amend_approved_diary() in the migration. This is the ONLY sanctioned
+// way to change an approved day's figures; a plain update bypasses the
+// audit trail.
+export const amendApprovedDiary = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        diaryId: z.string().uuid(),
+        newManagerCompletionPct: z.number().int().min(0).max(100),
+        reason: z.string().trim().min(1).max(1000),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc(
+      "amend_approved_diary" as never,
+      {
+        _diary_id: data.diaryId,
+        _new_manager_completion_pct: data.newManagerCompletionPct,
+        _reason: data.reason,
+      } as never,
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listDiaryAmendments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ diaryId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("diary_amendments")
+      .select(
+        "id, reason, previous_manager_completion_pct, new_manager_completion_pct, previous_qs_status, new_qs_status, created_at, changed_by",
+      )
+      .eq("diary_id", data.diaryId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return rows ?? [];
   });
