@@ -143,15 +143,27 @@ export const listZoneCompletion = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    // NOTE: this was previously unused anywhere in the UI, and returned
+    // raw completion_pct (the subcontractor's unverified claim) rather
+    // than the manager-authorised figure everything else in the app now
+    // uses (see workface_approved_completion() / manager_authorise_diary()
+    // in the Step 3 / Step 5 migrations). Fixed here before anything
+    // starts consuming it, so a future zone-summary view doesn't
+    // silently inherit the old, un-inspected numbers.
     const { data: rows, error } = await context.supabase
       .from("daily_site_diaries")
-      .select("zone_id, completion_pct, qs_status, ifc_synced, work_zones(name, level)")
+      .select(
+        "zone_id, completion_pct, manager_completion_pct, qs_status, ifc_synced, work_zones(name, level)",
+      )
       .eq("project_id", data.projectId)
       .not("zone_id", "is", null)
       .order("checkout_time", { ascending: false })
       .limit(500);
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    return (rows ?? []).map((r) => ({
+      ...r,
+      authorised_completion_pct: r.manager_completion_pct ?? r.completion_pct,
+    }));
   });
 
 export const signDiaryPhotos = createServerFn({ method: "POST" })

@@ -88,7 +88,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
       context.supabase
         .from("live_site_activity")
         .select(
-          "id, zone_id, workface_id, trade_package, operative_count, start_time, scheduled_finish, status, notes, permit_status, high_risk_flags, work_zones(name, level)",
+          "id, zone_id, workface_id, drawing_id, trade_package, operative_count, start_time, scheduled_finish, status, notes, permit_status, high_risk_flags, work_zones(name, level)",
         )
         .eq("project_id", data.projectId)
         .eq("status", "active")

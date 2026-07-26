@@ -27,6 +27,7 @@ type LivePin = {
   id: string;
   zone_id: string | null;
   workface_id: string | null;
+  drawing_id: string | null;
   trade_package: string | null;
   operative_count: number | null;
   start_time: string;
@@ -261,6 +262,16 @@ function MyDiaryPage() {
                         <p className="mt-1.5 font-mono text-[0.6rem] font-bold uppercase tracking-widest text-destructive-foreground">
                           ⚠ Permit Required
                         </p>
+                      )}
+                      {p.drawing_id && (
+                        <Link
+                          to="/site-manager/$projectId"
+                          params={{ projectId }}
+                          search={{ locatePinId: p.id, locateDrawingId: p.drawing_id }}
+                          className="mt-2 inline-flex items-center gap-1 rounded-sm border border-amber-400/50 px-2 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-amber-300 hover:bg-amber-400/10"
+                        >
+                          <MapPin size={10} /> Locate on Command Tower
+                        </Link>
                       )}
                     </div>
                   ))}
