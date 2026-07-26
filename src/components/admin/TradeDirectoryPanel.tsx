@@ -2,13 +2,28 @@ import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Link2, PlusCircle, Trash2, HardHat, Check, X, Building2, ArrowRight } from "lucide-react";
+import {
+  Copy,
+  Link2,
+  PlusCircle,
+  Trash2,
+  HardHat,
+  Check,
+  X,
+  Building2,
+  ArrowRight,
+  UserCog,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
   createSubcontractorInvite,
   listSubcontractorInvites,
   revokeSubcontractorInvite,
+  listProjectSiteManagers,
+  listUnassignedSiteManagers,
+  addSiteManagerToProject,
+  assignPackageManager,
 } from "@/lib/subcontractors.functions";
 
 const TRADE_PACKAGES = [
@@ -31,12 +46,45 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
   const listFn = useServerFn(listSubcontractorInvites);
   const createFn = useServerFn(createSubcontractorInvite);
   const revokeFn = useServerFn(revokeSubcontractorInvite);
+  const siteManagersFn = useServerFn(listProjectSiteManagers);
+  const unassignedManagersFn = useServerFn(listUnassignedSiteManagers);
+  const addManagerFn = useServerFn(addSiteManagerToProject);
+  const assignPmFn = useServerFn(assignPackageManager);
   const qc = useQueryClient();
 
   const invites = useQuery({
     queryKey: ["subcontractor-invites", projectId],
     queryFn: () => listFn({ data: { projectId } }),
   });
+
+  const siteManagers = useQuery({
+    queryKey: ["project-site-managers", projectId],
+    queryFn: () => siteManagersFn({ data: { projectId } }),
+  });
+
+  const unassignedManagers = useQuery({
+    queryKey: ["unassigned-site-managers", projectId],
+    queryFn: () => unassignedManagersFn({ data: { projectId } }),
+  });
+
+  const [pickedManagerId, setPickedManagerId] = useState("");
+  const [addingManager, setAddingManager] = useState(false);
+
+  const addManagerToProject = async () => {
+    if (!pickedManagerId) return;
+    setAddingManager(true);
+    try {
+      await addManagerFn({ data: { projectId, userId: pickedManagerId } });
+      qc.invalidateQueries({ queryKey: ["project-site-managers", projectId] });
+      qc.invalidateQueries({ queryKey: ["unassigned-site-managers", projectId] });
+      setPickedManagerId("");
+      toast.success("Site Manager added to project.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to add Site Manager.");
+    } finally {
+      setAddingManager(false);
+    }
+  };
 
   const [companyName, setCompanyName] = useState("");
   const [packages, setPackages] = useState<string[]>([]);
@@ -90,7 +138,18 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
     }
   };
 
+  const assignManager = async (inviteId: string, packageManagerId: string | null) => {
+    try {
+      await assignPmFn({ data: { inviteId, packageManagerId } });
+      qc.invalidateQueries({ queryKey: ["subcontractor-invites", projectId] });
+      toast.success(packageManagerId ? "Package Manager assigned." : "Package Manager cleared.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to assign Package Manager.");
+    }
+  };
+
   const list = useMemo(() => invites.data ?? [], [invites.data]);
+  const managers = useMemo(() => siteManagers.data ?? [], [siteManagers.data]);
 
   return (
     <div className="mt-4 rounded-lg border border-alert/50 bg-black/60 p-3">
@@ -112,11 +171,59 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
         <ArrowRight size={12} />
       </Link>
       <p className="mt-1 px-1 text-[0.65rem] text-foreground/50">
-        Use the Full Registry to enter registered address, office phone, corporate email, and PM/Site Supervisor contact details before issuing the QR access token.
+        Use the Full Registry to enter registered address, office phone, corporate email, and
+        PM/Site Supervisor contact details before issuing the QR access token.
       </p>
 
-      <form onSubmit={submit} className="mt-3 grid gap-2">
+      <div className="mt-3 rounded-md border border-white/10 bg-black/40 p-2.5">
+        <p className="mb-1.5 flex items-center gap-1.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-foreground/60">
+          <UserCog size={11} /> Site Managers on this project ({managers.length})
+        </p>
+        {managers.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {managers.map((m) => (
+              <span
+                key={m.user_id}
+                className="rounded-sm border border-white/15 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/70"
+              >
+                {m.full_name ?? "Unnamed"}
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center gap-1.5">
+          <select
+            value={pickedManagerId}
+            onChange={(e) => setPickedManagerId(e.target.value)}
+            className="min-w-0 flex-1 rounded-md border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/80 outline-none focus:border-alert"
+          >
+            <option value="">
+              {(unassignedManagers.data ?? []).length === 0
+                ? "No unassigned Site Managers found"
+                : "Add a Site Manager…"}
+            </option>
+            {(unassignedManagers.data ?? []).map((m) => (
+              <option key={m.user_id} value={m.user_id}>
+                {m.full_name ?? "Unnamed"}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={addManagerToProject}
+            disabled={!pickedManagerId || addingManager}
+            className="shrink-0 rounded-md border border-alert/60 bg-alert/10 px-2.5 py-1.5 font-mono text-[0.55rem] uppercase tracking-widest text-alert transition hover:bg-alert/20 disabled:opacity-40"
+          >
+            Add
+          </button>
+        </div>
+        <p className="mt-1.5 text-[0.6rem] text-foreground/40">
+          Only users who selected the Site Manager role at signup appear here. Add them to the
+          project first, then assign them as Package Manager on individual packages below.
+        </p>
+      </div>
 
+      <form onSubmit={submit} className="mt-3 grid gap-2">
         <input
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
@@ -206,7 +313,9 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
 
       <div className="mt-3 max-h-64 overflow-y-auto rounded-md border border-white/10 bg-black/40">
         {list.length === 0 && (
-          <p className="p-3 text-center text-xs text-foreground/50">No subcontractors invited yet.</p>
+          <p className="p-3 text-center text-xs text-foreground/50">
+            No subcontractors invited yet.
+          </p>
         )}
         {list.map((inv: any) => {
           const status = inv.revoked_at
@@ -240,6 +349,22 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
                 {status.label === "Accepted" && <Check size={10} />}
                 {status.label}
               </span>
+              <div className="flex items-center gap-1" title="Package Manager">
+                <UserCog size={11} className="shrink-0 text-foreground/40" />
+                <select
+                  value={inv.package_manager_id ?? ""}
+                  onChange={(e) => assignManager(inv.id, e.target.value || null)}
+                  disabled={managers.length === 0}
+                  className="rounded-sm border border-white/15 bg-black/50 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/80 outline-none focus:border-alert disabled:opacity-40"
+                >
+                  <option value="">Unassigned</option>
+                  {managers.map((m) => (
+                    <option key={m.user_id} value={m.user_id}>
+                      {m.full_name ?? "Unnamed"}
+                    </option>
+                  ))}
+                </select>
+              </div>
               {!inv.revoked_at && !inv.accepted_at && (
                 <button
                   type="button"

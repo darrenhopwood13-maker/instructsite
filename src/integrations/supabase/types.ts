@@ -1789,6 +1789,7 @@ export type Database = {
           expires_at: string
           id: string
           office_phone: string | null
+          package_manager_id: string | null
           pm_email: string | null
           pm_mobile: string | null
           pm_name: string | null
@@ -1812,6 +1813,7 @@ export type Database = {
           expires_at?: string
           id?: string
           office_phone?: string | null
+          package_manager_id?: string | null
           pm_email?: string | null
           pm_mobile?: string | null
           pm_name?: string | null
@@ -1835,6 +1837,7 @@ export type Database = {
           expires_at?: string
           id?: string
           office_phone?: string | null
+          package_manager_id?: string | null
           pm_email?: string | null
           pm_mobile?: string | null
           pm_name?: string | null
