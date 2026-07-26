@@ -313,7 +313,7 @@ function ProgrammePage() {
           </p>
           <h1
             className="mt-1 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
           >
             Programme Reference Diary
           </h1>
@@ -427,7 +427,7 @@ function ProgrammePage() {
                 <CalendarDays size={16} />
                 <span
                   className="text-base font-extrabold uppercase tracking-tight md:text-lg"
-                  style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+                  style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
                 >
                   {fmtHuman(date)}
                 </span>

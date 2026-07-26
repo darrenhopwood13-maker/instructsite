@@ -67,7 +67,7 @@ function PricingPage() {
           </p>
           <h1
             className="mt-3 text-5xl font-black tracking-tight md:text-6xl"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
           >
             Priced per project.
             <br />

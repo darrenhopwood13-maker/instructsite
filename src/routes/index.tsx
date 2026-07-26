@@ -41,7 +41,7 @@ function Index() {
           </p>
           <h1
             className="mt-6 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-extrabold leading-[0.9] tracking-tight"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
           >
             <span className="block sm:inline" style={{ color: "#ff7a00" }}>instruct</span>
             <span className="block sm:inline text-white">Site</span>

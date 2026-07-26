@@ -280,7 +280,7 @@ export function ReportViewer(props: ReportViewerProps) {
           </p>
           <h2
             className="mt-1 truncate text-2xl font-extrabold uppercase tracking-tight text-white md:text-3xl"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
           >
             {title}
           </h2>

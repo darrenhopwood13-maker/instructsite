@@ -92,7 +92,7 @@ function NewSnagPage() {
 
         <h1
           className="mt-6 text-4xl font-extrabold uppercase tracking-tight text-foreground"
-          style={{ fontFamily: "'Zen Dots', sans-serif" }}
+          style={{ fontFamily: "'Michroma', sans-serif" }}
         >
           New Snag
         </h1>

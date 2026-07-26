@@ -420,7 +420,7 @@ function StatCard({
       </p>
       <p
         className={`mt-1 text-3xl font-extrabold ${tone === "alert" ? "text-red-400" : "text-foreground"}`}
-        style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+        style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
       >
         {value}
       </p>

@@ -281,7 +281,7 @@ function SubcontractorCockpit() {
             </p>
             <h1
               className="mt-1 truncate text-lg font-black uppercase leading-tight text-foreground sm:text-xl"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
               title={ctx.data?.projectName ?? ""}
             >
               {ctx.data?.projectName ?? "Loading project…"}
@@ -520,7 +520,7 @@ function SubcontractorCockpit() {
                 </p>
                 <h3
                   className="mt-0.5 text-lg font-black uppercase tracking-tight text-foreground"
-                  style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+                  style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
                 >
                   Launch Shift
                 </h3>

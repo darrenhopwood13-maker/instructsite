@@ -38,7 +38,7 @@ function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
       <p className="text-[0.6rem] font-bold uppercase tracking-[0.35em] text-alert">{eyebrow}</p>
       <h2
         className="mt-1 text-xl font-extrabold uppercase tracking-tight text-foreground"
-        style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+        style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
       >
         {title}
       </h2>
@@ -151,7 +151,7 @@ function SubPackPage() {
           <div>
             <h1
               className="text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               Subcontractors Pack
             </h1>
@@ -425,7 +425,7 @@ function AccordionCard({
             <p className="text-[0.6rem] font-bold uppercase tracking-[0.35em] text-alert">{eyebrow}</p>
             <p
               className="mt-0.5 text-lg font-extrabold uppercase tracking-tight text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               {title}
             </p>

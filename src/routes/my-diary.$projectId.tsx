@@ -178,7 +178,7 @@ function MyDiaryPage() {
             </p>
             <h1
               className="mt-1 text-3xl font-extrabold uppercase tracking-tight text-foreground md:text-4xl"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               {project.data?.name ?? "Loading…"}
             </h1>

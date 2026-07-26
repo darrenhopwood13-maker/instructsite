@@ -117,7 +117,7 @@ function OrgPage() {
               </p>
               <h1
                 className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-                style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+                style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
               >
                 Organisations
               </h1>
@@ -190,7 +190,7 @@ function OrgPage() {
           <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">Onboarding</p>
           <h1
             className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground"
-            style={{ fontFamily: "'Zen Dots', sans-serif" }}
+            style={{ fontFamily: "'Michroma', sans-serif" }}
           >
             Claim your organisation
           </h1>
@@ -246,7 +246,7 @@ function OrgPage() {
         <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">Organisation</p>
         <h1
           className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground"
-          style={{ fontFamily: "'Zen Dots', sans-serif" }}
+          style={{ fontFamily: "'Michroma', sans-serif" }}
         >
           {org.data.org?.name}
         </h1>

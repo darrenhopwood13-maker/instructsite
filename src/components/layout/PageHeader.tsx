@@ -63,7 +63,7 @@ export function PageHeader({
         )}
         <h1
           className="mt-1 break-words text-3xl font-extrabold uppercase leading-tight tracking-tight text-foreground md:text-4xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           {title}
         </h1>

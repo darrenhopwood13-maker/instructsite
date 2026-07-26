@@ -40,7 +40,7 @@ export function ForceCheckoutModal({ pin, onClose, onDone }: Props) {
             <AlertTriangle className="text-alert" size={18} />
             <h3
               className="text-lg font-extrabold uppercase tracking-widest text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               Force Checkout
             </h3>

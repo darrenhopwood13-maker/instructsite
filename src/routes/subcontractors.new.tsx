@@ -184,7 +184,7 @@ function RegisterPartnerPage() {
           </p>
           <h1
             className="mt-2 text-4xl font-black tracking-tight text-neutral-900 md:text-5xl"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
           >
             Register New Contracted Trade Partner
           </h1>
@@ -630,7 +630,7 @@ function SuccessPane({
         </p>
         <h2
           className="mt-2 text-3xl font-black text-neutral-900"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           {company}
         </h2>

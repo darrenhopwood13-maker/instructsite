@@ -97,7 +97,7 @@ export function ZoneMap({
                     <div className="mt-3 w-full">
                       <p
                         className="line-clamp-2 text-sm font-extrabold uppercase tracking-tight text-foreground"
-                        style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+                        style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
                       >
                         {z.name}
                       </p>

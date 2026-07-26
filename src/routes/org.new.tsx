@@ -121,7 +121,7 @@ function NewOrgPage() {
         </p>
         <h1
           className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           New Organisation
         </h1>

@@ -103,7 +103,7 @@ function ResetPasswordPage() {
 
           <h1
             className="mt-4 text-3xl font-extrabold tracking-tight text-foreground"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
           >
             Choose a new password
           </h1>

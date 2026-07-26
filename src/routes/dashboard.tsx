@@ -91,7 +91,7 @@ function DashboardPage() {
         </p>
         <h1
           className="mt-2 text-4xl font-black tracking-tight text-neutral-900 md:text-5xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           Command Center
         </h1>
@@ -214,7 +214,7 @@ function Stat({
       </div>
       <p
         className={`mt-3 text-4xl font-black ${valueColor}`}
-        style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+        style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
       >
         {value}
       </p>
