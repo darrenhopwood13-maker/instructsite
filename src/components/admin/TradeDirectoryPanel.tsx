@@ -26,21 +26,7 @@ import {
   assignPackageManager,
 } from "@/lib/subcontractors.functions";
 
-const TRADE_PACKAGES = [
-  "Structural Steels",
-  "Groundworks",
-  "Drylining",
-  "M&E",
-  "Concrete Frame",
-  "Cladding & Facade",
-  "Roofing",
-  "Joinery",
-  "Fit-Out",
-  "Ceilings",
-  "Painting",
-  "Flooring",
-  "Glazing",
-];
+import { TRADE_PACKAGES } from "@/lib/trade-packages";
 
 export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
   const listFn = useServerFn(listSubcontractorInvites);
