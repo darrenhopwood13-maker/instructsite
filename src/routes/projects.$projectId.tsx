@@ -17,6 +17,7 @@ import { MasterAdminHUD } from "@/components/admin/MasterAdminHUD";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ZoneMatrixBoard } from "@/components/project/ZoneMatrixBoard";
 import { TradeDirectoryPanel } from "@/components/admin/TradeDirectoryPanel";
+import { WorkfaceRegisterPanel } from "@/components/admin/WorkfaceRegisterPanel";
 import { getMyRoles } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
@@ -204,6 +205,7 @@ function ProjectDetail() {
             </p>
             <div className="mt-5">
               <TradeDirectoryPanel projectId={projectId} />
+              <WorkfaceRegisterPanel projectId={projectId} />
             </div>
           </section>
         )}

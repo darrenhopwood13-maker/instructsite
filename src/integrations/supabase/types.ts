@@ -1956,6 +1956,70 @@ export type Database = {
         }
         Relationships: []
       }
+      workfaces: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          package_invite_id: string | null
+          project_id: string
+          source: string
+          stage: string | null
+          status: string
+          updated_at: string
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          package_invite_id?: string | null
+          project_id: string
+          source?: string
+          stage?: string | null
+          status?: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          package_invite_id?: string | null
+          project_id?: string
+          source?: string
+          stage?: string | null
+          status?: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workfaces_package_invite_id_fkey"
+            columns: ["package_invite_id"]
+            isOneToOne: false
+            referencedRelation: "subcontractor_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workfaces_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workfaces_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "work_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_zones: {
         Row: {
           created_at: string
