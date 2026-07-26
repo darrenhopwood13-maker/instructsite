@@ -84,13 +84,14 @@ export const createSubcontractorInvite = createServerFn({ method: "POST" })
         throw new Error("Maximum Capacity Reached · 2 read-only seats already assigned.");
       }
       if (m.includes("SEAT_CAP_TOTAL")) {
-        throw new Error("Maximum Capacity Reached · 3 seats per subcontractor (1 admin + 2 read-only).");
+        throw new Error(
+          "Maximum Capacity Reached · 3 seats per subcontractor (1 admin + 2 read-only).",
+        );
       }
       throw new Error(error.message);
     }
     return { id: row.id, token, expiresAt: row.expires_at };
   });
-
 
 export const listSubcontractorInvites = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -99,7 +100,9 @@ export const listSubcontractorInvites = createServerFn({ method: "GET" })
     await assertProjectAdmin(context.supabase, data.projectId, context.userId);
     const { data: rows, error } = await context.supabase
       .from("subcontractor_invites")
-      .select("id, company_name, trade_packages, accepted_by, accepted_at, revoked_at, expires_at, created_at")
+      .select(
+        "id, company_name, trade_packages, accepted_by, accepted_at, revoked_at, expires_at, created_at, package_manager_id",
+      )
       .eq("project_id", data.projectId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -172,3 +175,94 @@ export const getMyProjectContext = createServerFn({ method: "GET" })
     };
   });
 
+// =========================================================
+// PACKAGE MANAGER ASSIGNMENT
+// =========================================================
+
+export const listProjectSiteManagers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
+    const { data: rows, error } = await context.supabase.rpc(
+      "list_project_site_managers" as never,
+      { _project_id: data.projectId } as never,
+    );
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as { user_id: string; full_name: string | null }[];
+  });
+
+export const listUnassignedSiteManagers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
+    const { data: rows, error } = await context.supabase.rpc(
+      "list_unassigned_site_managers" as never,
+      { _project_id: data.projectId } as never,
+    );
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as { user_id: string; full_name: string | null }[];
+  });
+
+export const addSiteManagerToProject = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ projectId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
+    const { error } = await context.supabase.rpc(
+      "add_site_manager_to_project" as never,
+      {
+        _project_id: data.projectId,
+        _user_id: data.userId,
+      } as never,
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const assignPackageManager = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        inviteId: z.string().uuid(),
+        // null clears the assignment
+        packageManagerId: z.string().uuid().nullable(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: inv, error: gErr } = await context.supabase
+      .from("subcontractor_invites")
+      .select("project_id")
+      .eq("id", data.inviteId)
+      .maybeSingle();
+    if (gErr) throw new Error(gErr.message);
+    if (!inv) throw new Error("Package not found.");
+    await assertProjectAdmin(context.supabase, inv.project_id, context.userId);
+
+    if (data.packageManagerId) {
+      // Confirm the chosen user is actually a site manager on this project
+      // before assigning — belt-and-braces alongside the RLS/RPC checks.
+      const { data: eligible } = await context.supabase.rpc(
+        "list_project_site_managers" as never,
+        { _project_id: inv.project_id } as never,
+      );
+      const ok = ((eligible ?? []) as { user_id: string }[]).some(
+        (m) => m.user_id === data.packageManagerId,
+      );
+      if (!ok) {
+        throw new Error("Selected user is not a Site Manager on this project.");
+      }
+    }
+
+    const { error } = await context.supabase
+      .from("subcontractor_invites")
+      .update({ package_manager_id: data.packageManagerId })
+      .eq("id", data.inviteId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
