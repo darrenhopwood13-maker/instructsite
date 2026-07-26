@@ -1,6 +1,6 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutGrid, Activity, CheckCircle2, Circle } from "lucide-react";
+import { Activity, CheckCircle2, Circle } from "lucide-react";
 import { listZoneRuntimeState, listIfcModels } from "@/lib/ifc-models.functions";
 
 type ZoneRuntime = {
@@ -45,28 +45,9 @@ export function ZoneMatrixBoard({ projectId }: { projectId: string }) {
   }, {});
 
   return (
-    <section className="mt-8">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
-            2D Fallback Viewport
-          </p>
-          <h2
-            className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-          >
-            Zone Progress Matrix
-          </h2>
-          <p className="mt-1 text-xs text-foreground/60">
-            Live source of truth from extracted logistics zones · updates as approved
-            subcontractor diaries hit each zone.
-          </p>
-        </div>
-        <LayoutGrid className="text-alert/70" size={28} />
-      </div>
-
+    <div>
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap items-center gap-3 text-[0.6rem] font-mono uppercase tracking-widest text-foreground/70">
+      <div className="flex flex-wrap items-center gap-3 text-[0.6rem] font-mono uppercase tracking-widest text-foreground/70">
         <span className="inline-flex items-center gap-1.5">
           <Circle size={10} className="text-foreground/40" /> Unstarted
         </span>
@@ -103,7 +84,7 @@ export function ZoneMatrixBoard({ projectId }: { projectId: string }) {
           ))}
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -121,11 +102,7 @@ function ZoneTile({ zone }: { zone: ZoneRuntime }) {
             ? "border-alert bg-black/70 shadow-[0_0_25px_rgba(255,120,0,0.35)] animate-pulse-slow"
             : "border-white/12 bg-black/50 hover:border-white/30",
       ].join(" ")}
-      style={
-        live
-          ? { animation: "zone-live-outline 1.8s ease-in-out infinite" }
-          : undefined
-      }
+      style={live ? { animation: "zone-live-outline 1.8s ease-in-out infinite" } : undefined}
     >
       <style>{`
         @keyframes zone-live-outline {
@@ -159,9 +136,7 @@ function ZoneTile({ zone }: { zone: ZoneRuntime }) {
 
       <div className="mt-4">
         <div className="flex items-center justify-between font-mono text-[0.55rem] uppercase tracking-widest">
-          <span className={complete ? "text-emerald-100" : "text-foreground/60"}>
-            Progress
-          </span>
+          <span className={complete ? "text-emerald-100" : "text-foreground/60"}>Progress</span>
           <span className={complete ? "text-emerald-50" : "text-foreground/90"}>
             {zone.progress_pct}%
           </span>
@@ -169,11 +144,7 @@ function ZoneTile({ zone }: { zone: ZoneRuntime }) {
         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-black/50">
           <div
             className={`h-full rounded-full transition-[width] duration-500 ${
-              complete
-                ? "bg-emerald-300"
-                : live
-                  ? "bg-alert"
-                  : "bg-foreground/40"
+              complete ? "bg-emerald-300" : live ? "bg-alert" : "bg-foreground/40"
             }`}
             style={{ width: `${Math.max(4, zone.progress_pct)}%` }}
           />

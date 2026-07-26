@@ -83,7 +83,7 @@ function BillingPage() {
           </p>
           <h1
             className="mt-2 text-4xl font-black tracking-tight"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
           >
             Current Plan
           </h1>

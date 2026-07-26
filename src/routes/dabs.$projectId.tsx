@@ -168,7 +168,7 @@ function DabsPage() {
 
         <h1
           className="mt-3 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           DABS · Spatial Pin Drop
         </h1>
@@ -339,7 +339,7 @@ function DabsPage() {
             <div className="flex items-center justify-between">
               <h3
                 className="text-xl font-extrabold uppercase tracking-wider text-alert"
-                style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+                style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
               >
                 Labor Briefing
               </h3>

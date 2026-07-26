@@ -62,7 +62,7 @@ function SnagsPage() {
     return (
       <div className="mx-auto max-w-2xl px-6 py-20 text-center">
         <ShieldAlert className="mx-auto h-10 w-10 text-alert" />
-        <h1 className="mt-4 text-3xl font-extrabold uppercase tracking-tight text-foreground" style={{ fontFamily: "'Zen Dots', sans-serif" }}>
+        <h1 className="mt-4 text-3xl font-extrabold uppercase tracking-tight text-foreground" style={{ fontFamily: "'Michroma', sans-serif" }}>
           Join an Organisation
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
@@ -89,7 +89,7 @@ function SnagsPage() {
             </p>
             <h1
               className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               Snag Master
             </h1>

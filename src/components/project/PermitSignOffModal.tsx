@@ -60,7 +60,7 @@ export function PermitSignOffModal({ pin, projectId, onClose }: Props) {
             </p>
             <h3
               className="text-xl font-extrabold uppercase tracking-tight text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               High-Risk Sign-Off
             </h3>

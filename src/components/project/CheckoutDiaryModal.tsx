@@ -103,7 +103,7 @@ export function CheckoutDiaryModal({ pin, onClose }: Props) {
             </p>
             <h3
               className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               Close Out Shift
             </h3>

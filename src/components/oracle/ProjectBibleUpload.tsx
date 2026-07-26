@@ -103,7 +103,7 @@ export function ProjectBibleUpload() {
       </p>
       <h2
         className="mt-2 text-3xl font-extrabold uppercase tracking-tight text-foreground"
-        style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+        style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
       >
         Site Documents
       </h2>

@@ -34,14 +34,14 @@ export function OracleFAB() {
     <Link
       to="/tooling"
       aria-label="Open The Oracle"
-      className="oracle-fab fixed z-[60] grid place-items-center rounded-full text-white shadow-[0_16px_36px_-8px_rgba(139,92,246,0.65)] transition hover:scale-105 active:scale-95"
+      className="oracle-fab fixed z-[60] grid place-items-center rounded-full text-black shadow-[0_16px_36px_-8px_rgba(249,115,22,0.55)] transition hover:scale-105 active:scale-95"
       style={{
         right: "max(1rem, env(safe-area-inset-right))",
         bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 1rem))",
         width: "3.5rem",
         height: "3.5rem",
         background:
-          "radial-gradient(circle at 30% 30%, #A78BFA 0%, #8B5CF6 55%, #6D28D9 100%)",
+          "radial-gradient(circle at 30% 30%, #FDBA74 0%, #F97316 55%, #C2410C 100%)",
         border: "2px solid rgba(255,255,255,0.18)",
       }}
     >
@@ -50,7 +50,7 @@ export function OracleFAB() {
         className="pointer-events-none absolute inset-0 rounded-full"
         style={{
           background:
-            "radial-gradient(circle at 70% 70%, rgba(251,146,60,0.18) 0%, transparent 60%)",
+            "radial-gradient(circle at 70% 70%, rgba(11,30,63,0.18) 0%, transparent 60%)",
         }}
         aria-hidden
       />

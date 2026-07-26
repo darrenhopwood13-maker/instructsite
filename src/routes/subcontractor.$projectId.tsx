@@ -281,7 +281,7 @@ function SubcontractorCockpit() {
             </p>
             <h1
               className="mt-1 truncate text-lg font-black uppercase leading-tight text-foreground sm:text-xl"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
               title={ctx.data?.projectName ?? ""}
             >
               {ctx.data?.projectName ?? "Loading project…"}
@@ -520,7 +520,7 @@ function SubcontractorCockpit() {
                 </p>
                 <h3
                   className="mt-0.5 text-lg font-black uppercase tracking-tight text-foreground"
-                  style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+                  style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
                 >
                   Launch Shift
                 </h3>
@@ -622,17 +622,17 @@ function SubcontractorCockpit() {
       {/* ---- Oracle chat drawer ---- */}
       {oracleOpen && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/70 backdrop-blur sm:items-center">
-          <div className="glass-panel flex h-[92dvh] max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-2 border-purple-400/60 sm:h-[85dvh] sm:rounded-2xl">
+          <div className="glass-panel flex h-[92dvh] max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-2 border-alert/60 sm:h-[85dvh] sm:rounded-2xl">
 
             <div className="flex items-center justify-between border-b border-white/10 p-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="text-purple-300" size={18} />
+                <Sparkles className="text-alert" size={18} />
                 <div>
                   <p className="text-sm font-black uppercase tracking-widest text-foreground">
                     Project Oracle
                   </p>
                   {drawingLabel && (
-                    <p className="truncate text-[0.6rem] text-purple-200/80">🔒 {drawingLabel}</p>
+                    <p className="truncate text-[0.6rem] text-alert/70">🔒 {drawingLabel}</p>
                   )}
                 </div>
               </div>
@@ -646,7 +646,7 @@ function SubcontractorCockpit() {
             </div>
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
               {oracleMsgs.length === 0 && !oracleThinking && (
-                <div className="rounded-xl border border-purple-400/30 bg-purple-500/5 p-4 text-xs text-foreground/70">
+                <div className="rounded-xl border border-alert/30 bg-alert/5 p-4 text-xs text-foreground/70">
                   Ask a spec, dimension, or safety question — e.g. "Minimum concrete grade for this
                   pad foundation?" The Oracle reads this project's drawings, RAMS and logistics
                   documents only.
@@ -684,12 +684,12 @@ function SubcontractorCockpit() {
                 value={oracleInput}
                 onChange={(e) => setOracleInput(e.target.value)}
                 placeholder="Ask the Oracle…"
-                className="flex-1 rounded-full border border-white/15 bg-black/40 px-4 py-3 text-sm text-foreground outline-none focus:border-purple-300"
+                className="flex-1 rounded-full border border-white/15 bg-black/40 px-4 py-3 text-sm text-foreground outline-none focus:border-alert"
               />
               <button
                 type="submit"
                 disabled={oracleThinking || !oracleInput.trim()}
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-purple-500 text-white disabled:opacity-40"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-alert text-black disabled:opacity-40"
               >
                 <Send size={16} />
               </button>
@@ -795,7 +795,7 @@ function SubcontractorCockpit() {
           type="button"
           onClick={() => setOracleOpen(true)}
           aria-label="Ask the Oracle"
-          className="oracle-fab fixed bottom-5 right-5 z-[80] grid h-16 w-16 place-items-center rounded-full border-2 border-purple-300/60 bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white active:scale-95"
+          className="oracle-fab fixed bottom-5 right-5 z-[80] grid h-16 w-16 place-items-center rounded-full border-2 border-alert/60 bg-gradient-to-br from-alert to-orange-600 text-black active:scale-95"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           <Sparkles size={26} />

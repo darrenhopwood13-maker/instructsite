@@ -66,7 +66,7 @@ function UnlockPage() {
         </p>
         <h1
           className="mt-2 text-2xl font-black uppercase tracking-tight text-foreground"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           {scope === "invite" ? "Confirm Site Password" : "Restricted Preview"}
         </h1>

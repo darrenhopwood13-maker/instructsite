@@ -56,7 +56,7 @@ function ManagerPackPage() {
         </Link>
         <h1
           className="mt-3 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           Subcontractors · Master View
         </h1>
@@ -116,7 +116,7 @@ function SubCard({ sub, onOpen }: { sub: Sub; onOpen: () => void }) {
       <div className="flex-1 min-w-0">
         <p
           className="truncate text-2xl font-extrabold uppercase leading-tight tracking-tight text-foreground md:text-3xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           {sub.company_name}
         </p>
@@ -278,7 +278,7 @@ function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string
             <p className="text-[0.6rem] uppercase tracking-[0.35em] text-alert">Subcontractor</p>
             <h2
               className="mt-1 text-3xl font-extrabold uppercase tracking-tight text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               {sub.company_name}
             </h2>

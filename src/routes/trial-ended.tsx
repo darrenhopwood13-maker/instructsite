@@ -17,7 +17,7 @@ function TrialEnded() {
       <div className="mx-auto max-w-2xl px-6 py-24 text-center">
         <p className="text-[0.7rem] font-bold uppercase tracking-[0.5em] text-alert">Free Trial Ended</p>
         <h1 className="mt-6 text-5xl font-extrabold tracking-tight text-foreground"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}>
+            style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}>
           Thanks for trying <span style={{ color: "#ff7a00" }}>instruct</span>Site
         </h1>
         <p className="mt-6 text-base text-foreground/80">

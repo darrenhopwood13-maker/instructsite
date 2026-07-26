@@ -191,11 +191,11 @@
 }
 
 @utility glass-panel {
-  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.08) 100%);
   backdrop-filter: blur(18px) saturate(140%);
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.16);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.12) inset,
+    0 1px 0 rgba(255,255,255,0.16) inset,
     0 -1px 0 rgba(0,0,0,0.25) inset,
     0 24px 60px -24px rgba(0,0,0,0.55),
     0 2px 8px -2px rgba(0,0,0,0.35);
@@ -345,11 +345,10 @@
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(40% 32% at 78% 18%, rgba(249,115,22,0.22) 0%, rgba(249,115,22,0) 70%),
-    radial-gradient(50% 40% at 12% 88%, rgba(56,189,248,0.18) 0%, rgba(56,189,248,0) 70%),
-    radial-gradient(35% 28% at 60% 70%, rgba(168,85,247,0.12) 0%, rgba(168,85,247,0) 70%);
+    radial-gradient(40% 32% at 78% 18%, rgba(249,115,22,0.16) 0%, rgba(249,115,22,0) 70%),
+    radial-gradient(50% 40% at 12% 88%, rgba(56,189,248,0.13) 0%, rgba(56,189,248,0) 70%);
   filter: blur(40px);
-  animation: aurora-drift 18s ease-in-out infinite;
+  animation: aurora-drift 26s ease-in-out infinite;
   pointer-events: none;
 }
 
@@ -526,43 +525,16 @@
 }
 
 /* ============ Cinematic command tiles (from instructSite) ============ */
-.cmd-tile {
-  position: relative;
-  overflow: hidden;
-  border-radius: 1rem;
-  isolation: isolate;
-  transform: translateZ(0);
-  transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease;
+@keyframes collapse-down {
+  from { height: 0; opacity: 0.4; }
+  to   { height: var(--radix-collapsible-content-height); opacity: 1; }
 }
-.cmd-tile::after {
-  content: "";
-  position: absolute; inset: 0;
-  background: linear-gradient(180deg, transparent 30%, hsl(140 60% 5% / .85) 100%);
-  z-index: 1;
-  transition: opacity .3s ease;
+@keyframes collapse-up {
+  from { height: var(--radix-collapsible-content-height); opacity: 1; }
+  to   { height: 0; opacity: 0; }
 }
-.cmd-tile:hover { transform: translateY(-4px) scale(1.015); box-shadow: 0 20px 50px -20px hsl(122 60% 30% / .6); }
-.cmd-tile:active { transform: translateY(-1px) scale(.99); }
-.cmd-tile img { transition: transform .8s cubic-bezier(.2,.8,.2,1), filter .4s ease; }
-.cmd-tile:hover img { transform: scale(1.08); filter: brightness(1.05) saturate(1.15); }
-
-.shine::before {
-  content: "";
-  position: absolute; top: 0; left: -75%;
-  width: 50%; height: 100%;
-  background: linear-gradient(120deg, transparent, hsl(0 0% 100% / .25), transparent);
-  transform: skewX(-20deg);
-  z-index: 2;
-  transition: left .7s ease;
-}
-.shine:hover::before { left: 130%; }
-
-.glass-dark {
-  background: linear-gradient(180deg, hsl(140 40% 8% / 0.55), hsl(140 40% 5% / 0.75));
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid hsl(122 45% 55% / 0.18);
-}
+.animate-collapse-down { animation: collapse-down .22s cubic-bezier(.2,.8,.2,1); }
+.animate-collapse-up { animation: collapse-up .18s cubic-bezier(.4,0,1,1); }
 
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(12px); }
@@ -613,8 +585,8 @@
 
 /* Purple Oracle FAB glow */
 @keyframes oracle-fab-pulse {
-  0%,100% { box-shadow: 0 8px 30px -8px rgba(168,85,247,.55), 0 0 0 0 rgba(168,85,247,.4); }
-  50%     { box-shadow: 0 10px 40px -6px rgba(168,85,247,.75), 0 0 0 10px rgba(168,85,247,0); }
+  0%,100% { box-shadow: 0 8px 30px -8px rgba(249,115,22,.55), 0 0 0 0 rgba(249,115,22,.4); }
+  50%     { box-shadow: 0 10px 40px -6px rgba(249,115,22,.75), 0 0 0 10px rgba(249,115,22,0); }
 }
 .oracle-fab {
   animation: oracle-fab-pulse 3s ease-in-out infinite;

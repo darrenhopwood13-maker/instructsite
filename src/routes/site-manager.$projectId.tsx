@@ -3,9 +3,11 @@ import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle, ClipboardList, ChevronDown, BookOpen } from "lucide-react";
+import { ArrowLeft, AlertTriangle, ClipboardList, BookOpen, Box, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { CollapsibleSection } from "@/components/layout/CollapsibleSection";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
 import { listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { listArchivedToday } from "@/lib/daily-diary.functions";
@@ -169,8 +171,6 @@ function SiteManagerPage() {
   }, [search.locatePinId, pins.data]);
   const [permitPin, setPermitPin] = useState<PinRecord | null>(null);
   const [forcePin, setForcePin] = useState<PinRecord | null>(null);
-  const [bimOpen, setBimOpen] = useState(false);
-  const [qsOpen, setQsOpen] = useState(true);
 
   const closePin = async (pinId: string) => {
     await closeFn({ data: { pinId } });
@@ -209,24 +209,27 @@ function SiteManagerPage() {
           <ArrowLeft size={12} /> {project.data?.name ?? "Project"}
         </Link>
 
-        <h1
-          className="mt-3 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-        >
-          Command Tower · Live
-        </h1>
-        <p className="mt-2 text-sm text-foreground/70">
-          Realtime spatial overlay of active site labor · click any pin for the HUD popover.
-        </p>
+        <div className="mt-3">
+          <PageHeader
+            overline={project.data?.name ?? "Project"}
+            title="Command Tower · Live"
+            subtitle="Realtime spatial overlay of active site labor · click any pin for the HUD popover."
+            LinkComponent={Link}
+            actions={[
+              {
+                label: "Subcontractors Weekly Pack",
+                icon: <ClipboardList size={15} />,
+                to: "/subcontractor-pack/$projectId/manager",
+                params: { projectId },
+              },
+            ]}
+          />
+        </div>
 
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            to="/subcontractor-pack/$projectId/manager"
-            params={{ projectId }}
-            className="inline-flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-alert hover:bg-alert hover:text-black transition-colors"
-          >
-            <ClipboardList size={14} /> Subcontractors Weekly Pack
-          </Link>
+        {/* My Site Diary stays a directly visible button, not tucked in the
+            Actions menu — it was hard to find when nested a level deeper,
+            per earlier feedback, so it keeps its own prominent spot here. */}
+        <div className="mt-4">
           <Link
             to="/my-diary/$projectId"
             params={{ projectId }}
@@ -235,8 +238,6 @@ function SiteManagerPage() {
             <BookOpen size={14} /> My Site Diary
           </Link>
         </div>
-
-
         <section className="mt-6">
           <DrawingCanvas
             drawings={drawingRows as never}
@@ -262,30 +263,33 @@ function SiteManagerPage() {
           <StatCard label="Archived Today" value={String(archivedToday.data?.count ?? 0)} />
         </section>
 
-        <CollapsibleSection
-          label="BIM / IFC Model"
-          description="View, upload, and map IFC models to project zones"
-          open={bimOpen}
-          onToggle={() => setBimOpen(!bimOpen)}
-        >
-          <ClientOnly fallback={<div className="glass-panel h-[560px] animate-pulse" />}>
-            <BimModelViewer projectId={projectId} />
-          </ClientOnly>
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <BimModelUploader projectId={projectId} />
-            <BimMappingEditor projectId={projectId} />
-          </div>
-        </CollapsibleSection>
+        <div className="mt-10">
+          <CollapsibleSection
+            icon={<Box size={16} />}
+            title="BIM / IFC Model"
+            summary="View, upload, map to zones"
+            defaultOpen={false}
+          >
+            <ClientOnly fallback={<div className="glass-panel h-[560px] animate-pulse" />}>
+              <BimModelViewer projectId={projectId} />
+            </ClientOnly>
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              <BimModelUploader projectId={projectId} />
+              <BimMappingEditor projectId={projectId} />
+            </div>
+          </CollapsibleSection>
+        </div>
 
-
-        <CollapsibleSection
-          label="QS Verification Queue"
-          description="Verified quantities, diary reconciliation, and sign-off requests"
-          open={qsOpen}
-          onToggle={() => setQsOpen(!qsOpen)}
-        >
-          <QsVerificationQueue projectId={projectId} />
-        </CollapsibleSection>
+        <div className="mt-6">
+          <CollapsibleSection
+            icon={<CheckCircle2 size={16} />}
+            title="QS Verification Queue"
+            summary="Verified quantities · sign-off"
+            defaultOpen={true}
+          >
+            <QsVerificationQueue projectId={projectId} />
+          </CollapsibleSection>
+        </div>
 
         <section className="mt-8">
           <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
@@ -418,50 +422,10 @@ function StatCard({
       </p>
       <p
         className={`mt-1 text-3xl font-extrabold ${tone === "alert" ? "text-red-400" : "text-foreground"}`}
-        style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+        style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
       >
         {value}
       </p>
     </div>
-  );
-}
-
-function CollapsibleSection({
-  label,
-  description,
-  open,
-  onToggle,
-  children,
-}: {
-  label: string;
-  description: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="mt-10">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/30 px-5 py-4 text-left transition hover:bg-black/50"
-      >
-        <div className="min-w-0">
-          <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
-            {label}
-          </h2>
-          <p className="mt-0.5 text-[0.6rem] text-foreground/50">
-            {description}
-          </p>
-        </div>
-        <ChevronDown
-          size={16}
-          className={`shrink-0 text-foreground/50 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-      {open && <div className="mt-6">{children}</div>}
-    </section>
   );
 }

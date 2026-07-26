@@ -63,7 +63,7 @@ function ManualPage() {
             </p>
             <h1
               className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               instructSite, end to end
             </h1>
@@ -121,7 +121,7 @@ function ManualPage() {
                 </p>
                 <h2
                   className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground"
-                  style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+                  style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
                 >
                   {s.title}
                 </h2>

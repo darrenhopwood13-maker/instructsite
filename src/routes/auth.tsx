@@ -271,7 +271,7 @@ function AuthPage() {
               7-Day Free Trial · No card required
             </p>
             <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[0.9] tracking-tight text-foreground"
-                style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}>
+                style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}>
               <span className="block sm:inline">instruct</span><span className="block sm:inline" style={{ color: "#ff7a00" }}>Site</span>
             </h1>
 
@@ -309,7 +309,7 @@ function AuthPage() {
               </span>
             </div>
             <h2 className="mt-4 text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground break-words"
-                style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}>
+                style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}>
               {mode === "signin" ? "Enter the portal" : mode === "signup" ? "Create your account" : "Reset password"}
             </h2>
 

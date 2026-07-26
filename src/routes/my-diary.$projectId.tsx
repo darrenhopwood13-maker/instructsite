@@ -172,13 +172,13 @@ function MyDiaryPage() {
         </Link>
 
         <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
               My Site Diary
             </p>
             <h1
-              className="mt-1 text-3xl font-extrabold uppercase tracking-tight text-foreground md:text-4xl"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              className="mt-1 break-words text-3xl font-extrabold uppercase leading-tight tracking-tight text-foreground md:text-4xl"
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               {project.data?.name ?? "Loading…"}
             </h1>
@@ -191,7 +191,7 @@ function MyDiaryPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-black/40 px-4 py-2.5">
+          <div className="flex shrink-0 items-center gap-3 rounded-lg border border-white/10 bg-black/40 px-4 py-2.5">
             <div className="flex items-center gap-1.5 text-foreground/80">
               <Clock size={13} />
               <span className="font-mono text-xs">

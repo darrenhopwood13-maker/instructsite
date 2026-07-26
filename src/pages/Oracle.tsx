@@ -190,7 +190,7 @@ const OraclePage = () => {
         </p>
         <h1
           className="mt-3 text-5xl font-extrabold uppercase tracking-tight text-foreground"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           Oracle Tooling
         </h1>

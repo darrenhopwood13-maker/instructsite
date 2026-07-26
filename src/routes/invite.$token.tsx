@@ -51,7 +51,7 @@ function InviteAccept() {
             <AlertTriangle className="mx-auto text-alert" size={36} />
             <h1
               className="mt-3 text-2xl font-black uppercase tracking-tight text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               Invite Rejected
             </h1>
@@ -69,7 +69,7 @@ function InviteAccept() {
             <ShieldCheck className="mx-auto text-alert" size={36} />
             <h1
               className="mt-3 text-2xl font-black uppercase tracking-tight text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
             >
               Subcontractor Access
             </h1>

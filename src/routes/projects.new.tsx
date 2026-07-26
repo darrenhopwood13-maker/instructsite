@@ -216,7 +216,7 @@ function NewProject() {
         </p>
         <h1
           className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           New Project
         </h1>
@@ -437,7 +437,7 @@ function AiDropZone({
         </div>
         <h2
           className="mt-1 text-xl font-extrabold uppercase tracking-tight text-foreground md:text-2xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          style={{ fontFamily: "'Michroma', 'Inter Tight', sans-serif" }}
         >
           Drop Drawing Pack Here
         </h2>

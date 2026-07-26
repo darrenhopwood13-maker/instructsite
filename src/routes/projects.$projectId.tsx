@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays } from "lucide-react";
+import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays, Users, LayoutGrid, UploadCloud } from "lucide-react";
 import { getProject } from "@/lib/projects.functions";
 import {
   listProjectDrawings,
@@ -20,6 +20,8 @@ import { TradeDirectoryPanel } from "@/components/admin/TradeDirectoryPanel";
 import { WorkfaceRegisterPanel } from "@/components/admin/WorkfaceRegisterPanel";
 import { getMyRoles } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { CollapsibleSection } from "@/components/layout/CollapsibleSection";
 
 
 export const Route = createFileRoute("/projects/$projectId")({
@@ -131,48 +133,39 @@ function ProjectDetail() {
           <ArrowLeft size={12} /> All Projects
         </Link>
 
-        <div className="mt-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
-              Project
-            </p>
-            <h1
-              className="mt-1 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-            >
-              {project.data?.name ?? "…"}
-            </h1>
-            {project.data?.site_address && (
-              <p className="mt-2 flex items-center gap-1.5 text-sm text-foreground/70">
-                <MapPin size={14} /> {project.data.site_address}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2 md:flex-row">
-            <Link
-              to="/dabs/$projectId"
-              params={{ projectId }}
-              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
-            >
-              <ClipboardList size={14} /> DABS
-            </Link>
-            <Link
-              to="/programme/$projectId"
-              params={{ projectId }}
-              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
-            >
-              <CalendarDays size={14} /> Randall Diary
-            </Link>
-            {isMainContractor && (
-              <Link
-                to="/site-manager/$projectId"
-                params={{ projectId }}
-                className="glass-orange inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
-              >
-                <ShieldAlert size={14} /> Site Manager
-              </Link>
-            )}
-          </div>
+        <div className="mt-4">
+          <PageHeader
+            overline="Project"
+            title={project.data?.name ?? "…"}
+            subtitle={
+              project.data?.site_address && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin size={14} /> {project.data.site_address}
+                </span>
+              )
+            }
+            LinkComponent={Link}
+            actions={[
+              { label: "DABS", icon: <ClipboardList size={15} />, to: "/dabs/$projectId", params: { projectId } },
+              {
+                label: "Randall Diary",
+                icon: <CalendarDays size={15} />,
+                to: "/programme/$projectId",
+                params: { projectId },
+              },
+              ...(isMainContractor
+                ? [
+                    {
+                      label: "Site Manager",
+                      icon: <ShieldAlert size={15} />,
+                      to: "/site-manager/$projectId",
+                      params: { projectId },
+                      primary: true,
+                    },
+                  ]
+                : []),
+            ]}
+          />
         </div>
 
         {project.data?.scope_brief && (
@@ -189,63 +182,60 @@ function ProjectDetail() {
         />
 
         {isAdmin && (
-          <section className="mt-8">
-            <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
-              Project Administration
-            </p>
-            <h2
-              className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          <div className="mt-8">
+            <CollapsibleSection
+              icon={<Users size={16} />}
+              title="Subcontractor & Trade Directory"
+              summary="Registration · Package Managers · Workfaces"
+              defaultOpen={false}
             >
-              Subcontractor & Trade Directory
-            </h2>
-            <p className="mt-1.5 max-w-2xl text-xs text-foreground/60">
-              Register trade companies, generate one-time secure invite tokens, and
-              distribute QR codes for on-site onboarding.
-            </p>
-            <div className="mt-5">
+              <p className="mb-4 max-w-2xl text-xs text-foreground/60">
+                Register trade companies, generate one-time secure invite tokens, and
+                distribute QR codes for on-site onboarding.
+              </p>
               <TradeDirectoryPanel projectId={projectId} />
               <WorkfaceRegisterPanel projectId={projectId} />
-            </div>
-          </section>
+            </CollapsibleSection>
+          </div>
         )}
 
-        <ZoneMatrixBoard projectId={projectId} />
-
-
-
-
-
+        <div className="mt-8">
+          <CollapsibleSection
+            icon={<LayoutGrid size={16} />}
+            title="Zone Progress Matrix"
+            summary="2D fallback viewport"
+            defaultOpen={false}
+          >
+            <ZoneMatrixBoard projectId={projectId} />
+          </CollapsibleSection>
+        </div>
 
         {/* Upload engine row — symmetric 2-col */}
-        <section className="mt-10">
-          <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
-            Tier-1 Operational Documents
-          </p>
-          <h2
-            className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground"
-            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+        <div className="mt-6">
+          <CollapsibleSection
+            icon={<UploadCloud size={16} />}
+            title="Upload Engine"
+            summary="GA Drawings · Site Logistics"
+            defaultOpen={true}
           >
-            Upload Engine
-          </h2>
-
-          <div className="mt-5 grid auto-rows-fr gap-4 md:grid-cols-2">
-            <DropZone
-              projectId={projectId}
-              docType="drawing"
-              title="GA Drawings"
-              subtitle="Title blocks auto-parsed → 'Active Project Drawings' dropdown."
-              onUploaded={refresh}
-            />
-            <DropZone
-              projectId={projectId}
-              docType="logistics"
-              title="Site Logistics"
-              subtitle="Zones & levels extracted for spatial mapping."
-              onUploaded={refresh}
-            />
-          </div>
-        </section>
+            <div className="grid auto-rows-fr gap-4 md:grid-cols-2">
+              <DropZone
+                projectId={projectId}
+                docType="drawing"
+                title="GA Drawings"
+                subtitle="Title blocks auto-parsed → 'Active Project Drawings' dropdown."
+                onUploaded={refresh}
+              />
+              <DropZone
+                projectId={projectId}
+                docType="logistics"
+                title="Site Logistics"
+                subtitle="Zones & levels extracted for spatial mapping."
+                onUploaded={refresh}
+              />
+            </div>
+          </CollapsibleSection>
+        </div>
 
         {/* Drawing viewer — full width, tall */}
         <section className="mt-8">
