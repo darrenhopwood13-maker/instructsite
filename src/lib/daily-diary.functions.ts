@@ -17,20 +17,18 @@ export const submitDailyDiary = createServerFn({ method: "POST" })
     const { data: pin, error: pinErr } = await context.supabase
       .from("live_site_activity")
       .select(
-        "id, project_id, subcontractor_id, drawing_id, zone_id, trade_package, operative_count, start_time, scheduled_finish, status",
+        "id, project_id, subcontractor_id, drawing_id, zone_id, workface_id, trade_package, operative_count, start_time, scheduled_finish, status",
       )
       .eq("id", data.liveActivityId)
       .single();
     if (pinErr || !pin) throw new Error("Active pin not found.");
     if (pin.subcontractor_id !== context.userId)
       throw new Error("You can only close out your own shift.");
-    if (pin.status !== "active")
-      throw new Error("This shift has already been closed out.");
+    if (pin.status !== "active") throw new Error("This shift has already been closed out.");
 
     const checkoutTime = new Date();
     const hours =
-      Math.max(0, checkoutTime.getTime() - new Date(pin.start_time).getTime()) /
-      3_600_000;
+      Math.max(0, checkoutTime.getTime() - new Date(pin.start_time).getTime()) / 3_600_000;
 
     const { data: diary, error: insErr } = await context.supabase
       .from("daily_site_diaries")
@@ -40,6 +38,7 @@ export const submitDailyDiary = createServerFn({ method: "POST" })
         subcontractor_id: context.userId,
         drawing_id: pin.drawing_id,
         zone_id: pin.zone_id,
+        workface_id: pin.workface_id,
         trade_package: pin.trade_package,
         operative_count: pin.operative_count,
         start_time: pin.start_time,
@@ -66,9 +65,7 @@ export const submitDailyDiary = createServerFn({ method: "POST" })
 
 export const listQsQueue = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) =>
-    z.object({ projectId: z.string().uuid() }).parse(i),
-  )
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("daily_site_diaries")
@@ -101,9 +98,7 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
       "site_manager",
     ];
     const checks = await Promise.all(
-      roles.map((r) =>
-        context.supabase.rpc("has_role", { _user_id: context.userId, _role: r }),
-      ),
+      roles.map((r) => context.supabase.rpc("has_role", { _user_id: context.userId, _role: r })),
     );
     const authorised = checks.some((c) => c.data === true);
     if (!authorised) {
@@ -129,12 +124,9 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const listArchivedToday = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) =>
-    z.object({ projectId: z.string().uuid() }).parse(i),
-  )
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
@@ -149,9 +141,7 @@ export const listArchivedToday = createServerFn({ method: "GET" })
 
 export const listZoneCompletion = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) =>
-    z.object({ projectId: z.string().uuid() }).parse(i),
-  )
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("daily_site_diaries")

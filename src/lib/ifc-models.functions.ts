@@ -8,30 +8,97 @@ const projectIdInput = z.object({ projectId: z.string().uuid() });
 // `keys` are substrings Randall searches for in zone names (case-insensitive).
 const ZONE_PATTERNS: Array<{ label: string; match: RegExp; keys: string[] }> = [
   // --- Rooms / spaces ---
-  { label: "kitchen", match: /\b(kit|kitch|kitchen|sink|cabinet|appliance|worktop|hob|oven|pantry|utility)\b/i, keys: ["kitchen", "utility", "pantry"] },
-  { label: "bathroom", match: /\b(bath|bathroom|wc|shower|toilet|basin|ensuite|en[- ]?suite|lavatory|washroom)\b/i, keys: ["bathroom", "bath", "wc", "en-suite", "ensuite"] },
+  {
+    label: "kitchen",
+    match: /\b(kit|kitch|kitchen|sink|cabinet|appliance|worktop|hob|oven|pantry|utility)\b/i,
+    keys: ["kitchen", "utility", "pantry"],
+  },
+  {
+    label: "bathroom",
+    match: /\b(bath|bathroom|wc|shower|toilet|basin|ensuite|en[- ]?suite|lavatory|washroom)\b/i,
+    keys: ["bathroom", "bath", "wc", "en-suite", "ensuite"],
+  },
   { label: "bedroom", match: /\b(bed|bedroom|master|guest\s*room)\b/i, keys: ["bedroom", "bed"] },
-  { label: "living", match: /\b(living|lounge|reception|family\s*room|snug)\b/i, keys: ["living", "lounge", "reception"] },
+  {
+    label: "living",
+    match: /\b(living|lounge|reception|family\s*room|snug)\b/i,
+    keys: ["living", "lounge", "reception"],
+  },
   { label: "dining", match: /\b(dining|diner)\b/i, keys: ["dining"] },
-  { label: "hallway", match: /\b(hall|hallway|corridor|passage|lobby|foyer|entrance)\b/i, keys: ["hall", "corridor", "lobby"] },
-  { label: "stairs", match: /\b(stair|staircase|stairwell|landing)\b/i, keys: ["stair", "landing"] },
-  { label: "office", match: /\b(office|study|workspace|meeting|boardroom)\b/i, keys: ["office", "study", "meeting"] },
+  {
+    label: "hallway",
+    match: /\b(hall|hallway|corridor|passage|lobby|foyer|entrance)\b/i,
+    keys: ["hall", "corridor", "lobby"],
+  },
+  {
+    label: "stairs",
+    match: /\b(stair|staircase|stairwell|landing)\b/i,
+    keys: ["stair", "landing"],
+  },
+  {
+    label: "office",
+    match: /\b(office|study|workspace|meeting|boardroom)\b/i,
+    keys: ["office", "study", "meeting"],
+  },
   { label: "garage", match: /\b(garage|car\s*port|carport)\b/i, keys: ["garage", "carport"] },
-  { label: "plant", match: /\b(plant\s*room|riser|mech(anical)?\s*room|boiler|comms|server\s*room)\b/i, keys: ["plant", "mechanical", "boiler", "comms"] },
-  { label: "external", match: /\b(external|garden|patio|terrace|balcony|roof\s*terrace)\b/i, keys: ["external", "garden", "terrace", "balcony"] },
+  {
+    label: "plant",
+    match: /\b(plant\s*room|riser|mech(anical)?\s*room|boiler|comms|server\s*room)\b/i,
+    keys: ["plant", "mechanical", "boiler", "comms"],
+  },
+  {
+    label: "external",
+    match: /\b(external|garden|patio|terrace|balcony|roof\s*terrace)\b/i,
+    keys: ["external", "garden", "terrace", "balcony"],
+  },
 
   // --- Structural / envelope ---
-  { label: "structural steel", match: /\b(beam|column|uc\d*|ub\d*|baseplate|steelwork|rsj|purlin|structural\s*steel|steel\s*frame)\b/i, keys: ["structural steel", "steel", "structure", "frame"] },
-  { label: "concrete", match: /\b(slab|deck|footing|foundation|pile|pad|raft|screed|blinding)\b/i, keys: ["concrete", "slab", "foundation", "substructure"] },
-  { label: "roof", match: /\b(roof|rafter|truss|ridge|eaves|gutter|fascia|soffit)\b/i, keys: ["roof"] },
-  { label: "facade", match: /\b(facade|cladding|curtain\s*wall|rainscreen|render|brickwork|blockwork|masonry)\b/i, keys: ["facade", "cladding", "envelope"] },
-  { label: "windows", match: /\b(window|glazing|glazed|fenestration)\b/i, keys: ["window", "glazing", "fenestration"] },
+  {
+    label: "structural steel",
+    match:
+      /\b(beam|column|uc\d*|ub\d*|baseplate|steelwork|rsj|purlin|structural\s*steel|steel\s*frame)\b/i,
+    keys: ["structural steel", "steel", "structure", "frame"],
+  },
+  {
+    label: "concrete",
+    match: /\b(slab|deck|footing|foundation|pile|pad|raft|screed|blinding)\b/i,
+    keys: ["concrete", "slab", "foundation", "substructure"],
+  },
+  {
+    label: "roof",
+    match: /\b(roof|rafter|truss|ridge|eaves|gutter|fascia|soffit)\b/i,
+    keys: ["roof"],
+  },
+  {
+    label: "facade",
+    match: /\b(facade|cladding|curtain\s*wall|rainscreen|render|brickwork|blockwork|masonry)\b/i,
+    keys: ["facade", "cladding", "envelope"],
+  },
+  {
+    label: "windows",
+    match: /\b(window|glazing|glazed|fenestration)\b/i,
+    keys: ["window", "glazing", "fenestration"],
+  },
   { label: "doors", match: /\b(door|doorset|ironmongery)\b/i, keys: ["door"] },
 
   // --- MEP ---
-  { label: "mechanical", match: /\b(hvac|ahu|fcu|duct|ductwork|ventilation|extract|supply\s*air|chiller|heat\s*pump|radiator|underfloor\s*heating|ufh)\b/i, keys: ["mechanical", "hvac", "mep"] },
-  { label: "electrical", match: /\b(cable|containment|tray|basket|conduit|switchgear|distribution\s*board|db-|luminaire|lighting|socket|small\s*power)\b/i, keys: ["electrical", "power", "lighting", "mep"] },
-  { label: "plumbing", match: /\b(pipe|pipework|drainage|soil|waste|hot\s*water|cold\s*water|sprinkler|riser)\b/i, keys: ["plumbing", "drainage", "mep"] },
+  {
+    label: "mechanical",
+    match:
+      /\b(hvac|ahu|fcu|duct|ductwork|ventilation|extract|supply\s*air|chiller|heat\s*pump|radiator|underfloor\s*heating|ufh)\b/i,
+    keys: ["mechanical", "hvac", "mep"],
+  },
+  {
+    label: "electrical",
+    match:
+      /\b(cable|containment|tray|basket|conduit|switchgear|distribution\s*board|db-|luminaire|lighting|socket|small\s*power)\b/i,
+    keys: ["electrical", "power", "lighting", "mep"],
+  },
+  {
+    label: "plumbing",
+    match: /\b(pipe|pipework|drainage|soil|waste|hot\s*water|cold\s*water|sprinkler|riser)\b/i,
+    keys: ["plumbing", "drainage", "mep"],
+  },
 ];
 
 export const autoAllocateModelElements = createServerFn({ method: "POST" })
@@ -109,10 +176,15 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
       .from("ifc_element_mappings")
       .upsert(rows, { onConflict: "model_id,global_id" });
     if (error) throw new Error(error.message);
-    const suffix = missedLabels.size > 0
-      ? ` (skipped: ${Array.from(missedLabels).join(", ")} — no matching zone)`
-      : "";
-    return { ok: true as const, count: rows.length, reason: `Allocated ${rows.length} of ${inspected}${suffix}` };
+    const suffix =
+      missedLabels.size > 0
+        ? ` (skipped: ${Array.from(missedLabels).join(", ")} — no matching zone)`
+        : "";
+    return {
+      ok: true as const,
+      count: rows.length,
+      reason: `Allocated ${rows.length} of ${inspected}${suffix}`,
+    };
   });
 
 export const listIfcModels = createServerFn({ method: "GET" })
@@ -239,8 +311,11 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
   .inputValidator((i: unknown) => projectIdInput.parse(i))
   .handler(async ({ data, context }) => {
     const [zonesRes, progressRes, liveRes] = await Promise.all([
-      context.supabase.from("work_zones").select("id, name, level").eq("project_id", data.projectId),
-      context.supabase.rpc("zone_approved_completion", { _project_id: data.projectId }),
+      context.supabase
+        .from("work_zones")
+        .select("id, name, level")
+        .eq("project_id", data.projectId),
+      context.supabase.rpc("zone_runtime_progress", { _project_id: data.projectId }),
       context.supabase
         .from("live_site_activity")
         .select("zone_id")
@@ -252,24 +327,27 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
     if (liveRes.error) throw new Error(liveRes.error.message);
 
     const progressByZone = new Map<string, number>();
+    const completeByZone = new Map<string, boolean>();
     for (const row of (progressRes.data ?? []) as Array<{
       zone_id: string;
-      total_pct: number | string;
+      progress_pct: number | string;
+      all_workfaces_complete: boolean;
     }>) {
-      progressByZone.set(row.zone_id, Number(row.total_pct) || 0);
+      progressByZone.set(row.zone_id, Number(row.progress_pct) || 0);
+      completeByZone.set(row.zone_id, row.all_workfaces_complete);
     }
-    const live = new Set(
-      (liveRes.data ?? []).map((r) => r.zone_id).filter(Boolean) as string[],
-    );
+    const live = new Set((liveRes.data ?? []).map((r) => r.zone_id).filter(Boolean) as string[]);
 
     return (zonesRes.data ?? []).map((z) => {
       const progress_pct = Math.min(100, Math.round(progressByZone.get(z.id) ?? 0));
-      const state: "complete" | "live" | "unstarted" =
-        progress_pct >= 100
-          ? "complete"
-          : live.has(z.id)
-            ? "live"
-            : "unstarted";
+      // Complete requires every workface in the zone to be complete, not
+      // just the average crossing 100 — see zone_runtime_progress().
+      const isComplete = completeByZone.get(z.id) ?? progress_pct >= 100;
+      const state: "complete" | "live" | "unstarted" = isComplete
+        ? "complete"
+        : live.has(z.id)
+          ? "live"
+          : "unstarted";
       return {
         zone_id: z.id,
         name: z.name,
@@ -279,7 +357,6 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
       };
     });
   });
-
 
 export const listProjectZones = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

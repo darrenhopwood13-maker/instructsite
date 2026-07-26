@@ -193,6 +193,7 @@ export type Database = {
           subcontractor_id: string
           trade_package: string | null
           updated_at: string
+          workface_id: string | null
           zone_id: string | null
         }
         Insert: {
@@ -217,6 +218,7 @@ export type Database = {
           subcontractor_id: string
           trade_package?: string | null
           updated_at?: string
+          workface_id?: string | null
           zone_id?: string | null
         }
         Update: {
@@ -241,6 +243,7 @@ export type Database = {
           subcontractor_id?: string
           trade_package?: string | null
           updated_at?: string
+          workface_id?: string | null
           zone_id?: string | null
         }
         Relationships: [
@@ -256,6 +259,13 @@ export type Database = {
             columns: ["live_activity_id"]
             isOneToOne: false
             referencedRelation: "live_site_activity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_site_diaries_workface_id_fkey"
+            columns: ["workface_id"]
+            isOneToOne: false
+            referencedRelation: "workfaces"
             referencedColumns: ["id"]
           },
           {
@@ -465,6 +475,7 @@ export type Database = {
           subcontractor_id: string
           trade_package: string | null
           updated_at: string
+          workface_id: string | null
           x_pct: number
           y_pct: number
           zone_id: string | null
@@ -486,6 +497,7 @@ export type Database = {
           subcontractor_id: string
           trade_package?: string | null
           updated_at?: string
+          workface_id?: string | null
           x_pct: number
           y_pct: number
           zone_id?: string | null
@@ -507,6 +519,7 @@ export type Database = {
           subcontractor_id?: string
           trade_package?: string | null
           updated_at?: string
+          workface_id?: string | null
           x_pct?: number
           y_pct?: number
           zone_id?: string | null
@@ -517,6 +530,13 @@ export type Database = {
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_site_activity_workface_id_fkey"
+            columns: ["workface_id"]
+            isOneToOne: false
+            referencedRelation: "workfaces"
             referencedColumns: ["id"]
           },
           {
@@ -2221,6 +2241,53 @@ export type Database = {
           total_pct: number
           zone_id: string
         }[]
+      }
+      zone_runtime_progress: {
+        Args: { _project_id: string }
+        Returns: {
+          all_workfaces_complete: boolean
+          progress_pct: number
+          zone_id: string
+        }[]
+      }
+      workface_approved_completion: {
+        Args: { _project_id: string }
+        Returns: {
+          total_pct: number
+          workface_id: string
+        }[]
+      }
+      suggest_workfaces: {
+        Args: { _project_id: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          package_invite_id: string | null
+          project_id: string
+          source: string
+          stage: string | null
+          status: string
+          updated_at: string
+          zone_id: string | null
+        }[]
+      }
+      add_site_manager_to_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: undefined
+      }
+      list_project_site_managers: {
+        Args: { _project_id: string }
+        Returns: { full_name: string | null; user_id: string }[]
+      }
+      list_unassigned_site_managers: {
+        Args: { _project_id: string }
+        Returns: { full_name: string | null; user_id: string }[]
+      }
+      is_package_manager: {
+        Args: { _invite_id: string; _user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
