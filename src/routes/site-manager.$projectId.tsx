@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, AlertTriangle, ClipboardList, ChevronDown, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
 import { listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { listArchivedToday } from "@/lib/daily-diary.functions";
@@ -209,24 +210,27 @@ function SiteManagerPage() {
           <ArrowLeft size={12} /> {project.data?.name ?? "Project"}
         </Link>
 
-        <h1
-          className="mt-3 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-          style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-        >
-          Command Tower · Live
-        </h1>
-        <p className="mt-2 text-sm text-foreground/70">
-          Realtime spatial overlay of active site labor · click any pin for the HUD popover.
-        </p>
+        <div className="mt-3">
+          <PageHeader
+            overline={project.data?.name ?? "Project"}
+            title="Command Tower · Live"
+            subtitle="Realtime spatial overlay of active site labor · click any pin for the HUD popover."
+            LinkComponent={Link}
+            actions={[
+              {
+                label: "Subcontractors Weekly Pack",
+                icon: <ClipboardList size={15} />,
+                to: "/subcontractor-pack/$projectId/manager",
+                params: { projectId },
+              },
+            ]}
+          />
+        </div>
 
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            to="/subcontractor-pack/$projectId/manager"
-            params={{ projectId }}
-            className="inline-flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-alert hover:bg-alert hover:text-black transition-colors"
-          >
-            <ClipboardList size={14} /> Subcontractors Weekly Pack
-          </Link>
+        {/* My Site Diary stays a directly visible button, not tucked in the
+            Actions menu — it was hard to find when nested a level deeper,
+            per earlier feedback, so it keeps its own prominent spot here. */}
+        <div className="mt-4">
           <Link
             to="/my-diary/$projectId"
             params={{ projectId }}
@@ -235,8 +239,6 @@ function SiteManagerPage() {
             <BookOpen size={14} /> My Site Diary
           </Link>
         </div>
-
-
         <section className="mt-6">
           <DrawingCanvas
             drawings={drawingRows as never}

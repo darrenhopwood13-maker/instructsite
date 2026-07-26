@@ -20,6 +20,7 @@ import { TradeDirectoryPanel } from "@/components/admin/TradeDirectoryPanel";
 import { WorkfaceRegisterPanel } from "@/components/admin/WorkfaceRegisterPanel";
 import { getMyRoles } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 
 export const Route = createFileRoute("/projects/$projectId")({
@@ -131,48 +132,39 @@ function ProjectDetail() {
           <ArrowLeft size={12} /> All Projects
         </Link>
 
-        <div className="mt-4 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
-              Project
-            </p>
-            <h1
-              className="mt-1 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
-            >
-              {project.data?.name ?? "…"}
-            </h1>
-            {project.data?.site_address && (
-              <p className="mt-2 flex items-center gap-1.5 text-sm text-foreground/70">
-                <MapPin size={14} /> {project.data.site_address}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2 md:flex-row">
-            <Link
-              to="/dabs/$projectId"
-              params={{ projectId }}
-              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
-            >
-              <ClipboardList size={14} /> DABS
-            </Link>
-            <Link
-              to="/programme/$projectId"
-              params={{ projectId }}
-              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
-            >
-              <CalendarDays size={14} /> Randall Diary
-            </Link>
-            {isMainContractor && (
-              <Link
-                to="/site-manager/$projectId"
-                params={{ projectId }}
-                className="glass-orange inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
-              >
-                <ShieldAlert size={14} /> Site Manager
-              </Link>
-            )}
-          </div>
+        <div className="mt-4">
+          <PageHeader
+            overline="Project"
+            title={project.data?.name ?? "…"}
+            subtitle={
+              project.data?.site_address && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin size={14} /> {project.data.site_address}
+                </span>
+              )
+            }
+            LinkComponent={Link}
+            actions={[
+              { label: "DABS", icon: <ClipboardList size={15} />, to: "/dabs/$projectId", params: { projectId } },
+              {
+                label: "Randall Diary",
+                icon: <CalendarDays size={15} />,
+                to: "/programme/$projectId",
+                params: { projectId },
+              },
+              ...(isMainContractor
+                ? [
+                    {
+                      label: "Site Manager",
+                      icon: <ShieldAlert size={15} />,
+                      to: "/site-manager/$projectId",
+                      params: { projectId },
+                      primary: true,
+                    },
+                  ]
+                : []),
+            ]}
+          />
         </div>
 
         {project.data?.scope_brief && (
