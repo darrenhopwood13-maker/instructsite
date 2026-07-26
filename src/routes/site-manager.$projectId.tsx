@@ -3,10 +3,11 @@ import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle, ClipboardList, ChevronDown, BookOpen } from "lucide-react";
+import { ArrowLeft, AlertTriangle, ClipboardList, BookOpen, Box, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { CollapsibleSection } from "@/components/layout/CollapsibleSection";
 import { listProjectDrawings } from "@/lib/tier1-uploads.functions";
 import { listLivePins, closeLivePin } from "@/lib/live-activity.functions";
 import { listArchivedToday } from "@/lib/daily-diary.functions";
@@ -170,8 +171,6 @@ function SiteManagerPage() {
   }, [search.locatePinId, pins.data]);
   const [permitPin, setPermitPin] = useState<PinRecord | null>(null);
   const [forcePin, setForcePin] = useState<PinRecord | null>(null);
-  const [bimOpen, setBimOpen] = useState(false);
-  const [qsOpen, setQsOpen] = useState(true);
 
   const closePin = async (pinId: string) => {
     await closeFn({ data: { pinId } });
@@ -264,30 +263,33 @@ function SiteManagerPage() {
           <StatCard label="Archived Today" value={String(archivedToday.data?.count ?? 0)} />
         </section>
 
-        <CollapsibleSection
-          label="BIM / IFC Model"
-          description="View, upload, and map IFC models to project zones"
-          open={bimOpen}
-          onToggle={() => setBimOpen(!bimOpen)}
-        >
-          <ClientOnly fallback={<div className="glass-panel h-[560px] animate-pulse" />}>
-            <BimModelViewer projectId={projectId} />
-          </ClientOnly>
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <BimModelUploader projectId={projectId} />
-            <BimMappingEditor projectId={projectId} />
-          </div>
-        </CollapsibleSection>
+        <div className="mt-10">
+          <CollapsibleSection
+            icon={<Box size={16} />}
+            title="BIM / IFC Model"
+            summary="View, upload, map to zones"
+            defaultOpen={false}
+          >
+            <ClientOnly fallback={<div className="glass-panel h-[560px] animate-pulse" />}>
+              <BimModelViewer projectId={projectId} />
+            </ClientOnly>
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              <BimModelUploader projectId={projectId} />
+              <BimMappingEditor projectId={projectId} />
+            </div>
+          </CollapsibleSection>
+        </div>
 
-
-        <CollapsibleSection
-          label="QS Verification Queue"
-          description="Verified quantities, diary reconciliation, and sign-off requests"
-          open={qsOpen}
-          onToggle={() => setQsOpen(!qsOpen)}
-        >
-          <QsVerificationQueue projectId={projectId} />
-        </CollapsibleSection>
+        <div className="mt-6">
+          <CollapsibleSection
+            icon={<CheckCircle2 size={16} />}
+            title="QS Verification Queue"
+            summary="Verified quantities · sign-off"
+            defaultOpen={true}
+          >
+            <QsVerificationQueue projectId={projectId} />
+          </CollapsibleSection>
+        </div>
 
         <section className="mt-8">
           <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
@@ -425,45 +427,5 @@ function StatCard({
         {value}
       </p>
     </div>
-  );
-}
-
-function CollapsibleSection({
-  label,
-  description,
-  open,
-  onToggle,
-  children,
-}: {
-  label: string;
-  description: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="mt-10">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/30 px-5 py-4 text-left transition hover:bg-black/50"
-      >
-        <div className="min-w-0">
-          <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
-            {label}
-          </h2>
-          <p className="mt-0.5 text-[0.6rem] text-foreground/50">
-            {description}
-          </p>
-        </div>
-        <ChevronDown
-          size={16}
-          className={`shrink-0 text-foreground/50 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-      {open && <div className="mt-6">{children}</div>}
-    </section>
   );
 }
