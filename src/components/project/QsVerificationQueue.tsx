@@ -451,6 +451,88 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
           onNav={(next) => setLightbox({ ...lightbox, index: next })}
         />
       )}
+
+      {rejecting && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => !rejectBusy && setRejecting(null)}
+        >
+          <div
+            className="glass-panel w-full max-w-md border-l-4 border-l-red-500 p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="inline-flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.28em] text-red-400">
+                  <XCircle size={13} /> Reject Diary
+                </p>
+                <p className="mt-1 text-sm font-bold text-foreground">
+                  {rejecting.trade_package ?? "Untagged"} ·{" "}
+                  {rejecting.work_zones?.name ?? "no zone"}
+                </p>
+                <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                  Claimed {rejecting.completion_pct}% · {formatHours(rejecting)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => !rejectBusy && setRejecting(null)}
+                className="rounded-sm border border-white/20 p-1 text-foreground/60 hover:text-foreground"
+                aria-label="Close"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <label className="mt-4 block">
+              <span className="text-[0.6rem] font-bold uppercase tracking-widest text-foreground/60">
+                Reason for rejection (subcontractor sees this)
+              </span>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={4}
+                placeholder="e.g. Claimed 60% but only ground-floor block laid — approx. 25%. Photos don't cover Zone B."
+                className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-2.5 py-2 text-xs text-foreground outline-none focus:border-red-500"
+              />
+              <span className="mt-1 block text-[0.6rem] text-foreground/50">
+                {rejectReason.trim().length} / 10 min characters
+              </span>
+            </label>
+
+            <label className="mt-3 flex items-start gap-2 rounded-md border border-white/10 bg-black/30 p-2.5">
+              <input
+                type="checkbox"
+                checked={remeasure}
+                onChange={(e) => setRemeasure(e.target.checked)}
+                className="mt-0.5 accent-alert"
+              />
+              <span className="text-[0.7rem] leading-tight text-foreground/80">
+                Require re-measure and resubmission before this claim can be approved.
+              </span>
+            </label>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={submitReject}
+                disabled={rejectBusy || rejectReason.trim().length < 10}
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border-2 border-red-500 bg-red-500/10 px-3 py-2 text-[0.6rem] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/20 disabled:opacity-40"
+              >
+                <XCircle size={13} /> {rejectBusy ? "Rejecting…" : "Confirm Rejection"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRejecting(null)}
+                disabled={rejectBusy}
+                className="rounded-md border border-white/15 px-3 py-2 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-white/30 disabled:opacity-40"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
