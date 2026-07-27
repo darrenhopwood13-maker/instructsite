@@ -124,6 +124,16 @@ function SubCard({ sub, onOpen }: { sub: Sub; onOpen: () => void }) {
           Manager · {sub.manager_name || "—"}
         </p>
         <div className="mt-3 flex flex-wrap gap-1.5">
+          {sub.status === "pending" && (
+            <span className="rounded-sm border border-amber-400 bg-amber-400/10 px-2 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-amber-300">
+              Invite Pending
+            </span>
+          )}
+          {sub.status === "active" && (
+            <span className="rounded-sm border border-emerald-400 bg-emerald-400/10 px-2 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-emerald-300">
+              Active
+            </span>
+          )}
           {highRisk && (
             <span className="rounded-sm border border-red-500 bg-red-600/20 px-2 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-red-300">
               High Risk
