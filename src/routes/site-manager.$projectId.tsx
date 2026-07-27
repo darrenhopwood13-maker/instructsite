@@ -309,9 +309,15 @@ function SiteManagerPage() {
             Active Crews (All Sheets)
           </h2>
           <ul className="mt-3 space-y-2">
-            {(pins.data ?? []).map((p: any) => {
+            {(projectPins.data ?? []).map((p: any) => {
               const isOT = new Date(p.scheduled_finish).getTime() < now;
               const palette = pinColor(pinKey(p));
+              const startDate = new Date(p.start_time);
+              const today = new Date();
+              const sameDay =
+                startDate.getFullYear() === today.getFullYear() &&
+                startDate.getMonth() === today.getMonth() &&
+                startDate.getDate() === today.getDate();
               return (
                 <li
                   key={p.id}
@@ -331,8 +337,20 @@ function SiteManagerPage() {
                     <span className="min-w-0">
                       <p className="text-sm text-foreground">
                         {p.trade_package ?? "Untagged"} · {p.operative_count} ops
+                        {!sameDay && (
+                          <span className="ml-2 rounded-sm bg-alert/20 px-1.5 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert">
+                            {startDate.toLocaleDateString(undefined, {
+                              weekday: "short",
+                              day: "2-digit",
+                              month: "short",
+                            })}
+                          </span>
+                        )}
                       </p>
                       <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                        {p.project_drawings?.drawing_no
+                          ? `${p.project_drawings.drawing_no} · `
+                          : ""}
                         Started {new Date(p.start_time).toLocaleTimeString()} · finish{" "}
                         {new Date(p.scheduled_finish).toLocaleTimeString()}
                       </p>
@@ -346,7 +364,7 @@ function SiteManagerPage() {
                 </li>
               );
             })}
-            {(pins.data ?? []).length === 0 && (
+            {(projectPins.data ?? []).length === 0 && (
               <li className="glass-panel p-4 text-center text-xs text-foreground/50">
                 No active labor pins.
               </li>
