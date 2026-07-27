@@ -282,15 +282,21 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
         if (disposed) return;
         meshesRef.current = meshes;
 
-        // Center camera on model
-        if (!box.isEmpty()) {
-          const size = box.getSize(new THREE.Vector3());
-          const center = box.getCenter(new THREE.Vector3());
-          const maxDim = Math.max(size.x, size.y, size.z);
-          camera.position.copy(center).add(new THREE.Vector3(maxDim, maxDim * 0.8, maxDim));
+        // Fit camera to model bounding sphere using FOV
+        const fitToModel = () => {
+          if (box.isEmpty()) return;
+          const sphere = box.getBoundingSphere(new THREE.Sphere());
+          const center = sphere.center;
+          const radius = Math.max(sphere.radius, 1);
+          const fov = (camera.fov * Math.PI) / 180;
+          const distance = (radius / Math.sin(fov / 2)) * 1.15;
+          const dir = new THREE.Vector3(1, 0.75, 1).normalize();
+          camera.position.copy(center).add(dir.multiplyScalar(distance));
           controls.target.copy(center);
           controls.update();
-        }
+        };
+        fitToModel();
+        (window as any).__bimResetView = fitToModel;
 
         setStatus("ready");
       } catch (e: any) {
