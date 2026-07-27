@@ -138,50 +138,38 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
   const managers = useMemo(() => siteManagers.data ?? [], [siteManagers.data]);
 
   return (
-    <div className="mt-4 rounded-lg border border-alert/50 bg-black/60 p-3">
-      <div className="mt-3 flex items-center gap-2">
-        <HardHat className="text-alert" size={14} />
-        <p className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.28em] text-alert">
-          Project Trade Directory
-        </p>
+    <div className="mt-2 rounded-lg border border-alert/50 bg-black/60 p-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <HardHat className="text-alert" size={12} />
+          <p className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.28em] text-alert">
+            Project Trade Directory
+          </p>
+        </div>
+        <Link
+          to="/subcontractors/new"
+          search={{ projectId } as any}
+          className="inline-flex items-center gap-1.5 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1 text-alert transition hover:bg-alert/20"
+        >
+          <Building2 size={10} />
+          <span className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.2em]">
+            Full Registry
+          </span>
+          <ArrowRight size={10} />
+        </Link>
       </div>
 
-      <Link
-        to="/subcontractors/new"
-        search={{ projectId } as any}
-        className="mt-2 flex items-center justify-between gap-2 rounded-md border border-alert/60 bg-alert/10 px-3 py-2 text-alert transition hover:bg-alert/20"
-      >
-        <span className="inline-flex items-center gap-2 font-mono text-[0.65rem] font-bold uppercase tracking-[0.25em]">
-          <Building2 size={12} /> Full Registry — Company, PM & Supervisor
-        </span>
-        <ArrowRight size={12} />
-      </Link>
-      <p className="mt-1 px-1 text-[0.65rem] text-foreground/50">
-        Use the Full Registry to enter registered address, office phone, corporate email, and
-        PM/Site Supervisor contact details before issuing the QR access token.
-      </p>
-
-      <div className="mt-3 rounded-md border border-white/10 bg-black/40 p-2.5">
-        <p className="mb-1.5 flex items-center gap-1.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-foreground/60">
-          <UserCog size={11} /> Site Managers on this project ({managers.length})
-        </p>
-        {managers.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-1.5">
-            {managers.map((m) => (
-              <span
-                key={m.user_id}
-                className="rounded-sm border border-white/15 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/70"
-              >
-                {m.full_name ?? "Unnamed"}
-              </span>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center gap-1.5">
+      <div className="mt-2 rounded-md border border-white/10 bg-black/40 p-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="flex items-center gap-1 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-foreground/60">
+            <UserCog size={10} /> Site Managers ({managers.length})
+          </p>
+        </div>
+        <div className="mt-1.5 flex items-center gap-1.5">
           <select
             value={pickedManagerId}
             onChange={(e) => setPickedManagerId(e.target.value)}
-            className="min-w-0 flex-1 rounded-md border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/80 outline-none focus:border-alert"
+            className="min-w-0 flex-1 rounded-sm border border-white/15 bg-black/50 px-1.5 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/80 outline-none focus:border-alert"
           >
             <option value="">
               {(unassignedManagers.data ?? []).length === 0
@@ -198,29 +186,34 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
             type="button"
             onClick={addManagerToProject}
             disabled={!pickedManagerId || addingManager}
-            className="shrink-0 rounded-md border border-alert/60 bg-alert/10 px-2.5 py-1.5 font-mono text-[0.55rem] uppercase tracking-widest text-alert transition hover:bg-alert/20 disabled:opacity-40"
+            className="shrink-0 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-alert transition hover:bg-alert/20 disabled:opacity-40"
           >
             Add
           </button>
         </div>
-        <p className="mt-1.5 text-[0.6rem] text-foreground/40">
-          Only users who selected the Site Manager role at signup appear here. Add them to the
-          project first, then assign them as Package Manager on individual packages below.
-        </p>
+        {managers.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {managers.map((m) => (
+              <span
+                key={m.user_id}
+                className="rounded-sm border border-white/15 px-1 py-0.5 font-mono text-[0.5rem] uppercase tracking-widest text-foreground/70"
+              >
+                {m.full_name ?? "Unnamed"}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      <form onSubmit={submit} className="mt-3 grid gap-2">
+      <form onSubmit={submit} className="mt-2 grid gap-1.5">
         <input
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
           placeholder="Subcontractor company name"
-          className="rounded-md border border-white/15 bg-black/50 px-2.5 py-2 font-mono text-xs text-foreground outline-none focus:border-alert"
+          className="rounded-sm border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-alert"
         />
         <div>
-          <p className="mb-1.5 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
-            Trade Packages ({packages.length})
-          </p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {TRADE_PACKAGES.map((p) => {
               const on = packages.includes(p);
               return (
@@ -228,7 +221,7 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
                   type="button"
                   key={p}
                   onClick={() => togglePackage(p)}
-                  className={`rounded-sm border px-2 py-1 font-mono text-[0.6rem] uppercase tracking-widest transition ${
+                  className={`rounded-sm border px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest transition ${
                     on
                       ? "border-alert bg-alert/20 text-alert"
                       : "border-white/15 text-foreground/60 hover:border-white/40"
@@ -243,9 +236,9 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
         <button
           type="submit"
           disabled={busy || !companyName.trim() || packages.length === 0}
-          className="glass-orange inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-[0.65rem] uppercase tracking-widest disabled:opacity-40"
+          className="glass-orange inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.6rem] uppercase tracking-widest disabled:opacity-40"
         >
-          <PlusCircle size={12} /> Generate Subcontractor Access
+          <PlusCircle size={11} /> Generate Subcontractor Access
         </button>
       </form>
 
