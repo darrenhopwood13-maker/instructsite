@@ -71,11 +71,13 @@ function SiteManagerPage() {
     queryKey: ["project", projectId],
     queryFn: () => getP({ data: { projectId } }),
     enabled: allowLoad,
+    staleTime: 60_000,
   });
   const drawings = useQuery({
     queryKey: ["drawings", projectId],
     queryFn: () => drawingsFn({ data: { projectId } }),
     enabled: allowLoad,
+    staleTime: 60_000,
   });
 
   const drawingRows = useMemo(() => drawings.data ?? [], [drawings.data]);
@@ -93,30 +95,35 @@ function SiteManagerPage() {
     }
   }, [drawingRows, selectedDrawing, search.locateDrawingId]);
 
-  const pins = useQuery({
-    queryKey: ["live-pins", projectId, selectedDrawing],
-    queryFn: () =>
-      pinsFn({ data: { projectId, drawingId: selectedDrawing!, activeOnly: true } }),
-    enabled: allowLoad && !!selectedDrawing,
-    refetchInterval: 8000,
-  });
-
-  // Project-wide pins (all sheets) — powers the counters and Active Crews list
-  // so those totals reflect every live pin on the project, not just the sheet
-  // currently open in the drawing viewer.
+  // Single project-wide poll; derive per-sheet pins client-side so the
+  // drawing viewer and the counters share one network request.
   const projectPins = useQuery({
     queryKey: ["live-pins-all", projectId],
     queryFn: () => pinsFn({ data: { projectId, activeOnly: true } }),
     enabled: allowLoad,
     refetchInterval: 8000,
+    staleTime: 4_000,
   });
+  const pins = useMemo(() => {
+    const all = projectPins.data ?? [];
+    return {
+      data: selectedDrawing
+        ? all.filter((p: any) => p.drawing_id === selectedDrawing)
+        : [],
+      isLoading: projectPins.isLoading,
+      isError: projectPins.isError,
+      error: projectPins.error,
+    };
+  }, [projectPins.data, projectPins.isLoading, projectPins.isError, projectPins.error, selectedDrawing]);
 
   const archivedToday = useQuery({
     queryKey: ["archived-today", projectId],
     queryFn: () => archivedFn({ data: { projectId } }),
     enabled: allowLoad,
     refetchInterval: 30000,
+    staleTime: 15_000,
   });
+
 
   // Realtime — reactivate on any change
   useEffect(() => {
