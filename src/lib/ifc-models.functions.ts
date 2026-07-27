@@ -101,6 +101,47 @@ const ZONE_PATTERNS: Array<{ label: string; match: RegExp; keys: string[] }> = [
   },
 ];
 
+// Hard-typed IFC → zone-keyword rules, checked before regex patterns.
+const HARD_TYPE_RULES: Array<{
+  when: (ifcType: string, text: string) => boolean;
+  keys: string[];
+  label: string;
+}> = [
+  { when: (t) => /IfcRoof/i.test(t), keys: ["roof"], label: "roof" },
+  {
+    when: (t, x) => /IfcSlab/i.test(t) && /roof|ridge|eaves|top\s*deck/i.test(x),
+    keys: ["roof"],
+    label: "roof",
+  },
+  {
+    when: (t) => /IfcSlab|IfcFooting|IfcPile/i.test(t),
+    keys: ["concrete", "slab", "foundation", "substructure"],
+    label: "concrete",
+  },
+  {
+    when: (t) => /IfcBeam|IfcColumn|IfcMember|IfcPlate/i.test(t),
+    keys: ["structural steel", "steel", "structure", "frame"],
+    label: "structural steel",
+  },
+  { when: (t) => /IfcWindow/i.test(t), keys: ["window", "glazing"], label: "windows" },
+  { when: (t) => /IfcDoor/i.test(t), keys: ["door"], label: "doors" },
+  {
+    when: (t) => /IfcDuct|IfcAirTerminal|IfcFan|IfcCoil/i.test(t),
+    keys: ["mechanical", "hvac", "mep"],
+    label: "mechanical",
+  },
+  {
+    when: (t) => /IfcCable|IfcLightFixture|IfcOutlet|IfcSwitch/i.test(t),
+    keys: ["electrical", "power", "lighting", "mep"],
+    label: "electrical",
+  },
+  {
+    when: (t) => /IfcPipe|IfcSanitaryTerminal|IfcValve/i.test(t),
+    keys: ["plumbing", "drainage", "mep"],
+    label: "plumbing",
+  },
+];
+
 export const autoAllocateModelElements = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) =>
@@ -112,6 +153,7 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
             z.object({
               globalId: z.string().min(1).max(64),
               text: z.string().max(1000),
+              ifcType: z.string().max(64).optional().default(""),
             }),
           )
           .max(20000),
@@ -134,7 +176,7 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
       .eq("project_id", data.projectId);
     if (zErr) throw new Error(zErr.message);
     if (!zones || zones.length === 0) {
-      return { ok: false as const, count: 0, reason: "No work zones defined" };
+      return { ok: false as const, count: 0, unmapped: data.elements.length, reason: "No work zones defined" };
     }
 
     const findZone = (candidates: string[]) => {
@@ -145,32 +187,70 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
       return null;
     };
 
-    const rows: Array<{ model_id: string; global_id: string; zone_id: string }> = [];
+    type Row = { model_id: string; global_id: string; zone_id: string };
+    const rows: Row[] = [];
     const missedLabels = new Set<string>();
+    const confidence = { hard: 0, strong: 0, weak: 0 };
     let inspected = 0;
-    let matchedPattern = 0;
+    let unmapped = 0;
+
     for (const el of data.elements) {
       inspected++;
-      for (const pat of ZONE_PATTERNS) {
-        if (pat.match.test(el.text)) {
-          matchedPattern++;
-          const zoneId = findZone(pat.keys);
+      const ifcType = (el as any).ifcType ?? "";
+      const text = el.text;
+
+      // 1) Hard-typed rules (highest confidence)
+      let matched = false;
+      for (const rule of HARD_TYPE_RULES) {
+        if (rule.when(ifcType, text)) {
+          const zoneId = findZone(rule.keys);
           if (zoneId) {
             rows.push({ model_id: model.id, global_id: el.globalId, zone_id: zoneId });
+            confidence.hard++;
+            matched = true;
           } else {
-            missedLabels.add(pat.label);
+            missedLabels.add(rule.label);
           }
           break;
         }
       }
+      if (matched) continue;
+
+      // 2) Score all regex patterns; pick highest scoring hit that has a zone
+      let bestZoneId: string | null = null;
+      let bestScore = 0;
+      let bestLabel = "";
+      for (const pat of ZONE_PATTERNS) {
+        const hits = text.match(new RegExp(pat.match.source, "gi"));
+        if (!hits) continue;
+        const score = hits.length;
+        if (score > bestScore) {
+          const zoneId = findZone(pat.keys);
+          if (zoneId) {
+            bestZoneId = zoneId;
+            bestScore = score;
+            bestLabel = pat.label;
+          } else {
+            missedLabels.add(pat.label);
+          }
+        }
+      }
+      if (bestZoneId) {
+        rows.push({ model_id: model.id, global_id: el.globalId, zone_id: bestZoneId });
+        if (bestScore >= 2) confidence.strong++;
+        else confidence.weak++;
+      } else {
+        unmapped++;
+      }
+      void bestLabel;
     }
 
     if (rows.length === 0) {
       const reason =
-        matchedPattern === 0
+        missedLabels.size === 0
           ? `No semantic matches in ${inspected} elements. Element names don't hint at rooms/trades.`
-          : `Matched ${matchedPattern} elements (${Array.from(missedLabels).join(", ")}) but no zone names contain those keywords. Rename zones e.g. "Kitchen", "Bathroom", "Structural Steel".`;
-      return { ok: true as const, count: 0, reason };
+          : `Matched patterns (${Array.from(missedLabels).join(", ")}) but no zone names contain those keywords. Rename zones e.g. "Kitchen", "Roof", "Structural Steel".`;
+      return { ok: true as const, count: 0, unmapped, confidence, reason };
     }
     const { error } = await context.supabase
       .from("ifc_element_mappings")
@@ -183,7 +263,9 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
     return {
       ok: true as const,
       count: rows.length,
-      reason: `Allocated ${rows.length} of ${inspected}${suffix}`,
+      unmapped,
+      confidence,
+      reason: `Allocated ${rows.length} of ${inspected} · ${confidence.hard} hard · ${confidence.strong} strong · ${confidence.weak} weak${suffix}`,
     };
   });
 
