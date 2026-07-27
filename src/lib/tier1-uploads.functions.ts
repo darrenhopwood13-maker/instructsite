@@ -102,6 +102,8 @@ export const registerTier1Document = createServerFn({ method: "POST" })
         tradePackage: z.string().optional(),
         highRiskFlags: z.array(z.enum(["working_at_height", "hot_works", "confined_space"])).optional(),
         permitRequired: z.boolean().optional(),
+        contentHash: z.string().min(32).max(128).optional(),
+        supersedesSiteDocumentId: z.string().uuid().optional(),
       })
       .parse(i),
   )
@@ -124,10 +126,24 @@ export const registerTier1Document = createServerFn({ method: "POST" })
         bucket: "project-bible",
         uploaded_by: userId,
         extraction_status: "processing",
-      })
+        content_hash: data.contentHash ?? null,
+        revision_of: data.supersedesSiteDocumentId ?? null,
+      } as any)
       .select("id")
       .single();
     if (sdErr) throw new Error(sdErr.message);
+
+    // Supersede + soft-archive the prior revision (best-effort).
+    if (data.supersedesSiteDocumentId) {
+      await supabase
+        .from("site_documents")
+        .update({
+          superseded_by: sd.id,
+          archived_at: new Date().toISOString(),
+          archived_by: userId,
+        } as any)
+        .eq("id", data.supersedesSiteDocumentId);
+    }
 
     // 2) specialized row
     if (data.docType === "drawing") {

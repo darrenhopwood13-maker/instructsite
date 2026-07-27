@@ -93,11 +93,9 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
     }
     setScanning(true);
     try {
-      const WebIFC: any = await import("web-ifc");
-      const api = new WebIFC.IfcAPI();
-      api.SetWasmPath("/wasm/");
-      await api.Init();
-      const buf = new Uint8Array(await (await fetch(activeQ.data.url)).arrayBuffer());
+      const { getWebIfcApi, loadModelBuffer } = await import("@/lib/ifc-loader");
+      const { WebIFC, api } = await getWebIfcApi();
+      const buf = await loadModelBuffer(activeQ.data.model!.id, activeQ.data.url);
       const modelID = api.OpenModel(buf, {});
       const found: ElementMeta[] = [];
       const typeMap: Array<[number, string]> = [
