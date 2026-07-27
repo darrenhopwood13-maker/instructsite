@@ -265,11 +265,14 @@ function SiteManagerPage() {
         </section>
 
         <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Active Pins" value={String((pins.data ?? []).length)} />
+          <StatCard label="Active Pins" value={String((projectPins.data ?? []).length)} />
           <StatCard
             label="Operatives On Site"
             value={String(
-              (pins.data ?? []).reduce((s: number, p: any) => s + (p.operative_count ?? 0), 0),
+              (projectPins.data ?? []).reduce(
+                (s: number, p: any) => s + (p.operative_count ?? 0),
+                0,
+              ),
             )}
           />
           <StatCard label="Overtime" value={String(overtime.length)} tone={overtime.length ? "alert" : "ok"} />
