@@ -209,15 +209,69 @@ export const getManagerPack = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: subs, error } = await context.supabase
-      .from("subcontractors")
-      .select("id, company_name, manager_name, created_at")
-      .eq("project_id", data.projectId)
-      .order("company_name", { ascending: true });
-    if (error) throw new Error(error.message);
-    const rows = subs ?? [];
+    // Union invites + subcontractors so the master view mirrors what the
+    // project page shows. A `subcontractors` row is only lazily created when a
+    // sub opens their portal — until then we materialise one on read so
+    // PUWER/LOLER/toolbox records can be recorded against a stable id.
+    const [invitesRes, existingSubsRes] = await Promise.all([
+      context.supabase
+        .from("subcontractor_invites")
+        .select("id, company_name, trade_packages, pm_name, supervisor_name, accepted_at, revoked_at, expires_at, created_at")
+        .eq("project_id", data.projectId)
+        .is("revoked_at", null)
+        .order("company_name", { ascending: true }),
+      context.supabase
+        .from("subcontractors")
+        .select("id, company_name, manager_name, created_at")
+        .eq("project_id", data.projectId),
+    ]);
+    if (invitesRes.error) throw new Error(invitesRes.error.message);
+    if (existingSubsRes.error) throw new Error(existingSubsRes.error.message);
+
+    const existingByName = new Map<string, any>();
+    for (const s of (existingSubsRes.data ?? []) as any[]) {
+      existingByName.set(String(s.company_name).trim().toLowerCase(), s);
+    }
+
+    // Fold invites in first (authoritative list of who should be on site).
+    type Row = { id: string; company_name: string; manager_name: string | null; trade_packages: string[]; status: "pending" | "active"; created_at: string };
+    const rows: Row[] = [];
+    const seen = new Set<string>();
+    for (const inv of (invitesRes.data ?? []) as any[]) {
+      const key = String(inv.company_name).trim().toLowerCase();
+      seen.add(key);
+      let subId: string;
+      const existing = existingByName.get(key);
+      if (existing) {
+        subId = existing.id;
+      } else {
+        subId = await ensureSubcontractor(context.supabase, data.projectId, inv.company_name);
+      }
+      rows.push({
+        id: subId,
+        company_name: inv.company_name,
+        manager_name: (existing?.manager_name as string | null) ?? (inv.pm_name as string | null) ?? (inv.supervisor_name as string | null) ?? null,
+        trade_packages: (inv.trade_packages as string[] | null) ?? [],
+        status: inv.accepted_at ? "active" : "pending",
+        created_at: inv.created_at,
+      });
+    }
+    // Include any legacy subcontractor rows without a matching invite.
+    for (const s of (existingSubsRes.data ?? []) as any[]) {
+      const key = String(s.company_name).trim().toLowerCase();
+      if (seen.has(key)) continue;
+      rows.push({
+        id: s.id,
+        company_name: s.company_name,
+        manager_name: s.manager_name ?? null,
+        trade_packages: [],
+        status: "active",
+        created_at: s.created_at,
+      });
+    }
+
     const detailed = await Promise.all(
-      rows.map(async (s: any) => {
+      rows.map(async (s) => {
         const [w, r, t, l] = await Promise.all([
           context.supabase.from("workers").select("id,name,role,competency_card_url,created_at").eq("subcontractor_id", s.id).order("created_at", { ascending: false }),
           context.supabase.from("registers").select("id,type,asset_name,inspection_date,certificate_url,created_at").eq("subcontractor_id", s.id).order("created_at", { ascending: false }),
@@ -235,6 +289,7 @@ export const getManagerPack = createServerFn({ method: "POST" })
     );
     return { subcontractors: detailed };
   });
+
 
 export const checkWorkerDuplicate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
