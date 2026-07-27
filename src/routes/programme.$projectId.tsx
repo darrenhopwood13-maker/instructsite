@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ReportViewer } from "@/components/reports/ReportViewer";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import {
@@ -279,6 +280,11 @@ function ProgrammePage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["manager-notes", projectId, date] });
       setDraft("");
+      toast.success("Note posted to today's playbook.");
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Failed to post note.";
+      toast.error(msg);
     },
   });
 

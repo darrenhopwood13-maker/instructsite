@@ -101,6 +101,16 @@ function SiteManagerPage() {
     refetchInterval: 8000,
   });
 
+  // Project-wide pins (all sheets) — powers the counters and Active Crews list
+  // so those totals reflect every live pin on the project, not just the sheet
+  // currently open in the drawing viewer.
+  const projectPins = useQuery({
+    queryKey: ["live-pins-all", projectId],
+    queryFn: () => pinsFn({ data: { projectId, activeOnly: true } }),
+    enabled: allowLoad,
+    refetchInterval: 8000,
+  });
+
   const archivedToday = useQuery({
     queryKey: ["archived-today", projectId],
     queryFn: () => archivedFn({ data: { projectId } }),
@@ -116,7 +126,10 @@ function SiteManagerPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "live_site_activity", filter: `project_id=eq.${projectId}` },
-        () => qc.invalidateQueries({ queryKey: ["live-pins", projectId] }),
+        () => {
+          qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+          qc.invalidateQueries({ queryKey: ["live-pins-all", projectId] });
+        },
       )
       .on(
         "postgres_changes",
@@ -140,7 +153,7 @@ function SiteManagerPage() {
     return () => clearInterval(t);
   }, []);
 
-  const overtime = (pins.data ?? []).filter(
+  const overtime = (projectPins.data ?? []).filter(
     (p: any) => new Date(p.scheduled_finish).getTime() < now,
   );
 
@@ -176,6 +189,7 @@ function SiteManagerPage() {
     await closeFn({ data: { pinId } });
     setActivePin(null);
     qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+    qc.invalidateQueries({ queryKey: ["live-pins-all", projectId] });
   };
 
   if (roleGateReady && !isMainContractor) {
@@ -251,11 +265,14 @@ function SiteManagerPage() {
         </section>
 
         <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Active Pins" value={String((pins.data ?? []).length)} />
+          <StatCard label="Active Pins" value={String((projectPins.data ?? []).length)} />
           <StatCard
             label="Operatives On Site"
             value={String(
-              (pins.data ?? []).reduce((s: number, p: any) => s + (p.operative_count ?? 0), 0),
+              (projectPins.data ?? []).reduce(
+                (s: number, p: any) => s + (p.operative_count ?? 0),
+                0,
+              ),
             )}
           />
           <StatCard label="Overtime" value={String(overtime.length)} tone={overtime.length ? "alert" : "ok"} />
@@ -292,9 +309,15 @@ function SiteManagerPage() {
             Active Crews (All Sheets)
           </h2>
           <ul className="mt-3 space-y-2">
-            {(pins.data ?? []).map((p: any) => {
+            {(projectPins.data ?? []).map((p: any) => {
               const isOT = new Date(p.scheduled_finish).getTime() < now;
               const palette = pinColor(pinKey(p));
+              const startDate = new Date(p.start_time);
+              const today = new Date();
+              const sameDay =
+                startDate.getFullYear() === today.getFullYear() &&
+                startDate.getMonth() === today.getMonth() &&
+                startDate.getDate() === today.getDate();
               return (
                 <li
                   key={p.id}
@@ -314,8 +337,20 @@ function SiteManagerPage() {
                     <span className="min-w-0">
                       <p className="text-sm text-foreground">
                         {p.trade_package ?? "Untagged"} · {p.operative_count} ops
+                        {!sameDay && (
+                          <span className="ml-2 rounded-sm bg-alert/20 px-1.5 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert">
+                            {startDate.toLocaleDateString(undefined, {
+                              weekday: "short",
+                              day: "2-digit",
+                              month: "short",
+                            })}
+                          </span>
+                        )}
                       </p>
                       <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                        {p.project_drawings?.drawing_no
+                          ? `${p.project_drawings.drawing_no} · `
+                          : ""}
                         Started {new Date(p.start_time).toLocaleTimeString()} · finish{" "}
                         {new Date(p.scheduled_finish).toLocaleTimeString()}
                       </p>
@@ -329,7 +364,7 @@ function SiteManagerPage() {
                 </li>
               );
             })}
-            {(pins.data ?? []).length === 0 && (
+            {(projectPins.data ?? []).length === 0 && (
               <li className="glass-panel p-4 text-center text-xs text-foreground/50">
                 No active labor pins.
               </li>
@@ -379,6 +414,7 @@ function SiteManagerPage() {
           onClose={() => {
             setPermitPin(null);
             qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+            qc.invalidateQueries({ queryKey: ["live-pins-all", projectId] });
           }}
         />
       )}
@@ -391,6 +427,7 @@ function SiteManagerPage() {
             setForcePin(null);
             setActivePin(null);
             qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+            qc.invalidateQueries({ queryKey: ["live-pins-all", projectId] });
             qc.invalidateQueries({ queryKey: ["archived-today", projectId] });
           }}
         />

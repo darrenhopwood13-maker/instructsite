@@ -15,14 +15,31 @@ type DiaryRow = {
   trade_package: string | null;
   operative_count: number | null;
   hours_logged: number | null;
+  start_time: string | null;
+  checkout_time: string | null;
   progress_status: string | null;
   completion_pct: number | null;
   manager_completion_pct: number | null;
   notes: string | null;
   qs_status: string | null;
+  qs_rejection_reason: string | null;
+  qs_remeasure_required: boolean | null;
   photo_urls: string[] | null;
   work_zones?: { name?: string | null; level?: string | null } | null;
 };
+
+function formatHours(row: DiaryRow): string {
+  const logged = Number(row.hours_logged ?? 0);
+  if (logged > 0) return `${logged}h`;
+  if (row.start_time && row.checkout_time) {
+    const ms = new Date(row.checkout_time).getTime() - new Date(row.start_time).getTime();
+    if (ms > 0) {
+      const h = ms / 3_600_000;
+      return `${h.toFixed(h < 1 ? 2 : 1)}h`;
+    }
+  }
+  return "—";
+}
 
 function DiaryPhotoGrid({
   paths,
@@ -247,19 +264,50 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
   const setStatusFn = useServerFn(setDiaryQsStatus);
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
   const [inspecting, setInspecting] = useState<DiaryRow | null>(null);
+  const [rejecting, setRejecting] = useState<DiaryRow | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [remeasure, setRemeasure] = useState(false);
+  const [rejectBusy, setRejectBusy] = useState(false);
 
   const q = useQuery({
     queryKey: ["qs-queue", projectId],
     queryFn: () => listFn({ data: { projectId } }),
   });
 
-  const reject = async (diaryId: string) => {
+  const openReject = (r: DiaryRow) => {
+    setRejectReason("");
+    setRemeasure(false);
+    setRejecting(r);
+  };
+
+  const submitReject = async () => {
+    if (!rejecting) return;
+    const trimmed = rejectReason.trim();
+    if (trimmed.length < 10) {
+      toast.error("Please write at least 10 characters explaining the rejection.");
+      return;
+    }
+    setRejectBusy(true);
     try {
-      await setStatusFn({ data: { diaryId, status: "rejected" } });
-      toast.success("Rejected.");
+      await setStatusFn({
+        data: {
+          diaryId: rejecting.id,
+          status: "rejected",
+          reason: trimmed,
+          remeasureRequired: remeasure,
+        },
+      });
+      toast.success(
+        remeasure
+          ? "Rejected — subcontractor asked to re-measure and resubmit."
+          : "Rejected — subcontractor notified with your reason.",
+      );
+      setRejecting(null);
       qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to update diary.");
+      toast.error(err?.message ?? "Failed to reject diary.");
+    } finally {
+      setRejectBusy(false);
     }
   };
 
@@ -289,7 +337,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-foreground">
-                    {r.trade_package ?? "Untagged"} · {r.operative_count} ops · {r.hours_logged}h
+                    {r.trade_package ?? "Untagged"} · {r.operative_count} ops · {formatHours(r)}
                   </p>
                   <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
                     {r.work_zones?.name ?? "no zone"}
@@ -334,7 +382,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => reject(r.id)}
+                    onClick={() => openReject(r)}
                     className="inline-flex items-center gap-1 rounded-md border border-white/15 px-3 py-1.5 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-red-500 hover:text-red-400"
                   >
                     <XCircle size={12} /> Reject
@@ -360,18 +408,27 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
             {decided.map((r) => (
               <li
                 key={r.id}
-                className="flex items-center justify-between rounded-sm border border-white/10 bg-black/20 px-2 py-1.5 text-[0.65rem] text-foreground/70"
+                className="rounded-sm border border-white/10 bg-black/20 px-2 py-1.5 text-[0.65rem] text-foreground/70"
               >
-                <span className="truncate">
-                  {r.trade_package ?? "Untagged"} · {r.manager_completion_pct ?? r.completion_pct}%
-                </span>
-                <span
-                  className={`font-mono uppercase tracking-widest ${
-                    r.qs_status === "approved" ? "text-green-400" : "text-red-400"
-                  }`}
-                >
-                  {r.qs_status}
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="truncate">
+                    {r.trade_package ?? "Untagged"} ·{" "}
+                    {r.manager_completion_pct ?? r.completion_pct}%
+                  </span>
+                  <span
+                    className={`font-mono uppercase tracking-widest ${
+                      r.qs_status === "approved" ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {r.qs_status}
+                    {r.qs_status === "rejected" && r.qs_remeasure_required ? " · remeasure" : ""}
+                  </span>
+                </div>
+                {r.qs_status === "rejected" && r.qs_rejection_reason && (
+                  <p className="mt-1 whitespace-pre-wrap text-[0.65rem] italic text-red-300/90">
+                    "{r.qs_rejection_reason}"
+                  </p>
+                )}
               </li>
             ))}
           </ul>
@@ -393,6 +450,88 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
           onClose={() => setLightbox(null)}
           onNav={(next) => setLightbox({ ...lightbox, index: next })}
         />
+      )}
+
+      {rejecting && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => !rejectBusy && setRejecting(null)}
+        >
+          <div
+            className="glass-panel w-full max-w-md border-l-4 border-l-red-500 p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="inline-flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.28em] text-red-400">
+                  <XCircle size={13} /> Reject Diary
+                </p>
+                <p className="mt-1 text-sm font-bold text-foreground">
+                  {rejecting.trade_package ?? "Untagged"} ·{" "}
+                  {rejecting.work_zones?.name ?? "no zone"}
+                </p>
+                <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
+                  Claimed {rejecting.completion_pct}% · {formatHours(rejecting)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => !rejectBusy && setRejecting(null)}
+                className="rounded-sm border border-white/20 p-1 text-foreground/60 hover:text-foreground"
+                aria-label="Close"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <label className="mt-4 block">
+              <span className="text-[0.6rem] font-bold uppercase tracking-widest text-foreground/60">
+                Reason for rejection (subcontractor sees this)
+              </span>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={4}
+                placeholder="e.g. Claimed 60% but only ground-floor block laid — approx. 25%. Photos don't cover Zone B."
+                className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-2.5 py-2 text-xs text-foreground outline-none focus:border-red-500"
+              />
+              <span className="mt-1 block text-[0.6rem] text-foreground/50">
+                {rejectReason.trim().length} / 10 min characters
+              </span>
+            </label>
+
+            <label className="mt-3 flex items-start gap-2 rounded-md border border-white/10 bg-black/30 p-2.5">
+              <input
+                type="checkbox"
+                checked={remeasure}
+                onChange={(e) => setRemeasure(e.target.checked)}
+                className="mt-0.5 accent-alert"
+              />
+              <span className="text-[0.7rem] leading-tight text-foreground/80">
+                Require re-measure and resubmission before this claim can be approved.
+              </span>
+            </label>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={submitReject}
+                disabled={rejectBusy || rejectReason.trim().length < 10}
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border-2 border-red-500 bg-red-500/10 px-3 py-2 text-[0.6rem] font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/20 disabled:opacity-40"
+              >
+                <XCircle size={13} /> {rejectBusy ? "Rejecting…" : "Confirm Rejection"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRejecting(null)}
+                disabled={rejectBusy}
+                className="rounded-md border border-white/15 px-3 py-2 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-white/30 disabled:opacity-40"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

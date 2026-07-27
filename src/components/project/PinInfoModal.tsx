@@ -47,11 +47,29 @@ export function PinInfoModal({
   const palette = pinColor(key);
 
   const now = Date.now();
-  const elapsed = pin?.start_time
-    ? fmtDuration(now - new Date(pin.start_time).getTime())
-    : "—";
+  const startMs = pin?.start_time ? new Date(pin.start_time).getTime() : null;
+  const today = new Date();
+  const startDate = pin?.start_time ? new Date(pin.start_time) : null;
+  const isSameDay =
+    startDate !== null &&
+    startDate.getFullYear() === today.getFullYear() &&
+    startDate.getMonth() === today.getMonth() &&
+    startDate.getDate() === today.getDate();
+  const isFuture = startMs !== null && startMs > now;
+  const elapsed =
+    startMs !== null && !isFuture ? fmtDuration(now - startMs) : "—";
+  const scheduledWindow =
+    pin?.start_time && pin?.scheduled_finish
+      ? fmtDuration(
+          new Date(pin.scheduled_finish).getTime() -
+            new Date(pin.start_time).getTime(),
+        )
+      : null;
   const overtime =
-    pin?.scheduled_finish && new Date(pin.scheduled_finish).getTime() < now;
+    !isFuture &&
+    isSameDay &&
+    pin?.scheduled_finish &&
+    new Date(pin.scheduled_finish).getTime() < now;
 
   return (
     <div
@@ -129,14 +147,30 @@ export function PinInfoModal({
                 {pin.work_zones?.name ?? "No zone"}
                 {pin.work_zones?.level ? ` · ${pin.work_zones.level}` : ""}
               </Row>
-              <Row icon={<Clock size={12} />} label="Started">
+              <Row icon={<Clock size={12} />} label={isFuture ? "Scheduled start" : "Started"}>
                 {pin.start_time ? new Date(pin.start_time).toLocaleString() : "—"}
-                <span className="ml-1 text-foreground/50">· {elapsed} elapsed</span>
+                {isFuture ? (
+                  <span className="ml-1 text-amber-300">· scheduled — not yet on site</span>
+                ) : isSameDay ? (
+                  <span className="ml-1 text-foreground/50">· {elapsed} elapsed today</span>
+                ) : (
+                  <span className="ml-1 text-foreground/50">
+                    · logged on{" "}
+                    {startDate?.toLocaleDateString(undefined, {
+                      weekday: "short",
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </span>
+                )}
               </Row>
               <Row icon={<Clock size={12} />} label="Scheduled finish">
                 {pin.scheduled_finish
                   ? new Date(pin.scheduled_finish).toLocaleString()
                   : "—"}
+                {scheduledWindow && (
+                  <span className="ml-1 text-foreground/50">· {scheduledWindow} planned</span>
+                )}
               </Row>
 
               {pin.notes && (
@@ -150,11 +184,23 @@ export function PinInfoModal({
                 </div>
               )}
 
+              {isFuture && (
+                <p className="rounded-sm border border-amber-400 bg-amber-400/10 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300">
+                  Future-dated shift — starts{" "}
+                  {startDate?.toLocaleDateString(undefined, {
+                    weekday: "short",
+                    day: "2-digit",
+                    month: "short",
+                  })}
+                </p>
+              )}
               {overtime && (
                 <p className="rounded-sm border border-red-500 bg-red-600/20 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-red-400">
                   Overtime · past scheduled finish
                 </p>
               )}
+
+
 
               <PermitsBlock
                 needed={!!pin.permit_required}
