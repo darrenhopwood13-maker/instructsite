@@ -161,13 +161,19 @@ function ProjectBiblePage() {
         )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((doc) => (
-            <DocumentCard
-              key={`${doc.source}-${doc.id}`}
-              doc={doc}
-              onView={() => setSelected(doc)}
-            />
-          ))}
+          {filtered.map((doc) => {
+            const snippet = searchHits.get(doc.id);
+            return (
+              <div key={`${doc.source}-${doc.id}`} className="flex flex-col gap-1">
+                <DocumentCard doc={doc} onView={() => setSelected(doc)} />
+                {snippet && (
+                  <p className="rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-[11px] italic text-foreground/70">
+                    …{snippet}…
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
