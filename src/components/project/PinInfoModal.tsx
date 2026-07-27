@@ -47,11 +47,29 @@ export function PinInfoModal({
   const palette = pinColor(key);
 
   const now = Date.now();
-  const elapsed = pin?.start_time
-    ? fmtDuration(now - new Date(pin.start_time).getTime())
-    : "—";
+  const startMs = pin?.start_time ? new Date(pin.start_time).getTime() : null;
+  const today = new Date();
+  const startDate = pin?.start_time ? new Date(pin.start_time) : null;
+  const isSameDay =
+    startDate !== null &&
+    startDate.getFullYear() === today.getFullYear() &&
+    startDate.getMonth() === today.getMonth() &&
+    startDate.getDate() === today.getDate();
+  const isFuture = startMs !== null && startMs > now;
+  const elapsed =
+    startMs !== null && !isFuture ? fmtDuration(now - startMs) : "—";
+  const scheduledWindow =
+    pin?.start_time && pin?.scheduled_finish
+      ? fmtDuration(
+          new Date(pin.scheduled_finish).getTime() -
+            new Date(pin.start_time).getTime(),
+        )
+      : null;
   const overtime =
-    pin?.scheduled_finish && new Date(pin.scheduled_finish).getTime() < now;
+    !isFuture &&
+    isSameDay &&
+    pin?.scheduled_finish &&
+    new Date(pin.scheduled_finish).getTime() < now;
 
   return (
     <div
