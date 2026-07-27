@@ -1,9 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { generateText, Output } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { ORACLE_PERSONA } from "@/lib/oracle-persona";
+
 
 const SnagReport = z.object({
   defectTitle: z.string(),
@@ -157,7 +156,6 @@ export const analyzeSnag = createServerFn({ method: "POST" })
       }
     }
 
-    const gateway = createLovableAiGatewayProvider(key);
     const dataUrl = `data:${data.mimeType};base64,${data.dataBase64}`;
 
     const systemPrompt = [
@@ -170,35 +168,71 @@ export const analyzeSnag = createServerFn({ method: "POST" })
       "- Cite real UK regs where applicable: Building Regs Part L/E/B/K, BS 8000, BS 5395, CDM 2015, HSE guidance, NHBC Standards.",
       "- The 'tradesman's hack' is a hard-won trade tip a senior foreman would tell a green apprentice — practical, cheap, effective.",
       "- The severity assessment must weigh architectural impact, structural risk and safety together.",
+      "",
+      "OUTPUT: Reply with ONLY a single JSON object matching this exact shape. No markdown fences, no prose before or after.",
+      `{"defectTitle": string, "description": string, "cause": string, "rectificationOptionA": string, "rectificationOptionB": string, "tradesmanHack": string, "regulatoryCitations": string[], "hsNotes": string, "severity": "low"|"medium"|"high"|"critical", "trade": string}`,
     ].join("\n");
 
+    const userText =
+      "As The Oracle, inspect this snag photo with your full 30 years of site, design, architectural, structural, and regulatory expertise. Return the JSON report described in the system prompt.";
+
+    let raw: string;
     try {
-      const { output } = await generateText({
-        model: gateway("openai/gpt-4o"),
-        system: systemPrompt,
-        output: Output.object({ schema: SnagReport }),
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text:
-                  "As The Oracle, inspect this snag photo with your full 30 years of site, design, architectural, structural, and regulatory expertise. Draw on your fellowships — RICS for measurement/quality, ICE/IStructE for structural, RIBA for design intent, CIOB for trade quality, BIID for interior fit-out, HSE for safety. Return a JSON report with: defectTitle (5–8 words), description (2–4 sentences citing trade impact), cause (root cause), rectificationOptionA (proper by-the-book fix referencing relevant regulations), rectificationOptionB (fast/budget alternative), tradesmanHack (real trade tip), regulatoryCitations (array of relevant UK regs/standards and which fellowship body governs them), hsNotes (health & safety concerns with CDM 2015 relevance), severity (low/medium/high/critical — consider structural, architectural and safety risk together), trade (which trade owns this: bricklayer/carpenter/plumber/electrician/tiler/steelworker/roofer etc).",
-              },
-              { type: "image", image: dataUrl },
-            ],
-          },
-        ],
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-pro",
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: userText },
+                { type: "image_url", image_url: { url: dataUrl } },
+              ],
+            },
+          ],
+        }),
       });
-      return { report: output, photoPath };
+
+      if (!resp.ok) {
+        const body = await resp.text().catch(() => "");
+        await supabaseAdmin.storage.from("snag-photos").remove([photoPath]).catch(() => {});
+        if (resp.status === 429) throw new Error("Rate limit hit — hold on and try again in a moment.");
+        if (resp.status === 402) throw new Error("Out of AI credits — top up the workspace to keep the Oracle online.");
+        throw new Error(`AI gateway ${resp.status}: ${body.slice(0, 400) || "no body"}`);
+      }
+
+      const json = (await resp.json()) as { choices?: Array<{ message?: { content?: string } }> };
+      raw = json.choices?.[0]?.message?.content ?? "";
+      if (!raw.trim()) throw new Error("The Oracle returned an empty report — try a clearer photo.");
     } catch (error) {
-      // Clean up the orphan upload if AI failed
       await supabaseAdmin.storage.from("snag-photos").remove([photoPath]).catch(() => {});
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const msg = (error as any)?.message || "AI analysis failed.";
+      const msg = error instanceof Error ? error.message : String(error);
       throw new Error(msg);
     }
+
+    let parsed: unknown;
+    try {
+      // Strip accidental ```json fences just in case.
+      const cleaned = raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+      parsed = JSON.parse(cleaned);
+    } catch {
+      await supabaseAdmin.storage.from("snag-photos").remove([photoPath]).catch(() => {});
+      throw new Error("The Oracle's reply was not valid JSON — try again.");
+    }
+
+    const validated = SnagReport.safeParse(parsed);
+    if (!validated.success) {
+      await supabaseAdmin.storage.from("snag-photos").remove([photoPath]).catch(() => {});
+      throw new Error("The Oracle's report was missing required fields — try again.");
+    }
+    return { report: validated.data, photoPath };
   });
 
 export const createSnag = createServerFn({ method: "POST" })
