@@ -126,7 +126,10 @@ function SiteManagerPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "live_site_activity", filter: `project_id=eq.${projectId}` },
-        () => qc.invalidateQueries({ queryKey: ["live-pins", projectId] }),
+        () => {
+          qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+          qc.invalidateQueries({ queryKey: ["live-pins-all", projectId] });
+        },
       )
       .on(
         "postgres_changes",
