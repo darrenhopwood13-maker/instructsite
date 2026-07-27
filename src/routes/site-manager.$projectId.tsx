@@ -101,6 +101,16 @@ function SiteManagerPage() {
     refetchInterval: 8000,
   });
 
+  // Project-wide pins (all sheets) — powers the counters and Active Crews list
+  // so those totals reflect every live pin on the project, not just the sheet
+  // currently open in the drawing viewer.
+  const projectPins = useQuery({
+    queryKey: ["live-pins-all", projectId],
+    queryFn: () => pinsFn({ data: { projectId, activeOnly: true } }),
+    enabled: allowLoad,
+    refetchInterval: 8000,
+  });
+
   const archivedToday = useQuery({
     queryKey: ["archived-today", projectId],
     queryFn: () => archivedFn({ data: { projectId } }),
