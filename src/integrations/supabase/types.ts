@@ -1566,7 +1566,10 @@ export type Database = {
       }
       site_documents: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           bucket: string
+          content_hash: string | null
           created_at: string
           extraction_error: string | null
           extraction_status: string
@@ -1575,11 +1578,16 @@ export type Database = {
           file_size: number | null
           id: string
           mime_type: string | null
+          revision_of: string | null
+          superseded_by: string | null
           updated_at: string
           uploaded_by: string
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           bucket?: string
+          content_hash?: string | null
           created_at?: string
           extraction_error?: string | null
           extraction_status?: string
@@ -1588,11 +1596,16 @@ export type Database = {
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          revision_of?: string | null
+          superseded_by?: string | null
           updated_at?: string
           uploaded_by: string
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           bucket?: string
+          content_hash?: string | null
           created_at?: string
           extraction_error?: string | null
           extraction_status?: string
@@ -1601,10 +1614,27 @@ export type Database = {
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          revision_of?: string | null
+          superseded_by?: string | null
           updated_at?: string
           uploaded_by?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "site_documents_revision_of_fkey"
+            columns: ["revision_of"]
+            isOneToOne: false
+            referencedRelation: "site_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_documents_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "site_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       snag_comments: {
         Row: {

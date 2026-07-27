@@ -56,6 +56,7 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
       const payload = elements.map((el) => ({
         globalId: el.globalId,
         text: [el.name, el.objectType, el.longName, el.ifcType].filter(Boolean).join(" | "),
+        ifcType: el.ifcType ?? "",
       }));
       const res = await autoFn({ data: { projectId, elements: payload } });
       if (!res.ok) {
@@ -65,7 +66,9 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
           description: res.reason ?? "Try naming zones like 'Kitchen', 'Bathroom', 'Structural Steel'",
         });
       } else {
-        toast.success(`✨ Randall auto-allocated ${res.count} elements`);
+        const c = (res as any).confidence;
+        const detail = c ? ` · ${c.hard} hard · ${c.strong} strong · ${c.weak} weak` : "";
+        toast.success(`✨ Randall auto-allocated ${res.count} elements${detail}`);
         qc.invalidateQueries({ queryKey: ["ifc-mappings", projectId] });
       }
     } catch (e: any) {

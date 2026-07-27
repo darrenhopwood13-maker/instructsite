@@ -15,6 +15,7 @@ import { Route as TrialEndedRouteImport } from './routes/trial-ended'
 import { Route as ToolingRouteImport } from './routes/tooling'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as OrganisationRouteImport } from './routes/organisation'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as ManualRouteImport } from './routes/manual'
@@ -33,6 +34,7 @@ import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
+import { Route as OrganisationRestRouteImport } from './routes/organisation.$rest'
 import { Route as OrgNewRouteImport } from './routes/org.new'
 import { Route as OrgOrgIdRouteImport } from './routes/org.$orgId'
 import { Route as MyDiaryProjectIdRouteImport } from './routes/my-diary.$projectId'
@@ -84,6 +86,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganisationRoute = OrganisationRouteImport.update({
+  id: '/organisation',
+  path: '/organisation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OracleRoute = OracleRouteImport.update({
@@ -175,6 +182,11 @@ const ProgrammeProjectIdRoute = ProgrammeProjectIdRouteImport.update({
   id: '/programme/$projectId',
   path: '/programme/$projectId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const OrganisationRestRoute = OrganisationRestRouteImport.update({
+  id: '/$rest',
+  path: '/$rest',
+  getParentRoute: () => OrganisationRoute,
 } as any)
 const OrgNewRoute = OrgNewRouteImport.update({
   id: '/org/new',
@@ -302,6 +314,7 @@ export interface FileRoutesByFullPath {
   '/manual': typeof ManualRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/organisation': typeof OrganisationRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/tooling': typeof ToolingRoute
@@ -318,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/my-diary/$projectId': typeof MyDiaryProjectIdRoute
   '/org/$orgId': typeof OrgOrgIdRouteWithChildren
   '/org/new': typeof OrgNewRoute
+  '/organisation/$rest': typeof OrganisationRestRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -350,6 +364,7 @@ export interface FileRoutesByTo {
   '/manual': typeof ManualRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/organisation': typeof OrganisationRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/tooling': typeof ToolingRoute
@@ -365,6 +380,7 @@ export interface FileRoutesByTo {
   '/join-org/$slug': typeof JoinOrgSlugRoute
   '/my-diary/$projectId': typeof MyDiaryProjectIdRoute
   '/org/new': typeof OrgNewRoute
+  '/organisation/$rest': typeof OrganisationRestRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -398,6 +414,7 @@ export interface FileRoutesById {
   '/manual': typeof ManualRoute
   '/mcp': typeof McpRoute
   '/oracle': typeof OracleRoute
+  '/organisation': typeof OrganisationRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/tooling': typeof ToolingRoute
@@ -414,6 +431,7 @@ export interface FileRoutesById {
   '/my-diary/$projectId': typeof MyDiaryProjectIdRoute
   '/org/$orgId': typeof OrgOrgIdRouteWithChildren
   '/org/new': typeof OrgNewRoute
+  '/organisation/$rest': typeof OrganisationRestRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -448,6 +466,7 @@ export interface FileRouteTypes {
     | '/manual'
     | '/mcp'
     | '/oracle'
+    | '/organisation'
     | '/pricing'
     | '/reset-password'
     | '/tooling'
@@ -464,6 +483,7 @@ export interface FileRouteTypes {
     | '/my-diary/$projectId'
     | '/org/$orgId'
     | '/org/new'
+    | '/organisation/$rest'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -496,6 +516,7 @@ export interface FileRouteTypes {
     | '/manual'
     | '/mcp'
     | '/oracle'
+    | '/organisation'
     | '/pricing'
     | '/reset-password'
     | '/tooling'
@@ -511,6 +532,7 @@ export interface FileRouteTypes {
     | '/join-org/$slug'
     | '/my-diary/$projectId'
     | '/org/new'
+    | '/organisation/$rest'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -543,6 +565,7 @@ export interface FileRouteTypes {
     | '/manual'
     | '/mcp'
     | '/oracle'
+    | '/organisation'
     | '/pricing'
     | '/reset-password'
     | '/tooling'
@@ -559,6 +582,7 @@ export interface FileRouteTypes {
     | '/my-diary/$projectId'
     | '/org/$orgId'
     | '/org/new'
+    | '/organisation/$rest'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -592,6 +616,7 @@ export interface RootRouteChildren {
   ManualRoute: typeof ManualRoute
   McpRoute: typeof McpRoute
   OracleRoute: typeof OracleRoute
+  OrganisationRoute: typeof OrganisationRouteWithChildren
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ToolingRoute: typeof ToolingRoute
@@ -673,6 +698,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organisation': {
+      id: '/organisation'
+      path: '/organisation'
+      fullPath: '/organisation'
+      preLoaderRoute: typeof OrganisationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oracle': {
@@ -800,6 +832,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/programme/$projectId'
       preLoaderRoute: typeof ProgrammeProjectIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/organisation/$rest': {
+      id: '/organisation/$rest'
+      path: '/$rest'
+      fullPath: '/organisation/$rest'
+      preLoaderRoute: typeof OrganisationRestRouteImport
+      parentRoute: typeof OrganisationRoute
     }
     '/org/new': {
       id: '/org/new'
@@ -958,6 +997,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface OrganisationRouteChildren {
+  OrganisationRestRoute: typeof OrganisationRestRoute
+}
+
+const OrganisationRouteChildren: OrganisationRouteChildren = {
+  OrganisationRestRoute: OrganisationRestRoute,
+}
+
+const OrganisationRouteWithChildren = OrganisationRoute._addFileChildren(
+  OrganisationRouteChildren,
+)
+
 interface OrgOrgIdRouteChildren {
   OrgOrgIdEditRoute: typeof OrgOrgIdEditRoute
   OrgOrgIdIndexRoute: typeof OrgOrgIdIndexRoute
@@ -980,6 +1031,7 @@ const rootRouteChildren: RootRouteChildren = {
   ManualRoute: ManualRoute,
   McpRoute: McpRoute,
   OracleRoute: OracleRoute,
+  OrganisationRoute: OrganisationRouteWithChildren,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ToolingRoute: ToolingRoute,

@@ -6,6 +6,7 @@ import { ArrowLeft, BookOpen, Search, Loader2 } from "lucide-react";
 import { getProject } from "@/lib/projects.functions";
 import {
   listProjectBibleDocuments,
+  searchProjectBible,
   type BibleDocument,
 } from "@/lib/project-bible.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
@@ -40,8 +41,26 @@ function ProjectBiblePage() {
   });
 
   const [query, setQuery] = useState("");
+  const [debounced, setDebounced] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query.trim()), 300);
+    return () => clearTimeout(t);
+  }, [query]);
   const [category, setCategory] = useState<string>("all");
   const [selected, setSelected] = useState<BibleDocument | null>(null);
+
+  const searchFn = useServerFn(searchProjectBible);
+  const searchQ = useQuery({
+    queryKey: ["bible-search", projectId, debounced],
+    queryFn: () => searchFn({ data: { projectId, query: debounced } }),
+    enabled: ready && debounced.length >= 3,
+    staleTime: 30_000,
+  });
+  const searchHits = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of searchQ.data ?? []) m.set(r.documentId, r.snippet);
+    return m;
+  }, [searchQ.data]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -54,12 +73,15 @@ function ProjectBiblePage() {
     return (docsQ.data ?? []).filter((d) => {
       if (category !== "all" && d.category !== category) return false;
       if (!q) return true;
-      return (
+      if (
         d.title.toLowerCase().includes(q) ||
         d.fileName.toLowerCase().includes(q)
-      );
+      )
+        return true;
+      // Full-text hit against extracted content
+      return searchHits.has(d.id);
     });
-  }, [docsQ.data, query, category]);
+  }, [docsQ.data, query, category, searchHits]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -139,13 +161,19 @@ function ProjectBiblePage() {
         )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((doc) => (
-            <DocumentCard
-              key={`${doc.source}-${doc.id}`}
-              doc={doc}
-              onView={() => setSelected(doc)}
-            />
-          ))}
+          {filtered.map((doc) => {
+            const snippet = searchHits.get(doc.id);
+            return (
+              <div key={`${doc.source}-${doc.id}`} className="flex flex-col gap-1">
+                <DocumentCard doc={doc} onView={() => setSelected(doc)} />
+                {snippet && (
+                  <p className="rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-[11px] italic text-foreground/70">
+                    …{snippet}…
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
