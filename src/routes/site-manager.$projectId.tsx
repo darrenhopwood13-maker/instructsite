@@ -189,6 +189,7 @@ function SiteManagerPage() {
     await closeFn({ data: { pinId } });
     setActivePin(null);
     qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+    qc.invalidateQueries({ queryKey: ["live-pins-all", projectId] });
   };
 
   if (roleGateReady && !isMainContractor) {
