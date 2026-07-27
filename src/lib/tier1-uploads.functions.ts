@@ -156,10 +156,37 @@ export const registerTier1Document = createServerFn({ method: "POST" })
     // 3) extraction (best-effort)
     let extractionStatus: "complete" | "empty" | "failed" = "empty";
     let extractionError: string | null = null;
+    const mime = (data.mimeType ?? "").toLowerCase();
+    const isImage = mime.startsWith("image/");
     try {
+      // Site logistics plans uploaded as raster images (PNG/JPEG/HEIC) can't be
+      // text-parsed. Surface a clear, actionable error instead of silently
+      // leaving the row in "processing" forever.
+      if (data.docType === "logistics" && isImage) {
+        throw new Error(
+          "Image-format site plans can't be text-parsed. Re-upload the logistics plan as a PDF, or add work zones manually from the DABS panel.",
+        );
+      }
+
       const rawText = await downloadDocText(supabase, sd.id);
       if (!rawText || rawText.trim().length < 20) {
         extractionStatus = "empty";
+        if (data.docType === "logistics") {
+          // Don't leave the specialized row stuck on "processing".
+          await supabase
+            .from("logistics_plans")
+            .update({
+              extraction_status: "empty",
+              extraction_error:
+                "No readable text found in the uploaded plan. Re-upload a text-based PDF, or add work zones manually.",
+            })
+            .eq("site_document_id", sd.id);
+        } else if (data.docType === "drawing") {
+          await supabase
+            .from("project_drawings")
+            .update({ extraction_status: "empty" })
+            .eq("site_document_id", sd.id);
+        }
       } else if (data.docType === "drawing") {
         const meta = await aiJson<{
           drawing_no?: string;
@@ -196,16 +223,49 @@ export const registerTier1Document = createServerFn({ method: "POST" })
           'Extract the work zones / site areas / levels described in this Site Logistics Plan. Return JSON: { "zones": [{ "name": string, "level"?: string, "description"?: string }] }.',
           rawText,
         );
+        const zones = Array.isArray(meta.zones) ? meta.zones : [];
         await supabase
           .from("logistics_plans")
           .update({
-            extracted_zones: meta.zones ?? [],
+            extracted_zones: zones,
             extraction_status: "complete",
+            extraction_error: null,
           })
           .eq("site_document_id", sd.id);
-        // extracted_zones JSON is kept on logistics_plans so Oracle can use it
-        // as context when allocating zones for a DABS-flagged drawing. We no
-        // longer upsert into work_zones on upload.
+
+        // Persist the zones into work_zones so DABS can immediately pick a
+        // location without waiting for a manager to hand-key them. Uses
+        // source='logistics' so downstream views can distinguish these from
+        // Oracle-allocated zones. Deduped by (project_id, name, level, source).
+        if (zones.length > 0) {
+          const seen = new Set<string>();
+          const rows = zones
+            .map((z) => ({
+              project_id: data.projectId,
+              name: (z?.name ?? "").trim(),
+              level: z?.level?.trim() || null,
+              source: "logistics" as const,
+              status: "active" as const,
+            }))
+            .filter((r) => {
+              if (!r.name) return false;
+              const k = `${r.name.toLowerCase()}|${(r.level ?? "").toLowerCase()}`;
+              if (seen.has(k)) return false;
+              seen.add(k);
+              return true;
+            });
+          if (rows.length > 0) {
+            // Best-effort — a partial failure here shouldn't fail the whole
+            // logistics extraction, since the raw zones are already saved on
+            // logistics_plans.extracted_zones for manual reconciliation.
+            const { error: zErr } = await (supabase as any)
+              .from("work_zones")
+              .upsert(rows, { onConflict: "project_id,name,level,source", ignoreDuplicates: true });
+            if (zErr) {
+              extractionError = `Zones extracted but not all could be saved: ${zErr.message}`;
+            }
+          }
+        }
 
         extractionStatus = "complete";
       } else {
@@ -213,7 +273,7 @@ export const registerTier1Document = createServerFn({ method: "POST" })
       }
       await supabase
         .from("site_documents")
-        .update({ extraction_status: extractionStatus, extraction_error: null })
+        .update({ extraction_status: extractionStatus, extraction_error: extractionError })
         .eq("id", sd.id);
     } catch (err) {
       extractionError = err instanceof Error ? err.message : "Extraction failed";
