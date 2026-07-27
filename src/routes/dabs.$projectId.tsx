@@ -299,13 +299,26 @@ function DabsPage() {
                     Discard
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCheckoutPin(p)}
-                  className="glass-orange shimmer-btn mt-3 flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-xs font-bold uppercase tracking-widest"
-                >
-                  <LogOut size={14} /> Close Out Today's Shift / Complete Daily Diary
-                </button>
+                {(() => {
+                  const startDate = new Date(p.start_time);
+                  const today = new Date();
+                  const sameDay =
+                    startDate.getFullYear() === today.getFullYear() &&
+                    startDate.getMonth() === today.getMonth() &&
+                    startDate.getDate() === today.getDate();
+                  const label = sameDay
+                    ? "Close Out Today's Shift / Complete Daily Diary"
+                    : `Close Out ${startDate.toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "short" })} Shift / Complete Daily Diary`;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutPin(p)}
+                      className="glass-orange shimmer-btn mt-3 flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-xs font-bold uppercase tracking-widest"
+                    >
+                      <LogOut size={14} /> {label}
+                    </button>
+                  );
+                })()}
               </li>
               );
             })}
