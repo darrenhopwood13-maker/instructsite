@@ -70,7 +70,7 @@ export const listQsQueue = createServerFn({ method: "GET" })
     const { data: rows, error } = await (context.supabase
       .from("daily_site_diaries") as any)
       .select(
-        "id, trade_package, operative_count, hours_logged, progress_status, completion_pct, manager_completion_pct, manager_notes, manager_photo_urls, inspected_by, inspected_at, notes, checkout_time, qs_status, ifc_synced, photo_urls, zone_id, workface_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
+        "id, trade_package, operative_count, hours_logged, start_time, checkout_time, progress_status, completion_pct, manager_completion_pct, manager_notes, manager_photo_urls, inspected_by, inspected_at, notes, qs_status, qs_rejection_reason, qs_remeasure_required, ifc_synced, photo_urls, zone_id, workface_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
       )
       .eq("project_id", data.projectId)
       .order("checkout_time", { ascending: false })
@@ -86,6 +86,17 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
       .object({
         diaryId: z.string().uuid(),
         status: z.enum(["approved", "rejected"]),
+        reason: z.string().trim().min(1).max(2000).optional(),
+        remeasureRequired: z.boolean().optional(),
+      })
+      .superRefine((val, ctx) => {
+        if (val.status === "rejected" && (!val.reason || val.reason.length < 10)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["reason"],
+            message: "A rejection reason (10+ characters) is required.",
+          });
+        }
       })
       .parse(i),
   )
@@ -114,11 +125,23 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
       .single();
     if (fetchErr || !diary) throw new Error("Diary not found.");
 
-    // Just set qs_status — the DB trigger `trg_sync_zone_ifc` re-tallies the
-    // zone's approved completion and flips ifc_synced when cumulative >= 100.
-    const { error } = await context.supabase
-      .from("daily_site_diaries")
-      .update({ qs_status: data.status })
+    // Approving via this path clears any prior rejection metadata; rejecting
+    // records the manager's written reason and remeasure flag.
+    const patch: Record<string, unknown> =
+      data.status === "rejected"
+        ? {
+            qs_status: "rejected",
+            qs_rejection_reason: data.reason ?? null,
+            qs_remeasure_required: !!data.remeasureRequired,
+          }
+        : {
+            qs_status: "approved",
+            qs_rejection_reason: null,
+            qs_remeasure_required: false,
+          };
+
+    const { error } = await (context.supabase.from("daily_site_diaries") as any)
+      .update(patch)
       .eq("id", data.diaryId);
     if (error) throw new Error(error.message);
     return { ok: true };
