@@ -382,7 +382,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => reject(r.id)}
+                    onClick={() => openReject(r)}
                     className="inline-flex items-center gap-1 rounded-md border border-white/15 px-3 py-1.5 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-red-500 hover:text-red-400"
                   >
                     <XCircle size={12} /> Reject
