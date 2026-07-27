@@ -11,7 +11,7 @@ export const listMyManagedPackages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
+    const { data: rows, error } = await (context.supabase as any)
       .from("subcontractor_invites")
       .select("id, company_name, trade_packages")
       .eq("project_id", data.projectId)
@@ -47,7 +47,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: assigned, error: pkgErr } = await context.supabase
+    const { data: assigned, error: pkgErr } = await (context.supabase as any)
       .from("subcontractor_invites")
       .select("id, company_name, trade_packages, accepted_by")
       .eq("project_id", data.projectId)
@@ -64,7 +64,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
     }
 
     // Expand to every accepted seat for these companies on this project.
-    const { data: allSeats, error: seatsErr } = await context.supabase
+    const { data: allSeats, error: seatsErr } = await (context.supabase as any)
       .from("subcontractor_invites")
       .select("id, company_name, trade_packages, accepted_by")
       .eq("project_id", data.projectId)
@@ -103,7 +103,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
         .in("subcontractor_id", managedUserIds)
         .order("checkout_time", { ascending: false })
         .limit(100),
-      context.supabase
+      (context.supabase as any)
         .from("workfaces")
         .select("id, name, stage, zone_id, package_invite_id, status")
         .eq("project_id", data.projectId)
