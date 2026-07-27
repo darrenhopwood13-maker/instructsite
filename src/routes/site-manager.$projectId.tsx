@@ -427,6 +427,7 @@ function SiteManagerPage() {
             setForcePin(null);
             setActivePin(null);
             qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+            qc.invalidateQueries({ queryKey: ["live-pins-all", projectId] });
             qc.invalidateQueries({ queryKey: ["archived-today", projectId] });
           }}
         />
