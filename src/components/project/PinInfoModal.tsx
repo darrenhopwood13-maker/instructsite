@@ -200,22 +200,7 @@ export function PinInfoModal({
                 </p>
               )}
 
-              {pin.notes && (
-                <div className="rounded-md border border-white/10 bg-black/30 p-2.5">
-                  <p className="text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/50">
-                    Planned activity
-                  </p>
-                  <p className="mt-1 whitespace-pre-wrap text-[0.75rem] text-foreground/80">
-                    {pin.notes}
-                  </p>
-                </div>
-              )}
 
-              {overtime && (
-                <p className="rounded-sm border border-red-500 bg-red-600/20 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-red-400">
-                  Overtime · past scheduled finish
-                </p>
-              )}
 
               <PermitsBlock
                 needed={!!pin.permit_required}
