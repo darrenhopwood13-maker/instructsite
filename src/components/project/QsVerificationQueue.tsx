@@ -337,7 +337,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-foreground">
-                    {r.trade_package ?? "Untagged"} · {r.operative_count} ops · {r.hours_logged}h
+                    {r.trade_package ?? "Untagged"} · {r.operative_count} ops · {formatHours(r)}
                   </p>
                   <p className="mt-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/50">
                     {r.work_zones?.name ?? "no zone"}
