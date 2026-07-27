@@ -264,19 +264,50 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
   const setStatusFn = useServerFn(setDiaryQsStatus);
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
   const [inspecting, setInspecting] = useState<DiaryRow | null>(null);
+  const [rejecting, setRejecting] = useState<DiaryRow | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [remeasure, setRemeasure] = useState(false);
+  const [rejectBusy, setRejectBusy] = useState(false);
 
   const q = useQuery({
     queryKey: ["qs-queue", projectId],
     queryFn: () => listFn({ data: { projectId } }),
   });
 
-  const reject = async (diaryId: string) => {
+  const openReject = (r: DiaryRow) => {
+    setRejectReason("");
+    setRemeasure(false);
+    setRejecting(r);
+  };
+
+  const submitReject = async () => {
+    if (!rejecting) return;
+    const trimmed = rejectReason.trim();
+    if (trimmed.length < 10) {
+      toast.error("Please write at least 10 characters explaining the rejection.");
+      return;
+    }
+    setRejectBusy(true);
     try {
-      await setStatusFn({ data: { diaryId, status: "rejected" } });
-      toast.success("Rejected.");
+      await setStatusFn({
+        data: {
+          diaryId: rejecting.id,
+          status: "rejected",
+          reason: trimmed,
+          remeasureRequired: remeasure,
+        },
+      });
+      toast.success(
+        remeasure
+          ? "Rejected — subcontractor asked to re-measure and resubmit."
+          : "Rejected — subcontractor notified with your reason.",
+      );
+      setRejecting(null);
       qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to update diary.");
+      toast.error(err?.message ?? "Failed to reject diary.");
+    } finally {
+      setRejectBusy(false);
     }
   };
 
