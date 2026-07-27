@@ -76,10 +76,10 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
 
     const packages = (allSeats ?? []).filter(
       (s: { company_name: string }) => companyNames.includes(s.company_name.toLowerCase()),
-    );
+    ) as Array<{ id: string; company_name: string; trade_packages: string[]; accepted_by: string | null }>;
 
     const managedUserIds = packages
-      .map((p: { accepted_by: string | null }) => p.accepted_by)
+      .map((p) => p.accepted_by)
       .filter((id): id is string => Boolean(id));
 
     if (managedUserIds.length === 0) {
