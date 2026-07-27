@@ -408,18 +408,27 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
             {decided.map((r) => (
               <li
                 key={r.id}
-                className="flex items-center justify-between rounded-sm border border-white/10 bg-black/20 px-2 py-1.5 text-[0.65rem] text-foreground/70"
+                className="rounded-sm border border-white/10 bg-black/20 px-2 py-1.5 text-[0.65rem] text-foreground/70"
               >
-                <span className="truncate">
-                  {r.trade_package ?? "Untagged"} · {r.manager_completion_pct ?? r.completion_pct}%
-                </span>
-                <span
-                  className={`font-mono uppercase tracking-widest ${
-                    r.qs_status === "approved" ? "text-green-400" : "text-red-400"
-                  }`}
-                >
-                  {r.qs_status}
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="truncate">
+                    {r.trade_package ?? "Untagged"} ·{" "}
+                    {r.manager_completion_pct ?? r.completion_pct}%
+                  </span>
+                  <span
+                    className={`font-mono uppercase tracking-widest ${
+                      r.qs_status === "approved" ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {r.qs_status}
+                    {r.qs_status === "rejected" && r.qs_remeasure_required ? " · remeasure" : ""}
+                  </span>
+                </div>
+                {r.qs_status === "rejected" && r.qs_rejection_reason && (
+                  <p className="mt-1 whitespace-pre-wrap text-[0.65rem] italic text-red-300/90">
+                    "{r.qs_rejection_reason}"
+                  </p>
+                )}
               </li>
             ))}
           </ul>
