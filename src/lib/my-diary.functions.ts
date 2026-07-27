@@ -56,7 +56,9 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
     if (pkgErr) throw new Error(pkgErr.message);
 
     const companyNames = Array.from(
-      new Set((assigned ?? []).map((p) => p.company_name.toLowerCase())),
+      new Set(
+        (assigned ?? []).map((p: { company_name: string }) => p.company_name.toLowerCase()),
+      ),
     );
 
     if (companyNames.length === 0) {
@@ -72,12 +74,12 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
       .not("accepted_by", "is", null);
     if (seatsErr) throw new Error(seatsErr.message);
 
-    const packages = (allSeats ?? []).filter((s) =>
-      companyNames.includes(s.company_name.toLowerCase()),
+    const packages = (allSeats ?? []).filter(
+      (s: { company_name: string }) => companyNames.includes(s.company_name.toLowerCase()),
     );
 
     const managedUserIds = packages
-      .map((p) => p.accepted_by)
+      .map((p: { accepted_by: string | null }) => p.accepted_by)
       .filter((id): id is string => Boolean(id));
 
     if (managedUserIds.length === 0) {
@@ -85,7 +87,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
     }
 
     const [pinsRes, diariesRes, workfacesRes] = await Promise.all([
-      context.supabase
+      (context.supabase as any)
         .from("live_site_activity")
         .select(
           "id, zone_id, workface_id, drawing_id, trade_package, operative_count, start_time, scheduled_finish, status, notes, permit_status, high_risk_flags, work_zones(name, level)",
@@ -94,7 +96,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
         .eq("status", "active")
         .in("subcontractor_id", managedUserIds)
         .order("start_time", { ascending: false }),
-      context.supabase
+      (context.supabase as any)
         .from("daily_site_diaries")
         .select(
           "id, zone_id, workface_id, trade_package, operative_count, hours_logged, progress_status, completion_pct, notes, photo_urls, qs_status, checkout_time, work_zones(name, level)",
@@ -109,7 +111,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
         .eq("project_id", data.projectId)
         .in(
           "package_invite_id",
-          packages.map((p) => p.id),
+          packages.map((p: { id: string }) => p.id),
         )
         .neq("status", "archived"),
     ]);
