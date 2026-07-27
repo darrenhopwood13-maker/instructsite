@@ -414,6 +414,7 @@ function SiteManagerPage() {
           onClose={() => {
             setPermitPin(null);
             qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+            qc.invalidateQueries({ queryKey: ["live-pins-all", projectId] });
           }}
         />
       )}
