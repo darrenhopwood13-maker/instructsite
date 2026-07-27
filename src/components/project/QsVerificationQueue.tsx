@@ -269,7 +269,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
     qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
   };
 
-  const rows = (q.data ?? []) as DiaryRow[];
+  const rows = ((q.data ?? []) as unknown) as DiaryRow[];
   const pending = rows.filter((r) => r.qs_status === "pending");
   const decided = rows.filter((r) => r.qs_status !== "pending").slice(0, 8);
 
