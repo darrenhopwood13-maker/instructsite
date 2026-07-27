@@ -258,8 +258,8 @@ export const listDiaryAmendments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ diaryId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await (context.supabase
-      .from("diary_amendments") as any)
+    const { data: rows, error } = await (context.supabase as any)
+      .from("diary_amendments")
       .select(
         "id, reason, previous_manager_completion_pct, new_manager_completion_pct, previous_qs_status, new_qs_status, created_at, changed_by",
       )
