@@ -14,8 +14,8 @@ export const submitDailyDiary = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => submitSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { data: pin, error: pinErr } = await context.supabase
-      .from("live_site_activity")
+    const { data: pin, error: pinErr } = await (context.supabase
+      .from("live_site_activity") as any)
       .select(
         "id, project_id, subcontractor_id, drawing_id, zone_id, workface_id, trade_package, operative_count, start_time, scheduled_finish, status",
       )
