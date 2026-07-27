@@ -279,6 +279,11 @@ function ProgrammePage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["manager-notes", projectId, date] });
       setDraft("");
+      toast.success("Note posted to today's playbook.");
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Failed to post note.";
+      toast.error(msg);
     },
   });
 
