@@ -22,7 +22,7 @@ export const createLivePin = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { data: row, error } = await context.supabase
+    const { data: row, error } = await (context.supabase as any)
       .from("live_site_activity")
       .insert({
         project_id: data.projectId,

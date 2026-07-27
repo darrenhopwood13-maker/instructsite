@@ -315,7 +315,7 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
         .from("work_zones")
         .select("id, name, level")
         .eq("project_id", data.projectId),
-      context.supabase.rpc("zone_runtime_progress", { _project_id: data.projectId }),
+      (context.supabase as any).rpc("zone_runtime_progress", { _project_id: data.projectId }),
       context.supabase
         .from("live_site_activity")
         .select("zone_id")
@@ -328,7 +328,7 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
 
     const progressByZone = new Map<string, number>();
     const completeByZone = new Map<string, boolean>();
-    for (const row of (progressRes.data ?? []) as Array<{
+    for (const row of ((progressRes.data ?? []) as unknown) as Array<{
       zone_id: string;
       progress_pct: number | string;
       all_workfaces_complete: boolean;
