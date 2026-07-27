@@ -125,6 +125,22 @@ export const Route = createFileRoute("/api/oracle-stream")({
           });
         }
 
+        // Ask The Oracle needs something to reason about — otherwise Gemini
+        // often returns an empty completion and the panel appears to hang.
+        if (
+          buttonFunction === "ai_assist" &&
+          !userQuestion?.trim() &&
+          !base64Image &&
+          !pdfBase64
+        ) {
+          return new Response(
+            JSON.stringify({
+              error: "Add a question, drawing or photo before asking The Oracle.",
+            }),
+            { status: 400, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
         let pdfWarning: string | null = null;
         let pdfBlock: string | null = null;
         if (pdfBase64 && typeof pdfBase64 === "string") {

@@ -142,6 +142,12 @@ function ToolingPage() {
           }
         }
       }
+
+      if (!assistantSoFar.trim()) {
+        toast.error("The Oracle returned nothing", {
+          description: "Try adding a photo, PDF, or a more specific question.",
+        });
+      }
     } catch (err) {
       console.error(err);
       toast.error("Oracle comms dropped", {
