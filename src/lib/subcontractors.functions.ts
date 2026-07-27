@@ -259,7 +259,7 @@ export const assignPackageManager = createServerFn({ method: "POST" })
       }
     }
 
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("subcontractor_invites")
       .update({ package_manager_id: data.packageManagerId })
       .eq("id", data.inviteId);

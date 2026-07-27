@@ -45,7 +45,10 @@ export function WorkfaceRegisterPanel({ projectId }: { projectId: string }) {
   const [manualName, setManualName] = useState("");
   const [showManualForm, setShowManualForm] = useState(false);
 
-  const rows = useMemo(() => (workfaces.data ?? []) as WorkfaceRow[], [workfaces.data]);
+  const rows = useMemo(
+    () => ((workfaces.data ?? []) as unknown) as WorkfaceRow[],
+    [workfaces.data],
+  );
   const proposed = rows.filter((r) => r.status === "proposed");
   const confirmed = rows.filter((r) => r.status === "confirmed");
 

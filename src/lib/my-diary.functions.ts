@@ -11,7 +11,7 @@ export const listMyManagedPackages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
+    const { data: rows, error } = await (context.supabase as any)
       .from("subcontractor_invites")
       .select("id, company_name, trade_packages")
       .eq("project_id", data.projectId)
@@ -47,7 +47,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: assigned, error: pkgErr } = await context.supabase
+    const { data: assigned, error: pkgErr } = await (context.supabase as any)
       .from("subcontractor_invites")
       .select("id, company_name, trade_packages, accepted_by")
       .eq("project_id", data.projectId)
@@ -56,7 +56,9 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
     if (pkgErr) throw new Error(pkgErr.message);
 
     const companyNames = Array.from(
-      new Set((assigned ?? []).map((p) => p.company_name.toLowerCase())),
+      new Set(
+        (assigned ?? []).map((p: { company_name: string }) => p.company_name.toLowerCase()),
+      ),
     );
 
     if (companyNames.length === 0) {
@@ -64,7 +66,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
     }
 
     // Expand to every accepted seat for these companies on this project.
-    const { data: allSeats, error: seatsErr } = await context.supabase
+    const { data: allSeats, error: seatsErr } = await (context.supabase as any)
       .from("subcontractor_invites")
       .select("id, company_name, trade_packages, accepted_by")
       .eq("project_id", data.projectId)
@@ -72,9 +74,9 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
       .not("accepted_by", "is", null);
     if (seatsErr) throw new Error(seatsErr.message);
 
-    const packages = (allSeats ?? []).filter((s) =>
-      companyNames.includes(s.company_name.toLowerCase()),
-    );
+    const packages = (allSeats ?? []).filter(
+      (s: { company_name: string }) => companyNames.includes(s.company_name.toLowerCase()),
+    ) as Array<{ id: string; company_name: string; trade_packages: string[]; accepted_by: string | null }>;
 
     const managedUserIds = packages
       .map((p) => p.accepted_by)
@@ -85,7 +87,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
     }
 
     const [pinsRes, diariesRes, workfacesRes] = await Promise.all([
-      context.supabase
+      (context.supabase as any)
         .from("live_site_activity")
         .select(
           "id, zone_id, workface_id, drawing_id, trade_package, operative_count, start_time, scheduled_finish, status, notes, permit_status, high_risk_flags, work_zones(name, level)",
@@ -94,7 +96,7 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
         .eq("status", "active")
         .in("subcontractor_id", managedUserIds)
         .order("start_time", { ascending: false }),
-      context.supabase
+      (context.supabase as any)
         .from("daily_site_diaries")
         .select(
           "id, zone_id, workface_id, trade_package, operative_count, hours_logged, progress_status, completion_pct, notes, photo_urls, qs_status, checkout_time, work_zones(name, level)",
@@ -103,13 +105,13 @@ export const listMyDiaryFeed = createServerFn({ method: "GET" })
         .in("subcontractor_id", managedUserIds)
         .order("checkout_time", { ascending: false })
         .limit(100),
-      context.supabase
+      (context.supabase as any)
         .from("workfaces")
         .select("id, name, stage, zone_id, package_invite_id, status")
         .eq("project_id", data.projectId)
         .in(
           "package_invite_id",
-          packages.map((p) => p.id),
+          packages.map((p: { id: string }) => p.id),
         )
         .neq("status", "archived"),
     ]);

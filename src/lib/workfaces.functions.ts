@@ -22,7 +22,7 @@ export const listWorkfaces = createServerFn({ method: "GET" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    let query = context.supabase
+    let query = (context.supabase as any)
       .from("workfaces")
       .select(
         "id, zone_id, package_invite_id, name, stage, source, status, created_at, work_zones(name, level), subcontractor_invites(company_name, package_manager_id)",
@@ -70,7 +70,7 @@ export const confirmWorkface = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ workfaceId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("workfaces")
       .update({ status: "confirmed" })
       .eq("id", data.workfaceId);
@@ -90,7 +90,7 @@ export const renameWorkface = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("workfaces")
       .update({ name: data.name, stage: data.stage || null })
       .eq("id", data.workfaceId);
@@ -115,7 +115,7 @@ export const createWorkfaceManual = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertProjectAdmin(context.supabase, data.projectId, context.userId);
-    const { data: row, error } = await context.supabase
+    const { data: row, error } = await (context.supabase as any)
       .from("workfaces")
       .insert({
         project_id: data.projectId,
@@ -153,7 +153,7 @@ export const mergeWorkfaces = createServerFn({ method: "POST" })
       throw new Error("Cannot merge workfaces from different projects.");
     }
     await assertProjectAdmin(context.supabase, sourceProjectId, context.userId);
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("workfaces")
       .update({ status: "archived" })
       .eq("id", data.sourceId);
@@ -167,7 +167,7 @@ export const archiveWorkface = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const projectId = await getWorkfaceProjectId(context.supabase, data.workfaceId);
     await assertProjectAdmin(context.supabase, projectId, context.userId);
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("workfaces")
       .update({ status: "archived" })
       .eq("id", data.workfaceId);

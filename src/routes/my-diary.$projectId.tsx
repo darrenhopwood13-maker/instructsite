@@ -115,9 +115,9 @@ function MyDiaryPage() {
     return () => clearInterval(id);
   }, []);
 
-  const livePins = useMemo(() => (feed.data?.livePins ?? []) as LivePin[], [feed.data]);
-  const diaries = useMemo(() => (feed.data?.diaries ?? []) as DiaryEntry[], [feed.data]);
-  const workfaces = useMemo(() => (feed.data?.workfaces ?? []) as Workface[], [feed.data]);
+  const livePins = useMemo(() => ((feed.data?.livePins ?? []) as unknown) as LivePin[], [feed.data]);
+  const diaries = useMemo(() => ((feed.data?.diaries ?? []) as unknown) as DiaryEntry[], [feed.data]);
+  const workfaces = useMemo(() => ((feed.data?.workfaces ?? []) as unknown) as Workface[], [feed.data]);
   const packages = feed.data?.packages ?? [];
 
   // Group everything by workspace/zone name — total operatives per zone,
