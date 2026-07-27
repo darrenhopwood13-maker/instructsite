@@ -147,15 +147,58 @@ export function PinInfoModal({
                 {pin.work_zones?.name ?? "No zone"}
                 {pin.work_zones?.level ? ` · ${pin.work_zones.level}` : ""}
               </Row>
-              <Row icon={<Clock size={12} />} label="Started">
+              <Row icon={<Clock size={12} />} label={isFuture ? "Scheduled start" : "Started"}>
                 {pin.start_time ? new Date(pin.start_time).toLocaleString() : "—"}
-                <span className="ml-1 text-foreground/50">· {elapsed} elapsed</span>
+                {isFuture ? (
+                  <span className="ml-1 text-amber-300">· scheduled — not yet on site</span>
+                ) : isSameDay ? (
+                  <span className="ml-1 text-foreground/50">· {elapsed} elapsed today</span>
+                ) : (
+                  <span className="ml-1 text-foreground/50">
+                    · logged on{" "}
+                    {startDate?.toLocaleDateString(undefined, {
+                      weekday: "short",
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </span>
+                )}
               </Row>
               <Row icon={<Clock size={12} />} label="Scheduled finish">
                 {pin.scheduled_finish
                   ? new Date(pin.scheduled_finish).toLocaleString()
                   : "—"}
+                {scheduledWindow && (
+                  <span className="ml-1 text-foreground/50">· {scheduledWindow} planned</span>
+                )}
               </Row>
+
+              {pin.notes && (
+                <div className="rounded-md border border-white/10 bg-black/30 p-2.5">
+                  <p className="text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/50">
+                    Planned activity
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-[0.75rem] text-foreground/80">
+                    {pin.notes}
+                  </p>
+                </div>
+              )}
+
+              {isFuture && (
+                <p className="rounded-sm border border-amber-400 bg-amber-400/10 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300">
+                  Future-dated shift — starts{" "}
+                  {startDate?.toLocaleDateString(undefined, {
+                    weekday: "short",
+                    day: "2-digit",
+                    month: "short",
+                  })}
+                </p>
+              )}
+              {overtime && (
+                <p className="rounded-sm border border-red-500 bg-red-600/20 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-red-400">
+                  Overtime · past scheduled finish
+                </p>
+              )}
 
               {pin.notes && (
                 <div className="rounded-md border border-white/10 bg-black/30 p-2.5">
