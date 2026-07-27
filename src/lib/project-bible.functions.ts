@@ -3,8 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type BibleDocument = {
-  id: string; // site_document_id (or programme_upload id for programmes)
-  source: "drawing" | "logistics" | "rams" | "programme" | "report";
+  id: string; // site_document_id (or programme_upload id for programmes, or model id for models)
+  source: "drawing" | "logistics" | "rams" | "programme" | "report" | "model";
   title: string;
   category: string;
   fileName: string;
@@ -189,6 +189,31 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
       }
     }
 
+    // IFC / BIM models
+    {
+      const { data: rows, error } = await supabase
+        .from("project_ifc_models")
+        .select("id,storage_path,original_filename,is_active,created_at")
+        .eq("project_id", data.projectId);
+      if (error) throw new Error(error.message);
+      for (const row of (rows ?? []) as any[]) {
+        if (!row.storage_path) continue;
+        docs.push({
+          id: row.id,
+          source: "model",
+          title: `${row.original_filename}${row.is_active ? " · Active" : ""}`,
+          category: "Models",
+          fileName: row.original_filename,
+          mimeType: "model/ifc",
+          bucket: "project-bim-models",
+          filePath: row.storage_path,
+          sizeBytes: null,
+          uploadedAt: row.created_at,
+          extractionStatus: row.is_active ? "ready" : null,
+        });
+      }
+    }
+
     // Dedupe by (bucket + filePath), keep first occurrence
     const seen = new Set<string>();
     const unique = docs.filter((d) => {
@@ -200,6 +225,54 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
 
     unique.sort((a, b) => (b.uploadedAt ?? "").localeCompare(a.uploadedAt ?? ""));
     return unique;
+  });
+
+export const searchProjectBible = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        projectId: z.string().uuid(),
+        query: z.string().min(2).max(200),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureProjectMember(supabase, userId, data.projectId);
+
+    // Collect site_document ids for this project (drawings, logistics, rams, reports)
+    const [dr, lg, rm, rp] = await Promise.all([
+      supabase.from("project_drawings").select("site_document_id").eq("project_id", data.projectId),
+      supabase.from("logistics_plans").select("site_document_id").eq("project_id", data.projectId),
+      supabase.from("rams_documents").select("site_document_id").eq("project_id", data.projectId),
+      supabase.from("project_bible_reports").select("site_document_id").eq("project_id", data.projectId),
+    ]);
+    const ids = new Set<string>();
+    for (const r of [dr, lg, rm, rp]) {
+      for (const row of (r.data ?? []) as any[]) if (row?.site_document_id) ids.add(row.site_document_id);
+    }
+    if (ids.size === 0) return [] as Array<{ documentId: string; snippet: string }>;
+
+    // Escape query for websearch_to_tsquery via RPC-less filter.
+    const q = data.query.trim();
+    const { data: rows, error } = await supabase
+      .from("document_contents")
+      .select("document_id, content")
+      .in("document_id", Array.from(ids))
+      .textSearch("content", q, { type: "websearch", config: "english" })
+      .limit(50);
+    if (error) return [] as Array<{ documentId: string; snippet: string }>;
+
+    const needle = q.toLowerCase();
+    return ((rows ?? []) as any[]).map((r) => {
+      const c: string = r.content ?? "";
+      const idx = c.toLowerCase().indexOf(needle);
+      const start = Math.max(0, idx - 80);
+      const end = Math.min(c.length, (idx >= 0 ? idx : 0) + 160);
+      const snippet = (idx < 0 ? c.slice(0, 200) : c.slice(start, end)).replace(/\s+/g, " ").trim();
+      return { documentId: r.document_id as string, snippet };
+    });
   });
 
 export const getBibleDocumentSignedUrl = createServerFn({ method: "POST" })
