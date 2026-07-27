@@ -14,6 +14,7 @@ export type BibleDocument = {
   sizeBytes: number | null;
   uploadedAt: string | null;
   extractionStatus: string | null;
+  archived?: boolean;
 };
 
 async function ensureProjectMember(
@@ -32,7 +33,9 @@ async function ensureProjectMember(
 export const listProjectBibleDocuments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) =>
-    z.object({ projectId: z.string().uuid() }).parse(i),
+    z
+      .object({ projectId: z.string().uuid(), includeArchived: z.boolean().optional() })
+      .parse(i),
   )
   .handler(async ({ data, context }): Promise<BibleDocument[]> => {
     const { supabase, userId } = context;
@@ -45,7 +48,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
       const { data: rows, error } = await supabase
         .from("project_drawings")
         .select(
-          "id,title,drawing_no,revision,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status)",
+          "id,title,drawing_no,revision,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status,archived_at)",
         )
         .eq("project_id", data.projectId);
       if (error) throw new Error(error.message);
@@ -70,6 +73,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
           sizeBytes: sd.file_size ?? null,
           uploadedAt: sd.created_at ?? row.created_at ?? null,
           extractionStatus: sd.extraction_status ?? null,
+          archived: !!sd.archived_at,
         });
       }
     }
@@ -79,7 +83,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
       const { data: rows, error } = await supabase
         .from("logistics_plans")
         .select(
-          "id,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status)",
+          "id,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status,archived_at)",
         )
         .eq("project_id", data.projectId);
       if (error) throw new Error(error.message);
@@ -100,6 +104,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
           sizeBytes: sd.file_size ?? null,
           uploadedAt: sd.created_at ?? row.created_at ?? null,
           extractionStatus: sd.extraction_status ?? null,
+          archived: !!sd.archived_at,
         });
       }
     }
@@ -109,7 +114,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
       const { data: rows, error } = await supabase
         .from("rams_documents")
         .select(
-          "id,trade_package,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status)",
+          "id,trade_package,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status,archived_at)",
         )
         .eq("project_id", data.projectId);
       if (error) throw new Error(error.message);
@@ -130,6 +135,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
           sizeBytes: sd.file_size ?? null,
           uploadedAt: sd.created_at ?? row.created_at ?? null,
           extractionStatus: sd.extraction_status ?? null,
+          archived: !!sd.archived_at,
         });
       }
     }
@@ -155,6 +161,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
           sizeBytes: null,
           uploadedAt: row.created_at,
           extractionStatus: row.status ?? null,
+          archived: false,
         });
       }
     }
@@ -164,7 +171,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
       const { data: rows, error } = await supabase
         .from("project_bible_reports")
         .select(
-          "id,category,source,title,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status)",
+          "id,category,source,title,created_at,site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status,archived_at)",
         )
         .eq("project_id", data.projectId);
       if (error) throw new Error(error.message);
@@ -185,6 +192,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
           sizeBytes: sd.file_size ?? null,
           uploadedAt: sd.created_at ?? row.created_at ?? null,
           extractionStatus: sd.extraction_status ?? null,
+          archived: !!sd.archived_at,
         });
       }
     }
@@ -210,6 +218,7 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
           sizeBytes: null,
           uploadedAt: row.created_at,
           extractionStatus: row.is_active ? "ready" : null,
+          archived: false,
         });
       }
     }
@@ -223,8 +232,9 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
       return true;
     });
 
-    unique.sort((a, b) => (b.uploadedAt ?? "").localeCompare(a.uploadedAt ?? ""));
-    return unique;
+    const filtered = data.includeArchived ? unique : unique.filter((d) => !d.archived);
+    filtered.sort((a, b) => (b.uploadedAt ?? "").localeCompare(a.uploadedAt ?? ""));
+    return filtered;
   });
 
 export const searchProjectBible = createServerFn({ method: "POST" })

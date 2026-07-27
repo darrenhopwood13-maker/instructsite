@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
-import { UploadCloud, FileText, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { UploadCloud, FileText, Loader2, CheckCircle2, AlertCircle, X, AlertTriangle } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { registerTier1Document, splitAndRegisterDrawingPack } from "@/lib/tier1-uploads.functions";
+import { findDuplicateDocument } from "@/lib/document-lifecycle.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 type Item = {
@@ -22,6 +23,14 @@ function fmt(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+async function sha256Hex(file: File): Promise<string> {
+  const buf = await file.arrayBuffer();
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 interface Props {
   projectId: string;
   docType: "drawing" | "logistics" | "rams";
@@ -33,8 +42,17 @@ interface Props {
     highRiskFlags?: string[];
     permitRequired?: boolean;
   };
+  /** When set, disables the drop input and shows the reason. */
+  disabledReason?: string;
   onUploaded?: () => void;
 }
+
+type PendingDup = {
+  file: File;
+  hash: string;
+  matches: { id: string; fileName: string; createdAt: string | null }[];
+  resolve: (choice: "revision" | "separate" | "cancel", supersedesId?: string) => void;
+};
 
 export function DropZone({
   projectId,
@@ -43,12 +61,15 @@ export function DropZone({
   subtitle,
   accent = "orange",
   extraFields,
+  disabledReason,
   onUploaded,
 }: Props) {
   const [items, setItems] = useState<Item[]>([]);
   const [dragging, setDragging] = useState(false);
+  const [dup, setDup] = useState<PendingDup | null>(null);
   const register = useServerFn(registerTier1Document);
   const splitPack = useServerFn(splitAndRegisterDrawingPack);
+  const findDup = useServerFn(findDuplicateDocument);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -58,6 +79,41 @@ export function DropZone({
         const user = await ensureOracleSession();
         const isPdf = /pdf/i.test(file.type) || /\.pdf$/i.test(file.name);
         const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+
+        // Duplicate detection — skip for multi-sheet drawing packs (they're
+        // split server-side into per-sheet rows so hash matching would be
+        // misleading).
+        let supersedesId: string | undefined;
+        let contentHash: string | undefined;
+        if (!(docType === "drawing" && isPdf)) {
+          try {
+            contentHash = await sha256Hex(file);
+            const res = await findDup({ data: { projectId, contentHash } });
+            if (res.matches.length > 0) {
+              const choice = await new Promise<{
+                mode: "revision" | "separate" | "cancel";
+                supersedesId?: string;
+              }>((resolve) => {
+                setDup({
+                  file,
+                  hash: contentHash!,
+                  matches: res.matches,
+                  resolve: (mode, sid) => {
+                    setDup(null);
+                    resolve({ mode, supersedesId: sid });
+                  },
+                });
+              });
+              if (choice.mode === "cancel") {
+                setItems((p) => p.filter((x) => x.id !== id));
+                return;
+              }
+              if (choice.mode === "revision") supersedesId = choice.supersedesId;
+            }
+          } catch {
+            /* hashing / lookup failures shouldn't block the upload */
+          }
+        }
 
         // === DRAWING + PDF → server-side pdf-lib split + Gemini extraction ===
         if (docType === "drawing" && isPdf) {
@@ -116,6 +172,8 @@ export function DropZone({
             tradePackage: extraFields?.tradePackage,
             highRiskFlags: extraFields?.highRiskFlags as any,
             permitRequired: extraFields?.permitRequired,
+            contentHash,
+            supersedesSiteDocumentId: supersedesId,
           },
         });
 
@@ -129,8 +187,9 @@ export function DropZone({
               ? {
                   ...i,
                   status: "done",
-                  detail:
-                    res.extractionStatus === "complete"
+                  detail: supersedesId
+                    ? "Uploaded as new revision · prior version archived"
+                    : res.extractionStatus === "complete"
                       ? "Parsed & indexed"
                       : "Uploaded (no readable text)",
                 }
@@ -148,11 +207,12 @@ export function DropZone({
         );
       }
     },
-    [docType, extraFields, onUploaded, projectId, register, splitPack],
+    [docType, extraFields, findDup, onUploaded, projectId, register, splitPack],
   );
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
+    if (disabledReason) return;
     Array.from(files).forEach((f) => void uploadFile(f));
   };
 
@@ -186,8 +246,15 @@ export function DropZone({
         </div>
       </div>
 
+      {disabledReason && (
+        <p className="mb-2 flex items-center gap-1.5 rounded-md border border-amber-400/60 bg-amber-400/10 px-2 py-1.5 text-[0.65rem] uppercase tracking-widest text-amber-300">
+          <AlertTriangle size={12} /> {disabledReason}
+        </p>
+      )}
+
       <label
         onDragOver={(e) => {
+          if (disabledReason) return;
           e.preventDefault();
           setDragging(true);
         }}
@@ -197,7 +264,7 @@ export function DropZone({
           setDragging(false);
           handleFiles(e.dataTransfer.files);
         }}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed ${borderColor} bg-black/20 p-6 text-center transition-colors`}
+        className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed ${borderColor} bg-black/20 p-6 text-center transition-colors ${disabledReason ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
       >
         <div className="glass-accent flex h-12 w-12 items-center justify-center">
           <UploadCloud size={22} />
@@ -211,6 +278,7 @@ export function DropZone({
         <input
           type="file"
           multiple
+          disabled={!!disabledReason}
           accept="application/pdf,image/*,.heic,.heif,.txt,.csv,.tsv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.dwg,.dxf,.rvt,.ifc,.xml,.json"
           className="hidden"
           onChange={(e) => {
@@ -251,6 +319,61 @@ export function DropZone({
             </li>
           ))}
         </ul>
+      )}
+
+      {dup && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+        >
+          <div className="glass-panel w-full max-w-md border-2 border-alert p-6">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="text-alert" size={18} />
+              <h3 className="text-lg font-extrabold uppercase tracking-wider text-alert">
+                Duplicate detected
+              </h3>
+            </div>
+            <p className="mt-2 text-xs text-foreground/70">
+              An identical file is already in this project's bible:
+            </p>
+            <ul className="mt-2 space-y-1 rounded-md border border-white/10 bg-black/40 p-2 text-[0.7rem] font-mono text-foreground/80">
+              {dup.matches.slice(0, 5).map((m) => (
+                <li key={m.id} className="truncate">
+                  {m.fileName}
+                  {m.createdAt ? ` · ${new Date(m.createdAt).toLocaleDateString()}` : ""}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-[0.7rem] text-foreground/60">
+              Replace the previous version as a new revision (the old file is archived, not
+              deleted), or upload this as a separate document alongside it?
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => dup.resolve("revision", dup.matches[0].id)}
+                className="glass-orange rounded-md px-3 py-2 text-xs uppercase tracking-widest"
+              >
+                Replace as new revision
+              </button>
+              <button
+                type="button"
+                onClick={() => dup.resolve("separate")}
+                className="rounded-md border border-white/20 px-3 py-2 text-xs uppercase tracking-widest text-foreground/80 hover:border-white/40"
+              >
+                Upload as separate document
+              </button>
+              <button
+                type="button"
+                onClick={() => dup.resolve("cancel")}
+                className="rounded-md px-3 py-2 text-[0.65rem] uppercase tracking-widest text-foreground/50 hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

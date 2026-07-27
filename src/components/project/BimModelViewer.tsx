@@ -32,16 +32,15 @@ const COLORS: Record<ZoneState, THREE.Color> = {
 
 const HIGHLIGHT_COLOR = new THREE.Color("#ffffff");
 
+import { getWebIfcApi, loadModelBuffer } from "@/lib/ifc-loader";
+
 async function loadIfcMeshes(
+  modelId: string,
   url: string,
   scene: THREE.Scene,
 ): Promise<{ meshes: MeshEntry[]; box: THREE.Box3 }> {
-  const WebIFC: any = await import("web-ifc");
-  const ifcApi = new WebIFC.IfcAPI();
-  ifcApi.SetWasmPath("/wasm/");
-  await ifcApi.Init();
-
-  const buf = new Uint8Array(await (await fetch(url)).arrayBuffer());
+  const { api: ifcApi } = await getWebIfcApi();
+  const buf = await loadModelBuffer(modelId, url);
   const modelID: number = ifcApi.OpenModel(buf, { COORDINATE_TO_ORIGIN: true });
 
   const meshes: MeshEntry[] = [];
@@ -278,7 +277,11 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
         controls.dampingFactor = 0.08;
         controlsRef.current = controls;
 
-        const { meshes, box } = await loadIfcMeshes(activeQ.data.url!, scene);
+        const { meshes, box } = await loadIfcMeshes(
+          activeQ.data.model!.id,
+          activeQ.data.url!,
+          scene,
+        );
         if (disposed) return;
         meshesRef.current = meshes;
 
@@ -596,7 +599,18 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
               >
                 <X size={10} />
               </button>
-            )}
+        )}
+
+        {status === "ready" && (
+          <button
+            type="button"
+            onClick={() => (window as any).__bimResetView?.()}
+            className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-md border-2 border-black bg-white/95 px-2.5 py-1.5 text-[0.6rem] font-black uppercase tracking-widest text-black shadow-[3px_3px_0_0_#000] hover:bg-[#ff7a00]"
+            title="Reset camera to fit model"
+          >
+            <Focus size={12} /> Reset View
+          </button>
+        )}
           </div>
         )}
         {status === "loading" && (

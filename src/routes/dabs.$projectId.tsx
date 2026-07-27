@@ -225,7 +225,17 @@ function DabsPage() {
         </div>
 
         <section className="mt-6">
-          {drawings.isSuccess && drawingRows.length === 0 ? (
+          {drawings.isLoading || zones.isLoading ? (
+            <div className="glass-panel space-y-3 p-6" aria-busy="true" aria-label="Loading DABS board">
+              <div className="h-4 w-1/3 animate-pulse rounded bg-white/10" />
+              <div className="h-[420px] w-full animate-pulse rounded-md border border-white/10 bg-black/40" />
+              <div className="flex gap-2">
+                <div className="h-6 w-24 animate-pulse rounded bg-white/10" />
+                <div className="h-6 w-24 animate-pulse rounded bg-white/10" />
+                <div className="h-6 w-24 animate-pulse rounded bg-white/10" />
+              </div>
+            </div>
+          ) : drawings.isSuccess && drawingRows.length === 0 ? (
             <div className="glass-panel p-8 text-center">
               <h3 className="text-sm font-bold uppercase tracking-widest text-alert">
                 No drawings in DABS yet

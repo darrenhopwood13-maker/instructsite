@@ -1,14 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, BookOpen, Search, Loader2 } from "lucide-react";
-import { getProject } from "@/lib/projects.functions";
+import { ArrowLeft, BookOpen, Search, Loader2, Archive } from "lucide-react";
+import { getProject, getMyRoles } from "@/lib/projects.functions";
 import {
   listProjectBibleDocuments,
   searchProjectBible,
   type BibleDocument,
 } from "@/lib/project-bible.functions";
+import { archiveDocument, restoreDocument } from "@/lib/document-lifecycle.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { DocumentCard } from "@/components/project-bible/DocumentCard";
 import { DocumentViewerDialog } from "@/components/project-bible/DocumentViewerDialog";
@@ -27,6 +28,11 @@ function ProjectBiblePage() {
 
   const getP = useServerFn(getProject);
   const listFn = useServerFn(listProjectBibleDocuments);
+  const rolesFn = useServerFn(getMyRoles);
+  const archiveFn = useServerFn(archiveDocument);
+  const restoreFn = useServerFn(restoreDocument);
+  const qc = useQueryClient();
+  const [showArchived, setShowArchived] = useState(false);
 
   const projectQ = useQuery({
     queryKey: ["project", projectId],
@@ -34,10 +40,30 @@ function ProjectBiblePage() {
     enabled: ready,
   });
 
-  const docsQ = useQuery({
-    queryKey: ["project-bible", projectId],
-    queryFn: () => listFn({ data: { projectId } }),
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
     enabled: ready,
+    staleTime: 60_000,
+  });
+  const canArchive =
+    !!rolesQ.data?.roles?.includes("master_admin") ||
+    !!rolesQ.data?.roles?.includes("project_admin") ||
+    !!rolesQ.data?.roles?.includes("site_manager");
+
+  const docsQ = useQuery({
+    queryKey: ["project-bible", projectId, showArchived],
+    queryFn: () => listFn({ data: { projectId, includeArchived: showArchived } }),
+    enabled: ready,
+  });
+
+  const archiveM = useMutation({
+    mutationFn: (id: string) => archiveFn({ data: { siteDocumentId: id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["project-bible", projectId] }),
+  });
+  const restoreM = useMutation({
+    mutationFn: (id: string) => restoreFn({ data: { siteDocumentId: id } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["project-bible", projectId] }),
   });
 
   const [query, setQuery] = useState("");
@@ -134,6 +160,17 @@ function ProjectBiblePage() {
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={() => setShowArchived((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs uppercase tracking-widest transition ${
+              showArchived
+                ? "border-amber-400/60 bg-amber-400/10 text-amber-300"
+                : "border-border/60 bg-background/60 text-muted-foreground hover:border-border hover:text-foreground"
+            }`}
+          >
+            <Archive className="h-3 w-3" /> {showArchived ? "Hide archived" : "Show archived"}
+          </button>
         </div>
 
         {docsQ.isLoading && (
@@ -165,7 +202,13 @@ function ProjectBiblePage() {
             const snippet = searchHits.get(doc.id);
             return (
               <div key={`${doc.source}-${doc.id}`} className="flex flex-col gap-1">
-                <DocumentCard doc={doc} onView={() => setSelected(doc)} />
+                <DocumentCard
+                  doc={doc}
+                  onView={() => setSelected(doc)}
+                  canArchive={canArchive}
+                  onArchive={() => archiveM.mutate(doc.id)}
+                  onRestore={() => restoreM.mutate(doc.id)}
+                />
                 {snippet && (
                   <p className="rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-[11px] italic text-foreground/70">
                     …{snippet}…

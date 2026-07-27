@@ -19,6 +19,8 @@ import { ZoneMatrixBoard } from "@/components/project/ZoneMatrixBoard";
 import { TradeDirectoryPanel } from "@/components/admin/TradeDirectoryPanel";
 import { WorkfaceRegisterPanel } from "@/components/admin/WorkfaceRegisterPanel";
 import { getMyRoles } from "@/lib/projects.functions";
+import { listSubcontractorInvites } from "@/lib/subcontractors.functions";
+import { TRADE_PACKAGES } from "@/lib/trade-packages";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 
@@ -352,8 +354,37 @@ function UnifiedRamsBlock({
   rams: any[];
   onUploaded: () => void;
 }) {
-  const [trade, setTrade] = useState("General");
+  const [trade, setTrade] = useState<string>("");
+  const [customTrade, setCustomTrade] = useState("");
   const [flags, setFlags] = useState<string[]>([]);
+  const invitesFn = useServerFn(listSubcontractorInvites);
+  const invitesQ = useQuery({
+    queryKey: ["rams-trade-invites", projectId],
+    queryFn: () => invitesFn({ data: { projectId } }),
+    staleTime: 60_000,
+    retry: false,
+  });
+
+  const projectTrades = useMemo(() => {
+    const set = new Set<string>();
+    for (const inv of (invitesQ.data as any[]) ?? []) {
+      for (const t of (inv.trade_packages ?? []) as string[]) if (t) set.add(t);
+    }
+    for (const r of rams ?? []) if (r?.trade_package) set.add(r.trade_package);
+    return Array.from(set).sort();
+  }, [invitesQ.data, rams]);
+
+  const options = useMemo(() => {
+    const set = new Set<string>([...projectTrades, ...TRADE_PACKAGES]);
+    return Array.from(set);
+  }, [projectTrades]);
+
+  const isOther = trade === "__other__";
+  const effectiveTrade = isOther ? customTrade.trim() : trade;
+  const uniqueTrades = useMemo(
+    () => new Set((rams ?? []).map((r: any) => r.trade_package).filter(Boolean)).size,
+    [rams],
+  );
 
   const toggle = (f: string) =>
     setFlags((cur) => (cur.includes(f) ? cur.filter((x) => x !== f) : [...cur, f]));
@@ -364,7 +395,9 @@ function UnifiedRamsBlock({
         <h3 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
           RAMS Management
         </h3>
-        <span className="font-mono text-[0.7rem] text-foreground/60">{rams.length}</span>
+        <span className="font-mono text-[0.7rem] text-foreground/60">
+          {rams.length} docs · {uniqueTrades} trades
+        </span>
       </div>
 
       {/* Metadata + tags */}
@@ -373,12 +406,41 @@ function UnifiedRamsBlock({
           <span className="text-[0.6rem] font-bold uppercase tracking-[0.25em] text-foreground/60">
             Trade Package
           </span>
-          <input
+          <select
             value={trade}
             onChange={(e) => setTrade(e.target.value)}
             className="mt-1 w-full rounded-md border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-sm text-foreground outline-none focus:border-alert"
-          />
+          >
+            <option value="">— Select trade package —</option>
+            {projectTrades.length > 0 && (
+              <optgroup label="On this project">
+                {projectTrades.map((t) => (
+                  <option key={`p-${t}`} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label="Standard trades">
+              {options
+                .filter((t) => !projectTrades.includes(t))
+                .map((t) => (
+                  <option key={`s-${t}`} value={t}>
+                    {t}
+                  </option>
+                ))}
+            </optgroup>
+            <option value="__other__">Other…</option>
+          </select>
         </label>
+        {isOther && (
+          <input
+            value={customTrade}
+            onChange={(e) => setCustomTrade(e.target.value)}
+            placeholder="Type trade package"
+            className="mt-2 w-full rounded-md border border-alert/50 bg-black/50 px-2 py-1.5 font-mono text-sm text-foreground outline-none focus:border-alert"
+          />
+        )}
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {["working_at_height", "hot_works", "confined_space"].map((f) => (
             <button
@@ -404,7 +466,12 @@ function UnifiedRamsBlock({
           docType="rams"
           title="Master RAMS Upload"
           subtitle="Risk Assessments & Method Statements per trade package."
-          extraFields={{ tradePackage: trade, highRiskFlags: flags, permitRequired: flags.length > 0 }}
+          extraFields={{
+            tradePackage: effectiveTrade,
+            highRiskFlags: flags,
+            permitRequired: flags.length > 0,
+          }}
+          disabledReason={!effectiveTrade ? "Choose a trade package first" : undefined}
           onUploaded={onUploaded}
         />
       </div>
