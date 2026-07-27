@@ -30,8 +30,8 @@ export const submitDailyDiary = createServerFn({ method: "POST" })
     const hours =
       Math.max(0, checkoutTime.getTime() - new Date(pin.start_time).getTime()) / 3_600_000;
 
-    const { data: diary, error: insErr } = await context.supabase
-      .from("daily_site_diaries")
+    const { data: diary, error: insErr } = await (context.supabase
+      .from("daily_site_diaries") as any)
       .insert({
         project_id: pin.project_id,
         live_activity_id: pin.id,
@@ -67,8 +67,8 @@ export const listQsQueue = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
-      .from("daily_site_diaries")
+    const { data: rows, error } = await (context.supabase
+      .from("daily_site_diaries") as any)
       .select(
         "id, trade_package, operative_count, hours_logged, progress_status, completion_pct, manager_completion_pct, manager_notes, manager_photo_urls, inspected_by, inspected_at, notes, checkout_time, qs_status, ifc_synced, photo_urls, zone_id, workface_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
       )
@@ -150,8 +150,8 @@ export const listZoneCompletion = createServerFn({ method: "GET" })
     // in the Step 3 / Step 5 migrations). Fixed here before anything
     // starts consuming it, so a future zone-summary view doesn't
     // silently inherit the old, un-inspected numbers.
-    const { data: rows, error } = await context.supabase
-      .from("daily_site_diaries")
+    const { data: rows, error } = await (context.supabase
+      .from("daily_site_diaries") as any)
       .select(
         "zone_id, completion_pct, manager_completion_pct, qs_status, ifc_synced, work_zones(name, level)",
       )
@@ -160,7 +160,7 @@ export const listZoneCompletion = createServerFn({ method: "GET" })
       .order("checkout_time", { ascending: false })
       .limit(500);
     if (error) throw new Error(error.message);
-    return (rows ?? []).map((r) => ({
+    return (rows ?? []).map((r: any) => ({
       ...r,
       authorised_completion_pct: r.manager_completion_pct ?? r.completion_pct,
     }));
@@ -258,8 +258,8 @@ export const listDiaryAmendments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ diaryId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
-      .from("diary_amendments")
+    const { data: rows, error } = await (context.supabase
+      .from("diary_amendments") as any)
       .select(
         "id, reason, previous_manager_completion_pct, new_manager_completion_pct, previous_qs_status, new_qs_status, created_at, changed_by",
       )
