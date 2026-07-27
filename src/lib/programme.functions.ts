@@ -305,17 +305,52 @@ export const addManagerNote = createServerFn({ method: "POST" })
     const authorName =
       (profile as { full_name?: string } | null)?.full_name ?? "Site Manager";
 
+    const insertPayload = {
+      project_id: data.projectId,
+      note_date: data.date,
+      author_id: context.userId,
+      author_name: authorName,
+      body: data.body,
+    };
+
     const { data: row, error } = await context.supabase
       .from("programme_manager_notes")
-      .insert({
-        project_id: data.projectId,
-        note_date: data.date,
-        author_id: context.userId,
-        author_name: authorName,
-        body: data.body,
-      })
+      .insert(insertPayload)
       .select("id, body, author_id, author_name, created_at, updated_at")
       .single();
-    if (error) throw new Error(error.message);
+
+    // Founder / master_admin isn't automatically a project member on
+    // every project — RLS on programme_manager_notes.INSERT scopes to
+    // is_project_member(). Fall back to the admin client for that role
+    // so global oversight users can still log notes.
+    if (error) {
+      const msg = error.message ?? "";
+      const isRlsBlock =
+        /row-level security|violates row-level security|permission denied|not.*member/i.test(msg);
+      if (isRlsBlock) {
+        const { data: isMaster } = await context.supabase.rpc("has_role", {
+          _user_id: context.userId,
+          _role: "master_admin",
+        });
+        if (isMaster === true) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: adminRow, error: adminErr } = await (supabaseAdmin as any)
+            .from("programme_manager_notes")
+            .insert(insertPayload)
+            .select("id, body, author_id, author_name, created_at, updated_at")
+            .single();
+          if (adminErr) {
+            throw new Error(
+              `Failed to post note (admin fallback): ${adminErr.message ?? adminErr}`,
+            );
+          }
+          return adminRow;
+        }
+        throw new Error(
+          "You must be a member of this project to post playbook notes.",
+        );
+      }
+      throw new Error(msg || "Failed to post note.");
+    }
     return row;
   });
