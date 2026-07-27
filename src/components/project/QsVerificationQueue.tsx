@@ -15,14 +15,31 @@ type DiaryRow = {
   trade_package: string | null;
   operative_count: number | null;
   hours_logged: number | null;
+  start_time: string | null;
+  checkout_time: string | null;
   progress_status: string | null;
   completion_pct: number | null;
   manager_completion_pct: number | null;
   notes: string | null;
   qs_status: string | null;
+  qs_rejection_reason: string | null;
+  qs_remeasure_required: boolean | null;
   photo_urls: string[] | null;
   work_zones?: { name?: string | null; level?: string | null } | null;
 };
+
+function formatHours(row: DiaryRow): string {
+  const logged = Number(row.hours_logged ?? 0);
+  if (logged > 0) return `${logged}h`;
+  if (row.start_time && row.checkout_time) {
+    const ms = new Date(row.checkout_time).getTime() - new Date(row.start_time).getTime();
+    if (ms > 0) {
+      const h = ms / 3_600_000;
+      return `${h.toFixed(h < 1 ? 2 : 1)}h`;
+    }
+  }
+  return "—";
+}
 
 function DiaryPhotoGrid({
   paths,
