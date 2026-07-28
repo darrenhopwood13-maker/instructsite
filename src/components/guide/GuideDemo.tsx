@@ -300,7 +300,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
           }}
         >
           <img
-            src={shot}
+            src={activeShot}
             alt={shotAlt}
             draggable={false}
             className="absolute inset-0 h-full w-full select-none object-cover"
