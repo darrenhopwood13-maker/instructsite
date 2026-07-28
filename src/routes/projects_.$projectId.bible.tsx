@@ -204,6 +204,7 @@ function ProjectBiblePage() {
               <div key={`${doc.source}-${doc.id}`} className="flex flex-col gap-1">
                 <DocumentCard
                   doc={doc}
+                  projectId={projectId}
                   onView={() => setSelected(doc)}
                   canArchive={canArchive}
                   onArchive={() => archiveM.mutate(doc.id)}
