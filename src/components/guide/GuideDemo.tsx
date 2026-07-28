@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
+import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Maximize2, X, Volume2, VolumeX } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { cn } from "@/lib/utils";
+import { getGuideNarration } from "@/lib/narration.functions";
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                     */
@@ -16,7 +18,6 @@ export type GuideAction =
   | "wait";
 
 export interface GuideHotspot {
-  /** All values are percentages of the framed screenshot (0-100). */
   x: number;
   y: number;
   w: number;
@@ -30,21 +31,17 @@ export interface GuideStep {
   hotspot: GuideHotspot;
   text?: string;
   ms?: number;
-  /** Optional per-step screenshot override — defaults to the mission's shot. */
   shot?: { url: string };
 }
 
 export interface GuideDemoProps {
   title?: string;
   steps: GuideStep[];
-  /** Full-resolution screenshot URL (CDN or import). */
   shot: string;
   shotAlt: string;
   className?: string;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Constants                                                                 */
 /* -------------------------------------------------------------------------- */
 
 const DEFAULT_MS: Record<GuideAction, number> = {
@@ -58,10 +55,11 @@ const DEFAULT_MS: Record<GuideAction, number> = {
 };
 
 const LOOP_PAUSE_MS = 1500;
-const ZOOM_COVERAGE = 0.7; // hotspot fills ~70% of frame
+const ZOOM_COVERAGE = 0.7;
+const SOUND_PREF_KEY = "guide-demo:sound";
 
 /* -------------------------------------------------------------------------- */
-/*  Module-level singleton registry: only one player animates at a time.       */
+/*  Singleton registry — one player animates at a time.                       */
 /* -------------------------------------------------------------------------- */
 
 type Pauser = () => void;
@@ -80,8 +78,22 @@ function release(id: symbol) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Hooks                                                                     */
+/*  Helpers                                                                   */
 /* -------------------------------------------------------------------------- */
+
+/** Recursively flatten a ReactNode into plain text for TTS/subtitles. */
+function narrationToText(node: ReactNode): string {
+  if (node == null || node === false || node === true) return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(narrationToText).join("");
+  if (typeof node === "object") {
+    const maybe = node as unknown as { props?: { children?: ReactNode } };
+    if (maybe.props && "children" in maybe.props) {
+      return narrationToText(maybe.props.children);
+    }
+  }
+  return "";
+}
 
 const usePrefersReducedMotion = () => {
   const [reduced, setReduced] = useState(false);
@@ -113,10 +125,37 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
   const [toast, setToast] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState(false);
 
+  /* ---- sound state ---- */
+  const [soundOn, setSoundOn] = useState<boolean>(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [audioNotice, setAudioNotice] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const narrationCacheRef = useRef<Map<string, string | null>>(new Map());
+  const fetchNarration = useServerFn(getGuideNarration);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem(SOUND_PREF_KEY);
+      if (saved === "1") setSoundOn(true);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const persistSoundPref = useCallback((on: boolean) => {
+    try {
+      window.localStorage.setItem(SOUND_PREF_KEY, on ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const total = steps.length;
   const step = steps[stepIdx];
+  const narrationText = useMemo(() => narrationToText(step?.narration).trim(), [step]);
 
-  /* ------ visibility gating (viewport + tab) ------ */
+  /* ---- visibility gating ---- */
   const [inView, setInView] = useState(false);
   const [tabVisible, setTabVisible] = useState(
     typeof document === "undefined" ? true : document.visibilityState === "visible",
@@ -140,7 +179,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     return () => document.removeEventListener("visibilitychange", on);
   }, []);
 
-  /* ------ registry: pause other players when this one starts ------ */
+  /* ---- registry ---- */
   useEffect(() => {
     const id = idRef.current;
     const entry = { id, pause: () => setPlaying(false), visible: false };
@@ -151,7 +190,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     };
   }, []);
 
-  /* ------ autoplay when eligible ------ */
+  /* ---- autoplay ---- */
   useEffect(() => {
     if (reduced) {
       setPlaying(false);
@@ -167,7 +206,119 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     }
   }, [inView, tabVisible, reduced]);
 
-  /* ------ single RAF loop per player ------ */
+  /* ---- narration loader (with cache + next-step preload) ---- */
+  const loadNarration = useCallback(
+    async (text: string): Promise<string | null> => {
+      if (!text) return null;
+      const cache = narrationCacheRef.current;
+      if (cache.has(text)) return cache.get(text) ?? null;
+      try {
+        const res = await fetchNarration({ data: { text } });
+        const url = res?.url ?? null;
+        cache.set(text, url);
+        return url;
+      } catch (err) {
+        console.warn("[GuideDemo] narration fetch failed", err);
+        cache.set(text, null);
+        return null;
+      }
+    },
+    [fetchNarration],
+  );
+
+  /* ---- speechSynthesis fallback ---- */
+  const speakFallback = useCallback(
+    (text: string) => {
+      if (typeof window === "undefined" || !("speechSynthesis" in window) || !text) return false;
+      try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = speed;
+        utter.lang = "en-GB";
+        window.speechSynthesis.speak(utter);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [speed],
+  );
+
+  const stopAllAudio = useCallback(() => {
+    const el = audioRef.current;
+    if (el) {
+      try {
+        el.pause();
+      } catch {
+        /* ignore */
+      }
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  /* ---- play current-step audio when sound is on & unlocked & playing ---- */
+  useEffect(() => {
+    if (!soundOn || !audioUnlocked || !playing || !narrationText) {
+      stopAllAudio();
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const url = await loadNarration(narrationText);
+      if (cancelled) return;
+      if (url) {
+        const el = audioRef.current;
+        if (!el) return;
+        if (el.src !== url) el.src = url;
+        el.playbackRate = speed;
+        try {
+          await el.play();
+          setAudioNotice(null);
+        } catch {
+          const ok = speakFallback(narrationText);
+          setAudioNotice(ok ? "Using device voice." : null);
+        }
+      } else {
+        const ok = speakFallback(narrationText);
+        setAudioNotice(ok ? "Using device voice." : "Narration unavailable — subtitles only.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+      stopAllAudio();
+    };
+  }, [soundOn, audioUnlocked, playing, narrationText, loadNarration, speakFallback, speed, stopAllAudio]);
+
+  /* ---- keep playbackRate in sync with speed ---- */
+  useEffect(() => {
+    const el = audioRef.current;
+    if (el) el.playbackRate = speed;
+  }, [speed]);
+
+  /* ---- preload NEXT step's audio while current one plays ---- */
+  useEffect(() => {
+    if (!soundOn) return;
+    const next = steps[stepIdx + 1];
+    if (!next) return;
+    const nextText = narrationToText(next.narration).trim();
+    if (!nextText) return;
+    loadNarration(nextText).catch(() => undefined);
+  }, [stepIdx, steps, soundOn, loadNarration]);
+
+  /* ---- pause audio when the player is not eligible ---- */
+  useEffect(() => {
+    if (!playing || !inView || !tabVisible) stopAllAudio();
+  }, [playing, inView, tabVisible, stopAllAudio]);
+
+  useEffect(() => () => stopAllAudio(), [stopAllAudio]);
+
+  /* ---- single RAF loop per player ---- */
   const stepStartRef = useRef<number>(0);
   const rafRef = useRef<number | null>(null);
   const pausedElapsedRef = useRef<number>(0);
@@ -180,7 +331,6 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
   }, []);
 
   useEffect(() => {
-    // when step changes, reset per-step transients & fire click ripple
     resetTransient();
     if (step?.action === "click") setClickPulse((n) => n + 1);
     if (step?.action === "toast") setToast(step.text ?? step.caption);
@@ -205,12 +355,10 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
       }
 
       if (frac >= 1) {
-        // advance step
         pausedElapsedRef.current = 0;
         stepStartRef.current = 0;
         const next = stepIdx + 1;
         if (next >= total) {
-          // loop with pause
           const pauseStart = t;
           const waitLoop = (tt: number) => {
             if (cancelled) return;
@@ -238,7 +386,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     };
   }, [playing, stepIdx, speed, reduced, step, total]);
 
-  /* ------ manual controls ------ */
+  /* ---- manual controls ---- */
   const play = () => {
     claim(idRef.current);
     setPlaying(true);
@@ -258,16 +406,32 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     setStepIdx((i) => Math.min(total - 1, i + 1));
   };
 
-  /* ------ camera transform (zoom to hotspot centre) ------ */
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    persistSoundPref(next);
+    if (!next) {
+      stopAllAudio();
+    } else if (!audioUnlocked) {
+      // A direct user gesture — unlock audio too.
+      setAudioUnlocked(true);
+    }
+  };
+
+  const startWithSound = () => {
+    setSoundOn(true);
+    setAudioUnlocked(true);
+    persistSoundPref(true);
+    play();
+  };
+
+  /* ---- camera transform ---- */
   const camera = useMemo(() => {
     if (!step) return { scale: 1, tx: 0, ty: 0 };
     const { x, y, w, h } = step.hotspot;
-    // scale so the larger of (w,h) fills ZOOM_COVERAGE of the frame
     const scale = Math.min(3.5, ZOOM_COVERAGE * 100 / Math.max(w, h));
-    // hotspot centre in %
     const cx = x + w / 2;
     const cy = y + h / 2;
-    // translate so the centre lands in the middle of the frame after scaling
     const tx = (50 - cx) * scale;
     const ty = (50 - cy) * scale;
     return { scale, tx, ty };
@@ -278,6 +442,11 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     : "";
 
   const activeShot = step?.shot?.url ?? shot;
+
+  /* Show subtitles when: sound is off, or sound is on but audio hasn't been
+     unlocked yet (i.e. before the "Start with sound" gesture). */
+  const showSubtitles = !soundOn || !audioUnlocked;
+  const showStartOverlay = soundOn && !audioUnlocked;
 
   return (
     <div ref={rootRef} className={cn("w-full", className)}>
@@ -290,7 +459,6 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
         className="relative w-full overflow-hidden rounded-xl border border-border bg-background shadow-lg"
         style={{ aspectRatio: "16 / 9" }}
       >
-        {/* Camera wrapper: scales/translates the screenshot */}
         <div
           className="absolute inset-0 will-change-transform"
           style={{
@@ -306,7 +474,6 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
             className="absolute inset-0 h-full w-full select-none object-cover"
           />
 
-          {/* Scrim + highlight ring (only for highlight action) */}
           {step && step.action === "highlight" && (
             <>
               <div
@@ -329,7 +496,6 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
             </>
           )}
 
-          {/* Typing chip anchored inside hotspot */}
           {step && step.action === "type" && (
             <div
               className="pointer-events-none absolute z-20"
@@ -354,7 +520,6 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
             </div>
           )}
 
-          {/* Animated cursor arrow at hotspot centre */}
           {!reduced && step && (
             <div
               className="pointer-events-none absolute z-30"
@@ -383,14 +548,34 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
           )}
         </div>
 
-        {/* Toast (outside camera so it doesn't scale) */}
         {toast && (
           <div className="pointer-events-none absolute bottom-3 right-3 z-40 max-w-[70%] rounded-lg border border-border bg-foreground text-background px-3 py-2 text-xs font-medium shadow-xl animate-fade-in">
             {toast}
           </div>
         )}
 
-        {/* Expand button */}
+        {/* Subtitles */}
+        {showSubtitles && narrationText && (
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 z-40 flex justify-center">
+            <div className="max-w-[92%] rounded-md bg-black/75 px-3 py-1.5 text-center text-xs font-medium text-white shadow-lg backdrop-blur-sm">
+              {narrationText}
+            </div>
+          </div>
+        )}
+
+        {/* Start-with-sound overlay */}
+        {showStartOverlay && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={startWithSound}
+              className="inline-flex items-center gap-2 rounded-lg bg-[hsl(22_100%_54%)] px-4 py-2 text-sm font-semibold text-white shadow-xl transition hover:brightness-110"
+            >
+              <Volume2 size={16} /> Start with sound
+            </button>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => setLightbox(true)}
@@ -399,6 +584,9 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
         >
           <Maximize2 size={14} />
         </button>
+
+        {/* Hidden audio element */}
+        <audio ref={audioRef} preload="auto" className="hidden" />
       </div>
 
       {/* Controls */}
@@ -436,6 +624,21 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
         >
           <ChevronRight size={12} />
         </button>
+        <button
+          type="button"
+          onClick={toggleSound}
+          className={cn(
+            "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition",
+            soundOn
+              ? "border-[hsl(22_100%_54%)] bg-[hsl(22_100%_54%)]/10 text-foreground"
+              : "border-border bg-background text-muted-foreground hover:bg-muted",
+          )}
+          aria-label={soundOn ? "Turn narration off" : "Turn narration on"}
+          aria-pressed={soundOn}
+        >
+          {soundOn ? <Volume2 size={12} /> : <VolumeX size={12} />}
+          {soundOn ? "Sound on" : "Sound off"}
+        </button>
         <div className="flex items-center gap-1 rounded-md border border-border bg-background p-0.5">
           {([0.5, 1, 2] as const).map((s) => (
             <button
@@ -457,6 +660,10 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
           Step {Math.min(stepIdx + 1, total)} of {total}
         </div>
       </div>
+
+      {audioNotice && (
+        <div className="mt-1 text-[11px] text-muted-foreground italic">{audioNotice}</div>
+      )}
 
       {/* Caption strip */}
       <div className="mt-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
