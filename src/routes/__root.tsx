@@ -570,6 +570,9 @@ function AuthNav() {
           )}
 
           <ProjectBibleNavLink />
+          <Link to="/start" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
+            Quick Start
+          </Link>
           <Link to="/manual" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
             <LifeBuoy className="h-3.5 w-3.5" />
             Manual
