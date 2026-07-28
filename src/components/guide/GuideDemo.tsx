@@ -431,7 +431,7 @@ export const GuideAppear = ({
   as: Tag = "div",
 }: {
   refName: string;
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   as?: keyof React.JSX.IntrinsicElements;
 }) => {
