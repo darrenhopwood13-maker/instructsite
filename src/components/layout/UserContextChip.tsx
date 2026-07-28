@@ -200,13 +200,6 @@ export function UserContextChip() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 md:hidden">
-                <Calendar size={13} className="mt-0.5 text-foreground/50" />
-                <div>
-                  <p className="text-[0.6rem] uppercase tracking-widest text-foreground/50">Date</p>
-                  <p className="text-sm text-foreground">{dateStr}</p>
-                </div>
-              </div>
             </div>
 
             <div className="mt-4 flex flex-col gap-1 border-t border-white/10 pt-3">
