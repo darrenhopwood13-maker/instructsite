@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { GuideStep } from "./GuideDemo";
+import { Term } from "./Term";
 
 import shot01 from "@/assets/guide/guide-01-organisations.png.asset.json";
 import shot02 from "@/assets/guide/guide-02-new-organisation.png.asset.json";
