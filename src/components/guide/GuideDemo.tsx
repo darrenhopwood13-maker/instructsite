@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,11 +25,13 @@ export interface GuideHotspot {
 
 export interface GuideStep {
   caption: string;
-  narration?: string;
+  narration?: ReactNode;
   action: GuideAction;
   hotspot: GuideHotspot;
   text?: string;
   ms?: number;
+  /** Optional per-step screenshot override — defaults to the mission's shot. */
+  shot?: { url: string };
 }
 
 export interface GuideDemoProps {
