@@ -48,8 +48,45 @@ function useDone() {
   return { done, toggle, reset };
 }
 
+function useLatestProjectId() {
+  const [projectId, setProjectId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // Prefer updated_at, fall back to created_at if the column is missing.
+      let { data } = await supabase
+        .from("projects")
+        .select("id")
+        .order("updated_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      if (!data) {
+        const res = await supabase
+          .from("projects")
+          .select("id")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        data = res.data;
+      }
+      if (!cancelled) setProjectId((data?.id as string | undefined) ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return projectId;
+}
+
+function resolveDeepLink(template: string, projectId: string | null): string {
+  if (!template.includes("{projectId}")) return template;
+  if (!projectId) return "/projects";
+  return template.replaceAll("{projectId}", projectId);
+}
+
 function StartPage() {
   const { done, toggle, reset } = useDone();
+  const latestProjectId = useLatestProjectId();
   const total = MISSIONS.length;
   const completed = useMemo(() => MISSIONS.filter((m) => done[m.id]).length, [done]);
   const allDone = completed === total;
@@ -162,7 +199,7 @@ function StartPage() {
 
                   <div className="flex flex-wrap items-center gap-2 print:hidden">
                     <a
-                      href={m.deepLink}
+                      href={resolveDeepLink(m.deepLink, latestProjectId)}
                       target="_blank"
                       rel="noreferrer"
                       className="glass-orange inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs uppercase tracking-widest"

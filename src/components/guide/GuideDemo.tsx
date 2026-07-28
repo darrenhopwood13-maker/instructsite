@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,11 +25,13 @@ export interface GuideHotspot {
 
 export interface GuideStep {
   caption: string;
-  narration?: string;
+  narration?: ReactNode;
   action: GuideAction;
   hotspot: GuideHotspot;
   text?: string;
   ms?: number;
+  /** Optional per-step screenshot override — defaults to the mission's shot. */
+  shot?: { url: string };
 }
 
 export interface GuideDemoProps {
@@ -275,6 +277,8 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     ? (reduced ? step.text : step.text.slice(0, typedChars))
     : "";
 
+  const activeShot = step?.shot?.url ?? shot;
+
   return (
     <div ref={rootRef} className={cn("w-full", className)}>
       {title && (
@@ -296,7 +300,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
           }}
         >
           <img
-            src={shot}
+            src={activeShot}
             alt={shotAlt}
             draggable={false}
             className="absolute inset-0 h-full w-full select-none object-cover"
@@ -497,7 +501,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
             <X size={16} />
           </button>
           <img
-            src={shot}
+            src={activeShot}
             alt={shotAlt}
             className="max-h-[92vh] max-w-[96vw] rounded-lg border border-border shadow-2xl"
           />
