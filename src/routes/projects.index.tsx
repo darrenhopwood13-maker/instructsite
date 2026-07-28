@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Plus, FolderOpen, MapPin, ShieldAlert } from "lucide-react";
+import { Plus, FolderOpen, MapPin, ShieldAlert, Sparkles, X } from "lucide-react";
 import { listMyProjects, getMyRoles, listMyOrgsForProjectCreation } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
@@ -87,6 +87,10 @@ function ProjectsPage() {
             )}
           </div>
         )}
+
+        <QuickStartBanner />
+
+
 
         <div className="mt-10 grid gap-4 md:grid-cols-2">
           {projects.data?.map((p) => (
