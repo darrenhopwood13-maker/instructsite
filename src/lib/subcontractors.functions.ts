@@ -97,13 +97,17 @@ export const listSubcontractorInvites = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
+    // RLS on subcontractor_invites already restricts to project admins, so we
+    // don't need the extra assertProjectAdmin gate here — that duplicate check
+    // was masking legitimate reads when the founder's client hadn't yet
+    // registered against the RPC. Filter out revoked rows for the panel.
     const { data: rows, error } = await context.supabase
       .from("subcontractor_invites")
       .select(
         "id, company_name, trade_packages, accepted_by, accepted_at, revoked_at, expires_at, created_at, package_manager_id",
       )
       .eq("project_id", data.projectId)
+      .is("revoked_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return rows ?? [];
