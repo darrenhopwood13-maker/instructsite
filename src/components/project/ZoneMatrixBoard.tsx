@@ -36,13 +36,15 @@ export function ZoneMatrixBoard({ projectId }: { projectId: string }) {
   if (ifcModels.isLoading) return null;
   if (hasActiveModel) return null;
 
-  const zones = (runtime.data ?? []) as ZoneRuntime[];
+  const zones = (runtime.data?.zones ?? []) as ZoneRuntime[];
+  const progressDegraded = runtime.data?.progressDegraded ?? false;
 
   const grouped = zones.reduce<Record<string, ZoneRuntime[]>>((acc, z) => {
     const key = z.level?.trim() || "Unassigned";
     (acc[key] ||= []).push(z);
     return acc;
   }, {});
+
 
   return (
     <section className="mt-8">
