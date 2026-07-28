@@ -110,20 +110,15 @@ export function UserContextChip() {
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ff7a00] text-[0.65rem] font-bold text-black">
           {initials(s.fullName)}
         </span>
-        <span className="hidden flex-col leading-tight sm:flex">
-          <span className="text-xs font-semibold text-foreground">{s.fullName}</span>
-          <span className="text-[0.6rem] uppercase tracking-widest text-foreground/60">
+        <span className="hidden min-w-0 flex-col leading-tight sm:flex">
+          <span className="truncate text-xs font-semibold text-foreground">{s.fullName}</span>
+          <span className="truncate text-[0.6rem] uppercase tracking-widest text-foreground/60">
             {primaryRole}
-            {s.org ? ` · ${s.org.name}` : ""}
             {project.data ? ` · ${project.data.name}` : ""}
           </span>
         </span>
         <ChevronDown size={12} className="text-foreground/60" />
       </button>
-      <span className="hidden items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-2.5 py-1.5 text-[0.65rem] uppercase tracking-widest text-foreground/70 md:inline-flex">
-        <Calendar size={11} />
-        {dateStr}
-      </span>
 
       {open && (
         <>
