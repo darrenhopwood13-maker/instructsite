@@ -559,33 +559,7 @@ function AuthNav() {
     <div className="flex items-center gap-3">
       {signedIn ? (
         <>
-          {isOwner ? (
-            <Link to="/org" className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
-              Organisation
-            </Link>
-          ) : (
-            <Link to="/projects" className="glass-btn rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
-              Projects
-            </Link>
-          )}
-
-          <ProjectBibleNavLink />
-          <Link to="/start" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
-            Quick Start
-          </Link>
-          <Link to="/manual" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
-            <LifeBuoy className="h-3.5 w-3.5" />
-            Manual
-          </Link>
-          <NotificationBell />
-
-          <Link to="/snags" className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest">
-            <Camera className="h-3.5 w-3.5" />
-            Snag Master
-          </Link>
-          <Link to="/tooling" className="glass-orange rounded-lg px-4 py-2 text-sm">
-            AI Tooling
-          </Link>
+          <UserContextChip />
           <Button
             asChild
             variant="outline"
@@ -599,10 +573,10 @@ function AuthNav() {
               aria-label="Open instructSite in a new tab"
             >
               <ExternalLink className="h-4 w-4" />
-              Open instructSite
+              instructSite.ai
             </a>
           </Button>
-          <UserContextChip />
+          <SettingsMenu isOwner={isOwner} />
         </>
       ) : (
         <>
@@ -619,7 +593,7 @@ function AuthNav() {
               aria-label="Open instructSite in a new tab"
             >
               <ExternalLink className="h-4 w-4" />
-              Open instructSite
+              instructSite.ai
             </a>
           </Button>
           <Link to="/auth" className="glass-orange rounded-lg px-4 py-2 text-sm uppercase tracking-widest">
@@ -631,27 +605,5 @@ function AuthNav() {
   );
 }
 
-function ProjectBibleNavLink() {
-  const matches = useMatches();
-  let projectId: string | undefined;
-  for (const m of matches) {
-    const p = (m.params as { projectId?: string } | undefined)?.projectId;
-    if (p) {
-      projectId = p;
-      break;
-    }
-  }
-  if (!projectId) return null;
-  return (
-    <Link
-      to="/projects/$projectId/bible"
-      params={{ projectId }}
-      className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
-    >
-      <BookOpen className="h-3.5 w-3.5" />
-      Project Bible
-    </Link>
-  );
-}
 
 
