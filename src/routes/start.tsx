@@ -199,7 +199,7 @@ function StartPage() {
 
                   <div className="flex flex-wrap items-center gap-2 print:hidden">
                     <a
-                      href={m.deepLink}
+                      href={resolveDeepLink(m.deepLink, latestProjectId)}
                       target="_blank"
                       rel="noreferrer"
                       className="glass-orange inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
