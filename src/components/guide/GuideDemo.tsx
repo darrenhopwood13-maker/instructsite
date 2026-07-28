@@ -501,7 +501,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
             <X size={16} />
           </button>
           <img
-            src={shot}
+            src={activeShot}
             alt={shotAlt}
             className="max-h-[92vh] max-w-[96vw] rounded-lg border border-border shadow-2xl"
           />
