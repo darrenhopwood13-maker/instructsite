@@ -28,7 +28,13 @@ import {
 
 import { TRADE_PACKAGES } from "@/lib/trade-packages";
 
-export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
+export function TradeDirectoryPanel({
+  projectId,
+  ready = true,
+}: {
+  projectId: string;
+  ready?: boolean;
+}) {
   const listFn = useServerFn(listSubcontractorInvites);
   const createFn = useServerFn(createSubcontractorInvite);
   const revokeFn = useServerFn(revokeSubcontractorInvite);
@@ -41,16 +47,22 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
   const invites = useQuery({
     queryKey: ["subcontractor-invites", projectId],
     queryFn: () => listFn({ data: { projectId } }),
+    enabled: ready,
+    retry: false,
   });
 
   const siteManagers = useQuery({
     queryKey: ["project-site-managers", projectId],
     queryFn: () => siteManagersFn({ data: { projectId } }),
+    enabled: ready,
+    retry: false,
   });
 
   const unassignedManagers = useQuery({
     queryKey: ["unassigned-site-managers", projectId],
     queryFn: () => unassignedManagersFn({ data: { projectId } }),
+    enabled: ready,
+    retry: false,
   });
 
   const [pickedManagerId, setPickedManagerId] = useState("");
