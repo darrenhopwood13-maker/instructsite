@@ -77,9 +77,32 @@ export function UserContextChip() {
         : "Member";
 
   const signOut = async () => {
-    const { supabase } = await import("@/integrations/supabase/client");
-    await supabase.auth.signOut();
-    window.location.assign("/");
+    setOpen(false);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+    } catch {
+      // ignore — we still want to clear the session locally and redirect
+    }
+    try {
+      const url = new URL(
+        (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? "",
+      );
+      const projectRef = url.hostname.split(".")[0];
+      const key = `sb-${projectRef}-auth-token`;
+      window.localStorage.removeItem(key);
+    } catch {
+      // ignore
+    }
+    // Nuke any lingering sb-* auth entries as a belt-and-braces fallback.
+    try {
+      Object.keys(window.localStorage)
+        .filter((k) => k.startsWith("sb-") && k.endsWith("-auth-token"))
+        .forEach((k) => window.localStorage.removeItem(k));
+    } catch {
+      // ignore
+    }
+    window.location.replace("/");
   };
 
   return (
