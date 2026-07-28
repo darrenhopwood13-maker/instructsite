@@ -359,7 +359,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     if (meshes.length === 0) return;
     const mappings = mapQ.data ?? [];
     const stateByZone = new Map<string, ZoneState>();
-    for (const s of stateQ.data ?? []) stateByZone.set(s.zone_id, s.state);
+    for (const s of stateQ.data?.zones ?? []) stateByZone.set(s.zone_id, s.state);
     const zoneByGid = new Map<string, string>();
     const stateByGid = new Map<string, ZoneState>();
     for (const m of mappings) {
@@ -489,7 +489,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     };
   }, [projectId, qc]);
 
-  const zoneProgress = (stateQ.data ?? []).slice().sort((a, b) => {
+  const zoneProgress = (stateQ.data?.zones ?? []).slice().sort((a, b) => {
     // complete → live → unstarted, then desc by progress
     const rank: Record<string, number> = { complete: 0, live: 1, unstarted: 2 };
     const r = rank[a.state] - rank[b.state];

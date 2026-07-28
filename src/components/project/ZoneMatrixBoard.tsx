@@ -36,13 +36,15 @@ export function ZoneMatrixBoard({ projectId }: { projectId: string }) {
   if (ifcModels.isLoading) return null;
   if (hasActiveModel) return null;
 
-  const zones = (runtime.data ?? []) as ZoneRuntime[];
+  const zones = (runtime.data?.zones ?? []) as ZoneRuntime[];
+  const progressDegraded = runtime.data?.progressDegraded ?? false;
 
   const grouped = zones.reduce<Record<string, ZoneRuntime[]>>((acc, z) => {
     const key = z.level?.trim() || "Unassigned";
     (acc[key] ||= []).push(z);
     return acc;
   }, {});
+
 
   return (
     <section className="mt-8">
@@ -77,6 +79,12 @@ export function ZoneMatrixBoard({ projectId }: { projectId: string }) {
           <CheckCircle2 size={10} className="text-emerald-400" /> Complete
         </span>
       </div>
+      {progressDegraded && (
+        <p className="mt-3 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/50">
+          Zone progress unavailable — showing zones without live totals.
+        </p>
+      )}
+
 
       {zones.length === 0 ? (
         <div className="mt-5 rounded-xl border border-dashed border-white/15 bg-black/40 p-10 text-center">

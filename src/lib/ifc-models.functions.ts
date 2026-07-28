@@ -392,12 +392,28 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => projectIdInput.parse(i))
   .handler(async ({ data, context }) => {
+    const safeProgress = async () => {
+      try {
+        const res = await (context.supabase as any).rpc("zone_approved_completion", {
+          _project_id: data.projectId,
+        });
+        if (res.error) {
+          console.warn("[zone-runtime] progress RPC failed:", res.error.message);
+          return { data: [] as Array<{ zone_id: string; total_pct: number | string }>, degraded: true };
+        }
+        return { data: (res.data ?? []) as Array<{ zone_id: string; total_pct: number | string }>, degraded: false };
+      } catch (e) {
+        console.warn("[zone-runtime] progress RPC threw:", (e as Error).message);
+        return { data: [] as Array<{ zone_id: string; total_pct: number | string }>, degraded: true };
+      }
+    };
+
     const [zonesRes, progressRes, liveRes] = await Promise.all([
       context.supabase
         .from("work_zones")
         .select("id, name, level")
         .eq("project_id", data.projectId),
-      (context.supabase as any).rpc("zone_runtime_progress", { _project_id: data.projectId }),
+      safeProgress(),
       context.supabase
         .from("live_site_activity")
         .select("zone_id")
@@ -405,26 +421,17 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
         .eq("status", "active"),
     ]);
     if (zonesRes.error) throw new Error(zonesRes.error.message);
-    if (progressRes.error) throw new Error(progressRes.error.message);
     if (liveRes.error) throw new Error(liveRes.error.message);
 
     const progressByZone = new Map<string, number>();
-    const completeByZone = new Map<string, boolean>();
-    for (const row of ((progressRes.data ?? []) as unknown) as Array<{
-      zone_id: string;
-      progress_pct: number | string;
-      all_workfaces_complete: boolean;
-    }>) {
-      progressByZone.set(row.zone_id, Number(row.progress_pct) || 0);
-      completeByZone.set(row.zone_id, row.all_workfaces_complete);
+    for (const row of progressRes.data) {
+      progressByZone.set(row.zone_id, Number(row.total_pct) || 0);
     }
     const live = new Set((liveRes.data ?? []).map((r) => r.zone_id).filter(Boolean) as string[]);
 
-    return (zonesRes.data ?? []).map((z) => {
+    const zones = (zonesRes.data ?? []).map((z) => {
       const progress_pct = Math.min(100, Math.round(progressByZone.get(z.id) ?? 0));
-      // Complete requires every workface in the zone to be complete, not
-      // just the average crossing 100 — see zone_runtime_progress().
-      const isComplete = completeByZone.get(z.id) ?? progress_pct >= 100;
+      const isComplete = progress_pct >= 100;
       const state: "complete" | "live" | "unstarted" = isComplete
         ? "complete"
         : live.has(z.id)
@@ -438,7 +445,10 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
         progress_pct,
       };
     });
+
+    return { zones, progressDegraded: progressRes.degraded };
   });
+
 
 export const listProjectZones = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
