@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useMatches } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -125,15 +126,16 @@ export function UserContextChip() {
         <ChevronDown size={12} className="text-foreground/60" />
       </button>
 
-      {open && (
-        <>
-          <button
-            type="button"
-            aria-label="Close menu"
-            className="fixed inset-0 z-40"
-            onClick={() => setOpen(false)}
-          />
-          <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-white/15 bg-black/90 p-4 text-sm shadow-2xl backdrop-blur">
+      {open && typeof document !== "undefined" &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              aria-label="Close menu"
+              className="fixed inset-0 z-[9998]"
+              onClick={() => setOpen(false)}
+            />
+            <div className="fixed right-3 top-16 z-[9999] w-72 rounded-xl border border-white/15 bg-black/90 p-4 text-sm shadow-2xl backdrop-blur">
             <p className="font-semibold text-foreground">{s.fullName}</p>
             <p className="mt-0.5 truncate text-[0.7rem] text-foreground/60">{s.email}</p>
 
@@ -224,7 +226,8 @@ export function UserContextChip() {
               </button>
             </div>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   );
