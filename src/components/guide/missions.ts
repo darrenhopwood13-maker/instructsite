@@ -1,13 +1,20 @@
+import type { ReactNode } from "react";
 import type { GuideStep } from "./GuideDemo";
 
 import shot01 from "@/assets/guide/guide-01-organisations.png.asset.json";
 import shot02 from "@/assets/guide/guide-02-new-organisation.png.asset.json";
+import shot03 from "@/assets/guide/guide-03-active-projects.png.asset.json";
+import shot04 from "@/assets/guide/guide-04-new-project-ai-setup.png.asset.json";
 import shot05 from "@/assets/guide/guide-05-new-project-fields.png.asset.json";
+import shot06 from "@/assets/guide/guide-06-project-cockpit.png.asset.json";
+import shot07 from "@/assets/guide/guide-07-subcontractor-directory.png.asset.json";
+import shot08 from "@/assets/guide/guide-08-subcontractors-master-view.png.asset.json";
 import shot09 from "@/assets/guide/guide-09-active-drawings.png.asset.json";
+import shot10 from "@/assets/guide/guide-10-zones-and-rams.png.asset.json";
 import shot11 from "@/assets/guide/guide-11-project-bible.png.asset.json";
 import shot12 from "@/assets/guide/guide-12-dabs-pin-drop.png.asset.json";
 import shot13 from "@/assets/guide/guide-13-dabs-shift-closeout.png.asset.json";
-import shot15 from "@/assets/guide/guide-15-site-manager-command-tower.png.asset.json";
+import shot14 from "@/assets/guide/guide-14-randall-programme-diary.png.asset.json";
 import shot16 from "@/assets/guide/guide-16-snag-master.png.asset.json";
 import shot17 from "@/assets/guide/guide-17-the-oracle.png.asset.json";
 
@@ -15,7 +22,10 @@ export interface Mission {
   id: string;
   number: number;
   title: string;
-  why: string;
+  why: ReactNode;
+  /** Deep-link template. Use `{projectId}` where a real project id is needed;
+   *  it is resolved at runtime in /start against the user's most recent
+   *  project, falling back to `/projects` when none exists. */
   deepLink: string;
   ifWrong: string;
   steps: GuideStep[];
@@ -23,168 +33,450 @@ export interface Mission {
   shotAlt: string;
 }
 
-/* Hotspots are % of the screenshot (x, y, w, h). Estimated from the live UI;
-   tweak as needed without touching the engine. */
+/* All hotspots are % of the framed screenshot ({x, y, w, h}). */
 
 export const MISSIONS: Mission[] = [
+  /* -------------------------------------------------------------------- M1 */
   {
     id: "m1",
     number: 1,
-    title: "Create your organisation",
-    why: "Everything in instructSite lives inside your organisation. Set it up once and your whole team joins in.",
+    title: "Set up your company",
+    why: "Your company account holds everything — every job, every person, every drawing. Set it up once and the whole team joins in.",
     deepLink: "/org/new",
-    ifWrong: "If the CREATE button is greyed out, fill in the name field first.",
+    ifWrong: "If the CREATE button is greyed out, fill in the organisation name first.",
     shot: shot01,
-    shotAlt: "Organisations console with the list of organisations and a New Organisation button.",
+    shotAlt: "Founder console listing organisations with a New Organisation button.",
     steps: [
-      { caption: "This is your organisations console.", action: "reveal", hotspot: { x: 5, y: 20, w: 90, h: 50 } },
-      { caption: "Click 'New Organisation' to start one.", action: "highlight", hotspot: { x: 78, y: 18, w: 18, h: 8 } },
-      { caption: "Open the create form.", action: "click", hotspot: { x: 87, y: 22, w: 8, h: 5 } },
-      { caption: "Organisation ready.", action: "toast", text: "Organisation created", hotspot: { x: 70, y: 85, w: 25, h: 10 } },
+      {
+        caption: "This is your company console.",
+        narration: "Every job you run lives inside a company account.",
+        action: "reveal",
+        hotspot: { x: 5, y: 20, w: 90, h: 50 },
+      },
+      {
+        caption: "Find the NEW ORGANISATION button, top right.",
+        narration: "Top right, spot the New Organisation button.",
+        action: "highlight",
+        hotspot: { x: 75.1, y: 30.6, w: 17.2, h: 6.7 },
+      },
+      {
+        caption: "Click it to open the form.",
+        narration: "Give it a click to open the create form.",
+        action: "click",
+        hotspot: { x: 75.1, y: 30.6, w: 17.2, h: 6.7 },
+      },
+      {
+        caption: "Type your company name.",
+        narration: "Type your firm's name — the same one on your letterhead.",
+        action: "type",
+        text: "Ashcroft Homes Ltd",
+        hotspot: { x: 23.2, y: 61.1, w: 52.3, h: 6.7 },
+        shot: shot02,
+      },
+      {
+        caption: "The slug auto-fills — leave it alone.",
+        narration: "The slug is your web address. It fills itself in — no need to touch it.",
+        action: "highlight",
+        hotspot: { x: 23.2, y: 76.4, w: 52.3, h: 6.7 },
+        shot: shot02,
+      },
+      {
+        caption: "Company created.",
+        narration: "That's your firm set up. Everyone else joins from here.",
+        action: "toast",
+        text: "Organisation created",
+        hotspot: { x: 70, y: 85, w: 25, h: 10 },
+        shot: shot02,
+      },
     ],
   },
+
+  /* -------------------------------------------------------------------- M2 */
   {
     id: "m2",
     number: 2,
-    title: "Invite your first team members",
-    why: "Nothing works alone — invite your project manager and subcontractors so they can log in.",
-    deepLink: "/org",
-    ifWrong: "If invites bounce, double-check the email address for typos.",
-    shot: shot02,
-    shotAlt: "New organisation form with fields for name and invite emails.",
+    title: "Start your first project",
+    why: "A project is one job site. Everything — drawings, crews, diaries, snags — hangs off it.",
+    deepLink: "/projects/new",
+    ifWrong: "If it won't save, check every required field has been filled in.",
+    shot: shot03,
+    shotAlt: "Portfolio view of active projects with a New Project button.",
     steps: [
-      { caption: "Give the organisation a name.", action: "highlight", hotspot: { x: 10, y: 30, w: 55, h: 8 } },
-      { caption: "Add an invite email.", action: "type", text: "pm@site.com", hotspot: { x: 10, y: 55, w: 55, h: 8 } },
-      { caption: "Pick their role.", action: "highlight", hotspot: { x: 68, y: 55, w: 25, h: 8 } },
-      { caption: "Send invites and create.", action: "click", hotspot: { x: 40, y: 80, w: 20, h: 8 } },
-      { caption: "Invite sent.", action: "toast", text: "Invite sent", hotspot: { x: 70, y: 85, w: 25, h: 10 } },
+      {
+        caption: "This is your portfolio of live jobs.",
+        narration: "Every active job you're running shows up here.",
+        action: "reveal",
+        hotspot: { x: 5, y: 20, w: 90, h: 45 },
+      },
+      {
+        caption: "Find the NEW PROJECT button.",
+        narration: "Top right, look for the New Project button.",
+        action: "highlight",
+        hotspot: { x: 78.6, y: 26.1, w: 13.8, h: 6.4 },
+      },
+      {
+        caption: "Click to start a fresh job.",
+        narration: "Give it a click to start a fresh job.",
+        action: "click",
+        hotspot: { x: 78.6, y: 26.1, w: 13.8, h: 6.4 },
+      },
+      {
+        caption: "Drop a drawing pack for instant AI setup.",
+        narration: <>Drag a drawing pack in here and <Term>the Oracle</Term> fills the fields for you.</>,
+        action: "click",
+        hotspot: { x: 23, y: 69, w: 52.9, h: 20.8 },
+        shot: shot04,
+      },
+      {
+        caption: "Pick which company owns the job.",
+        narration: "Pick which of your companies this job belongs to.",
+        action: "highlight",
+        hotspot: { x: 23.2, y: 23.9, w: 52.3, h: 6.4 },
+        shot: shot05,
+      },
+      {
+        caption: "Name the project.",
+        narration: "Type a short, memorable project name.",
+        action: "type",
+        text: "Willow Bank House",
+        hotspot: { x: 23.2, y: 38.6, w: 52.3, h: 6.4 },
+        shot: shot05,
+      },
+      {
+        caption: "Enter the full site address.",
+        narration: "Put the full site address in — postcode and all.",
+        action: "type",
+        text: "12 Willow Lane, York YO1 8AA",
+        hotspot: { x: 23.2, y: 53.1, w: 52.3, h: 11.8 },
+        shot: shot05,
+      },
+      {
+        caption: "Add a short project brief.",
+        narration: "A sentence or two on what you're building. That's the lot.",
+        action: "highlight",
+        hotspot: { x: 23.2, y: 88.5, w: 52.3, h: 11.5 },
+        shot: shot05,
+      },
     ],
   },
+
+  /* -------------------------------------------------------------------- M3 */
   {
     id: "m3",
     number: 3,
-    title: "Create your first project",
-    why: "A project is one job site. Everything from drawings to diaries hangs off it.",
-    deepLink: "/projects/new",
-    ifWrong: "If the site address won't save, check you filled in every required field.",
-    shot: shot05,
-    shotAlt: "New project form with project name and site address fields.",
+    title: "Find your way around",
+    why: "The project cockpit has four tools. Learn where they live and you'll never hunt for a button again.",
+    deepLink: "/projects/{projectId}",
+    ifWrong: "If a button is missing, your role probably doesn't have access — ask a founder to open it up.",
+    shot: shot06,
+    shotAlt: "Project cockpit with DABS, Randall, Site Manager and Settings buttons.",
     steps: [
-      { caption: "Name the project.", action: "type", text: "Willow Bank House", hotspot: { x: 10, y: 30, w: 55, h: 8 } },
-      { caption: "Enter the site address.", action: "type", text: "12 Willow Lane", hotspot: { x: 10, y: 48, w: 55, h: 8 } },
-      { caption: "Click 'Create Project'.", action: "highlight", hotspot: { x: 40, y: 82, w: 22, h: 8 } },
-      { caption: "Project ready.", action: "toast", text: "Project ready", hotspot: { x: 70, y: 85, w: 25, h: 10 } },
+      {
+        caption: "DABS — today's plan on the drawing.",
+        narration: <><Term>DABS</Term> is the daily briefing — one glance and every crew knows their job.</>,
+        action: "highlight",
+        hotspot: { x: 65.7, y: 25.5, w: 6.9, h: 8.8 },
+      },
+      {
+        caption: "Randall Diary — the AI diary.",
+        narration: <><Term>Randall</Term> reads your <Term>programme</Term> and writes the diary for you.</>,
+        action: "highlight",
+        hotspot: { x: 73.5, y: 25.5, w: 8.4, h: 8.8 },
+      },
+      {
+        caption: "Site Manager — the command tower.",
+        narration: "The Site Manager view is the live command tower — pins, shifts, everything.",
+        action: "highlight",
+        hotspot: { x: 82.9, y: 25.2, w: 9.4, h: 9.1 },
+      },
+      {
+        caption: "Everything else lives in SETTINGS.",
+        narration: "Every other tool — bible, snags, subs, oracle — lives inside the Settings menu.",
+        action: "click",
+        hotspot: { x: 83.5, y: 3.5, w: 8.8, h: 5.1 },
+      },
     ],
   },
+
+  /* -------------------------------------------------------------------- M4 */
   {
     id: "m4",
     number: 4,
-    title: "Upload to the Project Bible",
-    why: "The Project Bible is one place for every document. Drop files in and the whole team sees them.",
-    deepLink: "/projects",
-    ifWrong: "If a file won't upload, it may be too big — try under 50MB.",
-    shot: shot11,
-    shotAlt: "Project Bible showing search bar, category filters and document cards.",
+    title: "Get your trades on the job",
+    why: "No subs, no site. Add each company, tell us their trade, and we build them their own login pack.",
+    deepLink: "/projects/{projectId}",
+    ifWrong: "If the pack won't generate, double-check the company name and email are both filled in.",
+    shot: shot07,
+    shotAlt: "Subcontractor directory with company field, trade chips and access button.",
     steps: [
-      { caption: "This is the Project Bible — every document, one place.", action: "reveal", hotspot: { x: 5, y: 15, w: 90, h: 25 } },
-      { caption: "Search across everything.", action: "highlight", hotspot: { x: 5, y: 30, w: 45, h: 8 } },
-      { caption: "Filter by document type.", action: "highlight", hotspot: { x: 52, y: 30, w: 45, h: 8 } },
-      { caption: "Open a document to view it.", action: "click", hotspot: { x: 6, y: 88, w: 22, h: 8 } },
-      { caption: "Document opened.", action: "toast", text: "Document opened", hotspot: { x: 70, y: 85, w: 25, h: 10 } },
+      {
+        caption: "Type the subcontractor's company name.",
+        narration: <>Start with the <Term>subcontractor</Term>'s company name.</>,
+        action: "type",
+        text: "Northern Sparks Ltd",
+        hotspot: { x: 7.1, y: 37.5, w: 84.7, h: 4.8 },
+      },
+      {
+        caption: "Tap the trade chip that fits.",
+        narration: <>Pick the <Term>trade package</Term> chip that matches what they do.</>,
+        action: "click",
+        hotspot: { x: 7, y: 43.6, w: 77.2, h: 6.7 },
+      },
+      {
+        caption: "Generate their access pack.",
+        narration: "Hit generate and we build them their own login pack.",
+        action: "click",
+        hotspot: { x: 7.1, y: 51.3, w: 84.7, h: 4.3 },
+      },
+      {
+        caption: "Invite sent.",
+        narration: "That's them invited. Now watch the master view.",
+        action: "toast",
+        text: "Subcontractor pack ready",
+        hotspot: { x: 70, y: 85, w: 25, h: 10 },
+      },
+      {
+        caption: "See them sitting in INVITE PENDING.",
+        narration: "Until they log in, they sit in Invite Pending — chase them if they're slow.",
+        action: "highlight",
+        hotspot: { x: 1.9, y: 42.6, w: 95, h: 24.4 },
+        shot: shot08,
+      },
+      {
+        caption: "OPEN PACK to see what they'll see.",
+        narration: "Open Pack shows you exactly what the sub will see when they log in.",
+        action: "highlight",
+        hotspot: { x: 82.7, y: 51.5, w: 11.7, h: 6.7 },
+        shot: shot08,
+      },
     ],
   },
+
+  /* -------------------------------------------------------------------- M5 */
   {
     id: "m5",
     number: 5,
-    title: "Add a GA drawing",
-    why: "The drawing is the map you'll pin work onto every day. No drawing, no pins.",
-    deepLink: "/projects",
-    ifWrong: "If the drawing won't display, re-upload as a PDF.",
+    title: "Load your drawings",
+    why: "The drawing is the map you'll pin work onto every day. No drawing, no pins, no plan.",
+    deepLink: "/projects/{projectId}",
+    ifWrong: "If a sheet won't display, re-export it from your CAD as a flat PDF and try again.",
     shot: shot09,
-    shotAlt: "Active project drawings panel with a sheet dropdown and Add to DABS button.",
+    shotAlt: "Active drawings panel with a sheet dropdown and Add to DABS button.",
     steps: [
-      { caption: "Pick the sheet you're working from.", action: "highlight", hotspot: { x: 6, y: 40, w: 78, h: 10 } },
-      { caption: "Add it into DABS so crews can pin against it.", action: "highlight", hotspot: { x: 82, y: 40, w: 12, h: 10 } },
-      { caption: "Confirm.", action: "click", hotspot: { x: 87, y: 44, w: 6, h: 6 } },
-      { caption: "Sheet added to DABS.", action: "toast", text: "Added to DABS", hotspot: { x: 70, y: 85, w: 25, h: 10 } },
+      {
+        caption: "Pick the sheet you're working from.",
+        narration: <>Pick the <Term>GA drawing</Term> sheet you want the crews to work off today.</>,
+        action: "highlight",
+        hotspot: { x: 7.9, y: 16.8, w: 69.5, h: 5.6 },
+      },
+      {
+        caption: "Push it into DABS.",
+        narration: <>Push it into <Term>DABS</Term> so pins can go straight onto it.</>,
+        action: "click",
+        hotspot: { x: 77.9, y: 16.4, w: 9.3, h: 6.4 },
+      },
+      {
+        caption: "Sheet is live on DABS.",
+        narration: "Done — that sheet is now the drawing the whole site pins against.",
+        action: "toast",
+        text: "Added to DABS",
+        hotspot: { x: 70, y: 85, w: 25, h: 10 },
+      },
     ],
   },
+
+  /* -------------------------------------------------------------------- M6 */
   {
     id: "m6",
     number: 6,
-    title: "Publish today's DABS",
-    why: "The DABS tells every crew what they're doing today, in one glance.",
-    deepLink: "/projects",
-    ifWrong: "If no zones show, add zones to your drawing first.",
-    shot: shot12,
-    shotAlt: "DABS Spatial Pin Drop screen with Work Zone and Trade Package selectors.",
+    title: "Zones and safety paperwork",
+    why: "Zones tell people where to work. RAMS tell them how to work safely. You need both before a crew steps on.",
+    deepLink: "/projects/{projectId}",
+    ifWrong: "If the RAMS upload greys out, you haven't picked a trade package yet — pick one first.",
+    shot: shot10,
+    shotAlt: "Zone tiles on the left and a RAMS upload panel on the right.",
     steps: [
-      { caption: "This is DABS — Spatial Pin Drop.", action: "reveal", hotspot: { x: 5, y: 15, w: 90, h: 25 } },
-      { caption: "Choose the work zone.", action: "highlight", hotspot: { x: 6, y: 50, w: 45, h: 10 } },
-      { caption: "Choose the trade package.", action: "type", text: "Electrical First Fix", hotspot: { x: 52, y: 50, w: 44, h: 10 } },
-      { caption: "Open the active drawing.", action: "click", hotspot: { x: 6, y: 75, w: 78, h: 10 } },
+      {
+        caption: "These tiles are your work zones.",
+        narration: <>These tiles are the <Term>work zones</Term> — each one is a patch of the site.</>,
+        action: "highlight",
+        hotspot: { x: 8.8, y: 1.3, w: 38, h: 32.2 },
+      },
+      {
+        caption: "Pick a trade before you upload.",
+        narration: <>You need to pick a <Term>trade package</Term> first — that's what the warning is telling you.</>,
+        action: "highlight",
+        hotspot: { x: 53.9, y: 11, w: 35.2, h: 4.6 },
+      },
+      {
+        caption: "Now drop the master RAMS in.",
+        narration: <>Now drop the master <Term>RAMS</Term> file into the upload zone.</>,
+        action: "click",
+        hotspot: { x: 53.9, y: 16.1, w: 35.1, h: 26.8 },
+      },
+      {
+        caption: "RAMS filed against the trade.",
+        narration: "Filed. That trade is now cleared to start work in these zones.",
+        action: "toast",
+        text: "RAMS uploaded",
+        hotspot: { x: 70, y: 85, w: 25, h: 10 },
+      },
     ],
   },
+
+  /* -------------------------------------------------------------------- M7 */
   {
     id: "m7",
     number: 7,
-    title: "Drop a live pin",
-    why: "A pin shows exactly where a crew is on the drawing right now. Colour = which trade.",
-    deepLink: "/projects",
-    ifWrong: "If the pin doesn't stick, tap the drawing first to focus it.",
-    shot: shot13,
-    shotAlt: "GA drawing with a labour pin and the active shifts panel below.",
+    title: "Everything in one place",
+    why: "The Project Bible is your one shelf for every document on this job — searchable, filterable, always up to date.",
+    deepLink: "/projects/{projectId}/bible",
+    ifWrong: "If a doc is missing, someone forgot to upload it — nudge them, don't email it around.",
+    shot: shot11,
+    shotAlt: "Project Bible with a search bar, filter chips and document cards.",
     steps: [
-      { caption: "Tap where the crew is working to drop a pin.", action: "click", hotspot: { x: 45, y: 5, w: 8, h: 10 } },
-      { caption: "Lock it to the Oracle so it can reason about it.", action: "highlight", hotspot: { x: 74, y: 46, w: 14, h: 8 } },
-      { caption: "Pin logged. It appears in Active Shifts.", action: "highlight", hotspot: { x: 8, y: 65, w: 84, h: 20 } },
+      {
+        caption: "Search across every document.",
+        narration: "Type any word — sheet number, trade, contractor — and the bible finds it.",
+        action: "type",
+        text: "M&E first fix",
+        hotspot: { x: 3.7, y: 31.1, w: 34.8, h: 5.4 },
+      },
+      {
+        caption: "Or filter by document type.",
+        narration: <>Or use the chips to narrow it down — drawings, <Term>RAMS</Term>, <Term>method statements</Term>, the lot.</>,
+        action: "highlight",
+        hotspot: { x: 39.2, y: 31.5, w: 56.1, h: 4.6 },
+      },
     ],
   },
+
+  /* -------------------------------------------------------------------- M8 */
   {
     id: "m8",
     number: 8,
-    title: "Log today in the Daily Diary",
-    why: "Two minutes today saves two hours in a dispute later.",
-    deepLink: "/projects",
-    ifWrong: "If save fails, check you have an internet connection.",
-    shot: shot13,
-    shotAlt: "Close-out button for today's shift and the daily diary flow.",
+    title: "Drop a pin and start a shift",
+    why: "A pin is the crew's flag on the drawing. It says who's working, where, and on what — right now.",
+    deepLink: "/dabs/{projectId}",
+    ifWrong: "If the pin won't stick, tap the drawing itself first to give it focus, then try again.",
+    shot: shot12,
+    shotAlt: "DABS spatial pin drop with work zone and trade package selectors.",
     steps: [
-      { caption: "At end of day, close out the shift.", action: "highlight", hotspot: { x: 8, y: 78, w: 84, h: 8 } },
-      { caption: "This opens the daily diary.", action: "click", hotspot: { x: 40, y: 80, w: 20, h: 6 } },
-      { caption: "Diary saved for today.", action: "toast", text: "Diary entry saved", hotspot: { x: 70, y: 85, w: 25, h: 10 } },
+      {
+        caption: "Pick which work zone the crew's in.",
+        narration: <>First pick the <Term>work zone</Term> the crew is heading to.</>,
+        action: "highlight",
+        hotspot: { x: 7.9, y: 57, w: 40.8, h: 5.9 },
+      },
+      {
+        caption: "Then pick the trade package.",
+        narration: <>Then pick the <Term>trade package</Term> so the pin gets the right colour.</>,
+        action: "type",
+        text: "Electrical First Fix",
+        hotspot: { x: 50.1, y: 57, w: 40.8, h: 5.9 },
+      },
+      {
+        caption: "Tap the drawing where they're working.",
+        narration: <>Now tap the drawing right where the crew is standing — that drops the <Term>pin</Term>.</>,
+        action: "click",
+        hotspot: { x: 28.4, y: 0, w: 42.1, h: 42.9 },
+        shot: shot13,
+      },
+      {
+        caption: "Pin dropped, shift is live.",
+        narration: <>Pin's in. Their <Term>shift</Term> is now live on the board.</>,
+        action: "toast",
+        text: "Pin dropped",
+        hotspot: { x: 70, y: 85, w: 25, h: 10 },
+        shot: shot13,
+      },
     ],
   },
+
+  /* -------------------------------------------------------------------- M9 */
   {
     id: "m9",
     number: 9,
-    title: "Report a snag",
-    why: "Snap a photo of anything wrong and the Snag Master writes the fix-list for you.",
-    deepLink: "/snags",
-    ifWrong: "If AI analysis stalls, try a smaller, clearer photo.",
-    shot: shot16,
-    shotAlt: "Snag Master defect intelligence screen with New Snag button and status filters.",
+    title: "Close out the shift",
+    why: "Two minutes at the end of the day saves two hours in a dispute later. Close it out and the diary writes itself.",
+    deepLink: "/dabs/{projectId}",
+    ifWrong: "If close-out fails, check the internet — the app queues it and sends when you're back on.",
+    shot: shot13,
+    shotAlt: "Active shifts row with a close-out shift button and Ask Oracle link.",
     steps: [
-      { caption: "This is Snag Master — defect intelligence.", action: "reveal", hotspot: { x: 5, y: 15, w: 90, h: 30 } },
-      { caption: "Start a new snag.", action: "highlight", hotspot: { x: 78, y: 30, w: 18, h: 10 } },
-      { caption: "Or add your very first from here.", action: "click", hotspot: { x: 42, y: 82, w: 18, h: 8 } },
-      { caption: "Snap the defect and the Foreman writes it up.", action: "wait", hotspot: { x: 42, y: 82, w: 18, h: 8 } },
+      {
+        caption: "Find today's active shifts row.",
+        narration: <>Scroll to the active <Term>shifts</Term> row — the crews still on site.</>,
+        action: "highlight",
+        hotspot: { x: 7.9, y: 76.7, w: 83.2, h: 6.4 },
+      },
+      {
+        caption: "Close out the shift.",
+        narration: <>Hit Close Out and the <Term>daily diary</Term> pre-fills with what actually happened.</>,
+        action: "click",
+        hotspot: { x: 7.9, y: 76.7, w: 83.2, h: 6.4 },
+      },
+      {
+        caption: "Diary saved for today.",
+        narration: "Diary saved. Weather, hours and pins all logged.",
+        action: "toast",
+        text: "Diary entry saved",
+        hotspot: { x: 70, y: 85, w: 25, h: 10 },
+      },
+      {
+        caption: "Stuck? ASK ORACLE on this sheet.",
+        narration: <>Stuck on anything on this drawing? Ask <Term>the Oracle</Term> right there.</>,
+        action: "highlight",
+        hotspot: { x: 82.9, y: 48, w: 7.4, h: 4 },
+      },
     ],
   },
+
+  /* -------------------------------------------------------------------- M10 */
   {
     id: "m10",
     number: 10,
-    title: "Ask the Oracle",
-    why: "The Oracle is your 30-year site mentor. Ask a plain question, get a plain answer.",
-    deepLink: "/tooling",
-    ifWrong: "If no answer comes, refresh and ask again — sessions can time out.",
-    shot: shot17,
-    shotAlt: "The Oracle terminal with Scan, Upload and View buttons and a note input.",
+    title: "Let the AI do the boring bits",
+    why: "Programmes, snags, questions — hand the paperwork to Randall, Snag Master and the Oracle. They're quicker than you.",
+    deepLink: "/programme/{projectId}",
+    ifWrong: "If the AI hangs, refresh the page — sessions time out after a while of doing nothing.",
+    shot: shot14,
+    shotAlt: "Randall programme compiler with an upload button and compiled progress bar.",
     steps: [
-      { caption: "The Oracle is ready for input.", action: "reveal", hotspot: { x: 12, y: 18, w: 78, h: 45 } },
-      { caption: "Attach a photo, drawing or PDF.", action: "highlight", hotspot: { x: 40, y: 55, w: 20, h: 20 } },
-      { caption: "Or just type a note.", action: "type", text: "Soleplate reads 12mm low on B/3", hotspot: { x: 14, y: 80, w: 74, h: 12 } },
-      { caption: "The Oracle replies with a plain-English answer.", action: "wait", hotspot: { x: 14, y: 80, w: 74, h: 12 } },
+      {
+        caption: "Upload your programme PDF.",
+        narration: <>Drop your <Term>programme</Term> in and <Term>Randall</Term> pulls every task out.</>,
+        action: "click",
+        hotspot: { x: 67, y: 61.7, w: 13.9, h: 8 },
+      },
+      {
+        caption: "Watch it compile in seconds.",
+        narration: "The bar fills as it reads — usually less than a minute.",
+        action: "highlight",
+        hotspot: { x: 18, y: 78.4, w: 62.8, h: 10.1 },
+      },
+      {
+        caption: "Spotted a defect? NEW SNAG.",
+        narration: <>Spotted a <Term>snag</Term> on site? Hit New Snag — Snag Master writes the fix-list for you.</>,
+        action: "click",
+        hotspot: { x: 79.8, y: 33, w: 12.5, h: 7 },
+        shot: shot16,
+      },
+      {
+        caption: "Or SCAN something into the Oracle.",
+        narration: <>Or open <Term>the Oracle</Term> and Scan a photo, drawing or PDF straight in.</>,
+        action: "highlight",
+        hotspot: { x: 21.6, y: 56.3, w: 5.1, h: 9.7 },
+        shot: shot17,
+      },
+      {
+        caption: "And just type a plain question.",
+        narration: "Or type a plain-English question. It replies in plain English.",
+        action: "type",
+        text: "What's the fire strategy for zone B?",
+        hotspot: { x: 10.8, y: 77.5, w: 77.3, h: 11.5 },
+        shot: shot17,
+      },
     ],
   },
 ];
