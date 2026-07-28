@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, ExternalLink, RotateCcw, PartyPopper, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GuideDemo } from "@/components/guide/GuideDemo";
-import { MissionMock } from "@/components/guide/MissionMocks";
 import { MISSIONS } from "@/components/guide/missions";
 import { Term, GLOSSARY } from "@/components/guide/Term";
 import { Button } from "@/components/ui/button";
