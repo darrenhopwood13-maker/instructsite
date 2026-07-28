@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useMatches } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Building2, HardHat, Calendar, User as UserIcon, LogOut } from "lucide-react";
+import { ChevronDown, Building2, HardHat, User as UserIcon, LogOut } from "lucide-react";
 import { getSessionContext } from "@/lib/session.functions";
 import { getProject } from "@/lib/projects.functions";
 
