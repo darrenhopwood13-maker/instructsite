@@ -4,7 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
-  useMatches,
+  
   HeadContent,
   Scripts,
   redirect,
