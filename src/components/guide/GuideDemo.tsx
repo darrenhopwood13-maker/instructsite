@@ -496,7 +496,7 @@ export const GuideAnchor = ({
   as: Tag = "div",
 }: {
   refName: string;
-  children?: ReactNode;
+  children?: ReactNode | undefined;
   className?: string;
   as?: keyof React.JSX.IntrinsicElements;
 }) => (
