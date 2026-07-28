@@ -359,7 +359,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     if (meshes.length === 0) return;
     const mappings = mapQ.data ?? [];
     const stateByZone = new Map<string, ZoneState>();
-    for (const s of stateQ.data ?? []) stateByZone.set(s.zone_id, s.state);
+    for (const s of stateQ.data?.zones ?? []) stateByZone.set(s.zone_id, s.state);
     const zoneByGid = new Map<string, string>();
     const stateByGid = new Map<string, ZoneState>();
     for (const m of mappings) {
