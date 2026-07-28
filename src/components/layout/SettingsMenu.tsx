@@ -13,6 +13,9 @@ import {
   Bell,
   Check,
   Calendar,
+  ClipboardList,
+  CalendarDays,
+  ShieldAlert,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -143,6 +146,30 @@ export function SettingsMenu({ isOwner }: { isOwner: boolean }) {
       params: { projectId },
       icon: BookOpen,
       match: (p) => p.includes("/bible"),
+    });
+    navItems.push({
+      key: "dabs",
+      label: "DABS",
+      to: "/dabs/$projectId",
+      params: { projectId },
+      icon: ClipboardList,
+      match: (p) => p.startsWith("/dabs"),
+    });
+    navItems.push({
+      key: "randall",
+      label: "Randall Diary",
+      to: "/programme/$projectId",
+      params: { projectId },
+      icon: CalendarDays,
+      match: (p) => p.startsWith("/programme"),
+    });
+    navItems.push({
+      key: "site-manager",
+      label: "Site Manager",
+      to: "/site-manager/$projectId",
+      params: { projectId },
+      icon: ShieldAlert,
+      match: (p) => p.startsWith("/site-manager"),
     });
   }
 

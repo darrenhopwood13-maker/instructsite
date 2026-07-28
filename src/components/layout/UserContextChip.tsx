@@ -52,8 +52,8 @@ export function UserContextChip() {
   const [open, setOpen] = useState(false);
 
   const session = useQuery({
-    queryKey: ["session-context"],
-    queryFn: () => sessionFn(),
+    queryKey: ["session-context", projectId ?? null],
+    queryFn: () => sessionFn(projectId ? { data: { projectId } } : undefined),
     staleTime: 60_000,
     retry: false,
   });
