@@ -88,7 +88,8 @@ function ProjectsPage() {
           </div>
         )}
 
-        <QuickStartBanner />
+
+
 
 
 
