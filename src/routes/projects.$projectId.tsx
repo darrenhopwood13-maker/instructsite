@@ -206,7 +206,7 @@ function ProjectDetail() {
               distribute QR codes for on-site onboarding.
             </p>
             <div className="mt-5">
-              <TradeDirectoryPanel projectId={projectId} />
+              <TradeDirectoryPanel projectId={projectId} ready={ready} />
               <WorkfaceRegisterPanel projectId={projectId} />
             </div>
           </section>

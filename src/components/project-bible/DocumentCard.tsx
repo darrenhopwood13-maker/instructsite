@@ -1,5 +1,20 @@
-import { FileText, Image as ImageIcon, FileArchive, Eye, Archive, RotateCcw } from "lucide-react";
-import type { BibleDocument } from "@/lib/project-bible.functions";
+import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  FileText,
+  Image as ImageIcon,
+  FileArchive,
+  Eye,
+  Archive,
+  RotateCcw,
+  Boxes,
+  CalendarDays,
+  FileSpreadsheet,
+} from "lucide-react";
+import {
+  getBibleDocumentSignedUrl,
+  type BibleDocument,
+} from "@/lib/project-bible.functions";
 
 function formatSize(n: number | null) {
   if (!n || n <= 0) return "";
@@ -17,25 +32,80 @@ function formatDate(s: string | null) {
   }
 }
 
+// Icon + colour tuned to the file type, so the deck reads at a glance
+// instead of being a wall of identical grey placeholders.
+function iconForDoc(doc: BibleDocument) {
+  const mime = (doc.mimeType ?? "").toLowerCase();
+  if (mime.startsWith("image/")) return { Icon: ImageIcon, color: "text-sky-300" };
+  if (mime.includes("pdf")) return { Icon: FileText, color: "text-rose-300" };
+  if (doc.source === "model") return { Icon: Boxes, color: "text-emerald-300" };
+  if (doc.source === "programme") return { Icon: CalendarDays, color: "text-amber-300" };
+  if (mime.includes("sheet") || mime.includes("excel") || mime.includes("csv"))
+    return { Icon: FileSpreadsheet, color: "text-lime-300" };
+  return { Icon: FileArchive, color: "text-foreground/60" };
+}
+
 export function DocumentCard({
   doc,
+  projectId,
   onView,
   onArchive,
   onRestore,
   canArchive,
 }: {
   doc: BibleDocument;
+  projectId: string;
   onView: () => void;
   onArchive?: () => void;
   onRestore?: () => void;
   canArchive?: boolean;
 }) {
-  const mime = (doc.mimeType ?? "").toLowerCase();
-  const isPdf = mime.includes("pdf");
-  const isImage = mime.startsWith("image/");
-  const Icon = isImage ? ImageIcon : isPdf ? FileText : FileArchive;
+  const { Icon, color } = iconForDoc(doc);
+  const isImage = (doc.mimeType ?? "").toLowerCase().startsWith("image/");
+  const [thumb, setThumb] = useState<string | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const getUrl = useServerFn(getBibleDocumentSignedUrl);
+
+  useEffect(() => {
+    if (!isImage) return;
+    let alive = true;
+    const fetchUrl = () => {
+      getUrl({ data: { projectId, bucket: doc.bucket, filePath: doc.filePath } })
+        .then((r) => alive && setThumb(r.signedUrl ?? null))
+        .catch(() => {});
+    };
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      fetchUrl();
+      return () => {
+        alive = false;
+      };
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            io.disconnect();
+            fetchUrl();
+            break;
+          }
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    io.observe(el);
+    return () => {
+      alive = false;
+      io.disconnect();
+    };
+  }, [isImage, doc.bucket, doc.filePath, projectId, getUrl]);
+
   const canLifecycle =
-    canArchive && (doc.source === "drawing" || doc.source === "logistics" || doc.source === "rams" || doc.source === "report");
+    canArchive &&
+    (doc.source === "drawing" ||
+      doc.source === "logistics" ||
+      doc.source === "rams" ||
+      doc.source === "report");
 
   return (
     <article
@@ -49,7 +119,17 @@ export function DocumentCard({
         className="group relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-muted/40"
         aria-label={`Preview ${doc.title}`}
       >
-        <Icon className="h-14 w-14 text-muted-foreground/60 transition group-hover:text-primary/70" />
+        <div ref={sentinelRef} className="pointer-events-none absolute inset-0" aria-hidden />
+        {thumb ? (
+          <img
+            src={thumb}
+            alt={doc.title}
+            loading="lazy"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <Icon className={`h-14 w-14 ${color} transition group-hover:opacity-90`} />
+        )}
         {doc.archived && (
           <span className="absolute left-2 top-2 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-amber-300">
             Archived
@@ -107,4 +187,3 @@ export function DocumentCard({
     </article>
   );
 }
-

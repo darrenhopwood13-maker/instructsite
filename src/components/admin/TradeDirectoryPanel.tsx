@@ -28,7 +28,13 @@ import {
 
 import { TRADE_PACKAGES } from "@/lib/trade-packages";
 
-export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
+export function TradeDirectoryPanel({
+  projectId,
+  ready = true,
+}: {
+  projectId: string;
+  ready?: boolean;
+}) {
   const listFn = useServerFn(listSubcontractorInvites);
   const createFn = useServerFn(createSubcontractorInvite);
   const revokeFn = useServerFn(revokeSubcontractorInvite);
@@ -41,16 +47,22 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
   const invites = useQuery({
     queryKey: ["subcontractor-invites", projectId],
     queryFn: () => listFn({ data: { projectId } }),
+    enabled: ready,
+    retry: false,
   });
 
   const siteManagers = useQuery({
     queryKey: ["project-site-managers", projectId],
     queryFn: () => siteManagersFn({ data: { projectId } }),
+    enabled: ready,
+    retry: false,
   });
 
   const unassignedManagers = useQuery({
     queryKey: ["unassigned-site-managers", projectId],
     queryFn: () => unassignedManagersFn({ data: { projectId } }),
+    enabled: ready,
+    retry: false,
   });
 
   const [pickedManagerId, setPickedManagerId] = useState("");
@@ -162,9 +174,15 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
       <div className="mt-2 rounded-md border border-white/10 bg-black/40 p-2">
         <div className="flex items-center justify-between gap-2">
           <p className="flex items-center gap-1 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-foreground/60">
-            <UserCog size={10} /> Site Managers ({managers.length})
+            <UserCog size={10} />{" "}
+            {managers.length > 0 ? "Site Managers" : "Project Leads"} ({managers.length})
           </p>
         </div>
+        {siteManagers.isError && (
+          <p className="mt-1 rounded-sm border border-destructive/50 bg-destructive/10 px-1.5 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-destructive-foreground">
+            {(siteManagers.error as Error)?.message ?? "Failed to load site managers."}
+          </p>
+        )}
         <div className="mt-1.5 flex items-center gap-1.5">
           <select
             value={pickedManagerId}
@@ -204,6 +222,13 @@ export function TradeDirectoryPanel({ projectId }: { projectId: string }) {
           </div>
         )}
       </div>
+
+      {invites.isError && (
+        <p className="mt-2 rounded-sm border border-destructive/60 bg-destructive/10 px-2 py-1.5 font-mono text-[0.6rem] uppercase tracking-widest text-destructive-foreground">
+          {(invites.error as Error)?.message ?? "Failed to load subcontractor invites."}
+        </p>
+      )}
+
 
       <form onSubmit={submit} className="mt-2 grid gap-1.5">
         <input
