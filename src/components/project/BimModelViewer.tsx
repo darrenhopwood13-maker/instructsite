@@ -489,7 +489,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     };
   }, [projectId, qc]);
 
-  const zoneProgress = (stateQ.data ?? []).slice().sort((a, b) => {
+  const zoneProgress = (stateQ.data?.zones ?? []).slice().sort((a, b) => {
     // complete → live → unstarted, then desc by progress
     const rank: Record<string, number> = { complete: 0, live: 1, unstarted: 2 };
     const r = rank[a.state] - rank[b.state];
