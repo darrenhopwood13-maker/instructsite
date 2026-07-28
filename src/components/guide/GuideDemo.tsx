@@ -277,6 +277,8 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     ? (reduced ? step.text : step.text.slice(0, typedChars))
     : "";
 
+  const activeShot = step?.shot?.url ?? shot;
+
   return (
     <div ref={rootRef} className={cn("w-full", className)}>
       {title && (
