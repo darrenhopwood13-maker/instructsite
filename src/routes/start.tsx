@@ -158,7 +158,7 @@ function StartPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <GuideDemo steps={m.steps} mock={<MissionMock k={m.mockKey} />} />
+                  <GuideDemo steps={m.steps} shot={m.shot.url} shotAlt={m.shotAlt} />
 
                   <div className="flex flex-wrap items-center gap-2 print:hidden">
                     <a
