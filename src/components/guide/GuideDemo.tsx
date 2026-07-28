@@ -432,7 +432,7 @@ export const GuideAppear = ({
   refName: string;
   children: ReactNode;
   className?: string;
-  as?: keyof JSX.IntrinsicElements;
+  as?: keyof React.JSX.IntrinsicElements;
 }) => {
   const { appeared } = useContext(GuideMockContext);
   const on = appeared[refName];
@@ -498,7 +498,7 @@ export const GuideAnchor = ({
   refName: string;
   children?: ReactNode;
   className?: string;
-  as?: keyof JSX.IntrinsicElements;
+  as?: keyof React.JSX.IntrinsicElements;
 }) => (
   // @ts-expect-error dynamic tag
   <Tag data-guide-ref={refName} className={className}>
