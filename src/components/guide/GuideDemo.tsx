@@ -86,9 +86,11 @@ function narrationToText(node: ReactNode): string {
   if (node == null || node === false || node === true) return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(narrationToText).join("");
-  if (typeof node === "object" && "props" in (node as Record<string, unknown>)) {
-    const props = (node as { props?: { children?: ReactNode } }).props;
-    return narrationToText(props?.children);
+  if (typeof node === "object") {
+    const maybe = node as unknown as { props?: { children?: ReactNode } };
+    if (maybe.props && "children" in maybe.props) {
+      return narrationToText(maybe.props.children);
+    }
   }
   return "";
 }
