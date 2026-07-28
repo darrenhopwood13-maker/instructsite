@@ -45,53 +45,6 @@ function iconForDoc(doc: BibleDocument) {
   return { Icon: FileArchive, color: "text-foreground/60" };
 }
 
-function useLazyThumbnail(doc: BibleDocument, projectId: string): string | null {
-  const [url, setUrl] = useState<string | null>(null);
-  const ref = useRef<HTMLDivElement | null>(null);
-  const getUrl = useServerFn(getBibleDocumentSignedUrl);
-  const isImage = (doc.mimeType ?? "").toLowerCase().startsWith("image/");
-
-  useEffect(() => {
-    if (!isImage) return;
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") {
-      // Fallback: fetch immediately
-      let alive = true;
-      getUrl({ data: { projectId, bucket: doc.bucket, filePath: doc.filePath } })
-        .then((r) => alive && setUrl(r.signedUrl ?? null))
-        .catch(() => {});
-      return () => {
-        alive = false;
-      };
-    }
-    let alive = true;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            io.disconnect();
-            getUrl({ data: { projectId, bucket: doc.bucket, filePath: doc.filePath } })
-              .then((r) => alive && setUrl(r.signedUrl ?? null))
-              .catch(() => {});
-            break;
-          }
-        }
-      },
-      { rootMargin: "200px" },
-    );
-    io.observe(el);
-    return () => {
-      alive = false;
-      io.disconnect();
-    };
-  }, [isImage, doc.bucket, doc.filePath, projectId, getUrl]);
-
-  // Expose the sentinel ref via a side channel so the caller can attach it.
-  // We stash it on the returned string container using a helper below.
-  (useLazyThumbnail as unknown as { _ref?: React.MutableRefObject<HTMLDivElement | null> })._ref = ref;
-  return url;
-}
-
 export function DocumentCard({
   doc,
   projectId,
@@ -108,10 +61,45 @@ export function DocumentCard({
   canArchive?: boolean;
 }) {
   const { Icon, color } = iconForDoc(doc);
-  const thumb = useLazyThumbnail(doc, projectId);
-  const sentinelRef = (useLazyThumbnail as unknown as {
-    _ref?: React.MutableRefObject<HTMLDivElement | null>;
-  })._ref;
+  const isImage = (doc.mimeType ?? "").toLowerCase().startsWith("image/");
+  const [thumb, setThumb] = useState<string | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const getUrl = useServerFn(getBibleDocumentSignedUrl);
+
+  useEffect(() => {
+    if (!isImage) return;
+    let alive = true;
+    const fetchUrl = () => {
+      getUrl({ data: { projectId, bucket: doc.bucket, filePath: doc.filePath } })
+        .then((r) => alive && setThumb(r.signedUrl ?? null))
+        .catch(() => {});
+    };
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      fetchUrl();
+      return () => {
+        alive = false;
+      };
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            io.disconnect();
+            fetchUrl();
+            break;
+          }
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    io.observe(el);
+    return () => {
+      alive = false;
+      io.disconnect();
+    };
+  }, [isImage, doc.bucket, doc.filePath, projectId, getUrl]);
+
   const canLifecycle =
     canArchive &&
     (doc.source === "drawing" ||
@@ -131,7 +119,7 @@ export function DocumentCard({
         className="group relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-muted/40"
         aria-label={`Preview ${doc.title}`}
       >
-        <div ref={sentinelRef} className="absolute inset-0" aria-hidden />
+        <div ref={sentinelRef} className="pointer-events-none absolute inset-0" aria-hidden />
         {thumb ? (
           <img
             src={thumb}
