@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, ExternalLink, RotateCcw, PartyPopper, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GuideDemo } from "@/components/guide/GuideDemo";
-import { MissionMock } from "@/components/guide/MissionMocks";
 import { MISSIONS } from "@/components/guide/missions";
 import { Term, GLOSSARY } from "@/components/guide/Term";
 import { Button } from "@/components/ui/button";
@@ -159,7 +158,7 @@ function StartPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <GuideDemo steps={m.steps} mock={<MissionMock k={m.mockKey} />} />
+                  <GuideDemo steps={m.steps} shot={m.shot.url} shotAlt={m.shotAlt} />
 
                   <div className="flex flex-wrap items-center gap-2 print:hidden">
                     <a

@@ -1,6 +1,5 @@
-import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* -------------------------------------------------------------------------- */
@@ -8,19 +7,27 @@ import { cn } from "@/lib/utils";
 /* -------------------------------------------------------------------------- */
 
 export type GuideAction =
+  | "reveal"
   | "move"
   | "click"
   | "type"
-  | "appear"
+  | "highlight"
   | "toast"
-  | "wait"
-  | "scroll"
-  | "drop";
+  | "wait";
+
+export interface GuideHotspot {
+  /** All values are percentages of the framed screenshot (0-100). */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 export interface GuideStep {
   caption: string;
+  narration?: string;
   action: GuideAction;
-  target?: string;
+  hotspot: GuideHotspot;
   text?: string;
   ms?: number;
 }
@@ -28,27 +35,51 @@ export interface GuideStep {
 export interface GuideDemoProps {
   title?: string;
   steps: GuideStep[];
-  /** JSX mock of the app screen. Refs on targets are resolved via `data-guide-ref` attributes. */
-  mock: ReactNode;
-  /** Aspect ratio for the frame, e.g. "16/10". Defaults to "16/10". */
-  aspect?: string;
+  /** Full-resolution screenshot URL (CDN or import). */
+  shot: string;
+  shotAlt: string;
   className?: string;
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Utilities                                                                 */
+/*  Constants                                                                 */
 /* -------------------------------------------------------------------------- */
 
 const DEFAULT_MS: Record<GuideAction, number> = {
+  reveal: 700,
   move: 900,
-  click: 450,
-  type: 1200,
-  appear: 600,
+  click: 550,
+  type: 1400,
+  highlight: 1200,
   toast: 1600,
   wait: 800,
-  scroll: 900,
-  drop: 1400,
 };
+
+const LOOP_PAUSE_MS = 1500;
+const ZOOM_COVERAGE = 0.7; // hotspot fills ~70% of frame
+
+/* -------------------------------------------------------------------------- */
+/*  Module-level singleton registry: only one player animates at a time.       */
+/* -------------------------------------------------------------------------- */
+
+type Pauser = () => void;
+const registry = new Set<{ id: symbol; pause: Pauser; visible: boolean }>();
+let active: symbol | null = null;
+
+function claim(id: symbol) {
+  if (active === id) return;
+  for (const entry of registry) {
+    if (entry.id !== id) entry.pause();
+  }
+  active = id;
+}
+function release(id: symbol) {
+  if (active === id) active = null;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Hooks                                                                     */
+/* -------------------------------------------------------------------------- */
 
 const usePrefersReducedMotion = () => {
   const [reduced, setReduced] = useState(false);
@@ -63,189 +94,186 @@ const usePrefersReducedMotion = () => {
   return reduced;
 };
 
-const useOnScreen = (ref: React.RefObject<HTMLElement | null>) => {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setVisible(entry.isIntersecting && entry.intersectionRatio > 0.25),
-      { threshold: [0, 0.25, 0.5, 1] },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [ref]);
-  return visible;
-};
-
 /* -------------------------------------------------------------------------- */
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
 
-export const GuideDemo = ({
-  title,
-  steps,
-  mock,
-  aspect = "16/10",
-  className,
-}: GuideDemoProps) => {
+export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoProps) => {
   const reduced = usePrefersReducedMotion();
   const rootRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
-  const onScreen = useOnScreen(rootRef);
+  const idRef = useRef<symbol>(Symbol("guide-demo"));
 
   const [stepIdx, setStepIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<0.5 | 1 | 2>(1);
-  const [cursor, setCursor] = useState<{ x: number; y: number }>({ x: 20, y: 20 });
+  const [typedChars, setTypedChars] = useState(0);
   const [clickPulse, setClickPulse] = useState(0);
-  const [typedText, setTypedText] = useState<Record<string, string>>({});
-  const [appeared, setAppeared] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
-  const [dropFlash, setDropFlash] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState(false);
 
   const total = steps.length;
   const step = steps[stepIdx];
 
-  /* --- Reset visual state whenever we jump back to step 0 -------------- */
-  const resetVisuals = useCallback(() => {
-    setTypedText({});
-    setAppeared({});
-    setToast(null);
-    setDropFlash(null);
-    setClickPulse(0);
-  }, []);
+  /* ------ visibility gating (viewport + tab) ------ */
+  const [inView, setInView] = useState(false);
+  const [tabVisible, setTabVisible] = useState(
+    typeof document === "undefined" ? true : document.visibilityState === "visible",
+  );
 
-  /* --- Resolve a target ref inside the mock ---------------------------- */
-  const targetCentre = useCallback((target?: string) => {
-    if (!target || !frameRef.current) return null;
-    const el = frameRef.current.querySelector<HTMLElement>(`[data-guide-ref="${target}"]`);
-    if (!el) return null;
-    const frameRect = frameRef.current.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
-    return {
-      x: r.left - frameRect.left + r.width / 2,
-      y: r.top - frameRect.top + r.height / 2,
-      w: r.width,
-      h: r.height,
-    };
-  }, []);
-
-  /* --- Step runner ----------------------------------------------------- */
   useEffect(() => {
-    if (!playing || !step) return;
-    let cancelled = false;
-    const duration = (step.ms ?? DEFAULT_MS[step.action]) / speed;
+    const el = rootRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting && entry.intersectionRatio > 0.25),
+      { threshold: [0, 0.25, 0.5, 1] },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
-    // apply the step effect
-    const t = targetCentre(step.target);
-    switch (step.action) {
-      case "move":
-      case "scroll":
-        if (t) setCursor({ x: t.x, y: t.y });
-        break;
-      case "click":
-        if (t) setCursor({ x: t.x, y: t.y });
-        setClickPulse((n) => n + 1);
-        if (step.target) setAppeared((a) => ({ ...a, [step.target!]: true }));
-        break;
-      case "type": {
-        if (t) setCursor({ x: t.x, y: t.y });
-        const full = step.text ?? "";
-        if (reduced) {
-          setTypedText((p) => ({ ...p, [step.target ?? "_"]: full }));
-        } else {
-          const key = step.target ?? "_";
-          const start = performance.now();
-          const tick = () => {
-            if (cancelled) return;
-            const elapsed = performance.now() - start;
-            const frac = Math.min(1, elapsed / duration);
-            const n = Math.floor(full.length * frac);
-            setTypedText((p) => ({ ...p, [key]: full.slice(0, n) }));
-            if (frac < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-        }
-        break;
-      }
-      case "appear":
-        if (step.target) setAppeared((a) => ({ ...a, [step.target!]: true }));
-        break;
-      case "toast":
-        setToast(step.text ?? step.caption);
-        break;
-      case "drop":
-        if (step.target) setDropFlash(step.target);
-        break;
-      case "wait":
-      default:
-        break;
-    }
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const on = () => setTabVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", on);
+    return () => document.removeEventListener("visibilitychange", on);
+  }, []);
 
-    const timer = window.setTimeout(() => {
-      if (cancelled) return;
-      if (step.action === "toast") setToast(null);
-      if (step.action === "drop") setDropFlash(null);
-      const next = stepIdx + 1;
-      if (next >= total) {
-        // loop with 1.5s pause
-        window.setTimeout(() => {
-          if (cancelled) return;
-          resetVisuals();
-          setStepIdx(0);
-        }, 1500 / speed);
-      } else {
-        setStepIdx(next);
-      }
-    }, duration);
-
+  /* ------ registry: pause other players when this one starts ------ */
+  useEffect(() => {
+    const id = idRef.current;
+    const entry = { id, pause: () => setPlaying(false), visible: false };
+    registry.add(entry);
     return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
+      registry.delete(entry);
+      release(id);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, stepIdx, speed, reduced]);
+  }, []);
 
-  /* --- Autoplay when visible ------------------------------------------ */
+  /* ------ autoplay when eligible ------ */
   useEffect(() => {
     if (reduced) {
-      // reduced motion: show final state of every step at once
-      const allTyped: Record<string, string> = {};
-      const allAppeared: Record<string, boolean> = {};
-      for (const s of steps) {
-        if (s.action === "type" && s.text) allTyped[s.target ?? "_"] = s.text;
-        if ((s.action === "appear" || s.action === "click") && s.target) allAppeared[s.target] = true;
-      }
-      setTypedText(allTyped);
-      setAppeared(allAppeared);
       setPlaying(false);
       return;
     }
-    if (onScreen) setPlaying(true);
-    else setPlaying(false);
-  }, [onScreen, reduced, steps]);
+    const eligible = inView && tabVisible;
+    if (eligible) {
+      claim(idRef.current);
+      setPlaying(true);
+    } else {
+      if (active === idRef.current) release(idRef.current);
+      setPlaying(false);
+    }
+  }, [inView, tabVisible, reduced]);
 
-  /* --- Controls -------------------------------------------------------- */
-  const restart = () => {
-    resetVisuals();
-    setStepIdx(0);
+  /* ------ single RAF loop per player ------ */
+  const stepStartRef = useRef<number>(0);
+  const rafRef = useRef<number | null>(null);
+  const pausedElapsedRef = useRef<number>(0);
+
+  const resetTransient = useCallback(() => {
+    setTypedChars(0);
+    setToast(null);
+    setClickPulse(0);
+    pausedElapsedRef.current = 0;
+  }, []);
+
+  useEffect(() => {
+    // when step changes, reset per-step transients & fire click ripple
+    resetTransient();
+    if (step?.action === "click") setClickPulse((n) => n + 1);
+    if (step?.action === "toast") setToast(step.text ?? step.caption);
+    stepStartRef.current = 0;
+  }, [stepIdx, step, resetTransient]);
+
+  useEffect(() => {
+    if (!playing || !step || reduced) return;
+
+    const duration = (step.ms ?? DEFAULT_MS[step.action]) / speed;
+    let cancelled = false;
+
+    const loop = (t: number) => {
+      if (cancelled) return;
+      if (stepStartRef.current === 0) stepStartRef.current = t - pausedElapsedRef.current;
+      const elapsed = t - stepStartRef.current;
+      const frac = Math.min(1, elapsed / duration);
+
+      if (step.action === "type" && step.text) {
+        const n = Math.floor(step.text.length * frac);
+        setTypedChars((prev) => (prev === n ? prev : n));
+      }
+
+      if (frac >= 1) {
+        // advance step
+        pausedElapsedRef.current = 0;
+        stepStartRef.current = 0;
+        const next = stepIdx + 1;
+        if (next >= total) {
+          // loop with pause
+          const pauseStart = t;
+          const waitLoop = (tt: number) => {
+            if (cancelled) return;
+            if (tt - pauseStart >= LOOP_PAUSE_MS / speed) {
+              setStepIdx(0);
+              return;
+            }
+            rafRef.current = requestAnimationFrame(waitLoop);
+          };
+          rafRef.current = requestAnimationFrame(waitLoop);
+        } else {
+          setStepIdx(next);
+        }
+        return;
+      }
+
+      rafRef.current = requestAnimationFrame(loop);
+    };
+
+    rafRef.current = requestAnimationFrame(loop);
+    return () => {
+      cancelled = true;
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [playing, stepIdx, speed, reduced, step, total]);
+
+  /* ------ manual controls ------ */
+  const play = () => {
+    claim(idRef.current);
     setPlaying(true);
   };
+  const pause = () => setPlaying(false);
+  const restart = () => {
+    resetTransient();
+    setStepIdx(0);
+    play();
+  };
   const stepBack = () => {
-    setPlaying(false);
+    pause();
     setStepIdx((i) => Math.max(0, i - 1));
   };
   const stepFwd = () => {
-    setPlaying(false);
+    pause();
     setStepIdx((i) => Math.min(total - 1, i + 1));
   };
 
-  /* --- Rendered mock context ------------------------------------------ */
-  const ctx = useMemo(
-    () => ({ typedText, appeared, dropFlash }),
-    [typedText, appeared, dropFlash],
-  );
+  /* ------ camera transform (zoom to hotspot centre) ------ */
+  const camera = useMemo(() => {
+    if (!step) return { scale: 1, tx: 0, ty: 0 };
+    const { x, y, w, h } = step.hotspot;
+    // scale so the larger of (w,h) fills ZOOM_COVERAGE of the frame
+    const scale = Math.min(3.5, ZOOM_COVERAGE * 100 / Math.max(w, h));
+    // hotspot centre in %
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    // translate so the centre lands in the middle of the frame after scaling
+    const tx = (50 - cx) * scale;
+    const ty = (50 - cy) * scale;
+    return { scale, tx, ty };
+  }, [step]);
+
+  const finalTypedText = step?.action === "type" && step.text
+    ? (reduced ? step.text : step.text.slice(0, typedChars))
+    : "";
 
   return (
     <div ref={rootRef} className={cn("w-full", className)}>
@@ -253,56 +281,127 @@ export const GuideDemo = ({
         <div className="font-display text-sm font-semibold text-foreground mb-2">{title}</div>
       )}
 
-      {/* Frame */}
+      {/* 16:9 frame */}
       <div
-        ref={frameRef}
         className="relative w-full overflow-hidden rounded-xl border border-border bg-background shadow-lg"
-        style={{ aspectRatio: aspect }}
+        style={{ aspectRatio: "16 / 9" }}
       >
-        <GuideMockContext.Provider value={ctx}>
-          <div className="absolute inset-0">{mock}</div>
-        </GuideMockContext.Provider>
+        {/* Camera wrapper: scales/translates the screenshot */}
+        <div
+          className="absolute inset-0 will-change-transform"
+          style={{
+            transform: `scale(${camera.scale}) translate(${camera.tx}%, ${camera.ty}%)`,
+            transformOrigin: "50% 50%",
+            transition: reduced ? "none" : "transform 900ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        >
+          <img
+            src={shot}
+            alt={shotAlt}
+            draggable={false}
+            className="absolute inset-0 h-full w-full select-none object-cover"
+          />
 
-        {/* Animated cursor */}
-        {!reduced && (
-          <div
-            className="pointer-events-none absolute z-30 transition-all duration-700 ease-out"
-            style={{
-              left: cursor.x,
-              top: cursor.y,
-              transform: "translate(-4px, -2px)",
-            }}
-          >
-            <svg width="18" height="22" viewBox="0 0 18 22" className="drop-shadow-md">
-              <path
-                d="M1 1 L1 17 L5 13 L8 20 L11 19 L8 12 L14 12 Z"
-                fill="hsl(var(--foreground))"
-                stroke="hsl(var(--background))"
-                strokeWidth="1.5"
+          {/* Scrim + highlight ring (only for highlight action) */}
+          {step && step.action === "highlight" && (
+            <>
+              <div
+                className="pointer-events-none absolute inset-0 bg-background/55"
+                style={{
+                  WebkitMaskImage: `radial-gradient(ellipse ${step.hotspot.w * 0.75}% ${step.hotspot.h * 0.75}% at ${step.hotspot.x + step.hotspot.w / 2}% ${step.hotspot.y + step.hotspot.h / 2}%, transparent 55%, black 100%)`,
+                  maskImage: `radial-gradient(ellipse ${step.hotspot.w * 0.75}% ${step.hotspot.h * 0.75}% at ${step.hotspot.x + step.hotspot.w / 2}% ${step.hotspot.y + step.hotspot.h / 2}%, transparent 55%, black 100%)`,
+                }}
               />
-            </svg>
-            {clickPulse > 0 && (
-              <span
-                key={clickPulse}
-                className="absolute -left-3 -top-3 h-8 w-8 rounded-full border-2 border-[hsl(22_100%_54%)] animate-ping"
+              <div
+                className="pointer-events-none absolute rounded-md ring-2 ring-[hsl(22_100%_54%)]"
+                style={{
+                  left: `${step.hotspot.x}%`,
+                  top: `${step.hotspot.y}%`,
+                  width: `${step.hotspot.w}%`,
+                  height: `${step.hotspot.h}%`,
+                  boxShadow: "0 0 0 6px hsl(22 100% 54% / 0.15), 0 0 30px 4px hsl(22 100% 54% / 0.45)",
+                }}
               />
-            )}
-          </div>
-        )}
+            </>
+          )}
 
-        {/* Toast */}
+          {/* Typing chip anchored inside hotspot */}
+          {step && step.action === "type" && (
+            <div
+              className="pointer-events-none absolute z-20"
+              style={{
+                left: `${step.hotspot.x}%`,
+                top: `${step.hotspot.y}%`,
+                width: `${step.hotspot.w}%`,
+                minHeight: `${step.hotspot.h}%`,
+              }}
+            >
+              <div className="flex h-full flex-col justify-center gap-1 rounded-md border border-[hsl(22_100%_54%)]/60 bg-background/95 px-2 py-1 shadow-lg backdrop-blur">
+                <div className="text-[8px] font-mono uppercase tracking-wider text-[hsl(22_100%_54%)]">
+                  example
+                </div>
+                <div className="text-xs font-medium text-foreground">
+                  {finalTypedText}
+                  {!reduced && (
+                    <span className="ml-0.5 inline-block h-3 w-0.5 bg-[hsl(22_100%_54%)] align-middle animate-pulse" />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Animated cursor arrow at hotspot centre */}
+          {!reduced && step && (
+            <div
+              className="pointer-events-none absolute z-30"
+              style={{
+                left: `${step.hotspot.x + step.hotspot.w / 2}%`,
+                top: `${step.hotspot.y + step.hotspot.h / 2}%`,
+                transform: "translate(-2px, -2px)",
+                transition: "left 850ms cubic-bezier(0.22, 1, 0.36, 1), top 850ms cubic-bezier(0.22, 1, 0.36, 1)",
+              }}
+            >
+              <svg width="18" height="22" viewBox="0 0 18 22" className="drop-shadow-md">
+                <path
+                  d="M1 1 L1 17 L5 13 L8 20 L11 19 L8 12 L14 12 Z"
+                  fill="white"
+                  stroke="black"
+                  strokeWidth="1.5"
+                />
+              </svg>
+              {clickPulse > 0 && step.action === "click" && (
+                <span
+                  key={clickPulse}
+                  className="absolute -left-4 -top-4 h-10 w-10 rounded-full border-2 border-[hsl(22_100%_54%)] animate-ping"
+                />
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Toast (outside camera so it doesn't scale) */}
         {toast && (
           <div className="pointer-events-none absolute bottom-3 right-3 z-40 max-w-[70%] rounded-lg border border-border bg-foreground text-background px-3 py-2 text-xs font-medium shadow-xl animate-fade-in">
             {toast}
           </div>
         )}
+
+        {/* Expand button */}
+        <button
+          type="button"
+          onClick={() => setLightbox(true)}
+          className="absolute top-2 right-2 z-40 rounded-md border border-border bg-background/80 p-1.5 text-foreground/80 backdrop-blur transition hover:bg-background"
+          aria-label="View full screenshot"
+        >
+          <Maximize2 size={14} />
+        </button>
       </div>
 
       {/* Controls */}
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={() => setPlaying((p) => !p)}
+          onClick={() => (playing ? pause() : play())}
           className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted"
           aria-label={playing ? "Pause" : "Play"}
         >
@@ -341,7 +440,9 @@ export const GuideDemo = ({
               onClick={() => setSpeed(s)}
               className={cn(
                 "px-1.5 py-0.5 text-[11px] rounded",
-                speed === s ? "bg-[hsl(22_100%_54%)] text-white" : "text-muted-foreground hover:bg-muted",
+                speed === s
+                  ? "bg-[hsl(22_100%_54%)] text-white"
+                  : "text-muted-foreground hover:bg-muted",
               )}
             >
               {s}x
@@ -356,9 +457,12 @@ export const GuideDemo = ({
       {/* Caption strip */}
       <div className="mt-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
         {step?.caption ?? ""}
+        {step?.narration && (
+          <div className="mt-1 text-xs text-muted-foreground">{step.narration}</div>
+        )}
       </div>
 
-      {/* Full readable script */}
+      {/* Written script */}
       <details className="mt-3 rounded-md border border-border bg-background/60 px-3 py-2">
         <summary className="cursor-pointer text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Written steps
@@ -372,135 +476,33 @@ export const GuideDemo = ({
         </ol>
       </details>
 
-      {/* Live region for accessibility */}
       <div className="sr-only" role="status" aria-live="polite">
         {step?.caption}
       </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setLightbox(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            onClick={() => setLightbox(false)}
+            className="absolute top-4 right-4 rounded-md border border-border bg-background/80 p-2 text-foreground"
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
+          <img
+            src={shot}
+            alt={shotAlt}
+            className="max-h-[92vh] max-w-[96vw] rounded-lg border border-border shadow-2xl"
+          />
+        </div>
+      )}
     </div>
   );
 };
-
-/* -------------------------------------------------------------------------- */
-/*  Mock helpers                                                              */
-/* -------------------------------------------------------------------------- */
-
-import { createContext, useContext } from "react";
-
-interface GuideMockCtx {
-  typedText: Record<string, string>;
-  appeared: Record<string, boolean>;
-  dropFlash: string | null;
-}
-const GuideMockContext = createContext<GuideMockCtx>({
-  typedText: {},
-  appeared: {},
-  dropFlash: null,
-});
-
-/** A field inside your mock that receives typed text via the "type" action. */
-export const GuideField = ({
-  refName,
-  placeholder,
-  className,
-}: {
-  refName: string;
-  placeholder?: string;
-  className?: string;
-}) => {
-  const { typedText } = useContext(GuideMockContext);
-  const value = typedText[refName] ?? "";
-  return (
-    <div
-      data-guide-ref={refName}
-      className={cn(
-        "min-h-[28px] rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground",
-        className,
-      )}
-    >
-      {value || <span className="text-muted-foreground/70">{placeholder}</span>}
-      <span className="ml-0.5 inline-block h-3 w-0.5 bg-[hsl(22_100%_54%)] align-middle animate-pulse" />
-    </div>
-  );
-};
-
-/** A block that only becomes visible after an "appear" or "click" targets it. */
-export const GuideAppear = ({
-  refName,
-  children,
-  className,
-  as: Tag = "div",
-}: {
-  refName: string;
-  children?: ReactNode;
-  className?: string;
-  as?: keyof React.JSX.IntrinsicElements;
-}) => {
-  const { appeared } = useContext(GuideMockContext);
-  const on = appeared[refName];
-  return (
-    <Tag
-      data-guide-ref={refName}
-      className={cn(
-        "transition-all duration-500",
-        on ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none",
-        className,
-      )}
-    >
-      {children}
-    </Tag>
-  );
-};
-
-/** A dashed drop-zone that flashes with a file icon on a "drop" action. */
-export const GuideDropZone = ({
-  refName,
-  label = "Drop files here",
-  className,
-}: {
-  refName: string;
-  label?: string;
-  className?: string;
-}) => {
-  const { dropFlash } = useContext(GuideMockContext);
-  const active = dropFlash === refName;
-  return (
-    <div
-      data-guide-ref={refName}
-      className={cn(
-        "relative flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-3 py-4 text-xs text-muted-foreground transition-all",
-        active
-          ? "border-[hsl(22_100%_54%)] bg-[hsl(22_100%_54%)]/10 text-foreground"
-          : "border-border bg-muted/30",
-        className,
-      )}
-    >
-      <FileText
-        size={20}
-        className={cn(
-          "transition-all",
-          active
-            ? "text-[hsl(22_100%_54%)] -translate-y-1 animate-bounce"
-            : "text-muted-foreground",
-        )}
-      />
-      <span>{label}</span>
-    </div>
-  );
-};
-
-/** Generic ref anchor for move/click/scroll targets that are non-input elements. */
-export const GuideAnchor = ({
-  refName,
-  children,
-  className,
-  as: Tag = "div",
-}: {
-  refName: string;
-  children?: ReactNode | undefined;
-  className?: string;
-  as?: keyof React.JSX.IntrinsicElements;
-}) => (
-  <Tag data-guide-ref={refName} className={className}>
-    {children}
-  </Tag>
-);
