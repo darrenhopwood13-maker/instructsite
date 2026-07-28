@@ -50,13 +50,6 @@ export function UserContextChip() {
   const projectFn = useServerFn(getProject);
   const projectId = useCurrentProjectId();
   const [open, setOpen] = useState(false);
-  const [now, setNow] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(t);
-  }, []);
 
   const session = useQuery({
     queryKey: ["session-context"],
@@ -82,17 +75,6 @@ export function UserContextChip() {
       : s.org
         ? roleLabel(s.org.role)
         : "Member";
-
-  const dateStr = now
-    ? new Intl.DateTimeFormat("en-GB", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(now)
-    : "";
 
   const signOut = async () => {
     const { supabase } = await import("@/integrations/supabase/client");
