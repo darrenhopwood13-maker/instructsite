@@ -13,6 +13,7 @@ import { Route as ViewerRouteImport } from './routes/viewer'
 import { Route as UnlockRouteImport } from './routes/unlock'
 import { Route as TrialEndedRouteImport } from './routes/trial-ended'
 import { Route as ToolingRouteImport } from './routes/tooling'
+import { Route as StartRouteImport } from './routes/start'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OrganisationRouteImport } from './routes/organisation'
@@ -76,6 +77,11 @@ const TrialEndedRoute = TrialEndedRouteImport.update({
 const ToolingRoute = ToolingRouteImport.update({
   id: '/tooling',
   path: '/tooling',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StartRoute = StartRouteImport.update({
+  id: '/start',
+  path: '/start',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -317,6 +323,7 @@ export interface FileRoutesByFullPath {
   '/organisation': typeof OrganisationRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/start': typeof StartRoute
   '/tooling': typeof ToolingRoute
   '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
@@ -367,6 +374,7 @@ export interface FileRoutesByTo {
   '/organisation': typeof OrganisationRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/start': typeof StartRoute
   '/tooling': typeof ToolingRoute
   '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
@@ -417,6 +425,7 @@ export interface FileRoutesById {
   '/organisation': typeof OrganisationRouteWithChildren
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/start': typeof StartRoute
   '/tooling': typeof ToolingRoute
   '/trial-ended': typeof TrialEndedRoute
   '/unlock': typeof UnlockRoute
@@ -469,6 +478,7 @@ export interface FileRouteTypes {
     | '/organisation'
     | '/pricing'
     | '/reset-password'
+    | '/start'
     | '/tooling'
     | '/trial-ended'
     | '/unlock'
@@ -519,6 +529,7 @@ export interface FileRouteTypes {
     | '/organisation'
     | '/pricing'
     | '/reset-password'
+    | '/start'
     | '/tooling'
     | '/trial-ended'
     | '/unlock'
@@ -568,6 +579,7 @@ export interface FileRouteTypes {
     | '/organisation'
     | '/pricing'
     | '/reset-password'
+    | '/start'
     | '/tooling'
     | '/trial-ended'
     | '/unlock'
@@ -619,6 +631,7 @@ export interface RootRouteChildren {
   OrganisationRoute: typeof OrganisationRouteWithChildren
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  StartRoute: typeof StartRoute
   ToolingRoute: typeof ToolingRoute
   TrialEndedRoute: typeof TrialEndedRoute
   UnlockRoute: typeof UnlockRoute
@@ -684,6 +697,13 @@ declare module '@tanstack/react-router' {
       path: '/tooling'
       fullPath: '/tooling'
       preLoaderRoute: typeof ToolingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/start': {
+      id: '/start'
+      path: '/start'
+      fullPath: '/start'
+      preLoaderRoute: typeof StartRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -1034,6 +1054,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrganisationRoute: OrganisationRouteWithChildren,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  StartRoute: StartRoute,
   ToolingRoute: ToolingRoute,
   TrialEndedRoute: TrialEndedRoute,
   UnlockRoute: UnlockRoute,
