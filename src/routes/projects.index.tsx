@@ -129,3 +129,38 @@ function ProjectsPage() {
     </div>
   );
 }
+
+function QuickStartBanner() {
+  const [dismissed, setDismissed] = useState(true);
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("instructsite:start:banner:dismissed") === "1") return;
+      const anyDone = Object.keys(localStorage).some(
+        (k) => k.startsWith("instructsite:start:done:") && Object.values(JSON.parse(localStorage.getItem(k) || "{}")).some(Boolean),
+      );
+      if (!anyDone) { setShow(true); setDismissed(false); }
+    } catch { /* noop */ }
+  }, []);
+  if (dismissed || !show) return null;
+  return (
+    <div className="glass-panel mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-alert/40 bg-alert/5 px-4 py-3">
+      <Sparkles size={16} className="text-alert" />
+      <div className="flex-1 text-sm text-foreground">
+        <span className="font-bold uppercase tracking-widest text-alert">New here?</span>{" "}
+        Start the 10-minute guided setup.
+      </div>
+      <Link to="/start" className="glass-orange rounded-lg px-3 py-1.5 text-xs uppercase tracking-widest">
+        Open Quick Start
+      </Link>
+      <button
+        type="button"
+        onClick={() => { try { localStorage.setItem("instructsite:start:banner:dismissed", "1"); } catch { /* noop */ } setDismissed(true); }}
+        className="text-foreground/50 hover:text-foreground"
+        aria-label="Dismiss"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
