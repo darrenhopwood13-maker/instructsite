@@ -696,14 +696,20 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
           </div>
         )}
 
-        {/* Subtitles */}
-        {showSubtitles && narrationText && (
+        {/* Subtitles — always rendered, never hidden by narration */}
+        {narrationText && (
           <div className="pointer-events-none absolute inset-x-3 bottom-3 z-40 flex justify-center">
-            <div className="max-w-[92%] rounded-md bg-black/75 px-3 py-1.5 text-center text-xs font-medium text-white shadow-lg backdrop-blur-sm">
+            <div
+              className={cn(
+                "max-w-[92%] rounded-md px-3 py-1.5 text-center text-xs font-medium text-white shadow-lg backdrop-blur-sm",
+                narrating ? "bg-black/60" : "bg-black/75",
+              )}
+            >
               {narrationText}
             </div>
           </div>
         )}
+
 
         {/* Start-with-sound overlay */}
         {showStartOverlay && (
