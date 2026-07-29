@@ -176,7 +176,10 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
   const audioEndedRef = useRef(false);
   /** Bumped on loadedmetadata/ended so the rAF effect re-evaluates. */
   const [audioTick, setAudioTick] = useState(0);
-  const narrationCacheRef = useRef<Map<string, string | null>>(new Map());
+  /** Bumped by Restart to force a replay of the same line. */
+  const [replayTick, setReplayTick] = useState(0);
+  /** One retry per step after a decode/network error. */
+  const audioRetryRef = useRef(false);
   const fetchNarration = useServerFn(getGuideNarration);
 
   useEffect(() => {
