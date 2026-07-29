@@ -130,6 +130,13 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [audioNotice, setAudioNotice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  /** Real ElevenLabs clip is driving the current step. */
+  const audioActiveRef = useRef(false);
+  /** Unscaled clip length in ms (0 = unknown yet). */
+  const audioDurationRef = useRef(0);
+  const audioEndedRef = useRef(false);
+  /** Bumped on loadedmetadata/ended so the rAF effect re-evaluates. */
+  const [audioTick, setAudioTick] = useState(0);
   const narrationCacheRef = useRef<Map<string, string | null>>(new Map());
   const fetchNarration = useServerFn(getGuideNarration);
 
@@ -265,35 +272,59 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
   /* ---- play current-step audio when sound is on & unlocked & playing ---- */
   useEffect(() => {
     if (!soundOn || !audioUnlocked || !playing || !narrationText) {
+      audioActiveRef.current = false;
       stopAllAudio();
       return;
     }
     let cancelled = false;
+    const el = audioRef.current;
+    const onMeta = () => {
+      if (!el || !Number.isFinite(el.duration)) return;
+      audioDurationRef.current = el.duration * 1000;
+      setAudioTick((n) => n + 1);
+    };
+    const onEnded = () => {
+      audioEndedRef.current = true;
+      setAudioTick((n) => n + 1);
+    };
+    el?.addEventListener("loadedmetadata", onMeta);
+    el?.addEventListener("ended", onEnded);
+
     (async () => {
       const url = await loadNarration(narrationText);
       if (cancelled) return;
-      if (url) {
-        const el = audioRef.current;
-        if (!el) return;
+      if (url && el) {
         if (el.src !== url) el.src = url;
         el.playbackRate = speed;
         try {
           await el.play();
+          audioActiveRef.current = true;
+          audioEndedRef.current = false;
+          if (Number.isFinite(el.duration)) audioDurationRef.current = el.duration * 1000;
+          setAudioTick((n) => n + 1);
           setAudioNotice(null);
         } catch {
+          audioActiveRef.current = false;
           const ok = speakFallback(narrationText);
           setAudioNotice(ok ? "Using device voice." : null);
+          setAudioTick((n) => n + 1);
         }
       } else {
+        audioActiveRef.current = false;
         const ok = speakFallback(narrationText);
         setAudioNotice(ok ? "Using device voice." : "Narration unavailable — subtitles only.");
+        setAudioTick((n) => n + 1);
       }
     })();
     return () => {
       cancelled = true;
+      el?.removeEventListener("loadedmetadata", onMeta);
+      el?.removeEventListener("ended", onEnded);
+      audioActiveRef.current = false;
       stopAllAudio();
     };
   }, [soundOn, audioUnlocked, playing, narrationText, loadNarration, speakFallback, speed, stopAllAudio]);
+
 
   /* ---- keep playbackRate in sync with speed ---- */
   useEffect(() => {
@@ -335,26 +366,44 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     if (step?.action === "click") setClickPulse((n) => n + 1);
     if (step?.action === "toast") setToast(step.text ?? step.caption);
     stepStartRef.current = 0;
+    audioDurationRef.current = 0;
+    audioEndedRef.current = false;
+    audioActiveRef.current = false;
   }, [stepIdx, step, resetTransient]);
 
   useEffect(() => {
     if (!playing || !step || reduced) return;
 
-    const duration = (step.ms ?? DEFAULT_MS[step.action]) / speed;
+    const baseMs = step.ms ?? DEFAULT_MS[step.action];
+    // Silent readers still need time to read the line: ~2.6 words/second.
+    const words = narrationText ? narrationText.split(/\s+/).filter(Boolean).length : 0;
+    const readMs = words ? (words / 2.6) * 1000 : 0;
+    const visualDuration = baseMs / speed;
+    const silentDuration = Math.max(baseMs, readMs) / speed;
     let cancelled = false;
 
     const loop = (t: number) => {
       if (cancelled) return;
       if (stepStartRef.current === 0) stepStartRef.current = t - pausedElapsedRef.current;
       const elapsed = t - stepStartRef.current;
+
+      const withAudio = audioActiveRef.current;
+      const audioMs = audioDurationRef.current ? audioDurationRef.current / speed : 0;
+      // Effective step length = max(visual, audio) when a real clip is playing.
+      const duration = withAudio ? Math.max(visualDuration, audioMs) : silentDuration;
       const frac = Math.min(1, elapsed / duration);
 
       if (step.action === "type" && step.text) {
-        const n = Math.floor(step.text.length * frac);
+        // Typing keeps its own (visual) cadence regardless of narration length.
+        const typeFrac = Math.min(1, elapsed / visualDuration);
+        const n = Math.floor(step.text.length * typeFrac);
         setTypedChars((prev) => (prev === n ? prev : n));
       }
 
-      if (frac >= 1) {
+      // Never cut the voice off: wait for both the visuals and the clip.
+      const audioDone = !withAudio || audioEndedRef.current;
+
+      if (frac >= 1 && audioDone) {
         pausedElapsedRef.current = 0;
         stepStartRef.current = 0;
         const next = stepIdx + 1;
@@ -378,13 +427,14 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
       rafRef.current = requestAnimationFrame(loop);
     };
 
+
     rafRef.current = requestAnimationFrame(loop);
     return () => {
       cancelled = true;
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [playing, stepIdx, speed, reduced, step, total]);
+  }, [playing, stepIdx, speed, reduced, step, total, narrationText, audioTick]);
 
   /* ---- manual controls ---- */
   const play = () => {
