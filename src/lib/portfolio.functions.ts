@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { hazardLabel } from "@/lib/high-risk";
 
 /**
  * Cross-project portfolio summary for master_admin / project_admin.
