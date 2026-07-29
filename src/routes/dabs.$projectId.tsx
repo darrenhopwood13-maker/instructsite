@@ -96,8 +96,8 @@ function DabsPage() {
   );
   const [busy, setBusy] = useState(false);
 
-  const HIGH_RISK_KEYWORDS = /(hot\s*work|welding|cutting torch|grinding|brazing|soldering|confined\s*space|tank entry|manhole|work(ing)?\s*at\s*height|scaffold|roof|mewp|cherry\s*picker|ladder work|excavation|dig(ging)?|trench|groundworks)/i;
-  const willFlagPermit = HIGH_RISK_KEYWORDS.test(`${trade} ${taskNotes}`);
+  const detectedHazards = detectHazards(`${trade} ${taskNotes}`);
+  const willFlagPermit = detectedHazards.length > 0;
 
   const handleDrop = (coords: { xPct: number; yPct: number }) => {
     if (!selectedDrawing) {
