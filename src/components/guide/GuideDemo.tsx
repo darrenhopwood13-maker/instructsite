@@ -434,7 +434,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [playing, stepIdx, speed, reduced, step, total]);
+  }, [playing, stepIdx, speed, reduced, step, total, narrationText, audioTick]);
 
   /* ---- manual controls ---- */
   const play = () => {
