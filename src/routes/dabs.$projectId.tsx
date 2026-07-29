@@ -13,6 +13,7 @@ import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { PinInfoModal } from "@/components/project/PinInfoModal";
 import { pinColor, pinKey } from "@/lib/pin-color";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { detectHazards, hazardLabel } from "@/lib/high-risk";
 
 
 export const Route = createFileRoute("/dabs/$projectId")({
