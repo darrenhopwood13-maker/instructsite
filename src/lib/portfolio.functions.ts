@@ -125,7 +125,7 @@ export const getPortfolioSummary = createServerFn({ method: "GET" })
           kind: "permit",
           project_id: pin.project_id,
           project_name: pname,
-          label: `Permit Required — ${(pin.high_risk_flags ?? []).join(", ").replace(/_/g, " ") || pin.trade_package || "High-risk task"}`,
+          label: `Permit Required — ${(pin.high_risk_flags ?? []).map(hazardLabel).join(", ") || pin.trade_package || "High-risk task"}`,
           at: pin.created_at,
         });
       } else if ((pin.high_risk_flags ?? []).length > 0) {
@@ -134,7 +134,7 @@ export const getPortfolioSummary = createServerFn({ method: "GET" })
           kind: "high_risk",
           project_id: pin.project_id,
           project_name: pname,
-          label: `High-Risk Task — ${(pin.high_risk_flags ?? []).join(", ").replace(/_/g, " ")}`,
+          label: `High-Risk Task — ${(pin.high_risk_flags ?? []).map(hazardLabel).join(", ")}`,
           at: pin.created_at,
         });
       }
