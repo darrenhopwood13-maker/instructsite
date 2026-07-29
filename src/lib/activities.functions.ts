@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { HIGH_RISK_CATEGORIES } from "@/lib/high-risk";
 
 const HIGH_RISK = HIGH_RISK_CATEGORIES;
 
