@@ -59,23 +59,62 @@ const ZOOM_COVERAGE = 0.7;
 const SOUND_PREF_KEY = "guide-demo:sound";
 
 /* -------------------------------------------------------------------------- */
+/*  Shared narration cache (one per page, not per player).                    */
+/* -------------------------------------------------------------------------- */
+
+interface NarrationEntry {
+  url: string | null;
+  expiresAt: number;
+}
+/** Signed URLs live 30 min server-side; refresh 2 min early. */
+const NARRATION_TTL_MS = 30 * 60 * 1000;
+const NARRATION_REFRESH_MARGIN_MS = 2 * 60 * 1000;
+/** Negative results are retried sooner. */
+const NARRATION_FAILURE_TTL_MS = 60 * 1000;
+const narrationCache = new Map<string, NarrationEntry>();
+
+/* -------------------------------------------------------------------------- */
 /*  Singleton registry — one player animates at a time.                       */
 /* -------------------------------------------------------------------------- */
 
 type Pauser = () => void;
 const registry = new Set<{ id: symbol; pause: Pauser; visible: boolean }>();
 let active: symbol | null = null;
+/** A player the user explicitly started — never pre-empted by autoplay. */
+let userDriven: symbol | null = null;
 
-function claim(id: symbol) {
-  if (active === id) return;
+/** Returns true when this player may play. */
+function claim(id: symbol, deliberate = false): boolean {
+  if (deliberate) {
+    userDriven = id;
+  } else if (userDriven && userDriven !== id) {
+    return false;
+  }
+  if (active === id) return true;
   for (const entry of registry) {
     if (entry.id !== id) entry.pause();
   }
   active = id;
+  return true;
 }
 function release(id: symbol) {
   if (active === id) active = null;
+  if (userDriven === id) userDriven = null;
 }
+
+/** Set playback rate without chipmunking the voice. */
+function setRate(el: HTMLAudioElement, rate: number) {
+  el.playbackRate = rate;
+  const anyEl = el as HTMLAudioElement & {
+    preservesPitch?: boolean;
+    webkitPreservesPitch?: boolean;
+    mozPreservesPitch?: boolean;
+  };
+  anyEl.preservesPitch = true;
+  anyEl.webkitPreservesPitch = true;
+  anyEl.mozPreservesPitch = true;
+}
+
 
 /* -------------------------------------------------------------------------- */
 /*  Helpers                                                                   */
