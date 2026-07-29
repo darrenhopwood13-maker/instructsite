@@ -31,6 +31,7 @@ import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { pinColor, pinKey } from "@/lib/pin-color";
 import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
+import { detectHazards, hazardLabel } from "@/lib/high-risk";
 
 export const Route = createFileRoute("/subcontractor/$projectId")({
   head: () => ({ meta: [{ title: "Subcontractor Cockpit — Site" }] }),
