@@ -239,7 +239,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     };
   }, []);
 
-  /* ---- autoplay ---- */
+  /* ---- autoplay (never pre-empts a user-driven player) ---- */
   useEffect(() => {
     if (reduced) {
       setPlaying(false);
@@ -247,33 +247,39 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     }
     const eligible = inView && tabVisible;
     if (eligible) {
-      claim(idRef.current);
-      setPlaying(true);
+      if (claim(idRef.current)) setPlaying(true);
     } else {
-      if (active === idRef.current) release(idRef.current);
+      if (active === idRef.current || userDriven === idRef.current) release(idRef.current);
       setPlaying(false);
     }
   }, [inView, tabVisible, reduced]);
 
-  /* ---- narration loader (with cache + next-step preload) ---- */
+  /* ---- narration loader (shared cache, expiry-aware, next-step preload) ---- */
   const loadNarration = useCallback(
-    async (text: string): Promise<string | null> => {
+    async (text: string, force = false): Promise<string | null> => {
       if (!text) return null;
-      const cache = narrationCacheRef.current;
-      if (cache.has(text)) return cache.get(text) ?? null;
+      const now = Date.now();
+      const hit = narrationCache.get(text);
+      if (!force && hit && hit.expiresAt - NARRATION_REFRESH_MARGIN_MS > now) {
+        return hit.url;
+      }
       try {
         const res = await fetchNarration({ data: { text } });
         const url = res?.url ?? null;
-        cache.set(text, url);
+        narrationCache.set(text, {
+          url,
+          expiresAt: now + (url ? NARRATION_TTL_MS : NARRATION_FAILURE_TTL_MS),
+        });
         return url;
       } catch (err) {
         console.warn("[GuideDemo] narration fetch failed", err);
-        cache.set(text, null);
+        narrationCache.set(text, { url: null, expiresAt: now + NARRATION_FAILURE_TTL_MS });
         return null;
       }
     },
     [fetchNarration],
   );
+
 
   /* ---- speechSynthesis fallback ---- */
   const speakFallback = useCallback(
