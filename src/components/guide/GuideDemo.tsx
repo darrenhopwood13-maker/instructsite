@@ -272,35 +272,59 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
   /* ---- play current-step audio when sound is on & unlocked & playing ---- */
   useEffect(() => {
     if (!soundOn || !audioUnlocked || !playing || !narrationText) {
+      audioActiveRef.current = false;
       stopAllAudio();
       return;
     }
     let cancelled = false;
+    const el = audioRef.current;
+    const onMeta = () => {
+      if (!el || !Number.isFinite(el.duration)) return;
+      audioDurationRef.current = el.duration * 1000;
+      setAudioTick((n) => n + 1);
+    };
+    const onEnded = () => {
+      audioEndedRef.current = true;
+      setAudioTick((n) => n + 1);
+    };
+    el?.addEventListener("loadedmetadata", onMeta);
+    el?.addEventListener("ended", onEnded);
+
     (async () => {
       const url = await loadNarration(narrationText);
       if (cancelled) return;
-      if (url) {
-        const el = audioRef.current;
-        if (!el) return;
+      if (url && el) {
         if (el.src !== url) el.src = url;
         el.playbackRate = speed;
         try {
           await el.play();
+          audioActiveRef.current = true;
+          audioEndedRef.current = false;
+          if (Number.isFinite(el.duration)) audioDurationRef.current = el.duration * 1000;
+          setAudioTick((n) => n + 1);
           setAudioNotice(null);
         } catch {
+          audioActiveRef.current = false;
           const ok = speakFallback(narrationText);
           setAudioNotice(ok ? "Using device voice." : null);
+          setAudioTick((n) => n + 1);
         }
       } else {
+        audioActiveRef.current = false;
         const ok = speakFallback(narrationText);
         setAudioNotice(ok ? "Using device voice." : "Narration unavailable — subtitles only.");
+        setAudioTick((n) => n + 1);
       }
     })();
     return () => {
       cancelled = true;
+      el?.removeEventListener("loadedmetadata", onMeta);
+      el?.removeEventListener("ended", onEnded);
+      audioActiveRef.current = false;
       stopAllAudio();
     };
   }, [soundOn, audioUnlocked, playing, narrationText, loadNarration, speakFallback, speed, stopAllAudio]);
+
 
   /* ---- keep playbackRate in sync with speed ---- */
   useEffect(() => {
