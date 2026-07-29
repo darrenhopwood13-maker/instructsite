@@ -432,8 +432,9 @@ function DabsPage() {
               />
             </label>
             {willFlagPermit && (
-              <p className="mt-2 flex items-center gap-1.5 rounded-md border-2 border-amber-400 bg-amber-400/10 px-2.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300">
-                <ShieldAlert size={12} /> High-risk task detected · site manager must issue permit
+              <p className="mt-2 flex items-start gap-1.5 rounded-md border-2 border-amber-400 bg-amber-400/10 px-2.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300">
+                <ShieldAlert size={12} className="mt-0.5 shrink-0" /> High-risk task detected ·{" "}
+                {detectedHazards.map(hazardLabel).join(" · ")} · site manager must issue permit
               </p>
             )}
 
