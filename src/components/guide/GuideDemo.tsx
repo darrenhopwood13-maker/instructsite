@@ -366,26 +366,44 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     if (step?.action === "click") setClickPulse((n) => n + 1);
     if (step?.action === "toast") setToast(step.text ?? step.caption);
     stepStartRef.current = 0;
+    audioDurationRef.current = 0;
+    audioEndedRef.current = false;
+    audioActiveRef.current = false;
   }, [stepIdx, step, resetTransient]);
 
   useEffect(() => {
     if (!playing || !step || reduced) return;
 
-    const duration = (step.ms ?? DEFAULT_MS[step.action]) / speed;
+    const baseMs = step.ms ?? DEFAULT_MS[step.action];
+    // Silent readers still need time to read the line: ~2.6 words/second.
+    const words = narrationText ? narrationText.split(/\s+/).filter(Boolean).length : 0;
+    const readMs = words ? (words / 2.6) * 1000 : 0;
+    const visualDuration = baseMs / speed;
+    const silentDuration = Math.max(baseMs, readMs) / speed;
     let cancelled = false;
 
     const loop = (t: number) => {
       if (cancelled) return;
       if (stepStartRef.current === 0) stepStartRef.current = t - pausedElapsedRef.current;
       const elapsed = t - stepStartRef.current;
+
+      const withAudio = audioActiveRef.current;
+      const audioMs = audioDurationRef.current ? audioDurationRef.current / speed : 0;
+      // Effective step length = max(visual, audio) when a real clip is playing.
+      const duration = withAudio ? Math.max(visualDuration, audioMs) : silentDuration;
       const frac = Math.min(1, elapsed / duration);
 
       if (step.action === "type" && step.text) {
-        const n = Math.floor(step.text.length * frac);
+        // Typing keeps its own (visual) cadence regardless of narration length.
+        const typeFrac = Math.min(1, elapsed / visualDuration);
+        const n = Math.floor(step.text.length * typeFrac);
         setTypedChars((prev) => (prev === n ? prev : n));
       }
 
-      if (frac >= 1) {
+      // Never cut the voice off: wait for both the visuals and the clip.
+      const audioDone = !withAudio || audioEndedRef.current;
+
+      if (frac >= 1 && audioDone) {
         pausedElapsedRef.current = 0;
         stepStartRef.current = 0;
         const next = stepIdx + 1;
@@ -408,6 +426,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
 
       rafRef.current = requestAnimationFrame(loop);
     };
+
 
     rafRef.current = requestAnimationFrame(loop);
     return () => {
