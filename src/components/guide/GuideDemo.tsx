@@ -515,17 +515,29 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     };
   }, [playing, stepIdx, speed, reduced, step, total, narrationText, audioTick]);
 
-  /* ---- manual controls ---- */
+  /* ---- manual controls (deliberate = wins over autoplay) ---- */
   const play = () => {
-    claim(idRef.current);
+    claim(idRef.current, true);
     setPlaying(true);
   };
   const pause = () => setPlaying(false);
   const restart = () => {
     resetTransient();
     setStepIdx(0);
+    const el = audioRef.current;
+    if (el) {
+      try {
+        el.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+    }
+    audioEndedRef.current = false;
+    // Force the audio effect to re-run even when the line is unchanged.
+    setReplayTick((n) => n + 1);
     play();
   };
+
   const stepBack = () => {
     pause();
     setStepIdx((i) => Math.max(0, i - 1));
