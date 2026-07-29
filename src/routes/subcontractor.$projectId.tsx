@@ -617,8 +617,8 @@ function SubcontractorCockpit() {
             {willFlagPermit && (
               <div className="mt-3 flex items-start gap-2 rounded-md border-2 border-amber-400 bg-amber-400/10 px-3 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-amber-200">
                 <ShieldAlert size={14} className="mt-0.5 shrink-0" />
-                High-Risk Task Detected. This briefing will require an Admin Permit to Work before
-                activation.
+                High-Risk Task Detected ({detectedHazards.map(hazardLabel).join(" · ")}). This
+                briefing will require an Admin Permit to Work before activation.
               </div>
             )}
 
