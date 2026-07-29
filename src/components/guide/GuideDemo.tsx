@@ -326,6 +326,8 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     }
     let cancelled = false;
     const el = audioRef.current;
+    audioRetryRef.current = false;
+
     const onMeta = () => {
       if (!el || !Number.isFinite(el.duration)) return;
       audioDurationRef.current = el.duration * 1000;
@@ -335,50 +337,79 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
       audioEndedRef.current = true;
       setAudioTick((n) => n + 1);
     };
+    const fallbackToSpeech = () => {
+      audioActiveRef.current = false;
+      const ok = speakFallback(narrationText);
+      setAudioNotice(ok ? "Using device voice." : "Narration unavailable — subtitles only.");
+      setAudioTick((n) => n + 1);
+    };
+    const start = async (force: boolean) => {
+      const url = await loadNarration(narrationText, force);
+      if (cancelled) return;
+      if (!url || !el) {
+        fallbackToSpeech();
+        return;
+      }
+      if (el.src !== url) el.src = url;
+      el.currentTime = 0;
+      setRate(el, speed);
+      try {
+        await el.play();
+        if (cancelled) return;
+        audioActiveRef.current = true;
+        audioEndedRef.current = false;
+        if (Number.isFinite(el.duration)) audioDurationRef.current = el.duration * 1000;
+        setAudioTick((n) => n + 1);
+        setAudioNotice(null);
+      } catch {
+        if (cancelled) return;
+        fallbackToSpeech();
+      }
+    };
+    /* A stale signed URL or a decode failure gets one silent retry with a
+       freshly signed URL, then falls back to the device voice. */
+    const onError = () => {
+      if (cancelled) return;
+      if (!audioRetryRef.current) {
+        audioRetryRef.current = true;
+        start(true).catch(() => fallbackToSpeech());
+        return;
+      }
+      fallbackToSpeech();
+    };
+
     el?.addEventListener("loadedmetadata", onMeta);
     el?.addEventListener("ended", onEnded);
+    el?.addEventListener("error", onError);
 
-    (async () => {
-      const url = await loadNarration(narrationText);
-      if (cancelled) return;
-      if (url && el) {
-        if (el.src !== url) el.src = url;
-        el.playbackRate = speed;
-        try {
-          await el.play();
-          audioActiveRef.current = true;
-          audioEndedRef.current = false;
-          if (Number.isFinite(el.duration)) audioDurationRef.current = el.duration * 1000;
-          setAudioTick((n) => n + 1);
-          setAudioNotice(null);
-        } catch {
-          audioActiveRef.current = false;
-          const ok = speakFallback(narrationText);
-          setAudioNotice(ok ? "Using device voice." : null);
-          setAudioTick((n) => n + 1);
-        }
-      } else {
-        audioActiveRef.current = false;
-        const ok = speakFallback(narrationText);
-        setAudioNotice(ok ? "Using device voice." : "Narration unavailable — subtitles only.");
-        setAudioTick((n) => n + 1);
-      }
-    })();
+    start(false).catch(() => fallbackToSpeech());
+
     return () => {
       cancelled = true;
       el?.removeEventListener("loadedmetadata", onMeta);
       el?.removeEventListener("ended", onEnded);
+      el?.removeEventListener("error", onError);
       audioActiveRef.current = false;
       stopAllAudio();
     };
-  }, [soundOn, audioUnlocked, playing, narrationText, loadNarration, speakFallback, speed, stopAllAudio]);
+  }, [
+    soundOn,
+    audioUnlocked,
+    playing,
+    narrationText,
+    loadNarration,
+    speakFallback,
+    speed,
+    stopAllAudio,
+    replayTick,
+  ]);
 
-
-  /* ---- keep playbackRate in sync with speed ---- */
+  /* ---- keep playbackRate (and pitch) in sync with speed ---- */
   useEffect(() => {
     const el = audioRef.current;
-    if (el) el.playbackRate = speed;
+    if (el) setRate(el, speed);
   }, [speed]);
+
 
   /* ---- preload NEXT step's audio while current one plays ---- */
   useEffect(() => {
