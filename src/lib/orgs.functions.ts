@@ -397,6 +397,18 @@ export const createOrg = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
+    // Bootstrap: the platform owner gets a real (non-standard) membership row so
+    // every RLS policy built on is_org_member() works for them in this org.
+    const { error: ownerSeatErr } = await supabaseAdmin.from("org_members").insert({
+      org_id: inserted.id,
+      user_id: context.userId,
+      role: "admin",
+      is_standard: false,
+    });
+    if (ownerSeatErr && !/duplicate key/i.test(ownerSeatErr.message)) {
+      console.warn("[orgs] owner seat bootstrap failed", ownerSeatErr.message);
+    }
+
     // Enforce the standard cap: 1 Org Admin + 1 PM + 2 Subcontractors
     const adminCount = data.invites.filter((r) => r.role === "admin").length;
     const pmCount = data.invites.filter((r) => r.role === "pm").length;
