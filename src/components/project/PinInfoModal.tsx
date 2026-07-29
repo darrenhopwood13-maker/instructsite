@@ -14,6 +14,7 @@ import {
 import type { ReactNode } from "react";
 import { getPinDetail } from "@/lib/live-activity.functions";
 import { pinColor, pinKey } from "@/lib/pin-color";
+import { hazardLabel } from "@/lib/high-risk";
 
 function fmtDuration(ms: number) {
   const mins = Math.max(0, Math.floor(ms / 60000));
@@ -280,7 +281,7 @@ function PermitsBlock({
           </p>
           {flags.length > 0 && (
             <p className="mt-1 text-[0.6rem] uppercase tracking-widest text-amber-200/80">
-              {flags.map((f) => f.replace(/_/g, " ")).join(" · ")}
+              {flags.map(hazardLabel).join(" · ")}
             </p>
           )}
         </div>

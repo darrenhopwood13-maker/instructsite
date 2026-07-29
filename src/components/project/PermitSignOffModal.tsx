@@ -5,6 +5,7 @@ import { ShieldAlert, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { issuePinPermit } from "@/lib/live-activity.functions";
 import type { PinRecord } from "@/components/project/DrawingCanvas";
+import { hazardLabel } from "@/lib/high-risk";
 
 interface Props {
   pin: PinRecord & { project_id?: string };
@@ -84,7 +85,7 @@ export function PermitSignOffModal({ pin, projectId, onClose }: Props) {
                   key={f}
                   className="rounded-sm border border-amber-400 bg-black/30 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-amber-300"
                 >
-                  {f.replace(/_/g, " ")}
+                  {hazardLabel(f)}
                 </span>
               ))}
             </div>

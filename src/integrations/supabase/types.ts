@@ -2130,6 +2130,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      high_risk_categories: { Args: never; Returns: string[] }
       is_org_admin: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean

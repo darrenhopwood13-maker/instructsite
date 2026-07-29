@@ -31,14 +31,14 @@ import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { pinColor, pinKey } from "@/lib/pin-color";
 import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
+import { detectHazards, hazardLabel } from "@/lib/high-risk";
 
 export const Route = createFileRoute("/subcontractor/$projectId")({
   head: () => ({ meta: [{ title: "Subcontractor Cockpit — Site" }] }),
   component: SubcontractorCockpit,
 });
 
-const HIGH_RISK_RE =
-  /(hot\s*work|welding|cutting torch|grinding|brazing|soldering|confined\s*space|manhole|work(ing)?\s*at\s*height|scaffold|roof|mewp|cherry\s*picker|ladder|excavation|dig(ging)?|trench|groundworks)/i;
+// Hazard vocabulary lives in src/lib/high-risk.ts (mirrors the DB trigger).
 
 function toLocalInput(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -156,7 +156,8 @@ function SubcontractorCockpit() {
   const [checkoutPin, setCheckoutPin] = useState<any | null>(null);
 
   const tradePkg = ctx.data?.tradePackages?.[0] ?? "";
-  const willFlagPermit = HIGH_RISK_RE.test(`${tradePkg} ${taskNotes}`);
+  const detectedHazards = detectHazards(`${tradePkg} ${taskNotes}`);
+  const willFlagPermit = detectedHazards.length > 0;
 
   const handleDrop = (coords: { xPct: number; yPct: number }) => {
     if (!selectedDrawing) {
@@ -616,8 +617,8 @@ function SubcontractorCockpit() {
             {willFlagPermit && (
               <div className="mt-3 flex items-start gap-2 rounded-md border-2 border-amber-400 bg-amber-400/10 px-3 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-amber-200">
                 <ShieldAlert size={14} className="mt-0.5 shrink-0" />
-                High-Risk Task Detected. This briefing will require an Admin Permit to Work before
-                activation.
+                High-Risk Task Detected ({detectedHazards.map(hazardLabel).join(" · ")}). This
+                briefing will require an Admin Permit to Work before activation.
               </div>
             )}
 

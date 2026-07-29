@@ -22,6 +22,7 @@ import { getMyRoles } from "@/lib/projects.functions";
 import { listSubcontractorInvites } from "@/lib/subcontractors.functions";
 import { TRADE_PACKAGES } from "@/lib/trade-packages";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { hazardLabel } from "@/lib/high-risk";
 
 
 export const Route = createFileRoute("/projects/$projectId")({
@@ -500,7 +501,7 @@ function UnifiedRamsBlock({
                     key={f}
                     className="rounded-sm border border-white/15 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase text-foreground/80"
                   >
-                    {f.replace(/_/g, " ")}
+                    {hazardLabel(f)}
                   </span>
                 ))}
               </div>
