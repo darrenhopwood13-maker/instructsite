@@ -130,6 +130,13 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [audioNotice, setAudioNotice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  /** Real ElevenLabs clip is driving the current step. */
+  const audioActiveRef = useRef(false);
+  /** Unscaled clip length in ms (0 = unknown yet). */
+  const audioDurationRef = useRef(0);
+  const audioEndedRef = useRef(false);
+  /** Bumped on loadedmetadata/ended so the rAF effect re-evaluates. */
+  const [audioTick, setAudioTick] = useState(0);
   const narrationCacheRef = useRef<Map<string, string | null>>(new Map());
   const fetchNarration = useServerFn(getGuideNarration);
 
