@@ -37,8 +37,7 @@ export const Route = createFileRoute("/subcontractor/$projectId")({
   component: SubcontractorCockpit,
 });
 
-const HIGH_RISK_RE =
-  /(hot\s*work|welding|cutting torch|grinding|brazing|soldering|confined\s*space|manhole|work(ing)?\s*at\s*height|scaffold|roof|mewp|cherry\s*picker|ladder|excavation|dig(ging)?|trench|groundworks)/i;
+// Hazard vocabulary lives in src/lib/high-risk.ts (mirrors the DB trigger).
 
 function toLocalInput(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
