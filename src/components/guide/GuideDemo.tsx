@@ -59,23 +59,62 @@ const ZOOM_COVERAGE = 0.7;
 const SOUND_PREF_KEY = "guide-demo:sound";
 
 /* -------------------------------------------------------------------------- */
+/*  Shared narration cache (one per page, not per player).                    */
+/* -------------------------------------------------------------------------- */
+
+interface NarrationEntry {
+  url: string | null;
+  expiresAt: number;
+}
+/** Signed URLs live 30 min server-side; refresh 2 min early. */
+const NARRATION_TTL_MS = 30 * 60 * 1000;
+const NARRATION_REFRESH_MARGIN_MS = 2 * 60 * 1000;
+/** Negative results are retried sooner. */
+const NARRATION_FAILURE_TTL_MS = 60 * 1000;
+const narrationCache = new Map<string, NarrationEntry>();
+
+/* -------------------------------------------------------------------------- */
 /*  Singleton registry — one player animates at a time.                       */
 /* -------------------------------------------------------------------------- */
 
 type Pauser = () => void;
 const registry = new Set<{ id: symbol; pause: Pauser; visible: boolean }>();
 let active: symbol | null = null;
+/** A player the user explicitly started — never pre-empted by autoplay. */
+let userDriven: symbol | null = null;
 
-function claim(id: symbol) {
-  if (active === id) return;
+/** Returns true when this player may play. */
+function claim(id: symbol, deliberate = false): boolean {
+  if (deliberate) {
+    userDriven = id;
+  } else if (userDriven && userDriven !== id) {
+    return false;
+  }
+  if (active === id) return true;
   for (const entry of registry) {
     if (entry.id !== id) entry.pause();
   }
   active = id;
+  return true;
 }
 function release(id: symbol) {
   if (active === id) active = null;
+  if (userDriven === id) userDriven = null;
 }
+
+/** Set playback rate without chipmunking the voice. */
+function setRate(el: HTMLAudioElement, rate: number) {
+  el.playbackRate = rate;
+  const anyEl = el as HTMLAudioElement & {
+    preservesPitch?: boolean;
+    webkitPreservesPitch?: boolean;
+    mozPreservesPitch?: boolean;
+  };
+  anyEl.preservesPitch = true;
+  anyEl.webkitPreservesPitch = true;
+  anyEl.mozPreservesPitch = true;
+}
+
 
 /* -------------------------------------------------------------------------- */
 /*  Helpers                                                                   */
@@ -137,7 +176,10 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
   const audioEndedRef = useRef(false);
   /** Bumped on loadedmetadata/ended so the rAF effect re-evaluates. */
   const [audioTick, setAudioTick] = useState(0);
-  const narrationCacheRef = useRef<Map<string, string | null>>(new Map());
+  /** Bumped by Restart to force a replay of the same line. */
+  const [replayTick, setReplayTick] = useState(0);
+  /** One retry per step after a decode/network error. */
+  const audioRetryRef = useRef(false);
   const fetchNarration = useServerFn(getGuideNarration);
 
   useEffect(() => {
@@ -197,7 +239,7 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     };
   }, []);
 
-  /* ---- autoplay ---- */
+  /* ---- autoplay (never pre-empts a user-driven player) ---- */
   useEffect(() => {
     if (reduced) {
       setPlaying(false);
@@ -205,33 +247,39 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     }
     const eligible = inView && tabVisible;
     if (eligible) {
-      claim(idRef.current);
-      setPlaying(true);
+      if (claim(idRef.current)) setPlaying(true);
     } else {
-      if (active === idRef.current) release(idRef.current);
+      if (active === idRef.current || userDriven === idRef.current) release(idRef.current);
       setPlaying(false);
     }
   }, [inView, tabVisible, reduced]);
 
-  /* ---- narration loader (with cache + next-step preload) ---- */
+  /* ---- narration loader (shared cache, expiry-aware, next-step preload) ---- */
   const loadNarration = useCallback(
-    async (text: string): Promise<string | null> => {
+    async (text: string, force = false): Promise<string | null> => {
       if (!text) return null;
-      const cache = narrationCacheRef.current;
-      if (cache.has(text)) return cache.get(text) ?? null;
+      const now = Date.now();
+      const hit = narrationCache.get(text);
+      if (!force && hit && hit.expiresAt - NARRATION_REFRESH_MARGIN_MS > now) {
+        return hit.url;
+      }
       try {
         const res = await fetchNarration({ data: { text } });
         const url = res?.url ?? null;
-        cache.set(text, url);
+        narrationCache.set(text, {
+          url,
+          expiresAt: now + (url ? NARRATION_TTL_MS : NARRATION_FAILURE_TTL_MS),
+        });
         return url;
       } catch (err) {
         console.warn("[GuideDemo] narration fetch failed", err);
-        cache.set(text, null);
+        narrationCache.set(text, { url: null, expiresAt: now + NARRATION_FAILURE_TTL_MS });
         return null;
       }
     },
     [fetchNarration],
   );
+
 
   /* ---- speechSynthesis fallback ---- */
   const speakFallback = useCallback(
@@ -278,6 +326,8 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     }
     let cancelled = false;
     const el = audioRef.current;
+    audioRetryRef.current = false;
+
     const onMeta = () => {
       if (!el || !Number.isFinite(el.duration)) return;
       audioDurationRef.current = el.duration * 1000;
@@ -287,50 +337,79 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
       audioEndedRef.current = true;
       setAudioTick((n) => n + 1);
     };
+    const fallbackToSpeech = () => {
+      audioActiveRef.current = false;
+      const ok = speakFallback(narrationText);
+      setAudioNotice(ok ? "Using device voice." : "Narration unavailable — subtitles only.");
+      setAudioTick((n) => n + 1);
+    };
+    const start = async (force: boolean) => {
+      const url = await loadNarration(narrationText, force);
+      if (cancelled) return;
+      if (!url || !el) {
+        fallbackToSpeech();
+        return;
+      }
+      if (el.src !== url) el.src = url;
+      el.currentTime = 0;
+      setRate(el, speed);
+      try {
+        await el.play();
+        if (cancelled) return;
+        audioActiveRef.current = true;
+        audioEndedRef.current = false;
+        if (Number.isFinite(el.duration)) audioDurationRef.current = el.duration * 1000;
+        setAudioTick((n) => n + 1);
+        setAudioNotice(null);
+      } catch {
+        if (cancelled) return;
+        fallbackToSpeech();
+      }
+    };
+    /* A stale signed URL or a decode failure gets one silent retry with a
+       freshly signed URL, then falls back to the device voice. */
+    const onError = () => {
+      if (cancelled) return;
+      if (!audioRetryRef.current) {
+        audioRetryRef.current = true;
+        start(true).catch(() => fallbackToSpeech());
+        return;
+      }
+      fallbackToSpeech();
+    };
+
     el?.addEventListener("loadedmetadata", onMeta);
     el?.addEventListener("ended", onEnded);
+    el?.addEventListener("error", onError);
 
-    (async () => {
-      const url = await loadNarration(narrationText);
-      if (cancelled) return;
-      if (url && el) {
-        if (el.src !== url) el.src = url;
-        el.playbackRate = speed;
-        try {
-          await el.play();
-          audioActiveRef.current = true;
-          audioEndedRef.current = false;
-          if (Number.isFinite(el.duration)) audioDurationRef.current = el.duration * 1000;
-          setAudioTick((n) => n + 1);
-          setAudioNotice(null);
-        } catch {
-          audioActiveRef.current = false;
-          const ok = speakFallback(narrationText);
-          setAudioNotice(ok ? "Using device voice." : null);
-          setAudioTick((n) => n + 1);
-        }
-      } else {
-        audioActiveRef.current = false;
-        const ok = speakFallback(narrationText);
-        setAudioNotice(ok ? "Using device voice." : "Narration unavailable — subtitles only.");
-        setAudioTick((n) => n + 1);
-      }
-    })();
+    start(false).catch(() => fallbackToSpeech());
+
     return () => {
       cancelled = true;
       el?.removeEventListener("loadedmetadata", onMeta);
       el?.removeEventListener("ended", onEnded);
+      el?.removeEventListener("error", onError);
       audioActiveRef.current = false;
       stopAllAudio();
     };
-  }, [soundOn, audioUnlocked, playing, narrationText, loadNarration, speakFallback, speed, stopAllAudio]);
+  }, [
+    soundOn,
+    audioUnlocked,
+    playing,
+    narrationText,
+    loadNarration,
+    speakFallback,
+    speed,
+    stopAllAudio,
+    replayTick,
+  ]);
 
-
-  /* ---- keep playbackRate in sync with speed ---- */
+  /* ---- keep playbackRate (and pitch) in sync with speed ---- */
   useEffect(() => {
     const el = audioRef.current;
-    if (el) el.playbackRate = speed;
+    if (el) setRate(el, speed);
   }, [speed]);
+
 
   /* ---- preload NEXT step's audio while current one plays ---- */
   useEffect(() => {
@@ -436,17 +515,29 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
     };
   }, [playing, stepIdx, speed, reduced, step, total, narrationText, audioTick]);
 
-  /* ---- manual controls ---- */
+  /* ---- manual controls (deliberate = wins over autoplay) ---- */
   const play = () => {
-    claim(idRef.current);
+    claim(idRef.current, true);
     setPlaying(true);
   };
   const pause = () => setPlaying(false);
   const restart = () => {
     resetTransient();
     setStepIdx(0);
+    const el = audioRef.current;
+    if (el) {
+      try {
+        el.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+    }
+    audioEndedRef.current = false;
+    // Force the audio effect to re-run even when the line is unchanged.
+    setReplayTick((n) => n + 1);
     play();
   };
+
   const stepBack = () => {
     pause();
     setStepIdx((i) => Math.max(0, i - 1));
@@ -493,10 +584,11 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
 
   const activeShot = step?.shot?.url ?? shot;
 
-  /* Show subtitles when: sound is off, or sound is on but audio hasn't been
-     unlocked yet (i.e. before the "Start with sound" gesture). */
-  const showSubtitles = !soundOn || !audioUnlocked;
+  /* Captions are always on — accessibility first. They simply sit a little
+     quieter when the ElevenLabs voice is also playing. */
+  const narrating = soundOn && audioUnlocked;
   const showStartOverlay = soundOn && !audioUnlocked;
+
 
   return (
     <div ref={rootRef} className={cn("w-full", className)}>
@@ -604,14 +696,20 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
           </div>
         )}
 
-        {/* Subtitles */}
-        {showSubtitles && narrationText && (
+        {/* Subtitles — always rendered, never hidden by narration */}
+        {narrationText && (
           <div className="pointer-events-none absolute inset-x-3 bottom-3 z-40 flex justify-center">
-            <div className="max-w-[92%] rounded-md bg-black/75 px-3 py-1.5 text-center text-xs font-medium text-white shadow-lg backdrop-blur-sm">
+            <div
+              className={cn(
+                "max-w-[92%] rounded-md px-3 py-1.5 text-center text-xs font-medium text-white shadow-lg backdrop-blur-sm",
+                narrating ? "bg-black/60" : "bg-black/75",
+              )}
+            >
               {narrationText}
             </div>
           </div>
         )}
+
 
         {/* Start-with-sound overlay */}
         {showStartOverlay && (
