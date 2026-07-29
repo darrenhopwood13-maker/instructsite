@@ -584,10 +584,11 @@ export const GuideDemo = ({ title, steps, shot, shotAlt, className }: GuideDemoP
 
   const activeShot = step?.shot?.url ?? shot;
 
-  /* Show subtitles when: sound is off, or sound is on but audio hasn't been
-     unlocked yet (i.e. before the "Start with sound" gesture). */
-  const showSubtitles = !soundOn || !audioUnlocked;
+  /* Captions are always on — accessibility first. They simply sit a little
+     quieter when the ElevenLabs voice is also playing. */
+  const narrating = soundOn && audioUnlocked;
   const showStartOverlay = soundOn && !audioUnlocked;
+
 
   return (
     <div ref={rootRef} className={cn("w-full", className)}>
