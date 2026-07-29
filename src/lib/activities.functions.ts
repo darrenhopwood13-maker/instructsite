@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const HIGH_RISK = ["working_at_height", "hot_works", "confined_space"] as const;
+const HIGH_RISK = HIGH_RISK_CATEGORIES;
 
 export const createActivity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
