@@ -155,7 +155,8 @@ function SubcontractorCockpit() {
   const [checkoutPin, setCheckoutPin] = useState<any | null>(null);
 
   const tradePkg = ctx.data?.tradePackages?.[0] ?? "";
-  const willFlagPermit = HIGH_RISK_RE.test(`${tradePkg} ${taskNotes}`);
+  const detectedHazards = detectHazards(`${tradePkg} ${taskNotes}`);
+  const willFlagPermit = detectedHazards.length > 0;
 
   const handleDrop = (coords: { xPct: number; yPct: number }) => {
     if (!selectedDrawing) {
