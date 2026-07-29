@@ -180,8 +180,13 @@ export type Database = {
           hours_logged: number
           id: string
           ifc_synced: boolean
+          inspected_at: string | null
+          inspected_by: string | null
           live_activity_id: string | null
+          manager_completion_pct: number | null
           manager_force_closed: boolean
+          manager_notes: string | null
+          manager_photo_urls: string[]
           notes: string | null
           operative_count: number
           photo_urls: string[]
@@ -195,6 +200,7 @@ export type Database = {
           subcontractor_id: string
           trade_package: string | null
           updated_at: string
+          workface_id: string | null
           zone_id: string | null
         }
         Insert: {
@@ -206,8 +212,13 @@ export type Database = {
           hours_logged: number
           id?: string
           ifc_synced?: boolean
+          inspected_at?: string | null
+          inspected_by?: string | null
           live_activity_id?: string | null
+          manager_completion_pct?: number | null
           manager_force_closed?: boolean
+          manager_notes?: string | null
+          manager_photo_urls?: string[]
           notes?: string | null
           operative_count: number
           photo_urls?: string[]
@@ -221,6 +232,7 @@ export type Database = {
           subcontractor_id: string
           trade_package?: string | null
           updated_at?: string
+          workface_id?: string | null
           zone_id?: string | null
         }
         Update: {
@@ -232,8 +244,13 @@ export type Database = {
           hours_logged?: number
           id?: string
           ifc_synced?: boolean
+          inspected_at?: string | null
+          inspected_by?: string | null
           live_activity_id?: string | null
+          manager_completion_pct?: number | null
           manager_force_closed?: boolean
+          manager_notes?: string | null
+          manager_photo_urls?: string[]
           notes?: string | null
           operative_count?: number
           photo_urls?: string[]
@@ -247,6 +264,7 @@ export type Database = {
           subcontractor_id?: string
           trade_package?: string | null
           updated_at?: string
+          workface_id?: string | null
           zone_id?: string | null
         }
         Relationships: [
@@ -269,6 +287,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_site_diaries_workface_id_fkey"
+            columns: ["workface_id"]
+            isOneToOne: false
+            referencedRelation: "workfaces"
             referencedColumns: ["id"]
           },
           {
@@ -471,6 +496,7 @@ export type Database = {
           subcontractor_id: string
           trade_package: string | null
           updated_at: string
+          workface_id: string | null
           x_pct: number
           y_pct: number
           zone_id: string | null
@@ -492,6 +518,7 @@ export type Database = {
           subcontractor_id: string
           trade_package?: string | null
           updated_at?: string
+          workface_id?: string | null
           x_pct: number
           y_pct: number
           zone_id?: string | null
@@ -513,6 +540,7 @@ export type Database = {
           subcontractor_id?: string
           trade_package?: string | null
           updated_at?: string
+          workface_id?: string | null
           x_pct?: number
           y_pct?: number
           zone_id?: string | null
@@ -537,6 +565,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_site_activity_workface_id_fkey"
+            columns: ["workface_id"]
+            isOneToOne: false
+            referencedRelation: "workfaces"
             referencedColumns: ["id"]
           },
           {
@@ -1805,6 +1840,7 @@ export type Database = {
           expires_at: string
           id: string
           office_phone: string | null
+          package_manager_id: string | null
           pm_email: string | null
           pm_mobile: string | null
           pm_name: string | null
@@ -1828,6 +1864,7 @@ export type Database = {
           expires_at?: string
           id?: string
           office_phone?: string | null
+          package_manager_id?: string | null
           pm_email?: string | null
           pm_mobile?: string | null
           pm_name?: string | null
@@ -1851,6 +1888,7 @@ export type Database = {
           expires_at?: string
           id?: string
           office_phone?: string | null
+          package_manager_id?: string | null
           pm_email?: string | null
           pm_mobile?: string | null
           pm_name?: string | null
@@ -2078,6 +2116,70 @@ export type Database = {
           },
         ]
       }
+      workfaces: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          package_invite_id: string | null
+          project_id: string
+          source: string
+          stage: string | null
+          status: string
+          updated_at: string
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          package_invite_id?: string | null
+          project_id: string
+          source?: string
+          stage?: string | null
+          status?: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          package_invite_id?: string | null
+          project_id?: string
+          source?: string
+          stage?: string | null
+          status?: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workfaces_package_invite_id_fkey"
+            columns: ["package_invite_id"]
+            isOneToOne: false
+            referencedRelation: "subcontractor_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workfaces_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workfaces_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "work_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2189,10 +2291,26 @@ export type Database = {
           total_cap: number
         }[]
       }
+      suggest_workfaces: { Args: { _project_id: string }; Returns: string[] }
+      workface_approved_completion: {
+        Args: { _project_id: string }
+        Returns: {
+          pct: number
+          workface_id: string
+        }[]
+      }
       zone_approved_completion: {
         Args: { _project_id: string }
         Returns: {
           total_pct: number
+          zone_id: string
+        }[]
+      }
+      zone_runtime_progress: {
+        Args: { _project_id: string }
+        Returns: {
+          all_workfaces_complete: boolean
+          progress_pct: number
           zone_id: string
         }[]
       }
