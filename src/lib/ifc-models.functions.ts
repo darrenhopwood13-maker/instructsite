@@ -392,19 +392,26 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => projectIdInput.parse(i))
   .handler(async ({ data, context }) => {
+    type ProgressRow = {
+      zone_id: string;
+      progress_pct: number | string;
+      all_workfaces_complete: boolean;
+    };
+    // Happy path is the real workface-scoped calculation; if it is ever
+    // missing or errors we degrade gracefully rather than break the map.
     const safeProgress = async () => {
       try {
-        const res = await (context.supabase as any).rpc("zone_approved_completion", {
+        const res = await (context.supabase as any).rpc("zone_runtime_progress", {
           _project_id: data.projectId,
         });
         if (res.error) {
           console.warn("[zone-runtime] progress RPC failed:", res.error.message);
-          return { data: [] as Array<{ zone_id: string; total_pct: number | string }>, degraded: true };
+          return { data: [] as ProgressRow[], degraded: true };
         }
-        return { data: (res.data ?? []) as Array<{ zone_id: string; total_pct: number | string }>, degraded: false };
+        return { data: (res.data ?? []) as ProgressRow[], degraded: false };
       } catch (e) {
         console.warn("[zone-runtime] progress RPC threw:", (e as Error).message);
-        return { data: [] as Array<{ zone_id: string; total_pct: number | string }>, degraded: true };
+        return { data: [] as ProgressRow[], degraded: true };
       }
     };
 
@@ -423,15 +430,21 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
     if (zonesRes.error) throw new Error(zonesRes.error.message);
     if (liveRes.error) throw new Error(liveRes.error.message);
 
-    const progressByZone = new Map<string, number>();
+    const progressByZone = new Map<string, { pct: number; complete: boolean }>();
     for (const row of progressRes.data) {
-      progressByZone.set(row.zone_id, Number(row.total_pct) || 0);
+      progressByZone.set(row.zone_id, {
+        pct: Number(row.progress_pct) || 0,
+        complete: Boolean(row.all_workfaces_complete),
+      });
     }
     const live = new Set((liveRes.data ?? []).map((r) => r.zone_id).filter(Boolean) as string[]);
 
     const zones = (zonesRes.data ?? []).map((z) => {
-      const progress_pct = Math.min(100, Math.round(progressByZone.get(z.id) ?? 0));
-      const isComplete = progress_pct >= 100;
+      const row = progressByZone.get(z.id);
+      const progress_pct = Math.min(100, Math.round(row?.pct ?? 0));
+      // Prefer the checked "every confirmed workface done" signal. Zones with
+      // no confirmed workfaces yet fall back to the percentage.
+      const isComplete = row?.complete === true || progress_pct >= 100;
       const state: "complete" | "live" | "unstarted" = isComplete
         ? "complete"
         : live.has(z.id)
@@ -447,6 +460,7 @@ export const listZoneRuntimeState = createServerFn({ method: "GET" })
     });
 
     return { zones, progressDegraded: progressRes.degraded };
+
   });
 
 
