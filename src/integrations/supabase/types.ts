@@ -305,6 +305,60 @@ export type Database = {
           },
         ]
       }
+      diary_amendments: {
+        Row: {
+          changed_by: string
+          created_at: string
+          diary_id: string
+          id: string
+          new_manager_completion_pct: number | null
+          new_qs_status: string | null
+          previous_manager_completion_pct: number | null
+          previous_qs_status: string | null
+          project_id: string
+          reason: string
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          diary_id: string
+          id?: string
+          new_manager_completion_pct?: number | null
+          new_qs_status?: string | null
+          previous_manager_completion_pct?: number | null
+          previous_qs_status?: string | null
+          project_id: string
+          reason: string
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          diary_id?: string
+          id?: string
+          new_manager_completion_pct?: number | null
+          new_qs_status?: string | null
+          previous_manager_completion_pct?: number | null
+          previous_qs_status?: string | null
+          project_id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diary_amendments_diary_id_fkey"
+            columns: ["diary_id"]
+            isOneToOne: false
+            referencedRelation: "daily_site_diaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diary_amendments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_contents: {
         Row: {
           char_count: number
@@ -2199,6 +2253,18 @@ export type Database = {
           trade_packages: string[]
         }[]
       }
+      add_site_manager_to_project: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: undefined
+      }
+      amend_approved_diary: {
+        Args: {
+          _diary_id: string
+          _new_manager_completion_pct: number
+          _reason: string
+        }
+        Returns: string
+      }
       can_admin_site_document: {
         Args: { _document_id: string; _user_id: string }
         Returns: boolean
@@ -2252,6 +2318,29 @@ export type Database = {
       issue_pin_permit: {
         Args: { _pin_id: string; _valid_hours?: number }
         Returns: string
+      }
+      list_project_site_managers: {
+        Args: { _project_id: string }
+        Returns: {
+          full_name: string
+          user_id: string
+        }[]
+      }
+      list_unassigned_site_managers: {
+        Args: { _project_id: string }
+        Returns: {
+          full_name: string
+          user_id: string
+        }[]
+      }
+      manager_authorise_diary: {
+        Args: {
+          _diary_id: string
+          _manager_completion_pct: number
+          _manager_notes?: string
+          _manager_photo_urls?: string[]
+        }
+        Returns: undefined
       }
       manager_force_checkout: {
         Args: { _completion_pct: number; _notes: string; _pin_id: string }
