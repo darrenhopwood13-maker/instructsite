@@ -369,12 +369,23 @@ export const inviteSiteManager = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: user.id, role: "site_manager" }, { onConflict: "user_id,role" });
-    await supabaseAdmin
+    // project_members is unique on (project_id, user_id, role_on_project) — insert
+    // only when this exact membership row is missing.
+    const { data: existingMember } = await supabaseAdmin
       .from("project_members")
-      .upsert(
-        { project_id: data.projectId, user_id: user.id, role_on_project: "site_manager" },
-        { onConflict: "project_id,user_id" },
-      );
+      .select("id")
+      .eq("project_id", data.projectId)
+      .eq("user_id", user.id)
+      .eq("role_on_project", "site_manager")
+      .limit(1);
+    if (!existingMember || existingMember.length === 0) {
+      const { error: memberErr } = await supabaseAdmin
+        .from("project_members")
+        .insert({ project_id: data.projectId, user_id: user.id, role_on_project: "site_manager" });
+      if (memberErr && !/duplicate key/i.test(memberErr.message)) {
+        throw new Error(memberErr.message);
+      }
+    }
     if (data.fullName?.trim()) {
       await supabaseAdmin
         .from("profiles")
