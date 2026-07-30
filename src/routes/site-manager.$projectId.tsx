@@ -25,6 +25,7 @@ import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 
 import { supabase } from "@/integrations/supabase/client";
+import { errorMessage } from "@/lib/error-message";
 
 const siteManagerSearchSchema = z.object({
   locatePinId: z.string().uuid().optional(),
@@ -193,10 +194,15 @@ function SiteManagerPage() {
   const [qsOpen, setQsOpen] = useState(true);
 
   const closePin = async (pinId: string) => {
-    await closeFn({ data: { pinId } });
-    setActivePin(null);
-    qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
-    qc.invalidateQueries({ queryKey: ["live-pins-all", projectId] });
+    try {
+      await closeFn({ data: { pinId } });
+      setActivePin(null);
+      qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
+      qc.invalidateQueries({ queryKey: ["live-pins-all", projectId] });
+      toast.success("Pin closed out.");
+    } catch (e) {
+      toast.error(errorMessage(e, "Couldn't close that pin."));
+    }
   };
 
   if (roleGateReady && !isMainContractor) {

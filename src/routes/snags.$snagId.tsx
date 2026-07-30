@@ -8,6 +8,8 @@ import { ReportView } from "./snags.new";
 import { ReportViewer } from "@/components/reports/ReportViewer";
 import { snagReportToMarkdown } from "@/lib/report-format";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { toast } from "sonner";
+import { errorMessage } from "@/lib/error-message";
 
 const STATUS_OPTIONS = [
   { v: "open", label: "Open" },
@@ -49,10 +51,15 @@ function SnagDetail() {
 
   async function changeStatus(v: string) {
     if (!snag) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await statusFn({ data: { snagId, status: v as any } });
-    qc.invalidateQueries({ queryKey: ["snag", snagId] });
-    qc.invalidateQueries({ queryKey: ["snags"] });
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await statusFn({ data: { snagId, status: v as any } });
+      qc.invalidateQueries({ queryKey: ["snag", snagId] });
+      qc.invalidateQueries({ queryKey: ["snags"] });
+      toast.success("Snag status updated.");
+    } catch (e) {
+      toast.error(errorMessage(e, "Couldn't update the snag status."));
+    }
   }
 
   async function sendComment() {
@@ -62,6 +69,9 @@ function SnagDetail() {
       await commentFn({ data: { snagId, body: comment.trim() } });
       setComment("");
       qc.invalidateQueries({ queryKey: ["snag", snagId] });
+      toast.success("Comment posted.");
+    } catch (e) {
+      toast.error(errorMessage(e, "Couldn't post that comment — it was not saved."));
     } finally {
       setPosting(false);
     }
