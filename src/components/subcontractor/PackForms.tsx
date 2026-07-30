@@ -516,6 +516,7 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
 
   return (
     <AccordionCard icon={<ClipboardList size={18} />} eyebrow="03" title="Toolbox Talk">
+      {dialog}
       <div className="grid gap-3 md:grid-cols-3">
         <Label text="Topic">
           <select value={topic} onChange={(e) => setTopic(e.target.value as any)} className={inputCls()}>
