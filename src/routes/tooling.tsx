@@ -28,10 +28,13 @@ function ToolingPage() {
   const [output, setOutput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeFunction, setActiveFunction] = useState<FunctionKey | null>(null);
+  const [lastFailed, setLastFailed] = useState<FunctionKey | null>(null);
+  const inFlightRef = useRef(false);
 
   const reset = () => {
     setOutput("");
     setActiveFunction(null);
+    setLastFailed(null);
   };
 
   const clearAttachment = () => {
@@ -41,20 +44,28 @@ function ToolingPage() {
   };
 
   const runOracle = async (fn: FunctionKey) => {
-    if (isStreaming) return;
+    // Guard on a ref, not state — two fast clicks in the same tick both saw
+    // isStreaming === false and could leave the UI in a dead state.
+    if (inFlightRef.current) return;
     if (fn === "snag_master" && !imageDataUrl) {
       toast.error("Attach a photo first for the Snag Master.");
       return;
     }
 
+    inFlightRef.current = true;
     setActiveFunction(fn);
+    setLastFailed(null);
     setOutput("");
     setIsStreaming(true);
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 120_000);
 
     try {
       const resp = await fetch("/api/oracle-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           buttonFunction: fn,
           base64Image: imageDataUrl,
@@ -75,7 +86,7 @@ function ToolingPage() {
         if (resp.status === 429) toast.error("Rate limit", { description: msg });
         else if (resp.status === 402) toast.error("Credits required", { description: msg });
         else toast.error("Oracle error", { description: msg });
-        setIsStreaming(false);
+        setLastFailed(fn);
         return;
       }
 
@@ -83,8 +94,8 @@ function ToolingPage() {
       if (warning) toast.warning("PDF notice", { description: warning });
 
       if (!resp.body) {
-        toast.error("No stream from The Oracle.");
-        setIsStreaming(false);
+        toast.error("No stream from The Oracle.", { description: "Press RETRY to run it again." });
+        setLastFailed(fn);
         return;
       }
 
@@ -93,6 +104,7 @@ function ToolingPage() {
       let textBuffer = "";
       let assistantSoFar = "";
       let streamDone = false;
+
 
       while (!streamDone) {
         const { done, value } = await reader.read();
