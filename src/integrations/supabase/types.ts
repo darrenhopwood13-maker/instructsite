@@ -645,6 +645,7 @@ export type Database = {
           created_at: string
           extracted_zones: Json
           extraction_error: string | null
+          extraction_started_at: string | null
           extraction_status: string
           id: string
           project_id: string
@@ -655,6 +656,7 @@ export type Database = {
           created_at?: string
           extracted_zones?: Json
           extraction_error?: string | null
+          extraction_started_at?: string | null
           extraction_status?: string
           id?: string
           project_id: string
@@ -665,6 +667,7 @@ export type Database = {
           created_at?: string
           extracted_zones?: Json
           extraction_error?: string | null
+          extraction_started_at?: string | null
           extraction_status?: string
           id?: string
           project_id?: string
@@ -2127,6 +2130,7 @@ export type Database = {
           drawing_id: string | null
           id: string
           level: string | null
+          logistics_plan_id: string | null
           name: string
           project_id: string
           source: string
@@ -2137,6 +2141,7 @@ export type Database = {
           drawing_id?: string | null
           id?: string
           level?: string | null
+          logistics_plan_id?: string | null
           name: string
           project_id: string
           source?: string
@@ -2147,6 +2152,7 @@ export type Database = {
           drawing_id?: string | null
           id?: string
           level?: string | null
+          logistics_plan_id?: string | null
           name?: string
           project_id?: string
           source?: string
@@ -2158,6 +2164,13 @@ export type Database = {
             columns: ["drawing_id"]
             isOneToOne: false
             referencedRelation: "project_drawings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_zones_logistics_plan_id_fkey"
+            columns: ["logistics_plan_id"]
+            isOneToOne: false
+            referencedRelation: "logistics_plans"
             referencedColumns: ["id"]
           },
           {
