@@ -13,6 +13,10 @@ import {
   Building2,
   ArrowRight,
   UserCog,
+  Mail,
+  RefreshCw,
+  Clock,
+  UserPlus,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -24,7 +28,11 @@ import {
   listUnassignedSiteManagers,
   addSiteManagerToProject,
   assignPackageManager,
+  refreshSubcontractorInvite,
+  inviteSiteManager,
 } from "@/lib/subcontractors.functions";
+import { formatSentDate, daysAgo, expiryCountdown } from "@/lib/invite-format";
+import { errorMessage } from "@/lib/error-message";
 
 import { TRADE_PACKAGES } from "@/lib/trade-packages";
 
@@ -42,6 +50,8 @@ export function TradeDirectoryPanel({
   const unassignedManagersFn = useServerFn(listUnassignedSiteManagers);
   const addManagerFn = useServerFn(addSiteManagerToProject);
   const assignPmFn = useServerFn(assignPackageManager);
+  const refreshInviteFn = useServerFn(refreshSubcontractorInvite);
+  const inviteManagerFn = useServerFn(inviteSiteManager);
   const qc = useQueryClient();
 
   const invites = useQuery({
@@ -81,6 +91,67 @@ export function TradeDirectoryPanel({
       toast.error(e?.message ?? "Failed to add Site Manager.");
     } finally {
       setAddingManager(false);
+    }
+  };
+
+  const [managerEmail, setManagerEmail] = useState("");
+  const [managerName, setManagerName] = useState("");
+  const [invitingManager, setInvitingManager] = useState(false);
+  const [showManagerInvite, setShowManagerInvite] = useState(false);
+  const [rowBusy, setRowBusy] = useState<string | null>(null);
+
+  const inviteAManager = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!managerEmail.trim() || invitingManager) return;
+    setInvitingManager(true);
+    try {
+      const res = await inviteManagerFn({
+        data: { projectId, email: managerEmail.trim(), fullName: managerName.trim() || null },
+      });
+      qc.invalidateQueries({ queryKey: ["project-site-managers", projectId] });
+      qc.invalidateQueries({ queryKey: ["unassigned-site-managers", projectId] });
+      setManagerEmail("");
+      setManagerName("");
+      if (res.attached) {
+        toast.success("Site Manager invited and added to this project.");
+      } else if (res.emailed) {
+        toast.success("Invite emailed — they join the project once they sign in.");
+      } else {
+        toast.error(res.emailError ?? "Could not send that invite.");
+      }
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Could not invite that Site Manager."));
+    } finally {
+      setInvitingManager(false);
+    }
+  };
+
+  const copyInviteLink = async (inviteId: string) => {
+    setRowBusy(inviteId);
+    try {
+      const res = await refreshInviteFn({ data: { inviteId, resendEmail: false } });
+      const url = `${window.location.origin}/invite/${res.token}`;
+      await navigator.clipboard.writeText(url);
+      qc.invalidateQueries({ queryKey: ["subcontractor-invites", projectId] });
+      toast.success("Fresh invite link copied to clipboard.");
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Could not generate an invite link."));
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+  const resendInvite = async (inviteId: string) => {
+    setRowBusy(inviteId);
+    try {
+      const res = await refreshInviteFn({ data: { inviteId, resendEmail: true } });
+      qc.invalidateQueries({ queryKey: ["subcontractor-invites", projectId] });
+      if (res.emailed) toast.success(`Invite re-sent to ${res.email}.`);
+      else toast.error(res.emailError ?? "Invite link refreshed, but the email did not send.");
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Could not resend that invite."));
+    } finally {
+      setRowBusy(null);
     }
   };
 
