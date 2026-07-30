@@ -2283,6 +2283,10 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      ensure_owner_org_membership: {
+        Args: { _org_id: string }
+        Returns: boolean
+      }
       get_subcontractor_project_id: {
         Args: { sub_id: string }
         Returns: string
