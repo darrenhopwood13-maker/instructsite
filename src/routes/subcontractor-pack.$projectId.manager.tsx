@@ -37,6 +37,12 @@ function ManagerPackPage() {
     queryKey: ["manager-pack", projectId],
     queryFn: () => getPackFn({ data: { projectId } }),
     enabled: ready,
+    // A focus/mount refetch competing with an in-flight "record on behalf" POST
+    // was one source of the intermittent `Failed to fetch`. Only refetch when
+    // a save explicitly invalidates this key.
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 30_000,
   });
 
   if (project.isError) return <AccessDeniedScreen message={(project.error as Error)?.message} />;
@@ -357,7 +363,7 @@ function SubDetail({
                   so the audit trail stays honest.
                 </p>
               </div>
-              <PackFormStack subId={sub.id} projectId={projectId} onSaved={onSaved} onBehalf />
+              <PackFormStack key={sub.id} subId={sub.id} projectId={projectId} onSaved={onSaved} onBehalf />
             </div>
           )}
         </div>
