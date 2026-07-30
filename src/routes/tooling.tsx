@@ -207,10 +207,26 @@ function ToolingPage() {
           }
         />
 
+        {lastFailed && !isStreaming && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-alert/40 bg-alert/10 px-4 py-3">
+            <span className="text-sm text-foreground">
+              {ACTION_LABELS[lastFailed]} did not return anything.
+            </span>
+            <button
+              type="button"
+              onClick={() => void runOracle(lastFailed)}
+              className="font-mono text-[11px] uppercase tracking-widest rounded-lg border border-alert/60 px-3 py-1.5 text-alert hover:bg-alert/15"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         <PromptInput value={question} onChange={setQuestion} disabled={isStreaming} />
 
         <ActionGrid onSelect={runOracle} disabled={isStreaming} active={activeFunction} loading={isStreaming} />
       </main>
+
     </div>
   );
 }
