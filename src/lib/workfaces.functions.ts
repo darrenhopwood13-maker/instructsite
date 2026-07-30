@@ -177,8 +177,8 @@ export const createWorkfaceManual = createServerFn({ method: "POST" })
         projectId: z.string().uuid(),
         name: z.string().trim().min(1).max(160),
         stage: z.string().trim().max(60).optional().nullable(),
-        zoneId: z.string().uuid().optional().nullable(),
-        packageInviteId: z.string().uuid().optional().nullable(),
+        zoneId: z.string().uuid(),
+        packageInviteId: z.string().uuid(),
       })
       .parse(i),
   )
