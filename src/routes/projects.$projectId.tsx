@@ -12,6 +12,8 @@ import {
 } from "@/lib/tier1-uploads.functions";
 import { DropZone } from "@/components/setup/DropZone";
 import { DrawingCanvas } from "@/components/project/DrawingCanvas";
+import { DuplicateDrawingsPanel } from "@/components/project/DuplicateDrawingsPanel";
+import { LogisticsPlanRow } from "@/components/project/LogisticsPlanRow";
 import { ZoneMap } from "@/components/project/ZoneMap";
 import { MasterAdminHUD } from "@/components/admin/MasterAdminHUD";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
@@ -276,6 +278,13 @@ function ProjectDetail() {
           </div>
         </section>
 
+        {/* Duplicate sheet cleanup */}
+        {isMainContractor && (
+          <section className="mt-6">
+            <DuplicateDrawingsPanel projectId={projectId} onChanged={refresh} />
+          </section>
+        )}
+
         {/* Drawing viewer — full width, tall */}
         <section className="mt-8">
           <DrawingCanvas
@@ -309,19 +318,7 @@ function ProjectDetail() {
         <section className="mt-8">
           <ListPanel title="Logistics Source Plans" count={logistics.data?.length ?? 0}>
             {logistics.data?.map((l: any) => (
-              <div key={l.id} className="border-t border-white/8 py-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="truncate font-mono text-foreground/85">
-                    {l.site_documents?.file_name}
-                  </span>
-                  <StatusPill status={l.extraction_status} />
-                </div>
-                {Array.isArray(l.extracted_zones) && l.extracted_zones.length > 0 && (
-                  <p className="mt-1 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/50">
-                    {l.extracted_zones.length} zone{l.extracted_zones.length === 1 ? "" : "s"} extracted
-                  </p>
-                )}
-              </div>
+              <LogisticsPlanRow key={l.id} plan={l} onChanged={refresh} />
             ))}
             {logistics.data && logistics.data.length === 0 && (
               <p className="py-4 text-center text-xs text-foreground/50">No logistics plans.</p>

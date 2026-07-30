@@ -6,6 +6,8 @@ export type Zone = {
   name: string;
   level?: string | null;
   source?: string | null;
+  logistics_plan_id?: string | null;
+  drawing_id?: string | null;
 };
 
 const PALETTE = [
@@ -103,7 +105,12 @@ export function ZoneMap({
                       </p>
                       {z.source && (
                         <p className="mt-1 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
-                          via {z.source}
+                          via{" "}
+                          {z.logistics_plan_id
+                            ? "logistics plan"
+                            : z.drawing_id
+                              ? "drawing"
+                              : z.source}
                         </p>
                       )}
                     </div>

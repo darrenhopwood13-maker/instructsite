@@ -2,7 +2,11 @@ import { useCallback, useState } from "react";
 import { UploadCloud, FileText, Loader2, CheckCircle2, AlertCircle, X, AlertTriangle } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { registerTier1Document, splitAndRegisterDrawingPack } from "@/lib/tier1-uploads.functions";
+import {
+  registerTier1Document,
+  splitAndRegisterDrawingPack,
+  checkDrawingPackDuplicate,
+} from "@/lib/tier1-uploads.functions";
 import { findDuplicateDocument } from "@/lib/document-lifecycle.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
@@ -54,6 +58,12 @@ type PendingDup = {
   resolve: (choice: "revision" | "separate" | "cancel", supersedesId?: string) => void;
 };
 
+type PendingPackDup = {
+  packName: string;
+  sheetCount: number;
+  resolve: (choice: "replace" | "keep_both" | "cancel") => void;
+};
+
 export function DropZone({
   projectId,
   docType,
@@ -70,6 +80,8 @@ export function DropZone({
   const register = useServerFn(registerTier1Document);
   const splitPack = useServerFn(splitAndRegisterDrawingPack);
   const findDup = useServerFn(findDuplicateDocument);
+  const checkPackDup = useServerFn(checkDrawingPackDuplicate);
+  const [packDup, setPackDup] = useState<PendingPackDup | null>(null);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -117,6 +129,31 @@ export function DropZone({
 
         // === DRAWING + PDF → server-side pdf-lib split + Gemini extraction ===
         if (docType === "drawing" && isPdf) {
+          // De-dup: warn before silently registering the same pack twice.
+          let duplicatePolicy: "replace" | "keep_both" | undefined;
+          try {
+            const dupRes = await checkPackDup({ data: { projectId, packName: file.name } });
+            if (dupRes.matches.length > 0) {
+              const choice = await new Promise<"replace" | "keep_both" | "cancel">((resolve) => {
+                setPackDup({
+                  packName: file.name,
+                  sheetCount: dupRes.matches.length,
+                  resolve: (c) => {
+                    setPackDup(null);
+                    resolve(c);
+                  },
+                });
+              });
+              if (choice === "cancel") {
+                setItems((p) => p.filter((x) => x.id !== id));
+                return;
+              }
+              duplicatePolicy = choice;
+            }
+          } catch {
+            /* a failed pre-check must never block the upload */
+          }
+
           const rawPath = `${user.id}/${projectId}/raw_incoming_packs/${Date.now()}-${safeName}`;
           const { error: upErr } = await supabase.storage
             .from(BUCKET)
@@ -132,7 +169,7 @@ export function DropZone({
           );
 
           const res = await splitPack({
-            data: { projectId, packName: file.name, rawFilePath: rawPath },
+            data: { projectId, packName: file.name, rawFilePath: rawPath, duplicatePolicy },
           });
 
           setItems((p) =>
@@ -207,7 +244,7 @@ export function DropZone({
         );
       }
     },
-    [docType, extraFields, findDup, onUploaded, projectId, register, splitPack],
+    [checkPackDup, docType, extraFields, findDup, onUploaded, projectId, register, splitPack],
   );
 
   const handleFiles = (files: FileList | null) => {
@@ -319,6 +356,51 @@ export function DropZone({
             </li>
           ))}
         </ul>
+      )}
+
+      {packDup && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+        >
+          <div className="glass-panel w-full max-w-md border-2 border-alert p-6">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="text-alert" size={18} />
+              <h3 className="text-lg font-extrabold uppercase tracking-wider text-alert">
+                Sheet already exists
+              </h3>
+            </div>
+            <p className="mt-2 text-xs text-foreground/70">
+              <span className="font-mono">{packDup.packName}</span> is already registered on this
+              project with {packDup.sheetCount} sheet{packDup.sheetCount === 1 ? "" : "s"}.
+              Uploading again will create a second copy of every sheet.
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => packDup.resolve("replace")}
+                className="glass-orange rounded-md px-3 py-2 text-xs uppercase tracking-widest"
+              >
+                Replace existing sheets
+              </button>
+              <button
+                type="button"
+                onClick={() => packDup.resolve("keep_both")}
+                className="rounded-md border border-white/20 px-3 py-2 text-xs uppercase tracking-widest text-foreground/80 hover:border-white/40"
+              >
+                Keep both
+              </button>
+              <button
+                type="button"
+                onClick={() => packDup.resolve("cancel")}
+                className="rounded-md px-3 py-2 text-[0.65rem] uppercase tracking-widest text-foreground/50 hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {dup && (
