@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { canonicalizeTrade, inferTradeFromText, GENERAL_TRADE } from "@/lib/trade-packages";
+
 
 const DOC_TYPES = ["drawing", "logistics", "rams"] as const;
 type DocType = (typeof DOC_TYPES)[number];
