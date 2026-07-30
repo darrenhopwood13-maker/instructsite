@@ -110,16 +110,61 @@ export const renameWorkface = createServerFn({ method: "POST" })
         workfaceId: z.string().uuid(),
         name: z.string().trim().min(1).max(160),
         stage: z.string().trim().max(60).optional().nullable(),
+        zoneId: z.string().uuid(),
+        packageInviteId: z.string().uuid(),
       })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as any)
       .from("workfaces")
-      .update({ name: data.name, stage: data.stage || null })
+      .update({
+        name: data.name,
+        stage: data.stage || null,
+        zone_id: data.zoneId,
+        package_invite_id: data.packageInviteId,
+      })
       .eq("id", data.workfaceId);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// Zone + package options for the register's pickers. A workface must be
+// bound to both, otherwise it cannot drive per-package or zone progress.
+export const listWorkfaceOptions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const [zones, packages] = await Promise.all([
+      (context.supabase as any)
+        .from("work_zones")
+        .select("id, name, level, status")
+        .eq("project_id", data.projectId)
+        .neq("status", "archived")
+        .order("name"),
+      (context.supabase as any)
+        .from("subcontractor_invites")
+        .select("id, company_name, trade_packages, accepted_at")
+        .eq("project_id", data.projectId)
+        .is("revoked_at", null)
+        .order("company_name"),
+    ]);
+    if (zones.error) throw new Error(zones.error.message);
+    if (packages.error) throw new Error(packages.error.message);
+    return {
+      zones: (zones.data ?? []) as {
+        id: string;
+        name: string;
+        level: string | null;
+        status: string;
+      }[],
+      packages: (packages.data ?? []) as {
+        id: string;
+        company_name: string;
+        trade_packages: string[] | null;
+        accepted_at: string | null;
+      }[],
+    };
   });
 
 // Manual creation — for the "manual anytime" case: temporary works,
