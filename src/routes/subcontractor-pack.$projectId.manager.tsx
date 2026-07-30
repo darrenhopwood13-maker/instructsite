@@ -322,7 +322,11 @@ function SubDetail({
         );
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to generate pack");
+      toast.error(
+        `Pack generation failed — ${e instanceof Error ? e.message : "unknown error"}`,
+        { id: buildingId, description: `${sub.company_name} · ${rangeLabel}` },
+      );
+
     } finally {
       setDownloading(false);
     }
