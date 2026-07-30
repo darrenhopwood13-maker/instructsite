@@ -148,7 +148,31 @@ export const listPackIssues = createServerFn({ method: "POST" })
         .from("profiles")
         .select("user_id, full_name")
         .in("user_id", ids);
-      for (const p of (profs ?? []) as any[]) names.set(p.user_id, p.full_name ?? "");
+      for (const p of (profs ?? []) as any[]) {
+        const n = (p.full_name ?? "").trim();
+        if (n) names.set(p.user_id, n);
+      }
+      // Fall back to the auth account (email local-part) for users without a
+      // profile row or a blank name. Only truly deleted accounts stay unknown.
+      const missing = ids.filter((id) => !names.get(id));
+      if (missing.length) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        await Promise.all(
+          missing.map(async (id) => {
+            const { data: u } = await supabaseAdmin.auth.admin.getUserById(id as string);
+            const meta = (u?.user?.user_metadata ?? {}) as Record<string, unknown>;
+            const metaName =
+              typeof meta.full_name === "string"
+                ? meta.full_name.trim()
+                : typeof meta.name === "string"
+                  ? meta.name.trim()
+                  : "";
+            const email = u?.user?.email ?? "";
+            const resolved = metaName || (email ? email.split("@")[0] : "");
+            if (resolved) names.set(id as string, resolved);
+          }),
+        );
+      }
     }
 
     return ((rows ?? []) as any[]).map((r) => ({
