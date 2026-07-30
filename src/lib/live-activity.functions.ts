@@ -18,6 +18,7 @@ export const createLivePin = createServerFn({ method: "POST" })
         xPct: z.number().min(0).max(1),
         yPct: z.number().min(0).max(1),
         notes: z.string().trim().max(1000).optional(),
+        highRiskFlags: z.array(z.string().trim().max(64)).max(20).optional(),
       })
       .parse(i),
   )
@@ -37,8 +38,9 @@ export const createLivePin = createServerFn({ method: "POST" })
         x_pct: data.xPct,
         y_pct: data.yPct,
         notes: data.notes ?? null,
+        high_risk_flags: data.highRiskFlags ?? [],
       })
-      .select("id,permit_required,permit_status,high_risk_flags")
+      .select("id,permit_required,permit_status,high_risk_flags,hazard_scanned")
       .single();
     if (error) throw new Error(error.message);
     return row;
@@ -59,7 +61,7 @@ export const listLivePins = createServerFn({ method: "GET" })
     let q = context.supabase
       .from("live_site_activity")
       .select(
-        "id,project_id,drawing_id,zone_id,subcontractor_id,trade_package,operative_count,start_time,scheduled_finish,x_pct,y_pct,status,notes,permit_required,permit_status,high_risk_flags,activity_id,created_at,work_zones(name,level),project_drawings(drawing_no,title)",
+        "id,project_id,drawing_id,zone_id,subcontractor_id,trade_package,operative_count,start_time,scheduled_finish,x_pct,y_pct,status,notes,permit_required,permit_status,high_risk_flags,hazard_scanned,activity_id,created_at,work_zones(name,level),project_drawings(drawing_no,title)",
       )
       .eq("project_id", data.projectId)
       .order("created_at", { ascending: false })
@@ -118,6 +120,7 @@ export const managerForceCheckout = createServerFn({ method: "POST" })
         pinId: z.string().uuid(),
         completionPct: z.number().int().min(0).max(100),
         notes: z.string().trim().max(1000).optional(),
+        highRiskFlags: z.array(z.string().trim().max(64)).max(20).optional(),
       })
       .parse(i),
   )
@@ -141,7 +144,7 @@ export const getPinDetail = createServerFn({ method: "GET" })
     const { data: pin, error } = await context.supabase
       .from("live_site_activity")
       .select(
-        "id,project_id,drawing_id,zone_id,subcontractor_id,trade_package,operative_count,start_time,scheduled_finish,x_pct,y_pct,status,notes,permit_required,permit_status,high_risk_flags,activity_id,created_at,work_zones(name,level),project_drawings(drawing_no,title)",
+        "id,project_id,drawing_id,zone_id,subcontractor_id,trade_package,operative_count,start_time,scheduled_finish,x_pct,y_pct,status,notes,permit_required,permit_status,high_risk_flags,hazard_scanned,activity_id,created_at,work_zones(name,level),project_drawings(drawing_no,title)",
       )
       .eq("id", data.pinId)
       .maybeSingle();
