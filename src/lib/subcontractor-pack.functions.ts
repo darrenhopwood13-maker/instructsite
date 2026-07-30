@@ -1,19 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { TOOLBOX_TOPICS, MAX_TOOLBOX_TOPIC_LENGTH } from "@/lib/toolbox-topics";
 
-const TOOLBOX_TOPICS = [
-  "Manual Handling",
-  "Working at Height",
-  "Slips/Trips",
-  "Fire Safety",
-  "Waste Segregation",
-  "Spill Control",
-  "Hot Weather",
-  "Confined Spaces",
-  "Hot Works",
-  "Excavations",
-] as const;
 
 const REGISTER_TYPES = ["PUWER", "LOLER", "HAVS", "Plant"] as const;
 
@@ -171,7 +160,8 @@ export const addToolboxTalk = createServerFn({ method: "POST" })
     z
       .object({
         subcontractorId: z.string().uuid(),
-        topic: z.enum(TOOLBOX_TOPICS),
+        // Known topics or a free-text "Other" topic — a site manager is never blocked.
+        topic: z.string().trim().min(2).max(MAX_TOOLBOX_TOPIC_LENGTH),
         attendees: z.array(z.string().trim().min(1)).max(200),
         date: z.string().trim().optional().nullable(),
         presenter: z.string().trim().max(160).optional().nullable(),
