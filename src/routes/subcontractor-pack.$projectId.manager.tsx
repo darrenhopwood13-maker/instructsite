@@ -382,7 +382,8 @@ function SubDetail({
 
             <p className="text-[0.6rem] uppercase tracking-[0.35em] text-alert">Subcontractor</p>
             <h2
-              className="mt-1 text-3xl font-extrabold uppercase tracking-tight text-foreground"
+              className="mt-1 break-words text-2xl font-extrabold uppercase tracking-tight text-foreground sm:text-3xl"
+
               style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
             >
               {sub.company_name}
