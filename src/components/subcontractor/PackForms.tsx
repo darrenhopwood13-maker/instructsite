@@ -215,6 +215,7 @@ export type PackFormProps = {
 export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackFormProps) {
   const fn = useServerFn(addWorker);
   const dupeFn = useServerFn(checkWorkerDuplicate);
+  const { confirm, dialog } = useConfirm();
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [cardType, setCardType] = useState("");
