@@ -130,6 +130,7 @@ function DabsPage() {
           xPct: pending.xPct,
           yPct: pending.yPct,
           notes: taskNotes.trim() || undefined,
+          highRiskFlags: detectedHazards,
         },
       });
       if ((result as any)?.permit_required) {
