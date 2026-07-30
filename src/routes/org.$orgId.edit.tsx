@@ -30,6 +30,8 @@ import {
   updateOrgMemberRole,
 } from "@/lib/orgs.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { toast } from "sonner";
+import { errorMessage } from "@/lib/error-message";
 
 
 export const Route = createFileRoute("/org/$orgId/edit")({
@@ -338,16 +340,24 @@ function MembersPanel({ orgId }: { orgId: string }) {
       await inviteFn({ data: { orgId, email: email.trim(), role } });
       setEmail("");
       invites.refetch();
+      toast.success("Invitation sent.");
     } catch (e2) {
-      setErr(e2 instanceof Error ? e2.message : String(e2));
+      const msg = errorMessage(e2, "Couldn't send that invitation.");
+      setErr(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
   }
 
   async function revoke(id: string) {
-    await revokeFn({ data: { inviteId: id } });
-    invites.refetch();
+    try {
+      await revokeFn({ data: { inviteId: id } });
+      invites.refetch();
+      toast.success("Invitation revoked.");
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Couldn't revoke that invitation."));
+    }
   }
 
   async function removeMember(id: string) {
@@ -356,8 +366,9 @@ function MembersPanel({ orgId }: { orgId: string }) {
     try {
       await removeFn({ data: { memberId: id } });
       await members.refetch();
+      toast.success("Member removed.");
     } catch (e2) {
-      alert(e2 instanceof Error ? e2.message : String(e2));
+      toast.error(errorMessage(e2, "Couldn't remove that member."));
     } finally {
       setRowBusy(null);
     }
@@ -368,8 +379,9 @@ function MembersPanel({ orgId }: { orgId: string }) {
     try {
       await updateRoleFn({ data: { memberId: id, role: newRole } });
       await members.refetch();
+      toast.success("Role updated.");
     } catch (e2) {
-      alert(e2 instanceof Error ? e2.message : String(e2));
+      toast.error(errorMessage(e2, "Couldn't update that member's role."));
     } finally {
       setRowBusy(null);
     }

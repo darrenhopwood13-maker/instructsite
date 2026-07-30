@@ -23,6 +23,8 @@ import {
   listAllOrgs,
 } from "@/lib/orgs.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { toast } from "sonner";
+import { errorMessage } from "@/lib/error-message";
 
 export const Route = createFileRoute("/org/")({
   head: () => ({ meta: [{ title: "Organisation — instructSite" }] }),
@@ -71,9 +73,11 @@ function OrgPage() {
     try {
       await claimFn({ data: { orgId } });
       qc.invalidateQueries();
+      toast.success("Organisation claimed.");
     } catch (e) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setError((e as any)?.message || "Claim failed.");
+      const msg = errorMessage(e, "Claim failed.");
+      setError(msg);
+      toast.error(msg);
     } finally {
       setClaiming(null);
     }
@@ -89,8 +93,13 @@ function OrgPage() {
 
   async function removeMember(id: string) {
     if (!confirm("Remove this member?")) return;
-    await removeFn({ data: { memberId: id } });
-    qc.invalidateQueries({ queryKey: ["org-members"] });
+    try {
+      await removeFn({ data: { memberId: id } });
+      qc.invalidateQueries({ queryKey: ["org-members"] });
+      toast.success("Member removed.");
+    } catch (e) {
+      toast.error(errorMessage(e, "Couldn't remove that member."));
+    }
   }
 
   if (!ready || org.isLoading) {

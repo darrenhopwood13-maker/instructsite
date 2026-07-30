@@ -3,6 +3,8 @@ import { Bell, Check } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
+import { toast } from "sonner";
+import { errorMessage } from "@/lib/error-message";
   listMyNotifications,
   markNotificationRead,
   markAllNotificationsRead,
@@ -44,8 +46,8 @@ export function NotificationBell() {
       try {
         await readFn({ data: { id: n.id } });
         invalidate();
-      } catch {
-        /* ignore */
+      } catch (e) {
+        toast.error(errorMessage(e, "Couldn't mark that notification as read."));
       }
     }
     if (n.link_to) {
@@ -57,8 +59,8 @@ export function NotificationBell() {
     try {
       await readAllFn();
       invalidate();
-    } catch {
-      /* ignore */
+    } catch (e) {
+      toast.error(errorMessage(e, "Couldn't mark notifications as read."));
     }
   };
 
