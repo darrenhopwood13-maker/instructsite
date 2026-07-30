@@ -5,6 +5,7 @@ import { AlertTriangle, Loader2, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { listDuplicateDrawings, deleteDrawingsBulk } from "@/lib/tier1-uploads.functions";
 import { errorMessage } from "@/lib/error-message";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Props {
   projectId: string;
@@ -20,6 +21,7 @@ export function DuplicateDrawingsPanel({ projectId, onChanged }: Props) {
   const listFn = useServerFn(listDuplicateDrawings);
   const deleteFn = useServerFn(deleteDrawingsBulk);
   const [busy, setBusy] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   const dupes = useQuery({
     queryKey: ["duplicate-drawings", projectId],
@@ -35,8 +37,9 @@ export function DuplicateDrawingsPanel({ projectId, onChanged }: Props) {
   const purge = async (group: any) => {
     const keep = group.rows[0];
     const remove = group.rows.slice(1);
-    const ok = window.confirm(
+    const ok = await confirm(
       `Keep the original ${group.label} (uploaded ${new Date(keep.created_at).toLocaleString()}) and permanently delete ${remove.length} duplicate copy/copies?`,
+      "Delete duplicates",
     );
     if (!ok) return;
     setBusy(group.key);
@@ -55,8 +58,9 @@ export function DuplicateDrawingsPanel({ projectId, onChanged }: Props) {
   };
 
   const purgeAll = async () => {
-    const ok = window.confirm(
+    const ok = await confirm(
       `Delete all ${extras} duplicate sheets across ${groups.length} group(s), keeping the earliest upload of each?`,
+      "Merge all",
     );
     if (!ok) return;
     setBusy("__all__");
@@ -75,6 +79,7 @@ export function DuplicateDrawingsPanel({ projectId, onChanged }: Props) {
 
   return (
     <div className="glass-panel border-2 border-amber-400/50 p-5">
+      {dialog}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className="text-amber-300" size={16} />

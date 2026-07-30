@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Users, ShieldCheck, ClipboardList, CalendarClock, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -152,56 +153,6 @@ function Label({ text, children, span }: { text: string; children: React.ReactNo
       {children}
     </label>
   );
-}
-
-/**
- * Non-blocking replacement for window.confirm().
- *
- * window.confirm() halts the renderer's main thread, and inside the published
- * app's iframe (no allow-modals) Chrome suppresses the dialog entirely — the
- * tab appears frozen and the save silently never runs. This renders an in-app
- * dialog and resolves a promise instead.
- */
-function useConfirm() {
-  const [message, setMessage] = useState<string | null>(null);
-  const [confirmLabel, setConfirmLabel] = useState("Confirm");
-  const resolver = useRef<((v: boolean) => void) | null>(null);
-
-  const confirm = useCallback((msg: string, label = "Confirm") => {
-    setMessage(msg);
-    setConfirmLabel(label);
-    return new Promise<boolean>((resolve) => {
-      resolver.current = resolve;
-    });
-  }, []);
-
-  const settle = useCallback((v: boolean) => {
-    setMessage(null);
-    const r = resolver.current;
-    resolver.current = null;
-    r?.(v);
-  }, []);
-
-  const dialog = message ? (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4">
-      <div className="glass-panel w-full max-w-md p-5">
-        <p className="text-[0.6rem] font-bold uppercase tracking-[0.35em] text-alert">Verify</p>
-        <pre className="mt-3 max-h-[50vh] overflow-y-auto whitespace-pre-wrap font-mono text-xs text-foreground/85">
-          {message}
-        </pre>
-        <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={() => settle(false)} className={ghostBtn()}>
-            Cancel
-          </button>
-          <button type="button" onClick={() => settle(true)} className={primaryBtn()}>
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  ) : null;
-
-  return { confirm, dialog };
 }
 
 export type PackFormProps = {

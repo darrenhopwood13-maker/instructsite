@@ -25,6 +25,7 @@ import {
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/error-message";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export const Route = createFileRoute("/org/")({
   head: () => ({ meta: [{ title: "Organisation — instructSite" }] }),
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/org/")({
 
 function OrgPage() {
   const qc = useQueryClient();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const orgFn = useServerFn(getMyOrg);
   const membersFn = useServerFn(listOrgMembers);
   const claimableFn = useServerFn(listClaimableOrgs);
@@ -92,7 +94,7 @@ function OrgPage() {
   }
 
   async function removeMember(id: string) {
-    if (!confirm("Remove this member?")) return;
+    if (!(await confirm("Remove this member?", "Remove"))) return;
     try {
       await removeFn({ data: { memberId: id } });
       qc.invalidateQueries({ queryKey: ["org-members"] });
@@ -250,6 +252,7 @@ function OrgPage() {
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
+      {confirmDialog}
       <div className="aurora-bg" />
       <div className="relative mx-auto max-w-3xl px-6 py-14">
         <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">Organisation</p>

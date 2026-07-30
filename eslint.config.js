@@ -32,6 +32,21 @@ export default tseslint.config(
           ],
         },
       ],
+      // Native modal dialogs block the renderer and are silently suppressed
+      // inside the published app's sandboxed iframe — use
+      // `useConfirm()` from @/components/ui/confirm-dialog and sonner toasts.
+      "no-restricted-globals": [
+        "error",
+        { name: "confirm", message: "Use useConfirm() from @/components/ui/confirm-dialog." },
+        { name: "alert", message: "Use a sonner toast instead." },
+        { name: "prompt", message: "Use an in-app dialog instead." },
+      ],
+      "no-restricted-properties": [
+        "error",
+        { object: "window", property: "confirm", message: "Use useConfirm() from @/components/ui/confirm-dialog." },
+        { object: "window", property: "alert", message: "Use a sonner toast instead." },
+        { object: "window", property: "prompt", message: "Use an in-app dialog instead." },
+      ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
     },
