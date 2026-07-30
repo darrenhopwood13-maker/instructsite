@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, Loader2, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { listDuplicateDrawings, deleteDrawingsBulk } from "@/lib/tier1-uploads.functions";
-import { friendlyError } from "@/lib/error-message";
+import { errorMessage } from "@/lib/error-message";
 
 interface Props {
   projectId: string;
@@ -48,7 +48,7 @@ export function DuplicateDrawingsPanel({ projectId, onChanged }: Props) {
       await dupes.refetch();
       onChanged?.();
     } catch (e) {
-      toast.error(friendlyError(e));
+      toast.error(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -67,7 +67,7 @@ export function DuplicateDrawingsPanel({ projectId, onChanged }: Props) {
       await dupes.refetch();
       onChanged?.();
     } catch (e) {
-      toast.error(friendlyError(e));
+      toast.error(errorMessage(e));
     } finally {
       setBusy(null);
     }
