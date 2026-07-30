@@ -296,8 +296,25 @@ export const registerTier1Document = createServerFn({ method: "POST" })
 
         extractionStatus = "complete";
       } else {
+        // RAMS: if the trade is still the catch-all, take a second pass using
+        // the extracted document text.
+        const { data: ramsRow } = await supabase
+          .from("rams_documents")
+          .select("id,trade_package")
+          .eq("site_document_id", sd.id)
+          .maybeSingle();
+        if (ramsRow && (ramsRow.trade_package ?? "").toLowerCase() === "general") {
+          const inferred = inferTradeFromText(data.fileName, rawText.slice(0, 8000));
+          if (inferred) {
+            await supabase
+              .from("rams_documents")
+              .update({ trade_package: inferred })
+              .eq("id", ramsRow.id);
+          }
+        }
         extractionStatus = "complete";
       }
+
       await supabase
         .from("site_documents")
         .update({ extraction_status: extractionStatus, extraction_error: extractionError })
