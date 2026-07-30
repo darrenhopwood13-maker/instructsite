@@ -311,8 +311,7 @@ function OrgPage() {
         </section>
 
         <div className="mt-8">
-          <Link to="/snags"
-              search={{}} className="glass-btn inline-flex rounded-lg px-4 py-2 text-xs uppercase tracking-widest">
+          <Link to="/snags" className="glass-btn inline-flex rounded-lg px-4 py-2 text-xs uppercase tracking-widest">
             → Go to Snag Master
           </Link>
         </div>

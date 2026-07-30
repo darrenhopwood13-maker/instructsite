@@ -33,9 +33,8 @@ const STATUS_PILL: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/snags/")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    project: typeof search.project === "string" ? search.project : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { project?: string } =>
+    typeof search.project === "string" ? { project: search.project } : {},
   head: () => ({
     meta: [
       { title: "Snag Master — instructSite" },
