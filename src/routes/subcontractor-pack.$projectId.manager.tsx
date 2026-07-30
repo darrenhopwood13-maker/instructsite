@@ -263,8 +263,12 @@ function SubDetail({
     staleTime: 30_000,
   });
 
+  const rangeLabel = `${startDate ? new Date(startDate + "T00:00:00").toLocaleDateString("en-GB") : "start"} – ${endDate ? new Date(endDate + "T00:00:00").toLocaleDateString("en-GB") : "today"}`;
+
   const download = async () => {
+    if (downloading) return;
     setDownloading(true);
+    const buildingId = toast.loading(`Building weekly pack for ${sub.company_name} · ${rangeLabel}…`);
     try {
       const { filename, blob } = await generateWeeklyPackPdf({
         projectName,
@@ -281,7 +285,11 @@ function SubDetail({
         },
       });
 
-      toast.success(`Weekly Pack Generated: ${filename}`);
+      toast.success(`Downloaded ${filename}`, {
+        id: buildingId,
+        description: `${sub.company_name} · ${rangeLabel}`,
+      });
+
 
       // Archive the pack exactly as issued — versioned, never overwritten.
       try {
