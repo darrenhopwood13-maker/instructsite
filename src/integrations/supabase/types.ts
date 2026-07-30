@@ -2044,6 +2044,75 @@ export type Database = {
           },
         ]
       }
+      subcontractor_pack_issues: {
+        Row: {
+          byte_size: number | null
+          counts: Json
+          created_at: string
+          filename: string
+          generated_at: string
+          generated_by: string
+          id: string
+          org_id: string | null
+          project_id: string
+          range_end: string | null
+          range_start: string | null
+          storage_path: string
+          subcontractor_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          byte_size?: number | null
+          counts?: Json
+          created_at?: string
+          filename: string
+          generated_at?: string
+          generated_by: string
+          id?: string
+          org_id?: string | null
+          project_id: string
+          range_end?: string | null
+          range_start?: string | null
+          storage_path: string
+          subcontractor_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          byte_size?: number | null
+          counts?: Json
+          created_at?: string
+          filename?: string
+          generated_at?: string
+          generated_by?: string
+          id?: string
+          org_id?: string | null
+          project_id?: string
+          range_end?: string | null
+          range_start?: string | null
+          storage_path?: string
+          subcontractor_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcontractor_pack_issues_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subcontractor_pack_issues_subcontractor_id_fkey"
+            columns: ["subcontractor_id"]
+            isOneToOne: false
+            referencedRelation: "subcontractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subcontractors: {
         Row: {
           company_name: string
