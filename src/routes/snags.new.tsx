@@ -6,6 +6,8 @@ import { analyzeSnag, createSnag, type SnagReportT } from "@/lib/snags.functions
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { ReportViewer } from "@/components/reports/ReportViewer";
 import { snagReportToMarkdown } from "@/lib/report-format";
+import { toast } from "sonner";
+import { errorMessage } from "@/lib/error-message";
 
 export const Route = createFileRoute("/snags/new")({
   head: () => ({
@@ -62,21 +64,28 @@ function NewSnagPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const msg = (e as any)?.message || String(e);
       // Show the real server error — hides technical stack traces but preserves the actionable message
-      setError(msg.includes("{") ? "The Oracle couldn't process that photo. Please try again with a clearer image." : msg);
+      const friendly = msg.includes("{")
+        ? "The Oracle couldn't process that photo. Please try again with a clearer image."
+        : errorMessage(e, "The Oracle couldn't process that photo.");
+      setError(friendly);
+      toast.error(friendly);
     } finally {
       setLoading(false);
     }
   }
 
   async function handleSave() {
-    if (!report || !photoPath) return;
+    if (!report || !photoPath || saving) return;
     setSaving(true);
+    setError(null);
     try {
       const { id } = await saveFn({ data: { photoPath, report } });
+      toast.success("Snag saved to the register.");
       navigate({ to: "/snags/$snagId", params: { snagId: id } });
     } catch (e) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setError((e as any)?.message || "Save failed.");
+      const msg = errorMessage(e, "Save failed — the snag was not stored.");
+      setError(msg);
+      toast.error(msg);
       setSaving(false);
     }
   }
