@@ -157,6 +157,7 @@ export function DrawingCanvas({
   const openUrl = absoluteUrl(links.data?.openPath);
   const downloadUrl = absoluteUrl(links.data?.downloadPath);
 
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [deleting, setDeleting] = useState(false);
   const handleDelete = async () => {
     if (!selected) return;
