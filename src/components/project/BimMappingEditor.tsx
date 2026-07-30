@@ -170,45 +170,38 @@ export function BimMappingEditor({ projectId }: { projectId: string }) {
       }
 
       // --- element sweep across the real IFC entity types ---
-      const candidateTypes: string[] = [
-        "IFCWALL",
-        "IFCWALLSTANDARDCASE",
-        "IFCSLAB",
-        "IFCCOLUMN",
-        "IFCBEAM",
-        "IFCMEMBER",
-        "IFCPLATE",
-        "IFCFOOTING",
-        "IFCPILE",
-        "IFCDOOR",
-        "IFCWINDOW",
-        "IFCROOF",
-        "IFCSTAIR",
-        "IFCSTAIRFLIGHT",
-        "IFCRAILING",
-        "IFCCOVERING",
-        "IFCCURTAINWALL",
-        "IFCRAMP",
-        "IFCSPACE",
-        "IFCFURNISHINGELEMENT",
-        "IFCFLOWSEGMENT",
-        "IFCFLOWTERMINAL",
-        "IFCFLOWFITTING",
-        "IFCBUILDINGELEMENTPROXY",
+      const candidateTypes: Array<[string, string]> = [
+        ["IFCWALL", "IfcWall"],
+        ["IFCWALLSTANDARDCASE", "IfcWallStandardCase"],
+        ["IFCSLAB", "IfcSlab"],
+        ["IFCCOLUMN", "IfcColumn"],
+        ["IFCBEAM", "IfcBeam"],
+        ["IFCMEMBER", "IfcMember"],
+        ["IFCPLATE", "IfcPlate"],
+        ["IFCFOOTING", "IfcFooting"],
+        ["IFCPILE", "IfcPile"],
+        ["IFCDOOR", "IfcDoor"],
+        ["IFCWINDOW", "IfcWindow"],
+        ["IFCROOF", "IfcRoof"],
+        ["IFCSTAIR", "IfcStair"],
+        ["IFCSTAIRFLIGHT", "IfcStairFlight"],
+        ["IFCRAILING", "IfcRailing"],
+        ["IFCCOVERING", "IfcCovering"],
+        ["IFCCURTAINWALL", "IfcCurtainWall"],
+        ["IFCRAMP", "IfcRamp"],
+        ["IFCSPACE", "IfcSpace"],
+        ["IFCFURNISHINGELEMENT", "IfcFurnishingElement"],
+        ["IFCFLOWSEGMENT", "IfcFlowSegment"],
+        ["IFCFLOWTERMINAL", "IfcFlowTerminal"],
+        ["IFCFLOWFITTING", "IfcFlowFitting"],
+        ["IFCBUILDINGELEMENTPROXY", "IfcBuildingElementProxy"],
       ];
 
       const found: ElementMeta[] = [];
       const seen = new Set<string>();
-      for (const key of candidateTypes) {
+      for (const [key, entityName] of candidateTypes) {
         const typeCode = (WebIFC as any)[key];
         if (!typeCode) continue;
-        // "IFCWALLSTANDARDCASE" → "IfcWallStandardCase"
-        const entityName =
-          "Ifc" +
-          key
-            .slice(3)
-            .toLowerCase()
-            .replace(/(^|[^a-z])([a-z])/g, (_m, a, b) => a + b.toUpperCase());
         let lines: any;
         try {
           lines = api.GetLineIDsWithType(modelID, typeCode);
