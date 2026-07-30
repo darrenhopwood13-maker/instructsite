@@ -449,6 +449,7 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
 
 export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: PackFormProps) {
   const fn = useServerFn(addToolboxTalk);
+  const { confirm, dialog } = useConfirm();
   const [topic, setTopic] = useState<(typeof TOOLBOX_TOPIC_OPTIONS)[number]>("Manual Handling");
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [presenter, setPresenter] = useState("");
