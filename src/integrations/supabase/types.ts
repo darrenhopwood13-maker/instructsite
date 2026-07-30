@@ -692,6 +692,7 @@ export type Database = {
           id: string
           is_high_risk: boolean
           permit_required: boolean
+          recorded_by: string | null
           subcontractor_id: string
           updated_at: string
           work_plan: string | null
@@ -702,6 +703,7 @@ export type Database = {
           id?: string
           is_high_risk?: boolean
           permit_required?: boolean
+          recorded_by?: string | null
           subcontractor_id: string
           updated_at?: string
           work_plan?: string | null
@@ -712,6 +714,7 @@ export type Database = {
           id?: string
           is_high_risk?: boolean
           permit_required?: boolean
+          recorded_by?: string | null
           subcontractor_id?: string
           updated_at?: string
           work_plan?: string | null
@@ -1619,6 +1622,9 @@ export type Database = {
           created_at: string
           id: string
           inspection_date: string | null
+          inspector: string | null
+          next_inspection_due: string | null
+          recorded_by: string | null
           subcontractor_id: string
           type: string
           updated_at: string
@@ -1629,6 +1635,9 @@ export type Database = {
           created_at?: string
           id?: string
           inspection_date?: string | null
+          inspector?: string | null
+          next_inspection_due?: string | null
+          recorded_by?: string | null
           subcontractor_id: string
           type: string
           updated_at?: string
@@ -1639,6 +1648,9 @@ export type Database = {
           created_at?: string
           id?: string
           inspection_date?: string | null
+          inspector?: string | null
+          next_inspection_due?: string | null
+          recorded_by?: string | null
           subcontractor_id?: string
           type?: string
           updated_at?: string
@@ -2037,28 +2049,40 @@ export type Database = {
       }
       toolbox_talks: {
         Row: {
+          attachment_url: string | null
           attendance_list: Json
           created_at: string
           date: string
           id: string
+          notes: string | null
+          presenter: string | null
+          recorded_by: string | null
           subcontractor_id: string
           topic: string | null
           updated_at: string
         }
         Insert: {
+          attachment_url?: string | null
           attendance_list?: Json
           created_at?: string
           date?: string
           id?: string
+          notes?: string | null
+          presenter?: string | null
+          recorded_by?: string | null
           subcontractor_id: string
           topic?: string | null
           updated_at?: string
         }
         Update: {
+          attachment_url?: string | null
           attendance_list?: Json
           created_at?: string
           date?: string
           id?: string
+          notes?: string | null
+          presenter?: string | null
+          recorded_by?: string | null
           subcontractor_id?: string
           topic?: string | null
           updated_at?: string
@@ -2144,28 +2168,40 @@ export type Database = {
       }
       workers: {
         Row: {
+          card_expiry: string | null
+          card_number: string | null
+          card_type: string | null
           competency_card_url: string | null
           created_at: string
           id: string
           name: string
+          recorded_by: string | null
           role: string | null
           subcontractor_id: string
           updated_at: string
         }
         Insert: {
+          card_expiry?: string | null
+          card_number?: string | null
+          card_type?: string | null
           competency_card_url?: string | null
           created_at?: string
           id?: string
           name: string
+          recorded_by?: string | null
           role?: string | null
           subcontractor_id: string
           updated_at?: string
         }
         Update: {
+          card_expiry?: string | null
+          card_number?: string | null
+          card_type?: string | null
           competency_card_url?: string | null
           created_at?: string
           id?: string
           name?: string
+          recorded_by?: string | null
           role?: string | null
           subcontractor_id?: string
           updated_at?: string
