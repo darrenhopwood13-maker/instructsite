@@ -406,6 +406,10 @@ function SubDetail({
           {tab === "registers" && <RegisterTable registers={filteredRegisters} onOpen={openDoc} />}
           {tab === "talks" && <TalksTable talks={filteredTalks} />}
           {tab === "lookahead" && <LookAheadTable rows={filteredLookAheads} />}
+          {tab === "history" && (
+            <PackHistoryPanel issues={history.data ?? []} loading={history.isLoading} />
+          )}
+
           {tab === "record" && (
             <div>
               <div className="mb-4 rounded-md border border-sky-400/40 bg-sky-400/5 p-4">
