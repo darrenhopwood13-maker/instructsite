@@ -393,16 +393,25 @@ function UnifiedRamsBlock({
   const projectTrades = useMemo(() => {
     const set = new Set<string>();
     for (const inv of (invitesQ.data as any[]) ?? []) {
-      for (const t of (inv.trade_packages ?? []) as string[]) if (t) set.add(t);
+      for (const t of (inv.trade_packages ?? []) as string[]) {
+        const c = canonicalizeTrade(t);
+        if (c) set.add(c);
+      }
     }
-    for (const r of rams ?? []) if (r?.trade_package) set.add(r.trade_package);
+    for (const r of rams ?? []) {
+      const c = canonicalizeTrade(r?.trade_package);
+      if (c && c.toLowerCase() !== "general") set.add(c);
+    }
     return Array.from(set).sort();
   }, [invitesQ.data, rams]);
 
+  // Canonical list first, then any bespoke project trade that isn't on it —
+  // deduped so near-duplicate spellings can never appear twice.
   const options = useMemo(() => {
-    const set = new Set<string>([...projectTrades, ...TRADE_PACKAGES]);
+    const set = new Set<string>([...TRADE_PACKAGES, ...projectTrades]);
     return Array.from(set);
   }, [projectTrades]);
+
 
   const isOther = trade === "__other__";
   const effectiveTrade = isOther ? customTrade.trim() : trade;
