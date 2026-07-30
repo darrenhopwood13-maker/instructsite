@@ -64,7 +64,9 @@ export function AccordionCard({
         <div className="flex items-center gap-3">
           <div className="glass-accent flex h-10 w-10 items-center justify-center">{icon}</div>
           <div>
-            <p className="text-[0.6rem] font-bold uppercase tracking-[0.35em] text-alert">{eyebrow}</p>
+            <p className="text-[0.6rem] font-bold uppercase tracking-[0.35em] text-alert">
+              {eyebrow}
+            </p>
             <p
               className="mt-0.5 text-lg font-extrabold uppercase tracking-tight text-foreground"
               style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
@@ -115,7 +117,11 @@ export async function uploadCompliance(
         onProgress?.(100);
         resolve();
       } else {
-        reject(new Error(`Upload failed (${xhr.status}) — ${xhr.responseText?.slice(0, 160) || "storage error"}`));
+        reject(
+          new Error(
+            `Upload failed (${xhr.status}) — ${xhr.responseText?.slice(0, 160) || "storage error"}`,
+          ),
+        );
       }
     };
     xhr.onerror = () => reject(new Error("Network error while uploading"));
@@ -146,7 +152,15 @@ const FILE_ACCEPT = "application/pdf,image/*,.heic,.heif,.txt,.doc,.docx,.xls,.x
 const fileInputCls =
   "block w-full text-xs text-foreground/70 file:mr-3 file:rounded-md file:border-0 file:bg-alert/20 file:px-3 file:py-2 file:text-[0.65rem] file:font-bold file:uppercase file:tracking-widest file:text-alert hover:file:bg-alert/30";
 
-function Label({ text, children, span }: { text: string; children: React.ReactNode; span?: string }) {
+function Label({
+  text,
+  children,
+  span,
+}: {
+  text: string;
+  children: React.ReactNode;
+  span?: string;
+}) {
   return (
     <label className={`block ${span ?? ""}`}>
       <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
@@ -183,10 +197,12 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
       toast.error("Worker name required");
       return;
     }
-    const verify = skipConfirm || await confirm(
-      `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Card: ${cardType.trim() || "—"} ${cardNumber.trim()}\n• Expiry: ${cardExpiry || "—"}\n• Competency Card File: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to labour roster?`,
-      "Save worker",
-    );
+    const verify =
+      skipConfirm ||
+      (await confirm(
+        `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Card: ${cardType.trim() || "—"} ${cardNumber.trim()}\n• Expiry: ${cardExpiry || "—"}\n• Competency Card File: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to labour roster?`,
+        "Save worker",
+      ));
     if (!verify) return;
     setBusy(true);
     setPct(0);
@@ -219,23 +235,28 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
         }
       }
       await saveWithRetry(
-        () => fn({
-        data: {
-          subcontractorId: subId,
-          name,
-          role: role || null,
-          competencyCardUrl: url,
-          cardType: cardType || null,
-          cardNumber: cardNumber || null,
-          cardExpiry: cardExpiry || null,
-          onBehalf,
-        },
-        }),
+        () =>
+          fn({
+            data: {
+              subcontractorId: subId,
+              name,
+              role: role || null,
+              competencyCardUrl: url,
+              cardType: cardType || null,
+              cardNumber: cardNumber || null,
+              cardExpiry: cardExpiry || null,
+              onBehalf,
+            },
+          }),
         "worker",
         { onRetry: () => toast.message("Connection dropped — retrying save…") },
       );
       toast.success(`${name.trim()} added to labour roster`, {
-        description: onBehalf ? "Recorded by site manager" : role.trim() ? `Role: ${role.trim()}` : undefined,
+        description: onBehalf
+          ? "Recorded by site manager"
+          : role.trim()
+            ? `Role: ${role.trim()}`
+            : undefined,
       });
       setName("");
       setRole("");
@@ -249,7 +270,12 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
       toast.error(saveFailureMessage("worker", e), {
         duration: 30000,
         description: "Your entries have been kept — nothing was cleared.",
-        action: { label: "Retry this save", onClick: () => { void submit(true); } },
+        action: {
+          label: "Retry this save",
+          onClick: () => {
+            void submit(true);
+          },
+        },
       });
     } finally {
       setBusy(false);
@@ -264,24 +290,57 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls()} />
         </Label>
         <Label text="Role">
-          <input value={role} onChange={(e) => setRole(e.target.value)} className={inputCls()} placeholder="e.g. Electrician" />
+          <input
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className={inputCls()}
+            placeholder="e.g. Electrician"
+          />
         </Label>
         <Label text="Competency Card Type">
-          <input value={cardType} onChange={(e) => setCardType(e.target.value)} className={inputCls()} placeholder="e.g. CSCS Gold / ECS / CPCS" />
+          <input
+            value={cardType}
+            onChange={(e) => setCardType(e.target.value)}
+            className={inputCls()}
+            placeholder="e.g. CSCS Gold / ECS / CPCS"
+          />
         </Label>
         <Label text="Card Number">
-          <input value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} className={inputCls()} placeholder="e.g. 12345678" />
+          <input
+            value={cardNumber}
+            onChange={(e) => setCardNumber(e.target.value)}
+            className={inputCls()}
+            placeholder="e.g. 12345678"
+          />
         </Label>
         <Label text="Card Expiry">
-          <input type="date" value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} className={inputCls()} />
+          <input
+            type="date"
+            value={cardExpiry}
+            onChange={(e) => setCardExpiry(e.target.value)}
+            className={inputCls()}
+          />
         </Label>
-        <Label text={`Competency Card File (PDF / Image · max ${MAX_UPLOAD_MB}MB)`} span="md:col-span-2">
-          <input type="file" accept={FILE_ACCEPT} onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={fileInputCls} />
+        <Label
+          text={`Competency Card File (PDF / Image · max ${MAX_UPLOAD_MB}MB)`}
+          span="md:col-span-2"
+        >
+          <input
+            type="file"
+            accept={FILE_ACCEPT}
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className={fileInputCls}
+          />
           {file && <p className="mt-1 font-mono text-[0.65rem] text-foreground/50">{file.name}</p>}
           {busy && file && <ProgressBar pct={pct} />}
         </Label>
       </div>
-      <button type="button" onClick={() => void submit()} disabled={busy} className={primaryBtn("mt-4")}>
+      <button
+        type="button"
+        onClick={() => void submit()}
+        disabled={busy}
+        className={primaryBtn("mt-4")}
+      >
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
         Save Worker
       </button>
@@ -303,21 +362,31 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
   const [pct, setPct] = useState(0);
 
   const submit = async (skipConfirm = false) => {
-    const verify = skipConfirm || await confirm(
-      `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Next Due: ${nextDue || "—"}\n• Inspector: ${inspector.trim() || "—"}\n• Certificate: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to ${type} register?`,
-      "Save register",
-    );
+    const verify =
+      skipConfirm ||
+      (await confirm(
+        `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Next Due: ${nextDue || "—"}\n• Inspector: ${inspector.trim() || "—"}\n• Certificate: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to ${type} register?`,
+        "Save register",
+      ));
     if (!verify) return;
     setBusy(true);
     setPct(0);
     try {
       if (file) {
         const dupe = await dupeFn({
-          data: { subcontractorId: subId, type, assetName: asset || null, inspectionDate: date || null },
+          data: {
+            subcontractorId: subId,
+            type,
+            assetName: asset || null,
+            inspectionDate: date || null,
+          },
         });
         if (dupe.hasCert) {
           const parts = [type, asset || "asset", date || "same date"].join(" · ");
-          const ok = await confirm(`A certificate already exists for ${parts}. Upload another anyway?`, "Upload anyway");
+          const ok = await confirm(
+            `A certificate already exists for ${parts}. Upload another anyway?`,
+            "Upload anyway",
+          );
           if (!ok) {
             toast.message("Upload cancelled");
             setBusy(false);
@@ -331,7 +400,8 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
           url = await uploadCompliance(projectId, `registers/${subId}`, file, setPct);
         } catch (e) {
           toast.error(e instanceof Error ? e.message : "Certificate upload failed", {
-            description: "The register entry was not saved. Try a smaller file or check your connection.",
+            description:
+              "The register entry was not saved. Try a smaller file or check your connection.",
           });
           setBusy(false);
           setPct(0);
@@ -339,18 +409,19 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
         }
       }
       await saveWithRetry(
-        () => fn({
-        data: {
-          subcontractorId: subId,
-          type,
-          assetName: asset || null,
-          inspectionDate: date || null,
-          certificateUrl: url,
-          nextInspectionDue: nextDue || null,
-          inspector: inspector || null,
-          onBehalf,
-        },
-        }),
+        () =>
+          fn({
+            data: {
+              subcontractorId: subId,
+              type,
+              assetName: asset || null,
+              inspectionDate: date || null,
+              certificateUrl: url,
+              nextInspectionDue: nextDue || null,
+              inspector: inspector || null,
+              onBehalf,
+            },
+          }),
         "safety register entry",
         { onRetry: () => toast.message("Connection dropped — retrying save…") },
       );
@@ -372,7 +443,12 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
       toast.error(saveFailureMessage("safety register entry", e), {
         duration: 30000,
         description: "Your entries have been kept — nothing was cleared.",
-        action: { label: "Retry this save", onClick: () => { void submit(true); } },
+        action: {
+          label: "Retry this save",
+          onClick: () => {
+            void submit(true);
+          },
+        },
       });
     } finally {
       setBusy(false);
@@ -384,31 +460,67 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
       {dialog}
       <div className="grid gap-3 md:grid-cols-3">
         <Label text="Register Type">
-          <select value={type} onChange={(e) => setType(e.target.value as any)} className={inputCls()}>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as any)}
+            className={inputCls()}
+          >
             {REGISTER_TYPE_OPTIONS.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
         </Label>
         <Label text="Equipment / Plant Item">
-          <input value={asset} onChange={(e) => setAsset(e.target.value)} className={inputCls()} placeholder="e.g. 110V Transformer" />
+          <input
+            value={asset}
+            onChange={(e) => setAsset(e.target.value)}
+            className={inputCls()}
+            placeholder="e.g. 110V Transformer"
+          />
         </Label>
         <Label text="Inspection Date">
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls()} />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={inputCls()}
+          />
         </Label>
         <Label text="Next Inspection Due">
-          <input type="date" value={nextDue} onChange={(e) => setNextDue(e.target.value)} className={inputCls()} />
+          <input
+            type="date"
+            value={nextDue}
+            onChange={(e) => setNextDue(e.target.value)}
+            className={inputCls()}
+          />
         </Label>
         <Label text="Inspector" span="md:col-span-2">
-          <input value={inspector} onChange={(e) => setInspector(e.target.value)} className={inputCls()} placeholder="e.g. A. Jones (LOLER competent person)" />
+          <input
+            value={inspector}
+            onChange={(e) => setInspector(e.target.value)}
+            className={inputCls()}
+            placeholder="e.g. A. Jones (LOLER competent person)"
+          />
         </Label>
         <Label text={`Certificate (PDF / Image · max ${MAX_UPLOAD_MB}MB)`} span="md:col-span-3">
-          <input type="file" accept={FILE_ACCEPT} onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={fileInputCls} />
+          <input
+            type="file"
+            accept={FILE_ACCEPT}
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className={fileInputCls}
+          />
           {file && <p className="mt-1 font-mono text-[0.65rem] text-foreground/50">{file.name}</p>}
           {busy && file && <ProgressBar pct={pct} />}
         </Label>
       </div>
-      <button type="button" onClick={() => void submit()} disabled={busy} className={primaryBtn("mt-4")}>
+      <button
+        type="button"
+        onClick={() => void submit()}
+        disabled={busy}
+        className={primaryBtn("mt-4")}
+      >
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
         Save Register
       </button>
@@ -432,7 +544,10 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
   const [pct, setPct] = useState(0);
 
   const submit = async (skipConfirm = false) => {
-    const list = attendees.split("\n").map((s) => s.trim()).filter(Boolean);
+    const list = attendees
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (isOther && topic.length < 2) {
       toast.error("Enter the topic name");
       return;
@@ -441,10 +556,12 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
       toast.error("Add at least one attendee");
       return;
     }
-    const verify = skipConfirm || await confirm(
-      `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Date: ${date || "—"}\n• Presenter: ${presenter.trim() || "—"}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nLog this talk?`,
-      "Log talk",
-    );
+    const verify =
+      skipConfirm ||
+      (await confirm(
+        `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Date: ${date || "—"}\n• Presenter: ${presenter.trim() || "—"}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nLog this talk?`,
+        "Log talk",
+      ));
     if (!verify) return;
     setBusy(true);
     setPct(0);
@@ -463,18 +580,19 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
         }
       }
       await saveWithRetry(
-        () => fn({
-        data: {
-          subcontractorId: subId,
-          topic,
-          attendees: list,
-          date: date || null,
-          presenter: presenter || null,
-          notes: notes || null,
-          attachmentUrl: url,
-          onBehalf,
-        },
-        }),
+        () =>
+          fn({
+            data: {
+              subcontractorId: subId,
+              topic,
+              attendees: list,
+              date: date || null,
+              presenter: presenter || null,
+              notes: notes || null,
+              attachmentUrl: url,
+              onBehalf,
+            },
+          }),
         "toolbox talk",
         { onRetry: () => toast.message("Connection dropped — retrying save…") },
       );
@@ -492,7 +610,12 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
       toast.error(saveFailureMessage("toolbox talk", e), {
         duration: 30000,
         description: "Your entries have been kept — nothing was cleared.",
-        action: { label: "Retry this save", onClick: () => { void submit(true); } },
+        action: {
+          label: "Retry this save",
+          onClick: () => {
+            void submit(true);
+          },
+        },
       });
     } finally {
       setBusy(false);
@@ -504,9 +627,15 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
       {dialog}
       <div className="grid gap-3 md:grid-cols-3">
         <Label text="Topic">
-          <select value={topicChoice} onChange={(e) => setTopicChoice(e.target.value)} className={inputCls()}>
+          <select
+            value={topicChoice}
+            onChange={(e) => setTopicChoice(e.target.value)}
+            className={inputCls()}
+          >
             {TOOLBOX_TOPIC_OPTIONS.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
             <option value={TOOLBOX_TOPIC_OTHER}>Other (specify)…</option>
           </select>
@@ -521,10 +650,20 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
           )}
         </Label>
         <Label text="Date">
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls()} />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={inputCls()}
+          />
         </Label>
         <Label text="Presenter">
-          <input value={presenter} onChange={(e) => setPresenter(e.target.value)} className={inputCls()} placeholder="e.g. J. Murphy" />
+          <input
+            value={presenter}
+            onChange={(e) => setPresenter(e.target.value)}
+            className={inputCls()}
+            placeholder="e.g. J. Murphy"
+          />
         </Label>
         <Label text="Attendees (one per line)" span="md:col-span-3">
           <textarea
@@ -536,15 +675,31 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
           />
         </Label>
         <Label text="Notes" span="md:col-span-3">
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className={inputCls()} placeholder="Key points covered, questions raised…" />
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            className={inputCls()}
+            placeholder="Key points covered, questions raised…"
+          />
         </Label>
         <Label text={`Attachment (optional · max ${MAX_UPLOAD_MB}MB)`} span="md:col-span-3">
-          <input type="file" accept={FILE_ACCEPT} onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={fileInputCls} />
+          <input
+            type="file"
+            accept={FILE_ACCEPT}
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className={fileInputCls}
+          />
           {file && <p className="mt-1 font-mono text-[0.65rem] text-foreground/50">{file.name}</p>}
           {busy && file && <ProgressBar pct={pct} />}
         </Label>
       </div>
-      <button type="button" onClick={() => void submit()} disabled={busy} className={primaryBtn("mt-4")}>
+      <button
+        type="button"
+        onClick={() => void submit()}
+        disabled={busy}
+        className={primaryBtn("mt-4")}
+      >
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
         Save Talk
       </button>
@@ -552,7 +707,11 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
   );
 }
 
-export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackFormProps, "projectId"> & { projectId?: string }) {
+export function AddLookAhead({
+  subId,
+  onSaved,
+  onBehalf = false,
+}: Omit<PackFormProps, "projectId"> & { projectId?: string }) {
   const fn = useServerFn(addLookAhead);
   const { confirm, dialog } = useConfirm();
   const [plan, setPlan] = useState("");
@@ -566,31 +725,41 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
       toast.error("Work plan required");
       return;
     }
-    const flags = [highRisk ? "HIGH RISK" : null, permit ? "PERMIT REQUIRED" : null].filter(Boolean).join(" · ") || "none";
+    const flags =
+      [highRisk ? "HIGH RISK" : null, permit ? "PERMIT REQUIRED" : null]
+        .filter(Boolean)
+        .join(" · ") || "none";
     const preview = plan.trim().length > 180 ? plan.trim().slice(0, 180) + "…" : plan.trim();
-    const verify = skipConfirm || await confirm(
-      `Please verify this look-ahead:\n\n• Date: ${date || "—"}\n• Flags: ${flags}\n• Plan: ${preview}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nSave look-ahead?`,
-      "Save look-ahead",
-    );
+    const verify =
+      skipConfirm ||
+      (await confirm(
+        `Please verify this look-ahead:\n\n• Date: ${date || "—"}\n• Flags: ${flags}\n• Plan: ${preview}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nSave look-ahead?`,
+        "Save look-ahead",
+      ));
     if (!verify) return;
     setBusy(true);
     try {
       await saveWithRetry(
-        () => fn({
-        data: {
-          subcontractorId: subId,
-          workPlan: plan,
-          isHighRisk: highRisk,
-          permitRequired: permit,
-          date: date || null,
-          onBehalf,
-        },
-        }),
+        () =>
+          fn({
+            data: {
+              subcontractorId: subId,
+              workPlan: plan,
+              isHighRisk: highRisk,
+              permitRequired: permit,
+              date: date || null,
+              onBehalf,
+            },
+          }),
         "look-ahead",
         { onRetry: () => toast.message("Connection dropped — retrying save…") },
       );
       toast.success("Look-ahead added to work plan", {
-        description: onBehalf ? "Recorded by site manager" : flags === "none" ? undefined : `Flags: ${flags}`,
+        description: onBehalf
+          ? "Recorded by site manager"
+          : flags === "none"
+            ? undefined
+            : `Flags: ${flags}`,
       });
       setPlan("");
       setHighRisk(false);
@@ -600,7 +769,12 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
       toast.error(saveFailureMessage("look-ahead", e), {
         duration: 30000,
         description: "Your entries have been kept — nothing was cleared.",
-        action: { label: "Retry this save", onClick: () => { void submit(true); } },
+        action: {
+          label: "Retry this save",
+          onClick: () => {
+            void submit(true);
+          },
+        },
       });
     } finally {
       setBusy(false);
@@ -612,7 +786,12 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
       {dialog}
       <div className="grid gap-3 md:grid-cols-3">
         <Label text="Date">
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls()} />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={inputCls()}
+          />
         </Label>
         <Label text="Work Plan" span="md:col-span-3">
           <textarea
@@ -626,15 +805,30 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
       </div>
       <div className="mt-3 flex flex-wrap gap-4">
         <label className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-foreground/70">
-          <input type="checkbox" checked={highRisk} onChange={(e) => setHighRisk(e.target.checked)} className="h-4 w-4 accent-red-500" />
+          <input
+            type="checkbox"
+            checked={highRisk}
+            onChange={(e) => setHighRisk(e.target.checked)}
+            className="h-4 w-4 accent-red-500"
+          />
           High Risk
         </label>
         <label className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-foreground/70">
-          <input type="checkbox" checked={permit} onChange={(e) => setPermit(e.target.checked)} className="h-4 w-4 accent-amber-400" />
+          <input
+            type="checkbox"
+            checked={permit}
+            onChange={(e) => setPermit(e.target.checked)}
+            className="h-4 w-4 accent-amber-400"
+          />
           Permit Required
         </label>
       </div>
-      <button type="button" onClick={() => void submit()} disabled={busy} className={primaryBtn("mt-4")}>
+      <button
+        type="button"
+        onClick={() => void submit()}
+        disabled={busy}
+        className={primaryBtn("mt-4")}
+      >
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
         Save Look-Ahead
       </button>
@@ -642,12 +836,7 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
   );
 }
 
-export function PackFormStack({
-  subId,
-  projectId,
-  onSaved,
-  onBehalf = false,
-}: PackFormProps) {
+export function PackFormStack({ subId, projectId, onSaved, onBehalf = false }: PackFormProps) {
   return (
     <div className="space-y-4">
       <AddLabour subId={subId} projectId={projectId} onSaved={onSaved} onBehalf={onBehalf} />
