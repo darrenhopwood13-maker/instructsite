@@ -28,14 +28,22 @@ async function getMyOrgId(supabase: any, userId: string, claims?: any): Promise<
 export const listSnags = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) =>
-    z.object({ status: z.string().optional() }).parse(i ?? {}),
+    z
+      .object({
+        status: z.string().optional(),
+        projectId: z.string().uuid().optional(),
+      })
+      .parse(i ?? {}),
   )
   .handler(async ({ data, context }) => {
     let q = context.supabase
       .from("snags")
-      .select("id, defect_title, severity, status, trade, photo_path, created_at, created_by")
+      .select(
+        "id, defect_title, severity, status, trade, photo_path, created_at, created_by, project_id, projects:project_id(id,name)",
+      )
       .order("created_at", { ascending: false });
     if (data.status && data.status !== "all") q = q.eq("status", data.status);
+    if (data.projectId) q = q.eq("project_id", data.projectId);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
 
@@ -46,7 +54,11 @@ export const listSnags = createServerFn({ method: "GET" })
         const { data: signed } = await supabaseAdmin.storage
           .from("snag-photos")
           .createSignedUrl(r.photo_path, 3600);
-        return { ...r, photoUrl: signed?.signedUrl ?? null };
+        return {
+          ...r,
+          projectName: (r as any).projects?.name ?? null,
+          photoUrl: signed?.signedUrl ?? null,
+        };
       }),
     );
     return items;
@@ -58,7 +70,7 @@ export const getSnag = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: snag, error } = await context.supabase
       .from("snags")
-      .select("*")
+      .select("*, projects:project_id(id,name)")
       .eq("id", data.snagId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -221,6 +233,7 @@ export const createSnag = createServerFn({ method: "POST" })
     z
       .object({
         photoPath: z.string(),
+        projectId: z.string().uuid(),
         report: SnagReport,
       })
       .parse(i),
@@ -231,6 +244,7 @@ export const createSnag = createServerFn({ method: "POST" })
       .from("snags")
       .insert({
         org_id: orgId,
+        project_id: data.projectId,
         photo_path: data.photoPath,
         defect_title: data.report.defectTitle,
         description: data.report.description,
@@ -289,4 +303,18 @@ export const postSnagComment = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/** Open snag count for a project (org-scoped by RLS). */
+export const countOpenSnagsForProject = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { count, error } = await context.supabase
+      .from("snags")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", data.projectId)
+      .in("status", ["open", "in_progress", "disputed"]);
+    if (error) throw new Error(error.message);
+    return { count: count ?? 0 };
   });
