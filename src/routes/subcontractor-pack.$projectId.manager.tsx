@@ -417,7 +417,7 @@ function SubDetail({
           ))}
         </div>
 
-        <div className="mt-5">
+        <div className="mt-5 w-full min-w-0 max-w-full">
           {tab === "labour" && <LabourTable workers={filteredWorkers} onOpen={openDoc} />}
           {tab === "registers" && <RegisterTable registers={filteredRegisters} onOpen={openDoc} />}
           {tab === "talks" && <TalksTable talks={filteredTalks} />}
