@@ -28,6 +28,7 @@ import {
 import { deleteDrawing } from "@/lib/admin.functions";
 import { getMyRoles } from "@/lib/projects.functions";
 import { pinColor, pinKey } from "@/lib/pin-color";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Drawing = {
   id: string;
@@ -159,8 +160,9 @@ export function DrawingCanvas({
   const [deleting, setDeleting] = useState(false);
   const handleDelete = async () => {
     if (!selected) return;
-    const ok = window.confirm(
+    const ok = await confirm(
       `Permanently delete ${selected.drawing_no ?? "this drawing"}? This purges the sheet from the drawing vault and DABS selectors.`,
+      "Delete drawing",
     );
     if (!ok) return;
     setDeleting(true);
@@ -178,6 +180,7 @@ export function DrawingCanvas({
 
   return (
     <div className="glass-panel flex h-full flex-col p-5">
+      {confirmDialog}
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
           Active Project Drawings
