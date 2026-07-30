@@ -518,8 +518,9 @@ function PackHistoryPanel({ issues, loading }: { issues: PackIssue[]; loading: b
 function TableShell({ head, empty, children }: { head: string[]; empty: string; children: React.ReactNode }) {
   const isEmpty = Array.isArray(children) ? children.length === 0 : !children;
   return (
-    <div className="overflow-x-auto rounded-md border border-white/10">
-      <table className="w-full text-left text-xs">
+    <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-md border border-white/10">
+      <table className="w-full min-w-[640px] text-left text-xs">
+
         <thead className="bg-black/40 text-[0.55rem] uppercase tracking-[0.28em] text-foreground/60">
           <tr>
             {head.map((h) => (
