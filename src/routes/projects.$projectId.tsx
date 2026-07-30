@@ -465,7 +465,7 @@ function UnifiedRamsBlock({
           />
         )}
         <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {["working_at_height", "hot_works", "confined_space"].map((f) => (
+          {HIGH_RISK_CATEGORIES.map((f) => (
             <button
               key={f}
               type="button"
@@ -476,10 +476,15 @@ function UnifiedRamsBlock({
                   : "border-white/15 text-foreground/60 hover:border-white/40"
               }`}
             >
-              {f.replace(/_/g, " ")}
+              {hazardLabel(f)}
             </button>
           ))}
         </div>
+        {suggestedFlags.length > 0 && (
+          <p className="mt-2 text-[0.55rem] uppercase tracking-widest text-amber-300/80">
+            Suggested for this trade: {suggestedFlags.map(hazardLabel).join(" · ")}
+          </p>
+        )}
       </div>
 
       {/* Upload zone */}
