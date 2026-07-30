@@ -1816,6 +1816,7 @@ export type Database = {
           id: string
           org_id: string
           photo_path: string
+          project_id: string | null
           rectification_option_a: string | null
           rectification_option_b: string | null
           regulatory_citations: Json
@@ -1836,6 +1837,7 @@ export type Database = {
           id?: string
           org_id: string
           photo_path: string
+          project_id?: string | null
           rectification_option_a?: string | null
           rectification_option_b?: string | null
           regulatory_citations?: Json
@@ -1856,6 +1858,7 @@ export type Database = {
           id?: string
           org_id?: string
           photo_path?: string
+          project_id?: string | null
           rectification_option_a?: string | null
           rectification_option_b?: string | null
           regulatory_citations?: Json
@@ -1872,6 +1875,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "snags_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
