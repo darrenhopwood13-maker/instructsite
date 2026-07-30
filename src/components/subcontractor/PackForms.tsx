@@ -558,6 +558,7 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
 
 export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackFormProps, "projectId"> & { projectId?: string }) {
   const fn = useServerFn(addLookAhead);
+  const { confirm, dialog } = useConfirm();
   const [plan, setPlan] = useState("");
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [highRisk, setHighRisk] = useState(false);
