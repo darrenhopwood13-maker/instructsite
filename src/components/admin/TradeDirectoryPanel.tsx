@@ -33,6 +33,7 @@ import {
 } from "@/lib/subcontractors.functions";
 import { formatSentDate, daysAgo, expiryCountdown } from "@/lib/invite-format";
 import { errorMessage } from "@/lib/error-message";
+import { Button } from "@/components/ui/button";
 
 import { TRADE_PACKAGES } from "@/lib/trade-packages";
 
@@ -156,6 +157,7 @@ export function TradeDirectoryPanel({
   };
 
   const [companyName, setCompanyName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
   const [packages, setPackages] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [freshLink, setFreshLink] = useState<{ url: string; company: string } | null>(null);
@@ -165,7 +167,7 @@ export function TradeDirectoryPanel({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!companyName.trim() || packages.length === 0) return;
+    if (!companyName.trim() || !inviteEmail.trim() || packages.length === 0) return;
     setBusy(true);
     try {
       const res = await createFn({
@@ -173,11 +175,13 @@ export function TradeDirectoryPanel({
           projectId,
           companyName: companyName.trim(),
           tradePackages: packages,
+          corporateEmail: inviteEmail.trim(),
         },
       });
       const url = `${window.location.origin}/invite/${res.token}`;
       setFreshLink({ url, company: companyName.trim() });
       setCompanyName("");
+      setInviteEmail("");
       setPackages([]);
       qc.invalidateQueries({ queryKey: ["subcontractor-invites", projectId] });
       toast.success("Invite generated.");
@@ -248,13 +252,26 @@ export function TradeDirectoryPanel({
             <UserCog size={10} />{" "}
             {managers.length > 0 ? "Site Managers" : "Project Leads"} ({managers.length})
           </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setShowManagerInvite((open) => !open)}
+            className="h-7 border-alert/60 bg-alert/10 px-2 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert hover:bg-alert/20 hover:text-alert"
+          >
+            <UserPlus size={11} /> Invite a Site Manager
+          </Button>
         </div>
         {siteManagers.isError && (
           <p className="mt-1 rounded-sm border border-destructive/50 bg-destructive/10 px-1.5 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-destructive-foreground">
             {(siteManagers.error as Error)?.message ?? "Failed to load site managers."}
           </p>
         )}
-        {(unassignedManagers.data ?? []).length > 0 ? (
+        {unassignedManagers.isLoading ? (
+          <p className="mt-1.5 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+            Loading eligible Site Managers…
+          </p>
+        ) : (unassignedManagers.data ?? []).length > 0 ? (
           <div className="mt-1.5 flex items-center gap-1.5">
             <select
               value={pickedManagerId}
@@ -277,15 +294,7 @@ export function TradeDirectoryPanel({
               Add
             </button>
           </div>
-        ) : !showManagerInvite ? (
-          <button
-            type="button"
-            onClick={() => setShowManagerInvite(true)}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert transition hover:bg-alert/20"
-          >
-            <UserPlus size={11} /> Invite a Site Manager
-          </button>
-        ) : (
+        ) : showManagerInvite ? (
           <form onSubmit={inviteAManager} className="mt-1.5 grid gap-1.5">
             <input
               type="email"
@@ -322,6 +331,20 @@ export function TradeDirectoryPanel({
               Manager, so they can be picked as a Package Manager below.
             </p>
           </form>
+        ) : (
+          <div className="mt-1.5 flex items-center justify-between gap-2 rounded-sm border border-alert/30 bg-alert/5 px-2 py-1.5">
+            <p className="font-mono text-[0.55rem] uppercase tracking-widest text-foreground/60">
+              No unassigned Site Managers found
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setShowManagerInvite(true)}
+              className="h-7 shrink-0 bg-alert px-2 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert-foreground hover:bg-alert/90"
+            >
+              <Mail size={10} /> Invite Now
+            </Button>
+          </div>
         )}
         {managers.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
@@ -351,6 +374,14 @@ export function TradeDirectoryPanel({
           placeholder="Subcontractor company name"
           className="rounded-sm border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-alert"
         />
+        <input
+          type="email"
+          required
+          value={inviteEmail}
+          onChange={(e) => setInviteEmail(e.target.value)}
+          placeholder="Invited contact email"
+          className="rounded-sm border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-alert"
+        />
         <div>
           <div className="flex flex-wrap gap-1">
             {TRADE_PACKAGES.map((p) => {
@@ -374,7 +405,7 @@ export function TradeDirectoryPanel({
         </div>
         <button
           type="submit"
-          disabled={busy || !companyName.trim() || packages.length === 0}
+          disabled={busy || !companyName.trim() || !inviteEmail.trim() || packages.length === 0}
           className="glass-orange inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.6rem] uppercase tracking-widest disabled:opacity-40"
         >
           <PlusCircle size={11} /> Generate Subcontractor Access
@@ -466,7 +497,11 @@ export function TradeDirectoryPanel({
                   ))}
                 </div>
                 {pending && (
-                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[0.55rem] text-foreground/55">
+                  <div className="mt-1.5 rounded-sm border border-alert/25 bg-alert/5 p-1.5">
+                    <p className="mb-1 font-mono text-[0.5rem] font-bold uppercase tracking-widest text-alert">
+                      Pending invite details
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[0.55rem] text-foreground/70">
                     <span className="inline-flex items-center gap-1">
                       <Mail size={9} />
                       {inviteEmail ?? "No contact email on file"}
@@ -484,6 +519,7 @@ export function TradeDirectoryPanel({
                       <Clock size={9} />
                       {expiry.label}
                     </span>
+                    </div>
                   </div>
                 )}
                 {pending && (
