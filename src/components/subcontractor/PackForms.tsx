@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Users, ShieldCheck, ClipboardList, CalendarClock, Upload, Loader2 } from "lucide-react";
+import { TOOLBOX_TOPIC_OTHER, MAX_TOOLBOX_TOPIC_LENGTH } from "@/lib/toolbox-topics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
@@ -401,7 +402,10 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
 export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: PackFormProps) {
   const fn = useServerFn(addToolboxTalk);
   const { confirm, dialog } = useConfirm();
-  const [topic, setTopic] = useState<(typeof TOOLBOX_TOPIC_OPTIONS)[number]>("Manual Handling");
+  const [topicChoice, setTopicChoice] = useState<string>("Manual Handling");
+  const [otherTopic, setOtherTopic] = useState("");
+  const isOther = topicChoice === TOOLBOX_TOPIC_OTHER;
+  const topic = isOther ? otherTopic.trim() : topicChoice;
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [presenter, setPresenter] = useState("");
   const [notes, setNotes] = useState("");
@@ -412,6 +416,10 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
 
   const submit = async () => {
     const list = attendees.split("\n").map((s) => s.trim()).filter(Boolean);
+    if (isOther && topic.length < 2) {
+      toast.error("Enter the topic name");
+      return;
+    }
     if (list.length === 0) {
       toast.error("Add at least one attendee");
       return;
@@ -455,6 +463,7 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
       setAttendees("");
       setNotes("");
       setPresenter("");
+      setOtherTopic("");
       setFile(null);
       setPct(0);
       onSaved();
@@ -470,11 +479,21 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
       {dialog}
       <div className="grid gap-3 md:grid-cols-3">
         <Label text="Topic">
-          <select value={topic} onChange={(e) => setTopic(e.target.value as any)} className={inputCls()}>
+          <select value={topicChoice} onChange={(e) => setTopicChoice(e.target.value)} className={inputCls()}>
             {TOOLBOX_TOPIC_OPTIONS.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
+            <option value={TOOLBOX_TOPIC_OTHER}>Other (specify)…</option>
           </select>
+          {isOther && (
+            <input
+              value={otherTopic}
+              onChange={(e) => setOtherTopic(e.target.value)}
+              maxLength={MAX_TOOLBOX_TOPIC_LENGTH}
+              className={`${inputCls()} mt-2`}
+              placeholder="Describe the topic"
+            />
+          )}
         </Label>
         <Label text="Date">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls()} />
