@@ -1,14 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ExternalLink, Loader2, HardHat, ShieldCheck, MessagesSquare, CalendarRange, FileDown, ChevronRight, Users } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, HardHat, ShieldCheck, MessagesSquare, CalendarRange, FileDown, ChevronRight, Users, PencilLine } from "lucide-react";
 import { toast } from "sonner";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { getProject } from "@/lib/projects.functions";
 import { getManagerPack, getComplianceSignedUrl } from "@/lib/subcontractor-pack.functions";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { generateWeeklyPackPdf } from "@/lib/weekly-pack-pdf";
+import { PackFormStack, RecordedByBadge } from "@/components/subcontractor/PackForms";
 
 export const Route = createFileRoute("/subcontractor-pack/$projectId/manager")({
   head: () => ({ meta: [{ title: "Subcontractors Weekly Pack — Manager" }] }),
@@ -19,6 +20,7 @@ type Sub = any;
 
 function ManagerPackPage() {
   const { projectId } = Route.useParams();
+  const qc = useQueryClient();
   const [ready, setReady] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   useEffect(() => {
@@ -90,8 +92,10 @@ function ManagerPackPage() {
         {active && (
           <SubDetail
             sub={active}
+            projectId={projectId}
             projectName={project.data?.name ?? "Project"}
             onBack={() => setActiveId(null)}
+            onSaved={() => qc.invalidateQueries({ queryKey: ["manager-pack", projectId] })}
           />
         )}
       </div>
@@ -172,9 +176,21 @@ function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string
   );
 }
 
-type TabKey = "labour" | "registers" | "talks" | "lookahead";
+type TabKey = "labour" | "registers" | "talks" | "lookahead" | "record";
 
-function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string; onBack: () => void }) {
+function SubDetail({
+  sub,
+  projectId,
+  projectName,
+  onBack,
+  onSaved,
+}: {
+  sub: Sub;
+  projectId: string;
+  projectName: string;
+  onBack: () => void;
+  onSaved: () => void;
+}) {
   const [tab, setTab] = useState<TabKey>("labour");
   const [downloading, setDownloading] = useState(false);
   // Historical range — default to current week (Mon–Sun).
@@ -228,6 +244,8 @@ function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string
         registers: filteredRegisters,
         toolboxTalks: filteredTalks,
         lookAheads: filteredLookAheads,
+        rangeStart: startDate || null,
+        rangeEnd: endDate || null,
         resolveUrl: async (path: string) => {
           const { url } = await getSig({ data: { path } });
           return url;
@@ -247,6 +265,7 @@ function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string
     { key: "registers", label: "Safety Registers", icon: <ShieldCheck size={13} />, count: filteredRegisters.length },
     { key: "talks", label: "Toolbox Talks", icon: <MessagesSquare size={13} />, count: filteredTalks.length },
     { key: "lookahead", label: "Look-Ahead", icon: <CalendarRange size={13} />, count: filteredLookAheads.length },
+    { key: "record", label: "Record On Behalf", icon: <PencilLine size={13} />, count: 0 },
   ];
 
   const dateInputCls =
@@ -313,18 +332,34 @@ function SubDetail({ sub, projectName, onBack }: { sub: Sub; projectName: string
             >
               {t.icon}
               {t.label}
-              <span className="rounded-sm bg-black/40 px-1.5 py-0.5 font-mono text-[0.55rem] text-foreground/70">
-                {t.count}
-              </span>
+              {t.key !== "record" && (
+                <span className="rounded-sm bg-black/40 px-1.5 py-0.5 font-mono text-[0.55rem] text-foreground/70">
+                  {t.count}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
         <div className="mt-5">
-          {tab === "labour" && <LabourTable workers={sub.workers ?? []} onOpen={openDoc} />}
-          {tab === "registers" && <RegisterTable registers={sub.registers ?? []} onOpen={openDoc} />}
-          {tab === "talks" && <TalksTable talks={sub.toolboxTalks ?? []} />}
-          {tab === "lookahead" && <LookAheadTable rows={sub.lookAheads ?? []} />}
+          {tab === "labour" && <LabourTable workers={filteredWorkers} onOpen={openDoc} />}
+          {tab === "registers" && <RegisterTable registers={filteredRegisters} onOpen={openDoc} />}
+          {tab === "talks" && <TalksTable talks={filteredTalks} />}
+          {tab === "lookahead" && <LookAheadTable rows={filteredLookAheads} />}
+          {tab === "record" && (
+            <div>
+              <div className="mb-4 rounded-md border border-sky-400/40 bg-sky-400/5 p-4">
+                <p className="text-[0.6rem] font-bold uppercase tracking-[0.35em] text-sky-300">Record on behalf of</p>
+                <p className="mt-1 text-sm text-foreground/80">
+                  You are logging records for <span className="font-bold text-foreground">{sub.company_name}</span>.
+                  Every entry saved here is stamped with your user id and shown as
+                  <span className="mx-1 font-mono text-sky-300">RECORDED BY SITE MANAGER</span>
+                  so the audit trail stays honest.
+                </p>
+              </div>
+              <PackFormStack subId={sub.id} projectId={projectId} onSaved={onSaved} onBehalf />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -366,8 +401,21 @@ function LabourTable({ workers, onOpen }: { workers: any[]; onOpen: (p?: string 
     <TableShell head={["Name", "Role", "Competency Card", "Logged"]} empty="No workers registered.">
       {workers.map((w) => (
         <tr key={w.id} className="hover:bg-white/[0.02]">
-          <td className="px-3 py-2 font-bold text-foreground">{w.name}</td>
-          <td className="px-3 py-2 text-foreground/80">{w.role || "—"}</td>
+          <td className="px-3 py-2 font-bold text-foreground">
+            <div className="flex flex-wrap items-center gap-2">
+              {w.name}
+              {w.recorded_by && <RecordedByBadge />}
+            </div>
+          </td>
+          <td className="px-3 py-2 text-foreground/80">
+            {w.role || "—"}
+            {(w.card_type || w.card_number) && (
+              <p className="mt-0.5 font-mono text-[0.6rem] text-foreground/50">
+                {[w.card_type, w.card_number].filter(Boolean).join(" · ")}
+                {w.card_expiry ? ` · exp ${new Date(w.card_expiry).toLocaleDateString()}` : ""}
+              </p>
+            )}
+          </td>
           <td className="px-3 py-2">
             {w.competency_card_url ? (
               <button
@@ -402,9 +450,20 @@ function RegisterTable({ registers, onOpen }: { registers: any[]; onOpen: (p?: s
               {r.type}
             </span>
           </td>
-          <td className="px-3 py-2 text-foreground/85">{r.asset_name || "—"}</td>
+          <td className="px-3 py-2 text-foreground/85">
+            <div className="flex flex-wrap items-center gap-2">
+              {r.asset_name || "—"}
+              {r.recorded_by && <RecordedByBadge />}
+            </div>
+            {r.inspector && (
+              <p className="mt-0.5 font-mono text-[0.6rem] text-foreground/50">Inspector · {r.inspector}</p>
+            )}
+          </td>
           <td className="px-3 py-2 font-mono text-[0.65rem] text-foreground/70">
             {r.inspection_date ? new Date(r.inspection_date).toLocaleDateString() : "—"}
+            {r.next_inspection_due && (
+              <p className="mt-0.5 text-foreground/50">Next · {new Date(r.next_inspection_due).toLocaleDateString()}</p>
+            )}
           </td>
           <td className="px-3 py-2">
             {r.certificate_url ? (
@@ -437,7 +496,15 @@ function TalksTable({ talks }: { talks: any[] }) {
             <td className="px-3 py-2 font-mono text-[0.65rem] text-foreground/70">
               {t.date ? new Date(t.date).toLocaleDateString() : ""}
             </td>
-            <td className="px-3 py-2 font-bold text-foreground">{t.topic}</td>
+            <td className="px-3 py-2 font-bold text-foreground">
+              <div className="flex flex-wrap items-center gap-2">
+                {t.topic}
+                {t.recorded_by && <RecordedByBadge />}
+              </div>
+              {t.presenter && (
+                <p className="mt-0.5 font-mono text-[0.6rem] text-foreground/50">Presenter · {t.presenter}</p>
+              )}
+            </td>
             <td className="px-3 py-2 font-mono text-foreground/85">{list.length}</td>
             <td className="px-3 py-2 text-[0.7rem] text-foreground/60">
               {list.slice(0, 8).map((a: unknown) => String(a)).join(", ")}
@@ -462,6 +529,11 @@ function LookAheadTable({ rows }: { rows: any[] }) {
             </td>
             <td className="px-3 py-2 align-top text-foreground/85">
               <p className="whitespace-pre-wrap">{l.work_plan}</p>
+              {l.recorded_by && (
+                <div className="mt-1">
+                  <RecordedByBadge />
+                </div>
+              )}
             </td>
             <td className="px-3 py-2 align-top">
               <div className="flex flex-wrap gap-1">
