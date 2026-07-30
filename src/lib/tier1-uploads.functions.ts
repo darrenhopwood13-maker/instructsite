@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { canonicalizeTrade, inferTradeFromText, GENERAL_TRADE } from "@/lib/trade-packages";
+
 
 const DOC_TYPES = ["drawing", "logistics", "rams"] as const;
 type DocType = (typeof DOC_TYPES)[number];
@@ -159,15 +161,24 @@ export const registerTier1Document = createServerFn({ method: "POST" })
         extraction_status: "processing",
       });
     } else {
+      // Trade: use what the uploader picked (folded onto the canonical list),
+      // otherwise infer it from the document title so RAMS don't all land in
+      // "General" and make the trade filter useless.
+      const picked = canonicalizeTrade(data.tradePackage);
+      const tradePackage =
+        picked && picked.toLowerCase() !== "general"
+          ? picked
+          : (inferTradeFromText(data.fileName) ?? GENERAL_TRADE);
       await supabase.from("rams_documents").insert({
         project_id: data.projectId,
         site_document_id: sd.id,
         uploaded_by: userId,
-        trade_package: data.tradePackage ?? "General",
+        trade_package: tradePackage,
         high_risk_flags: data.highRiskFlags ?? [],
         permit_required: data.permitRequired ?? (data.highRiskFlags?.length ?? 0) > 0,
       });
     }
+
 
     // 3) extraction (best-effort)
     let extractionStatus: "complete" | "empty" | "failed" = "empty";
@@ -285,8 +296,25 @@ export const registerTier1Document = createServerFn({ method: "POST" })
 
         extractionStatus = "complete";
       } else {
+        // RAMS: if the trade is still the catch-all, take a second pass using
+        // the extracted document text.
+        const { data: ramsRow } = await supabase
+          .from("rams_documents")
+          .select("id,trade_package")
+          .eq("site_document_id", sd.id)
+          .maybeSingle();
+        if (ramsRow && (ramsRow.trade_package ?? "").toLowerCase() === "general") {
+          const inferred = inferTradeFromText(data.fileName, rawText.slice(0, 8000));
+          if (inferred) {
+            await supabase
+              .from("rams_documents")
+              .update({ trade_package: inferred })
+              .eq("id", ramsRow.id);
+          }
+        }
         extractionStatus = "complete";
       }
+
       await supabase
         .from("site_documents")
         .update({ extraction_status: extractionStatus, extraction_error: extractionError })
