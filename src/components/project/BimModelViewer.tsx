@@ -621,49 +621,58 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
       <div className="relative" style={{ height: 520 }}>
         <div ref={containerRef} className="absolute inset-0" />
 
-        {/* Zone Isolation Dropdown — top-left overlay */}
-        {status === "ready" && (zonesQ.data ?? []).length > 0 && (
-          <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-md border-2 border-black bg-white/95 px-2 py-1.5 shadow-[3px_3px_0_0_#000]">
-            <Focus size={14} className="text-[#ff7a00]" />
-            <label className="text-[0.6rem] font-black uppercase tracking-widest text-black">
-              Isolate Zone
-            </label>
-            <select
-              value={isolatedZoneId}
-              onChange={(e) => setIsolatedZoneId(e.target.value)}
-              className="rounded-sm border-2 border-black bg-white px-2 py-1 text-xs font-bold text-black focus:outline-none"
-            >
-              <option value="">— Show all —</option>
-              {(zonesQ.data ?? []).map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.name}
-                  {z.level ? ` · ${z.level}` : ""}
-                </option>
-              ))}
-            </select>
-            {isolatedZoneId && (
-              <button
-                type="button"
-                onClick={() => setIsolatedZoneId("")}
-                className="inline-flex items-center gap-1 rounded-sm border-2 border-black bg-[#ff7a00] px-1.5 py-1 text-[0.55rem] font-black uppercase tracking-widest text-black hover:bg-[#ff9440]"
-                title="Clear isolation"
-              >
-                <X size={10} />
-              </button>
-        )}
-
+        {/* Viewer controls — single dark glass toolbar, no overlap */}
         {status === "ready" && (
-          <button
-            type="button"
-            onClick={() => (window as any).__bimResetView?.()}
-            className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-md border-2 border-black bg-white/95 px-2.5 py-1.5 text-[0.6rem] font-black uppercase tracking-widest text-black shadow-[3px_3px_0_0_#000] hover:bg-[#ff7a00]"
-            title="Reset camera to fit model"
-          >
-            <Focus size={12} /> Reset View
-          </button>
-        )}
+          <div className="pointer-events-none absolute inset-x-3 top-3 z-10 flex flex-wrap items-center justify-between gap-2">
+            {(zonesQ.data ?? []).length > 0 ? (
+              <div className="pointer-events-auto flex items-center gap-2 rounded-md border border-white/15 bg-black/80 px-2.5 py-1.5 backdrop-blur-md">
+                <Focus size={13} className="text-alert" />
+                <label
+                  htmlFor="bim-isolate-zone"
+                  className="text-[0.55rem] font-bold uppercase tracking-[0.2em] text-foreground/60"
+                >
+                  Isolate Zone
+                </label>
+                <select
+                  id="bim-isolate-zone"
+                  value={isolatedZoneId}
+                  onChange={(e) => setIsolatedZoneId(e.target.value)}
+                  className="max-w-[13rem] rounded-sm border border-white/15 bg-black/60 px-2 py-1 text-xs text-foreground focus:border-alert focus:outline-none"
+                >
+                  <option value="">— Show all —</option>
+                  {(zonesQ.data ?? []).map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.name}
+                      {z.level ? ` · ${z.level}` : ""}
+                    </option>
+                  ))}
+                </select>
+                {isolatedZoneId && (
+                  <button
+                    type="button"
+                    onClick={() => setIsolatedZoneId("")}
+                    className="inline-flex items-center rounded-sm border border-alert/60 bg-alert/15 px-1.5 py-1 text-alert hover:bg-alert/30"
+                    title="Clear isolation"
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <span />
+            )}
+
+            <button
+              type="button"
+              onClick={() => fitRef.current?.()}
+              className="pointer-events-auto inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-black/80 px-2.5 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-foreground/80 backdrop-blur-md transition hover:border-alert hover:text-alert"
+              title="Re-fit camera to the model"
+            >
+              <Focus size={12} /> Reset View
+            </button>
           </div>
         )}
+
         {status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div className="flex items-center gap-2 text-sm text-foreground/80">
