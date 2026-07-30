@@ -191,7 +191,7 @@ function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string
   );
 }
 
-type TabKey = "labour" | "registers" | "talks" | "lookahead" | "record";
+type TabKey = "labour" | "registers" | "talks" | "lookahead" | "history" | "record";
 
 function SubDetail({
   sub,
@@ -323,7 +323,7 @@ function SubDetail({
     { key: "registers", label: "Safety Registers", icon: <ShieldCheck size={13} />, count: filteredRegisters.length },
     { key: "talks", label: "Toolbox Talks", icon: <MessagesSquare size={13} />, count: filteredTalks.length },
     { key: "lookahead", label: "Look-Ahead", icon: <CalendarRange size={13} />, count: filteredLookAheads.length },
-    { key: "history", label: "Pack History", icon: <History size={13} />, count: history.data?.length ?? 0 },
+    { key: "history", label: "Pack History", icon: <HistoryIcon size={13} />, count: history.data?.length ?? 0 },
     { key: "record", label: "Record On Behalf", icon: <PencilLine size={13} />, count: 0 },
   ];
 
