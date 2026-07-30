@@ -109,6 +109,10 @@ function SubPackPage() {
     queryKey: ["sub-pack", projectId, companyName],
     queryFn: () => getPackFn({ data: { projectId, companyName } }),
     enabled: ready && companyLocked && !!companyName,
+    // Don't let a focus refetch race an in-flight save POST.
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 30_000,
   });
 
   const subId = pack.data?.subcontractor?.id as string | undefined;
