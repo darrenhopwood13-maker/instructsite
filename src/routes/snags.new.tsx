@@ -68,6 +68,10 @@ function NewSnagPage() {
   }, [projects.data, projectId]);
 
   async function handleFile(file: File) {
+    if (!projectId) {
+      toast.error("Pick the project this snag belongs to first.");
+      return;
+    }
     setError(null);
     setReport(null);
     setPhotoPath(null);
@@ -76,7 +80,7 @@ function NewSnagPage() {
     try {
       const dataBase64 = await fileToBase64(file);
       const res = await analyzeFn({
-        data: { fileName: file.name, mimeType: file.type || "image/jpeg", dataBase64 },
+        data: { fileName: file.name, mimeType: file.type || "image/jpeg", dataBase64, projectId },
       });
       setReport(res.report);
       setPhotoPath(res.photoPath);

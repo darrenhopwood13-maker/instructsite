@@ -27,20 +27,38 @@ export const getSessionContext = createServerFn({ method: "GET" })
     const [{ data: profile }, { data: rolesRows }, { data: orgRow }] = await Promise.all([
       supabase.from("profiles").select("full_name").eq("user_id", userId).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", userId),
+      // Multi-row safe: the founder is a member of every org.
       supabase
         .from("org_members")
-        .select("role, org_id, orgs:org_id(id,name)")
+        .select("role, org_id, created_at, orgs:org_id(id,name)")
         .eq("user_id", userId)
-        .maybeSingle(),
+        .order("created_at", { ascending: true }),
     ]);
 
     const roles = (rolesRows ?? []).map((r: { role: string }) => r.role);
     if (isFounder && !roles.includes("master_admin")) roles.push("master_admin");
 
+    // Prefer the membership matching the project in context; otherwise the
+    // only membership; otherwise the oldest one.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const orgs = (orgRow as any)?.orgs;
+    const memberships = (orgRow as any[]) ?? [];
+    let projectOrgId: string | null = null;
+    if (projectId) {
+      const { data: p } = await supabase
+        .from("projects")
+        .select("org_id")
+        .eq("id", projectId)
+        .maybeSingle();
+      projectOrgId = (p?.org_id as string | undefined) ?? null;
+    }
+    const chosen =
+      (projectOrgId && memberships.find((m) => m.org_id === projectOrgId)) ||
+      memberships[0] ||
+      null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const orgs = (chosen as any)?.orgs;
     let org: SessionContext["org"] = orgs
-      ? { id: orgs.id as string, name: orgs.name as string, role: (orgRow as { role: string }).role }
+      ? { id: orgs.id as string, name: orgs.name as string, role: (chosen as { role: string }).role }
       : null;
 
     // If no direct org membership but a project is in context, resolve org via the project.
