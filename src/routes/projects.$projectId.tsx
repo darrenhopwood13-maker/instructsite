@@ -22,7 +22,11 @@ import { getMyRoles } from "@/lib/projects.functions";
 import { listSubcontractorInvites } from "@/lib/subcontractors.functions";
 import { TRADE_PACKAGES } from "@/lib/trade-packages";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
-import { hazardLabel } from "@/lib/high-risk";
+import {
+  HIGH_RISK_CATEGORIES,
+  detectHazards,
+  hazardLabel,
+} from "@/lib/high-risk";
 import { countOpenSnagsForProject } from "@/lib/snags.functions";
 import { rememberProject } from "@/lib/last-project";
 
@@ -380,6 +384,7 @@ function UnifiedRamsBlock({
   const [trade, setTrade] = useState<string>("");
   const [customTrade, setCustomTrade] = useState("");
   const [flags, setFlags] = useState<string[]>([]);
+  const [filters, setFilters] = useState<string[]>([]);
   const invitesFn = useServerFn(listSubcontractorInvites);
   const invitesQ = useQuery({
     queryKey: ["rams-trade-invites", projectId],
@@ -411,6 +416,30 @@ function UnifiedRamsBlock({
 
   const toggle = (f: string) =>
     setFlags((cur) => (cur.includes(f) ? cur.filter((x) => x !== f) : [...cur, f]));
+
+  // Hazards implied by the trade package currently selected for upload.
+  const suggestedFlags = useMemo(
+    () => detectHazards(effectiveTrade).filter((f) => !flags.includes(f)),
+    [effectiveTrade, flags],
+  );
+
+  // Hazard coverage across the project: which categories the trades on this
+  // project imply, and which of those already have a RAMS document tagged.
+  const coverage = useMemo(() => {
+    const needed = new Set<string>();
+    for (const t of projectTrades) for (const f of detectHazards(t)) needed.add(f);
+    const covered = new Set<string>();
+    for (const r of rams ?? [])
+      for (const f of (r?.high_risk_flags ?? []) as string[]) covered.add(f);
+    return { needed, covered };
+  }, [projectTrades, rams]);
+
+  const visibleRams = useMemo(() => {
+    if (filters.length === 0) return rams ?? [];
+    return (rams ?? []).filter((r: any) =>
+      filters.every((f) => ((r?.high_risk_flags ?? []) as string[]).includes(f)),
+    );
+  }, [rams, filters]);
 
   return (
     <div className="glass-panel flex h-full flex-col p-5">
@@ -465,7 +494,7 @@ function UnifiedRamsBlock({
           />
         )}
         <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {["working_at_height", "hot_works", "confined_space"].map((f) => (
+          {HIGH_RISK_CATEGORIES.map((f) => (
             <button
               key={f}
               type="button"
@@ -476,10 +505,15 @@ function UnifiedRamsBlock({
                   : "border-white/15 text-foreground/60 hover:border-white/40"
               }`}
             >
-              {f.replace(/_/g, " ")}
+              {hazardLabel(f)}
             </button>
           ))}
         </div>
+        {suggestedFlags.length > 0 && (
+          <p className="mt-2 text-[0.55rem] uppercase tracking-widest text-amber-300/80">
+            Suggested for this trade: {suggestedFlags.map(hazardLabel).join(" · ")}
+          </p>
+        )}
       </div>
 
       {/* Upload zone */}
@@ -499,9 +533,50 @@ function UnifiedRamsBlock({
         />
       </div>
 
+      {/* Hazard filter chips + coverage */}
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        {HIGH_RISK_CATEGORIES.map((f) => {
+          const on = filters.includes(f);
+          const missing = coverage.needed.has(f) && !coverage.covered.has(f);
+          return (
+            <button
+              key={f}
+              type="button"
+              onClick={() =>
+                setFilters((cur) =>
+                  cur.includes(f) ? cur.filter((x) => x !== f) : [...cur, f],
+                )
+              }
+              aria-pressed={on}
+              className={`flex items-center gap-1 rounded-sm border px-2 py-1 font-mono text-[0.6rem] uppercase tracking-widest ${
+                on
+                  ? "border-alert bg-alert/20 text-alert"
+                  : "border-white/15 text-foreground/60 hover:border-white/40"
+              }`}
+            >
+              {hazardLabel(f)}
+              {missing && (
+                <span className="rounded-sm bg-red-600 px-1 py-px text-[0.5rem] font-bold text-white">
+                  Missing
+                </span>
+              )}
+            </button>
+          );
+        })}
+        {filters.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setFilters([])}
+            className="rounded-sm border border-white/15 px-2 py-1 font-mono text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-white/40"
+          >
+            Clear filter
+          </button>
+        )}
+      </div>
+
       {/* Existing docs list */}
       <div className="mt-3 flex-1 overflow-y-auto rounded-md border border-white/10 bg-black/25 p-2">
-        {rams.map((r: any) => (
+        {visibleRams.map((r: any) => (
           <div key={r.id} className="border-t border-white/8 py-2 text-xs first:border-t-0">
             <div className="flex items-center justify-between gap-2">
               <span className="truncate font-mono text-foreground/85">
@@ -530,8 +605,12 @@ function UnifiedRamsBlock({
             )}
           </div>
         ))}
-        {rams.length === 0 && (
-          <p className="py-4 text-center text-xs text-foreground/50">No RAMS uploaded.</p>
+        {visibleRams.length === 0 && (
+          <p className="py-4 text-center text-xs text-foreground/50">
+            {rams.length === 0
+              ? "No RAMS uploaded."
+              : "No RAMS match the selected hazard filters."}
+          </p>
         )}
       </div>
     </div>
