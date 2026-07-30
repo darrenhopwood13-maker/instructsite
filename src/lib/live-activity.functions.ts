@@ -120,7 +120,6 @@ export const managerForceCheckout = createServerFn({ method: "POST" })
         pinId: z.string().uuid(),
         completionPct: z.number().int().min(0).max(100),
         notes: z.string().trim().max(1000).optional(),
-        highRiskFlags: z.array(z.string().trim().max(64)).max(20).optional(),
       })
       .parse(i),
   )
