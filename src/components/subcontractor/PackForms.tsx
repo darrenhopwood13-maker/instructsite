@@ -297,6 +297,7 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
 
   return (
     <AccordionCard icon={<Users size={18} />} eyebrow="01" title="Add Labour" defaultOpen>
+      {dialog}
       <div className="grid gap-3 md:grid-cols-2">
         <Label text="Name">
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls()} />
