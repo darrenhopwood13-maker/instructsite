@@ -376,9 +376,10 @@ function SubDetail({
         </div>
       </div>
 
-      <div className="glass-panel mt-4 p-6">
+      <div className="glass-panel mt-4 w-full min-w-0 max-w-full overflow-hidden p-6">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/10 pb-4">
-          <div>
+          <div className="min-w-0 max-w-full">
+
             <p className="text-[0.6rem] uppercase tracking-[0.35em] text-alert">Subcontractor</p>
             <h2
               className="mt-1 text-3xl font-extrabold uppercase tracking-tight text-foreground"
