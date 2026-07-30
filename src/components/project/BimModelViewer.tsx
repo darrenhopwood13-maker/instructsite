@@ -137,6 +137,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<any>(null);
+  const fitRef = useRef<(() => void) | null>(null);
   const selectedRef = useRef<MeshEntry | null>(null);
   const [status, setStatus] = useState<
     "idle" | "loading" | "ready" | "empty" | "error"
@@ -212,7 +213,8 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
     dir.position.set(50, 100, 50);
     scene.add(ambient, dir);
 
-    const grid = new THREE.GridHelper(200, 40, 0x333344, 0x1c1c26);
+    // Grid is re-scaled to the model once its bounds are known.
+    let grid = new THREE.GridHelper(200, 40, 0x333344, 0x1c1c26);
     scene.add(grid);
 
     // ---- Raycasting: click-to-inspect ----
@@ -285,22 +287,70 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
         if (disposed) return;
         meshesRef.current = meshes;
 
+        // Robust bounds: a single stray element (survey point, site marker,
+        // annotation miles from origin) would otherwise blow the bounding box
+        // up and leave the building a speck. Reject positional outliers.
+        const robustBox = () => {
+          const boxes = meshes
+            .map((m) => new THREE.Box3().setFromObject(m.mesh))
+            .filter((b) => !b.isEmpty());
+          if (boxes.length === 0) return box;
+          const centers = boxes.map((b) => b.getCenter(new THREE.Vector3()));
+          const median = (arr: number[]) => {
+            const s = [...arr].sort((a, b) => a - b);
+            return s[Math.floor(s.length / 2)];
+          };
+          const mc = new THREE.Vector3(
+            median(centers.map((c) => c.x)),
+            median(centers.map((c) => c.y)),
+            median(centers.map((c) => c.z)),
+          );
+          const dists = centers.map((c) => c.distanceTo(mc)).sort((a, b) => a - b);
+          // 95th percentile spread, with a floor so small models aren't clipped.
+          const p95 = dists[Math.floor(dists.length * 0.95)] ?? 0;
+          const cutoff = Math.max(p95 * 3, 10);
+          const out = new THREE.Box3();
+          boxes.forEach((b, i) => {
+            if (centers[i].distanceTo(mc) <= cutoff) out.union(b);
+          });
+          return out.isEmpty() ? box : out;
+        };
+
+        const fitBox = robustBox();
+
         // Fit camera to model bounding sphere using FOV
         const fitToModel = () => {
-          if (box.isEmpty()) return;
-          const sphere = box.getBoundingSphere(new THREE.Sphere());
+          if (fitBox.isEmpty()) return;
+          const sphere = fitBox.getBoundingSphere(new THREE.Sphere());
           const center = sphere.center;
           const radius = Math.max(sphere.radius, 1);
           const fov = (camera.fov * Math.PI) / 180;
           const distance = (radius / Math.sin(fov / 2)) * 1.15;
-          const dir = new THREE.Vector3(1, 0.75, 1).normalize();
-          camera.position.copy(center).add(dir.multiplyScalar(distance));
+          const dirV = new THREE.Vector3(1, 0.75, 1).normalize();
+          camera.position.copy(center).add(dirV.multiplyScalar(distance));
+          camera.near = Math.max(0.05, radius / 500);
+          camera.far = Math.max(1000, distance * 10);
+          camera.updateProjectionMatrix();
           controls.target.copy(center);
+          controls.minDistance = radius * 0.05;
+          controls.maxDistance = distance * 6;
           controls.update();
         };
         fitToModel();
-        (window as any).__bimResetView = fitToModel;
 
+        // Re-scale the ground grid to the model so it frames rather than dwarfs it.
+        if (!fitBox.isEmpty()) {
+          const size = fitBox.getSize(new THREE.Vector3());
+          const center = fitBox.getCenter(new THREE.Vector3());
+          const span = Math.max(size.x, size.z, 4) * 2.5;
+          scene.remove(grid);
+          grid.dispose?.();
+          grid = new THREE.GridHelper(span, 24, 0x333344, 0x1c1c26);
+          grid.position.set(center.x, fitBox.min.y, center.z);
+          scene.add(grid);
+        }
+
+        fitRef.current = fitToModel;
         setStatus("ready");
       } catch (e: any) {
         console.error("[BIM] IFC load failed", e);
@@ -338,6 +388,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
       renderer.dispose();
       controls?.dispose?.();
+      fitRef.current = null;
       if (renderer.domElement.parentElement === container) {
         container.removeChild(renderer.domElement);
       }
