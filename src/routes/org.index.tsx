@@ -34,6 +34,7 @@ export const Route = createFileRoute("/org/")({
 
 function OrgPage() {
   const qc = useQueryClient();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const orgFn = useServerFn(getMyOrg);
   const membersFn = useServerFn(listOrgMembers);
   const claimableFn = useServerFn(listClaimableOrgs);

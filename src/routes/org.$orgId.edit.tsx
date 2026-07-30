@@ -321,6 +321,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const pendingInvites = (invites.data ?? []).filter((i) => i.status === "pending");
   const stdAdminFilled =
@@ -414,6 +415,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
 
   return (
     <div className="glass-panel mt-8 space-y-6 p-6">
+      {confirmDialog}
       <div>
         <p className="text-[0.7rem] font-bold uppercase tracking-[0.35em] text-alert">
           Members & Invites
