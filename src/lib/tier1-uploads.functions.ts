@@ -1006,6 +1006,8 @@ export const splitAndRegisterDrawingPack = createServerFn({ method: "POST" })
         projectId: z.string().uuid(),
         packName: z.string().min(1),
         rawFilePath: z.string().min(1),
+        /** "replace" purges any sheets already registered under this pack name. */
+        duplicatePolicy: z.enum(["replace", "keep_both"]).optional(),
       })
       .parse(i),
   )
@@ -1015,6 +1017,25 @@ export const splitAndRegisterDrawingPack = createServerFn({ method: "POST" })
     if (!data.rawFilePath.startsWith(`${userId}/`)) {
       throw new Error("Upload path must be under the signed-in user's folder.");
     }
+
+    // De-duplication: when the caller chose REPLACE, remove the existing sheets
+    // registered under this pack name before re-registering them.
+    if (data.duplicatePolicy === "replace") {
+      const { data: existing } = await supabase
+        .from("project_drawings")
+        .select("id,site_document_id")
+        .eq("project_id", data.projectId)
+        .eq("pack_name", data.packName);
+      const docIds = (existing ?? []).map((r: any) => r.site_document_id).filter(Boolean);
+      if (docIds.length > 0) {
+        await supabase.from("site_documents").delete().in("id", docIds);
+      }
+      const ids = (existing ?? []).map((r: any) => r.id);
+      if (ids.length > 0) {
+        await supabase.from("project_drawings").delete().in("id", ids);
+      }
+    }
+
 
     // 1) Download the raw pack.
     const { data: packBlob, error: dlErr } = await supabase.storage
