@@ -4,6 +4,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Users, ShieldCheck, ClipboardList, CalendarClock, Upload, Loader2 } from "lucide-react";
 import { TOOLBOX_TOPIC_OTHER, MAX_TOOLBOX_TOPIC_LENGTH } from "@/lib/toolbox-topics";
 import { toast } from "sonner";
+import { saveWithRetry, saveFailureMessage } from "@/lib/save-with-retry";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import {
@@ -177,12 +178,12 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
   const [busy, setBusy] = useState(false);
   const [pct, setPct] = useState(0);
 
-  const submit = async () => {
+  const submit = async (skipConfirm = false) => {
     if (!name.trim()) {
       toast.error("Worker name required");
       return;
     }
-    const verify = await confirm(
+    const verify = skipConfirm || await confirm(
       `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Card: ${cardType.trim() || "—"} ${cardNumber.trim()}\n• Expiry: ${cardExpiry || "—"}\n• Competency Card File: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to labour roster?`,
       "Save worker",
     );
@@ -217,7 +218,8 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
           return;
         }
       }
-      await fn({
+      await saveWithRetry(
+        () => fn({
         data: {
           subcontractorId: subId,
           name,
@@ -228,7 +230,10 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
           cardExpiry: cardExpiry || null,
           onBehalf,
         },
-      });
+        }),
+        "worker",
+        { onRetry: () => toast.message("Connection dropped — retrying save…") },
+      );
       toast.success(`${name.trim()} added to labour roster`, {
         description: onBehalf ? "Recorded by site manager" : role.trim() ? `Role: ${role.trim()}` : undefined,
       });
@@ -241,7 +246,11 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
       setPct(0);
       onSaved();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
+      toast.error(saveFailureMessage("worker", e), {
+        duration: 30000,
+        description: "Your entries have been kept — nothing was cleared.",
+        action: { label: "Retry this save", onClick: () => { void submit(true); } },
+      });
     } finally {
       setBusy(false);
     }
@@ -272,7 +281,7 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
           {busy && file && <ProgressBar pct={pct} />}
         </Label>
       </div>
-      <button type="button" onClick={submit} disabled={busy} className={primaryBtn("mt-4")}>
+      <button type="button" onClick={() => void submit()} disabled={busy} className={primaryBtn("mt-4")}>
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
         Save Worker
       </button>
@@ -293,8 +302,8 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
   const [busy, setBusy] = useState(false);
   const [pct, setPct] = useState(0);
 
-  const submit = async () => {
-    const verify = await confirm(
+  const submit = async (skipConfirm = false) => {
+    const verify = skipConfirm || await confirm(
       `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Next Due: ${nextDue || "—"}\n• Inspector: ${inspector.trim() || "—"}\n• Certificate: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to ${type} register?`,
       "Save register",
     );
@@ -329,7 +338,8 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
           return;
         }
       }
-      await fn({
+      await saveWithRetry(
+        () => fn({
         data: {
           subcontractorId: subId,
           type,
@@ -340,7 +350,10 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
           inspector: inspector || null,
           onBehalf,
         },
-      });
+        }),
+        "safety register entry",
+        { onRetry: () => toast.message("Connection dropped — retrying save…") },
+      );
       toast.success(`${asset.trim() || "Asset"} added to ${type} register`, {
         description: onBehalf
           ? "Recorded by site manager"
@@ -356,7 +369,11 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
       setPct(0);
       onSaved();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
+      toast.error(saveFailureMessage("safety register entry", e), {
+        duration: 30000,
+        description: "Your entries have been kept — nothing was cleared.",
+        action: { label: "Retry this save", onClick: () => { void submit(true); } },
+      });
     } finally {
       setBusy(false);
     }
@@ -391,7 +408,7 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
           {busy && file && <ProgressBar pct={pct} />}
         </Label>
       </div>
-      <button type="button" onClick={submit} disabled={busy} className={primaryBtn("mt-4")}>
+      <button type="button" onClick={() => void submit()} disabled={busy} className={primaryBtn("mt-4")}>
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
         Save Register
       </button>
@@ -414,7 +431,7 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
   const [busy, setBusy] = useState(false);
   const [pct, setPct] = useState(0);
 
-  const submit = async () => {
+  const submit = async (skipConfirm = false) => {
     const list = attendees.split("\n").map((s) => s.trim()).filter(Boolean);
     if (isOther && topic.length < 2) {
       toast.error("Enter the topic name");
@@ -424,7 +441,7 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
       toast.error("Add at least one attendee");
       return;
     }
-    const verify = await confirm(
+    const verify = skipConfirm || await confirm(
       `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Date: ${date || "—"}\n• Presenter: ${presenter.trim() || "—"}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nLog this talk?`,
       "Log talk",
     );
@@ -445,7 +462,8 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
           return;
         }
       }
-      await fn({
+      await saveWithRetry(
+        () => fn({
         data: {
           subcontractorId: subId,
           topic,
@@ -456,7 +474,10 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
           attachmentUrl: url,
           onBehalf,
         },
-      });
+        }),
+        "toolbox talk",
+        { onRetry: () => toast.message("Connection dropped — retrying save…") },
+      );
       toast.success(`Toolbox talk logged: ${topic}`, {
         description: `${list.length} attendee${list.length === 1 ? "" : "s"} recorded${onBehalf ? " by site manager" : ""}`,
       });
@@ -468,7 +489,11 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
       setPct(0);
       onSaved();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
+      toast.error(saveFailureMessage("toolbox talk", e), {
+        duration: 30000,
+        description: "Your entries have been kept — nothing was cleared.",
+        action: { label: "Retry this save", onClick: () => { void submit(true); } },
+      });
     } finally {
       setBusy(false);
     }
@@ -519,7 +544,7 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
           {busy && file && <ProgressBar pct={pct} />}
         </Label>
       </div>
-      <button type="button" onClick={submit} disabled={busy} className={primaryBtn("mt-4")}>
+      <button type="button" onClick={() => void submit()} disabled={busy} className={primaryBtn("mt-4")}>
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
         Save Talk
       </button>
@@ -536,21 +561,22 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
   const [permit, setPermit] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const submit = async () => {
+  const submit = async (skipConfirm = false) => {
     if (!plan.trim()) {
       toast.error("Work plan required");
       return;
     }
     const flags = [highRisk ? "HIGH RISK" : null, permit ? "PERMIT REQUIRED" : null].filter(Boolean).join(" · ") || "none";
     const preview = plan.trim().length > 180 ? plan.trim().slice(0, 180) + "…" : plan.trim();
-    const verify = await confirm(
+    const verify = skipConfirm || await confirm(
       `Please verify this look-ahead:\n\n• Date: ${date || "—"}\n• Flags: ${flags}\n• Plan: ${preview}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nSave look-ahead?`,
       "Save look-ahead",
     );
     if (!verify) return;
     setBusy(true);
     try {
-      await fn({
+      await saveWithRetry(
+        () => fn({
         data: {
           subcontractorId: subId,
           workPlan: plan,
@@ -559,7 +585,10 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
           date: date || null,
           onBehalf,
         },
-      });
+        }),
+        "look-ahead",
+        { onRetry: () => toast.message("Connection dropped — retrying save…") },
+      );
       toast.success("Look-ahead added to work plan", {
         description: onBehalf ? "Recorded by site manager" : flags === "none" ? undefined : `Flags: ${flags}`,
       });
@@ -568,7 +597,11 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
       setPermit(false);
       onSaved();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
+      toast.error(saveFailureMessage("look-ahead", e), {
+        duration: 30000,
+        description: "Your entries have been kept — nothing was cleared.",
+        action: { label: "Retry this save", onClick: () => { void submit(true); } },
+      });
     } finally {
       setBusy(false);
     }
@@ -601,7 +634,7 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
           Permit Required
         </label>
       </div>
-      <button type="button" onClick={submit} disabled={busy} className={primaryBtn("mt-4")}>
+      <button type="button" onClick={() => void submit()} disabled={busy} className={primaryBtn("mt-4")}>
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
         Save Look-Ahead
       </button>
