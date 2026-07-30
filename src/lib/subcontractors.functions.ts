@@ -104,7 +104,7 @@ export const listSubcontractorInvites = createServerFn({ method: "GET" })
     const { data: rows, error } = await context.supabase
       .from("subcontractor_invites")
       .select(
-        "id, company_name, trade_packages, accepted_by, accepted_at, revoked_at, expires_at, created_at, package_manager_id",
+        "id, company_name, trade_packages, accepted_by, accepted_at, revoked_at, expires_at, created_at, package_manager_id, seat_role, corporate_email, pm_email, supervisor_email, pm_name",
       )
       .eq("project_id", data.projectId)
       .is("revoked_at", null)
@@ -269,4 +269,125 @@ export const assignPackageManager = createServerFn({ method: "POST" })
       .eq("id", data.inviteId);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+
+/** Best invite contact for a subcontractor row. */
+function inviteEmailOf(inv: {
+  corporate_email?: string | null;
+  pm_email?: string | null;
+  supervisor_email?: string | null;
+}): string | null {
+  return inv.corporate_email || inv.pm_email || inv.supervisor_email || null;
+}
+
+/**
+ * Mint a fresh join link for a pending invite (the stored token is hashed and
+ * cannot be recovered, so copying or resending always rotates it) and
+ * optionally email it to the subcontractor's contact address.
+ */
+export const refreshSubcontractorInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ inviteId: z.string().uuid(), resendEmail: z.boolean().default(false) }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: inv, error: gErr } = await context.supabase
+      .from("subcontractor_invites")
+      .select(
+        "id, project_id, company_name, accepted_at, revoked_at, corporate_email, pm_email, supervisor_email",
+      )
+      .eq("id", data.inviteId)
+      .maybeSingle();
+    if (gErr) throw new Error(gErr.message);
+    if (!inv) throw new Error("Invite not found.");
+    await assertProjectAdmin(context.supabase, inv.project_id, context.userId);
+    if (inv.revoked_at) throw new Error("That invite has been revoked — create a new one.");
+    if (inv.accepted_at) throw new Error("That invite has already been accepted.");
+
+    const token = randomToken();
+    const tokenHash = await sha256Hex(token);
+    const expiresAt = new Date(Date.now() + 30 * 86_400_000).toISOString();
+    const { error } = await context.supabase
+      .from("subcontractor_invites")
+      .update({ token_hash: tokenHash, expires_at: expiresAt })
+      .eq("id", data.inviteId);
+    if (error) throw new Error(error.message);
+
+    const email = inviteEmailOf(inv);
+    let emailed = false;
+    let emailError: string | null = null;
+    if (data.resendEmail) {
+      if (!email) {
+        emailError = "No contact email on this invite — copy the link and send it manually.";
+      } else {
+        const { sendInviteEmail } = await import("@/lib/invite-email.server");
+        const res = await sendInviteEmail(email, `/invite/${token}`);
+        emailed = res.sent;
+        emailError = res.sent ? null : (res.reason ?? "Email send failed.");
+      }
+    }
+
+    return { token, expiresAt, email, emailed, emailError };
+  });
+
+/**
+ * Invite a Site Manager onto the project by email. The account is granted the
+ * site_manager role and project membership immediately so the Package Manager
+ * pickers are usable straight away; the invitee gets a magic link to set up.
+ */
+export const inviteSiteManager = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        projectId: z.string().uuid(),
+        email: z.string().trim().email().max(200),
+        fullName: z.string().trim().max(120).optional().nullable(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
+    const email = data.email.toLowerCase();
+    const nextPath = `/projects/${data.projectId}`;
+
+    const { sendInviteEmail, findAuthUserByEmail } = await import("@/lib/invite-email.server");
+    const sendResult = await sendInviteEmail(email, nextPath);
+
+    const user = await findAuthUserByEmail(email);
+    if (!user) {
+      return {
+        ok: sendResult.sent,
+        emailed: sendResult.sent,
+        emailError: sendResult.reason ?? null,
+        attached: false,
+      };
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: user.id, role: "site_manager" }, { onConflict: "user_id,role" });
+    await supabaseAdmin
+      .from("project_members")
+      .upsert(
+        { project_id: data.projectId, user_id: user.id, role_on_project: "site_manager" },
+        { onConflict: "project_id,user_id" },
+      );
+    if (data.fullName?.trim()) {
+      await supabaseAdmin
+        .from("profiles")
+        .upsert(
+          { user_id: user.id, full_name: data.fullName.trim() },
+          { onConflict: "user_id" },
+        );
+    }
+
+    return {
+      ok: true,
+      emailed: sendResult.sent,
+      emailError: sendResult.reason ?? null,
+      attached: true,
+    };
   });
