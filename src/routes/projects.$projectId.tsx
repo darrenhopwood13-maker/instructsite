@@ -22,7 +22,7 @@ import { TradeDirectoryPanel } from "@/components/admin/TradeDirectoryPanel";
 import { WorkfaceRegisterPanel } from "@/components/admin/WorkfaceRegisterPanel";
 import { getMyRoles } from "@/lib/projects.functions";
 import { listSubcontractorInvites } from "@/lib/subcontractors.functions";
-import { TRADE_PACKAGES } from "@/lib/trade-packages";
+import { TRADE_PACKAGES, canonicalizeTrade } from "@/lib/trade-packages";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import {
   HIGH_RISK_CATEGORIES,
