@@ -606,6 +606,7 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
 
   return (
     <AccordionCard icon={<CalendarClock size={18} />} eyebrow="04" title="Look-Ahead">
+      {dialog}
       <div className="grid gap-3 md:grid-cols-3">
         <Label text="Date">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls()} />
