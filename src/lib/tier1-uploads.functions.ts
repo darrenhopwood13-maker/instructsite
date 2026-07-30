@@ -450,6 +450,9 @@ export const allocateZonesForDabsDrawing = createServerFn({ method: "POST" })
 
 
 
+/** Plans stuck in "processing" longer than this are flipped to failed. */
+const LOGISTICS_TIMEOUT_MS = 5 * 60 * 1000;
+
 export const listProjectLogistics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
@@ -457,13 +460,231 @@ export const listProjectLogistics = createServerFn({ method: "GET" })
     const { data: rows, error } = await context.supabase
       .from("logistics_plans")
       .select(
-        "id,extracted_zones,extraction_status,extraction_error,created_at,site_documents(file_name)",
+        "id,site_document_id,extracted_zones,extraction_status,extraction_error,extraction_started_at,created_at,updated_at,site_documents(file_name,mime_type)",
       )
       .eq("project_id", data.projectId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return rows ?? [];
+
+    // Time-out sweep: anything left "processing" past the deadline is dead —
+    // flag it honestly so the RETRY EXTRACTION button becomes actionable.
+    const now = Date.now();
+    const stale = (rows ?? []).filter((r: any) => {
+      if (r.extraction_status !== "processing") return false;
+      const started = new Date(r.extraction_started_at ?? r.updated_at ?? r.created_at).getTime();
+      return Number.isFinite(started) && now - started > LOGISTICS_TIMEOUT_MS;
+    });
+    if (stale.length > 0) {
+      const reason = "Extraction timed out — press RETRY EXTRACTION to re-run it.";
+      await context.supabase
+        .from("logistics_plans")
+        .update({ extraction_status: "failed", extraction_error: reason })
+        .in(
+          "id",
+          stale.map((r: any) => r.id),
+        );
+      for (const r of stale as any[]) {
+        r.extraction_status = "failed";
+        r.extraction_error = reason;
+      }
+    }
+    return (rows ?? []) as any[];
   });
+
+/**
+ * Re-runs zone extraction on an existing logistics plan (image or PDF) and
+ * links the resulting work zones back to the plan so provenance is honest.
+ */
+export const retryLogisticsExtraction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ logisticsPlanId: z.string().uuid() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: plan, error } = await supabase
+      .from("logistics_plans")
+      .select("id,project_id,site_document_id")
+      .eq("id", data.logisticsPlanId)
+      .maybeSingle();
+    if (error || !plan) throw new Error("Logistics plan not found.");
+    await ensureProjectAccess(supabase, userId, plan.project_id);
+
+    await supabase
+      .from("logistics_plans")
+      .update({
+        extraction_status: "processing",
+        extraction_error: null,
+        extraction_started_at: new Date().toISOString(),
+      } as any)
+      .eq("id", plan.id);
+
+    try {
+      const { extractLogisticsZones } = await import("./logistics-extract.server");
+      const zones = await extractLogisticsZones(supabase, plan.site_document_id);
+
+      if (zones.length === 0) {
+        await supabase
+          .from("logistics_plans")
+          .update({
+            extracted_zones: [],
+            extraction_status: "empty",
+            extraction_error:
+              "No labelled work zones could be read from this plan. Add zones manually if needed.",
+          })
+          .eq("id", plan.id);
+        return { status: "empty" as const, zonesExtracted: 0, zonesLinked: 0 };
+      }
+
+      await supabase
+        .from("logistics_plans")
+        .update({
+          extracted_zones: zones as any,
+          extraction_status: "complete",
+          extraction_error: null,
+        })
+        .eq("id", plan.id);
+
+      // Upsert work zones and stamp their source plan.
+      const seen = new Set<string>();
+      const rows = zones
+        .map((z) => ({
+          project_id: plan.project_id,
+          name: z.name.trim(),
+          level: z.level?.trim() || null,
+          source: "logistics" as const,
+          status: "active" as const,
+          logistics_plan_id: plan.id,
+        }))
+        .filter((r) => {
+          const k = `${r.name.toLowerCase()}|${(r.level ?? "").toLowerCase()}`;
+          if (!r.name || seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+
+      let linked = 0;
+      for (const row of rows) {
+        const { error: upErr } = await (supabase as any)
+          .from("work_zones")
+          .upsert(row, { onConflict: "project_id,name,level,source" });
+        if (!upErr) linked += 1;
+      }
+      return { status: "complete" as const, zonesExtracted: zones.length, zonesLinked: linked };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Extraction failed";
+      await supabase
+        .from("logistics_plans")
+        .update({ extraction_status: "failed", extraction_error: msg })
+        .eq("id", plan.id);
+      throw new Error(msg);
+    }
+  });
+
+/**
+ * Groups the project's drawings by (drawing number + revision + sheet index),
+ * falling back to file name when no metadata was parsed, and returns any group
+ * with more than one row so the user can merge / delete the extras.
+ */
+export const listDuplicateDrawings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("project_drawings")
+      .select(
+        "id,drawing_no,revision,title,page_number,pack_name,in_dabs,created_at,site_documents(file_name)",
+      )
+      .eq("project_id", data.projectId)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+
+    const groups = new Map<string, any[]>();
+    for (const r of (rows ?? []) as any[]) {
+      const fileName = (Array.isArray(r.site_documents) ? r.site_documents[0] : r.site_documents)
+        ?.file_name;
+      const key = r.drawing_no
+        ? `dwg:${String(r.drawing_no).toLowerCase()}|${String(r.revision ?? "").toLowerCase()}|${r.page_number ?? ""}`
+        : `file:${String(fileName ?? r.id).toLowerCase()}`;
+      const list = groups.get(key) ?? [];
+      list.push({ ...r, file_name: fileName ?? null });
+      groups.set(key, list);
+    }
+    return Array.from(groups.entries())
+      .filter(([, list]) => list.length > 1)
+      .map(([key, list]) => ({
+        key,
+        label:
+          list[0].drawing_no
+            ? `${list[0].drawing_no}${list[0].revision ? ` Rev ${list[0].revision}` : ""}${list[0].page_number ? ` · Sheet ${list[0].page_number}` : ""}`
+            : (list[0].file_name ?? "Unnamed sheet"),
+        rows: list,
+      }));
+  });
+
+/** Deletes the given drawing rows (project admins and above). */
+export const deleteDrawingsBulk = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ projectId: z.string().uuid(), drawingIds: z.array(z.string().uuid()).min(1) }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin, error: roleErr } = await supabase.rpc("is_project_admin", {
+      _project_id: data.projectId,
+      _user_id: userId,
+    });
+    if (roleErr) throw new Error(roleErr.message);
+    if (!isAdmin) throw new Error("Project admin role required to remove drawings.");
+
+    const { data: rows, error } = await supabase
+      .from("project_drawings")
+      .select("id,site_document_id")
+      .eq("project_id", data.projectId)
+      .in("id", data.drawingIds);
+    if (error) throw new Error(error.message);
+
+    const docIds = (rows ?? []).map((r: any) => r.site_document_id).filter(Boolean);
+    if (docIds.length > 0) {
+      const { error: delErr } = await supabase.from("site_documents").delete().in("id", docIds);
+      if (delErr) throw new Error(delErr.message);
+    }
+    const { error: pdErr } = await supabase
+      .from("project_drawings")
+      .delete()
+      .in("id", data.drawingIds);
+    if (pdErr) throw new Error(pdErr.message);
+    return { deleted: data.drawingIds.length };
+  });
+
+/**
+ * Pre-flight duplicate check for a drawing pack upload, keyed on project +
+ * pack/file name. Returns the sheets already registered under that name.
+ */
+export const checkDrawingPackDuplicate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ projectId: z.string().uuid(), packName: z.string().min(1) }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("project_drawings")
+      .select("id,drawing_no,revision,page_number,created_at")
+      .eq("project_id", data.projectId)
+      .eq("pack_name", data.packName)
+      .order("page_number", { ascending: true });
+    if (error) throw new Error(error.message);
+    return {
+      matches: (rows ?? []).map((r: any) => ({
+        id: r.id,
+        drawingNo: r.drawing_no,
+        revision: r.revision,
+        pageNumber: r.page_number,
+        createdAt: r.created_at,
+      })),
+    };
+  });
+
 
 export const listProjectRams = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
