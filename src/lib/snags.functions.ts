@@ -18,9 +18,14 @@ const SnagReport = z.object({
 });
 export type SnagReportT = z.infer<typeof SnagReport>;
 
-async function getMyOrgId(supabase: any, userId: string, claims?: any): Promise<string> {
+async function getMyOrgId(
+  supabase: any,
+  userId: string,
+  claims?: any,
+  opts?: { projectId?: string | null; orgId?: string | null },
+): Promise<string> {
   const { resolveActingOrgId } = await import("@/lib/org-membership.server");
-  return resolveActingOrgId(supabase, userId, claims);
+  return resolveActingOrgId(supabase, userId, claims, opts ?? {});
 }
 
 
@@ -99,6 +104,7 @@ export const analyzeSnag = createServerFn({ method: "POST" })
         fileName: z.string(),
         mimeType: z.string(),
         dataBase64: z.string().min(1),
+        projectId: z.string().uuid().optional(),
       })
       .parse(i),
   )
@@ -109,7 +115,9 @@ export const analyzeSnag = createServerFn({ method: "POST" })
       throw new Error("Please upload an image file.");
     }
 
-    const orgId = await getMyOrgId(context.supabase, context.userId, context.claims);
+    const orgId = await getMyOrgId(context.supabase, context.userId, context.claims, {
+      projectId: data.projectId,
+    });
 
     // Upload photo to snag-photos/{orgId}/{uuid}.ext via admin client (still stored under org folder for RLS)
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -239,7 +247,9 @@ export const createSnag = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const orgId = await getMyOrgId(context.supabase, context.userId, context.claims);
+    const orgId = await getMyOrgId(context.supabase, context.userId, context.claims, {
+      projectId: data.projectId,
+    });
     const { data: row, error } = await context.supabase
       .from("snags")
       .insert({
@@ -294,7 +304,15 @@ export const postSnagComment = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const orgId = await getMyOrgId(context.supabase, context.userId, context.claims);
+    // The comment belongs to the snag's org, never to a guessed membership.
+    const { data: snagRow, error: snagErr } = await context.supabase
+      .from("snags")
+      .select("org_id")
+      .eq("id", data.snagId)
+      .maybeSingle();
+    if (snagErr) throw new Error(snagErr.message);
+    if (!snagRow) throw new Error("That snag no longer exists.");
+    const orgId = snagRow.org_id as string;
     const { error } = await context.supabase.from("snag_comments").insert({
       snag_id: data.snagId,
       org_id: orgId,

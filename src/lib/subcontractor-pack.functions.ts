@@ -23,13 +23,16 @@ async function ensureSubcontractor(
   companyName: string,
 ): Promise<string> {
   const name = companyName.trim();
-  const { data: existing } = await supabase
+  // company_name is not unique per project — never single-row this.
+  const { data: existingRows } = await supabase
     .from("subcontractors")
     .select("id")
     .eq("project_id", projectId)
     .ilike("company_name", name)
-    .maybeSingle();
-  if (existing?.id) return existing.id as string;
+    .order("created_at", { ascending: true })
+    .limit(1);
+  const existingId = existingRows?.[0]?.id as string | undefined;
+  if (existingId) return existingId;
   const { data: created, error } = await supabase
     .from("subcontractors")
     .insert({ project_id: projectId, company_name: name })

@@ -61,12 +61,14 @@ export const getMyOrg = createServerFn({ method: "GET" })
     if (isOwnerFromClaims(context.claims)) {
       return { role: "owner" as const, orgId: null, org: null };
     }
-    const { data, error } = await context.supabase
+    // Multi-row safe: a user (and certainly the founder) may belong to many orgs.
+    const { data: rows, error } = await context.supabase
       .from("org_members")
-      .select("role, org_id, orgs:org_id (id, name, slug)")
+      .select("role, org_id, created_at, orgs:org_id (id, name, slug)")
       .eq("user_id", context.userId)
-      .maybeSingle();
+      .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
+    const data = rows?.[0];
     if (!data) return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const org = data.orgs as any;
@@ -99,12 +101,14 @@ export const claimOrgAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ orgId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: existing } = await context.supabase
+    const { data: existingRows } = await context.supabase
       .from("org_members")
       .select("id")
       .eq("user_id", context.userId)
-      .maybeSingle();
-    if (existing) throw new Error("You already belong to an organisation.");
+      .limit(1);
+    if (existingRows && existingRows.length > 0) {
+      throw new Error("You already belong to an organisation.");
+    }
 
     const { error } = await context.supabase.from("org_members").insert({
       org_id: data.orgId,
@@ -133,13 +137,13 @@ export const joinOrgAsSub = createServerFn({ method: "POST" })
     if (orgErr) throw new Error(orgErr.message);
     if (!org) throw new Error("Organisation not found.");
 
-    const { data: existing } = await context.supabase
+    const { data: existingRows } = await context.supabase
       .from("org_members")
       .select("id, org_id")
-      .eq("user_id", context.userId)
-      .maybeSingle();
+      .eq("user_id", context.userId);
+    const existing = existingRows?.[0];
     if (existing) {
-      if (existing.org_id === org.id) return { ok: true, orgId: org.id };
+      if (existingRows!.some((m) => m.org_id === org.id)) return { ok: true, orgId: org.id };
       throw new Error("You already belong to another organisation.");
     }
 
@@ -160,11 +164,12 @@ export const joinOrgAsSub = createServerFn({ method: "POST" })
 export const listOrgMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: me } = await context.supabase
+    const { data: myRows } = await context.supabase
       .from("org_members")
-      .select("org_id, role")
+      .select("org_id, role, created_at")
       .eq("user_id", context.userId)
-      .maybeSingle();
+      .order("created_at", { ascending: true });
+    const me = myRows?.[0];
     if (!me) return { orgId: null, myRole: null, members: [] };
 
     const { data: members, error } = await context.supabase
