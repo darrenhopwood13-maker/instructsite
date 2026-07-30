@@ -179,9 +179,32 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
       return { ok: false as const, count: 0, unmapped: data.elements.length, reason: "No work zones defined" };
     }
 
+    // Site-setup / logistics zones describe where plant, welfare and access
+    // live — they are NOT places building elements get built. Allocating a
+    // whole house model into "Scaffold Perimeter" is worse than no allocation,
+    // so they are excluded as auto-allocation targets.
+    const LOGISTICS_ZONE =
+      /(scaffold|compound|welfare|site\s*office|skip|waste|storage|coshh|crane\s*standing|lift\s*zone|exclusion|entrance|gate|pedestrian|haul|route|parking|laydown|hoarding)/i;
+    const buildableZones = zones.filter((z) => !LOGISTICS_ZONE.test(z.name));
+    const excludedLogistics = zones.length - buildableZones.length;
+
+    if (buildableZones.length === 0) {
+      return {
+        ok: true as const,
+        count: 0,
+        unmapped: data.elements.length,
+        confidence: { hard: 0, strong: 0, weak: 0 },
+        reason:
+          "Every work zone on this project is a site-logistics zone (scaffold, compound, welfare, skips, exclusion zones). Those describe site setup, not where the building gets built — create build zones (e.g. \"Ground Floor\", \"First Floor\", \"Roof\", \"Substructure\") before auto-allocating.",
+      };
+    }
+
+    // Whole-word matching only: naive substring matching produced nonsense hits.
     const findZone = (candidates: string[]) => {
       for (const c of candidates) {
-        const z = zones.find((z) => z.name.toLowerCase().includes(c.toLowerCase()));
+        const needle = c.toLowerCase().trim();
+        const re = new RegExp(`(^|[^a-z0-9])${needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`, "i");
+        const z = buildableZones.find((z) => re.test(z.name));
         if (z) return z.id;
       }
       return null;
@@ -260,13 +283,83 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
       missedLabels.size > 0
         ? ` (skipped: ${Array.from(missedLabels).join(", ")} — no matching zone)`
         : "";
+    const logisticsNote =
+      excludedLogistics > 0
+        ? ` · ${excludedLogistics} site-logistics zone${excludedLogistics === 1 ? "" : "s"} excluded as targets`
+        : "";
     return {
       ok: true as const,
       count: rows.length,
       unmapped,
       confidence,
-      reason: `Allocated ${rows.length} of ${inspected} · ${confidence.hard} hard · ${confidence.strong} strong · ${confidence.weak} weak${suffix}`,
+      reason: `Allocated ${rows.length} of ${inspected} · ${confidence.hard} hard · ${confidence.strong} strong · ${confidence.weak} weak${suffix}${logisticsNote}`,
     };
+  });
+
+const elementInput = z.object({
+  globalId: z.string().min(1).max(64),
+  expressId: z.number().int().nonnegative().optional(),
+  ifcType: z.string().max(64),
+  name: z.string().max(300).nullable().optional(),
+  objectType: z.string().max(300).nullable().optional(),
+  longName: z.string().max(300).nullable().optional(),
+  storey: z.string().max(200).nullable().optional(),
+});
+
+/** Persist the client-side model scan so the mapping table has real labels. */
+export const saveModelElements = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        modelId: z.string().uuid(),
+        elements: z.array(elementInput).max(20000),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    if (data.elements.length === 0) return { ok: true as const, count: 0 };
+    const payload = data.elements.map((e) => ({
+      model_id: data.modelId,
+      global_id: e.globalId,
+      express_id: e.expressId ?? null,
+      ifc_type: e.ifcType,
+      name: e.name ?? null,
+      object_type: e.objectType ?? null,
+      long_name: e.longName ?? null,
+      storey: e.storey ?? null,
+    }));
+    // Chunked to keep each request comfortably inside payload limits.
+    for (let i = 0; i < payload.length; i += 500) {
+      const { error } = await context.supabase
+        .from("ifc_model_elements")
+        .upsert(payload.slice(i, i + 500), { onConflict: "model_id,global_id" });
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true as const, count: payload.length };
+  });
+
+/** Stored catalogue for the active model — drives the mapping table labels. */
+export const listModelElements = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => projectIdInput.parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: model } = await context.supabase
+      .from("project_ifc_models")
+      .select("id")
+      .eq("project_id", data.projectId)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (!model) return [];
+
+    const { data: rows, error } = await context.supabase
+      .from("ifc_model_elements")
+      .select("global_id, express_id, ifc_type, name, object_type, long_name, storey")
+      .eq("model_id", model.id)
+      .order("ifc_type")
+      .limit(20000);
+    if (error) throw new Error(error.message);
+    return rows ?? [];
   });
 
 export const listIfcModels = createServerFn({ method: "GET" })

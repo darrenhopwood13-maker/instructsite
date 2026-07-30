@@ -532,6 +532,56 @@ export type Database = {
           },
         ]
       }
+      ifc_model_elements: {
+        Row: {
+          created_at: string
+          express_id: number | null
+          global_id: string
+          id: string
+          ifc_type: string
+          long_name: string | null
+          model_id: string
+          name: string | null
+          object_type: string | null
+          storey: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          express_id?: number | null
+          global_id: string
+          id?: string
+          ifc_type?: string
+          long_name?: string | null
+          model_id: string
+          name?: string | null
+          object_type?: string | null
+          storey?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          express_id?: number | null
+          global_id?: string
+          id?: string
+          ifc_type?: string
+          long_name?: string | null
+          model_id?: string
+          name?: string | null
+          object_type?: string | null
+          storey?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ifc_model_elements_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "project_ifc_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_site_activity: {
         Row: {
           activity_id: string | null
