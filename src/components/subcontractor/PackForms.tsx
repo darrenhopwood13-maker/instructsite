@@ -331,6 +331,7 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
 export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: PackFormProps) {
   const fn = useServerFn(addRegister);
   const dupeFn = useServerFn(checkRegisterDuplicate);
+  const { confirm, dialog } = useConfirm();
   const [type, setType] = useState<(typeof REGISTER_TYPE_OPTIONS)[number]>("PUWER");
   const [asset, setAsset] = useState("");
   const [date, setDate] = useState("");
