@@ -341,9 +341,28 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
 
   const dateStamp = new Date().toISOString().slice(0, 10);
   const filename = `${safeFile(input.companyName || "Subcontractor")}_Weekly_Pack_${dateStamp}.pdf`;
-  pdf.save(filename);
-  // Also hand back the bytes so the caller can archive the pack as issued.
   const blob = pdf.output("blob") as Blob;
+
+  // Trigger the download ourselves rather than pdf.save(): jsPDF injects a
+  // persistent anchor/iframe into <body> which can widen the page and cause a
+  // horizontal scrollbar. This anchor is off-flow and removed immediately.
+  if (typeof document !== "undefined") {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    a.style.position = "fixed";
+    a.style.left = "-9999px";
+    a.style.width = "0";
+    a.style.height = "0";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  }
+
   return { filename, blob };
 }
+
 

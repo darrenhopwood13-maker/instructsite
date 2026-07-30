@@ -62,10 +62,11 @@ function ManagerPackPage() {
   const active = useMemo(() => subs.find((s) => s.id === activeId) ?? null, [subs, activeId]);
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
+    <div className="relative min-h-[calc(100vh-4rem)] w-full max-w-full overflow-x-hidden bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />
-      <div className="relative mx-auto max-w-7xl px-6 py-10">
+      <div className="relative mx-auto w-full min-w-0 max-w-7xl px-6 py-10">
+
         <Link
           to="/site-manager/$projectId"
           params={{ projectId }}
@@ -263,8 +264,12 @@ function SubDetail({
     staleTime: 30_000,
   });
 
+  const rangeLabel = `${startDate ? new Date(startDate + "T00:00:00").toLocaleDateString("en-GB") : "start"} – ${endDate ? new Date(endDate + "T00:00:00").toLocaleDateString("en-GB") : "today"}`;
+
   const download = async () => {
+    if (downloading) return;
     setDownloading(true);
+    const buildingId = toast.loading(`Building weekly pack for ${sub.company_name} · ${rangeLabel}…`);
     try {
       const { filename, blob } = await generateWeeklyPackPdf({
         projectName,
@@ -281,7 +286,11 @@ function SubDetail({
         },
       });
 
-      toast.success(`Weekly Pack Generated: ${filename}`);
+      toast.success(`Downloaded ${filename}`, {
+        id: buildingId,
+        description: `${sub.company_name} · ${rangeLabel}`,
+      });
+
 
       // Archive the pack exactly as issued — versioned, never overwritten.
       try {
@@ -314,7 +323,11 @@ function SubDetail({
         );
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to generate pack");
+      toast.error(
+        `Pack generation failed — ${e instanceof Error ? e.message : "unknown error"}`,
+        { id: buildingId, description: `${sub.company_name} · ${rangeLabel}` },
+      );
+
     } finally {
       setDownloading(false);
     }
@@ -334,7 +347,7 @@ function SubDetail({
     "rounded-md border border-white/15 bg-black/40 px-2 py-1.5 font-mono text-[0.7rem] text-foreground outline-none focus:border-alert";
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 w-full min-w-0 max-w-full">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
@@ -363,12 +376,14 @@ function SubDetail({
         </div>
       </div>
 
-      <div className="glass-panel mt-4 p-6">
+      <div className="glass-panel mt-4 w-full min-w-0 max-w-full overflow-hidden p-6">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/10 pb-4">
-          <div>
+          <div className="min-w-0 max-w-full">
+
             <p className="text-[0.6rem] uppercase tracking-[0.35em] text-alert">Subcontractor</p>
             <h2
-              className="mt-1 text-3xl font-extrabold uppercase tracking-tight text-foreground"
+              className="mt-1 break-words text-2xl font-extrabold uppercase tracking-tight text-foreground sm:text-3xl"
+
               style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
             >
               {sub.company_name}
@@ -403,7 +418,7 @@ function SubDetail({
           ))}
         </div>
 
-        <div className="mt-5">
+        <div className="mt-5 w-full min-w-0 max-w-full">
           {tab === "labour" && <LabourTable workers={filteredWorkers} onOpen={openDoc} />}
           {tab === "registers" && <RegisterTable registers={filteredRegisters} onOpen={openDoc} />}
           {tab === "talks" && <TalksTable talks={filteredTalks} />}
@@ -503,8 +518,9 @@ function PackHistoryPanel({ issues, loading }: { issues: PackIssue[]; loading: b
 function TableShell({ head, empty, children }: { head: string[]; empty: string; children: React.ReactNode }) {
   const isEmpty = Array.isArray(children) ? children.length === 0 : !children;
   return (
-    <div className="overflow-x-auto rounded-md border border-white/10">
-      <table className="w-full text-left text-xs">
+    <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-md border border-white/10">
+      <table className="w-full min-w-[640px] text-left text-xs">
+
         <thead className="bg-black/40 text-[0.55rem] uppercase tracking-[0.28em] text-foreground/60">
           <tr>
             {head.map((h) => (
