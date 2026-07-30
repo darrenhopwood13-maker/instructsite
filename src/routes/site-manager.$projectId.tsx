@@ -105,6 +105,22 @@ function SiteManagerPage() {
     refetchInterval: 8000,
     staleTime: 4_000,
   });
+  // Future-dated shifts are scheduled, not on site — keep them out of the
+  // live on-site counters.
+  const onSitePins = useMemo(
+    () =>
+      ((projectPins.data ?? []) as any[]).filter(
+        (p) => !p.start_time || new Date(p.start_time).getTime() <= Date.now(),
+      ),
+    [projectPins.data],
+  );
+  const scheduledPins = useMemo(
+    () =>
+      ((projectPins.data ?? []) as any[]).filter(
+        (p) => p.start_time && new Date(p.start_time).getTime() > Date.now(),
+      ),
+    [projectPins.data],
+  );
   const pins = useMemo(() => {
     const all = projectPins.data ?? [];
     return {
@@ -278,15 +294,16 @@ function SiteManagerPage() {
         </section>
 
         <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Active Pins" value={String((projectPins.data ?? []).length)} />
+          <StatCard label="Active Pins" value={String(onSitePins.length)} />
           <StatCard
             label="Operatives On Site"
             value={String(
-              (projectPins.data ?? []).reduce(
-                (s: number, p: any) => s + (p.operative_count ?? 0),
-                0,
-              ),
+              onSitePins.reduce((s: number, p: any) => s + (p.operative_count ?? 0), 0),
             )}
+          />
+          <StatCard
+            label="Scheduled (Future)"
+            value={String(scheduledPins.length)}
           />
           <StatCard label="Overtime" value={String(overtime.length)} tone={overtime.length ? "alert" : "ok"} />
           <StatCard label="Archived Today" value={String(archivedToday.data?.count ?? 0)} />
