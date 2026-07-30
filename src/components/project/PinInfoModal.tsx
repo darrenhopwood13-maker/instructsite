@@ -109,7 +109,11 @@ export function PinInfoModal({
               {pin?.trade_package ?? "Untagged Crew"}
             </h3>
             <p className="mt-0.5 truncate text-[0.65rem] uppercase tracking-widest text-foreground/60">
-              {q.data?.companyName ?? q.data?.subcontractorName ?? "Loading crew…"}
+              {q.isLoading
+                ? "Loading crew…"
+                : (q.data?.companyName ??
+                  q.data?.subcontractorName ??
+                  (pin?.trade_package ? "Crew not linked" : "Unassigned crew"))}
             </p>
           </div>
           <button
@@ -135,12 +139,16 @@ export function PinInfoModal({
 
           {pin && (
             <>
-              <Row icon={<Building2 size={12} />} label="Company">
-                {q.data?.companyName ?? "—"}
-              </Row>
-              <Row icon={<HardHat size={12} />} label="Operative">
-                {q.data?.subcontractorName ?? "—"}
-              </Row>
+              {q.data?.companyName && (
+                <Row icon={<Building2 size={12} />} label="Company">
+                  {q.data.companyName}
+                </Row>
+              )}
+              {q.data?.subcontractorName && (
+                <Row icon={<HardHat size={12} />} label="Operative">
+                  {q.data.subcontractorName}
+                </Row>
+              )}
               <Row icon={<Users size={12} />} label="Crew size">
                 {pin.operative_count} operatives
               </Row>
@@ -204,7 +212,8 @@ export function PinInfoModal({
 
 
               <PermitsBlock
-                needed={!!pin.permit_required}
+                scanned={!!pin.hazard_scanned}
+                needed={!!pin.permit_required || (pin.high_risk_flags ?? []).length > 0}
                 status={pin.permit_status}
                 flags={pin.high_risk_flags ?? []}
                 permits={q.data?.permits ?? []}
@@ -242,11 +251,13 @@ function Row({
 }
 
 function PermitsBlock({
+  scanned,
   needed,
   status,
   flags,
   permits,
 }: {
+  scanned: boolean;
   needed: boolean;
   status?: string | null;
   flags: string[];
@@ -263,6 +274,15 @@ function PermitsBlock({
       p.status === "active" &&
       (!p.valid_to || new Date(p.valid_to).getTime() > Date.now()),
   );
+
+  if (!scanned && !needed && active.length === 0) {
+    return (
+      <div className="rounded-md border border-amber-400/50 bg-amber-400/10 px-2.5 py-2 text-[0.65rem] uppercase tracking-widest text-amber-300">
+        <ShieldAlert size={12} className="mr-1 inline" /> Hazard detection not run · permit status
+        unverified
+      </div>
+    );
+  }
 
   if (!needed && active.length === 0) {
     return (

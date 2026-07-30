@@ -537,6 +537,7 @@ export type Database = {
           activity_id: string | null
           created_at: string
           drawing_id: string | null
+          hazard_scanned: boolean
           high_risk_flags: string[]
           id: string
           notes: string | null
@@ -559,6 +560,7 @@ export type Database = {
           activity_id?: string | null
           created_at?: string
           drawing_id?: string | null
+          hazard_scanned?: boolean
           high_risk_flags?: string[]
           id?: string
           notes?: string | null
@@ -581,6 +583,7 @@ export type Database = {
           activity_id?: string | null
           created_at?: string
           drawing_id?: string | null
+          hazard_scanned?: boolean
           high_risk_flags?: string[]
           id?: string
           notes?: string | null
