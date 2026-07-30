@@ -1,9 +1,9 @@
 import type jsPDF from "jspdf";
 
-type Worker = { name: string; role?: string | null; competency_card_url?: string | null; created_at: string };
-type Register = { type: string; asset_name?: string | null; inspection_date?: string | null; certificate_url?: string | null; created_at: string };
-type ToolboxTalk = { topic: string; attendance_list?: unknown; date?: string | null; created_at: string };
-type LookAhead = { work_plan: string; is_high_risk?: boolean; permit_required?: boolean; date?: string | null; created_at: string };
+type Worker = { name: string; role?: string | null; competency_card_url?: string | null; card_type?: string | null; card_number?: string | null; card_expiry?: string | null; recorded_by?: string | null; created_at: string };
+type Register = { type: string; asset_name?: string | null; inspection_date?: string | null; next_inspection_due?: string | null; inspector?: string | null; certificate_url?: string | null; recorded_by?: string | null; created_at: string };
+type ToolboxTalk = { topic: string; attendance_list?: unknown; date?: string | null; presenter?: string | null; recorded_by?: string | null; created_at: string };
+type LookAhead = { work_plan: string; is_high_risk?: boolean; permit_required?: boolean; date?: string | null; recorded_by?: string | null; created_at: string };
 
 export type WeeklyPackInput = {
   projectName: string;
@@ -12,6 +12,9 @@ export type WeeklyPackInput = {
   registers: Register[];
   toolboxTalks: ToolboxTalk[];
   lookAheads: LookAhead[];
+  /** Optional explicit reporting range (YYYY-MM-DD). Defaults to the current Mon–Sun week. */
+  rangeStart?: string | null;
+  rangeEnd?: string | null;
   /** Optional resolver that turns a stored path/URL into a temporary fetchable URL (e.g. Supabase signed URL). */
   resolveUrl?: (path: string) => Promise<string>;
 };
@@ -80,7 +83,13 @@ async function loadPdfLibs() {
 
 export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ filename: string }> {
   const { JsPDF, autoTable } = await loadPdfLibs();
-  const { start, end, label } = currentWeekRange();
+  let { start, end, label } = currentWeekRange();
+  if (input.rangeStart || input.rangeEnd) {
+    start = input.rangeStart ? new Date(`${input.rangeStart}T00:00:00`) : new Date(0);
+    end = input.rangeEnd ? new Date(`${input.rangeEnd}T23:59:59.999`) : new Date(8640000000000000);
+    const fmt = (x: Date) => x.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    label = `${input.rangeStart ? fmt(start) : "Start"} – ${input.rangeEnd ? fmt(end) : "Today"}`;
+  }
 
   const workers = input.workers.filter((w) => withinWeek(w.created_at, start, end));
   const registers = input.registers.filter((r) => withinWeek(r.inspection_date ?? r.created_at, start, end));
@@ -119,7 +128,7 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
   pdf.setFontSize(9);
   pdf.text(`Subcontractor: ${input.companyName || "—"}`, margin, y);
   y += 4.5;
-  pdf.text(`Week: ${label}`, margin, y);
+  pdf.text(`Period: ${label}`, margin, y);
   y += 4.5;
   pdf.text(`Generated: ${new Date().toLocaleString("en-GB")}`, margin, y);
   y += 6;
@@ -138,7 +147,7 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
   const runTable = (head: string[][], body: (string | { content: string; styles?: any })[][], opts?: any) => {
     autoTable(pdf, {
       head,
-      body: body.length ? body : [[{ content: "— No entries logged this week —", colSpan: head[0].length, styles: { halign: "center", textColor: [120, 120, 120], fontStyle: "italic" } }]],
+      body: body.length ? body : [[{ content: "— No entries logged in this period —", colSpan: head[0].length, styles: { halign: "center", textColor: [120, 120, 120], fontStyle: "italic" } }]],
       startY: y,
       theme: "grid",
       margin: { left: margin, right: margin },
@@ -154,35 +163,38 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
   // Table 1 — Labour Roster
   sectionHeader("TABLE 1 · LABOUR ROSTER & COMPETENCY");
   runTable(
-    [["#", "Name", "Role", "Competency Card", "Logged"]],
+    [["#", "Name", "Role", "Card", "Competency Card", "Source"]],
     workers.map((w, i) => [
       String(i + 1),
       w.name,
       w.role || "—",
+      [w.card_type, w.card_number].filter(Boolean).join(" ") || "—",
       w.competency_card_url ? "On file" : "Missing",
-      new Date(w.created_at).toLocaleDateString("en-GB"),
+      w.recorded_by ? "Site Manager" : "Subcontractor",
     ]),
-    { columnStyles: { 0: { cellWidth: 8 }, 3: { cellWidth: 30 }, 4: { cellWidth: 22 } } },
+    { columnStyles: { 0: { cellWidth: 8 }, 4: { cellWidth: 24 }, 5: { cellWidth: 26 } } },
   );
 
   // Table 2 — Safety Registers
   sectionHeader("TABLE 2 · SAFETY REGISTERS (PUWER / LOLER / HAVS / PLANT)");
   runTable(
-    [["#", "Type", "Asset", "Inspection Date", "Certificate"]],
+    [["#", "Type", "Asset", "Inspection", "Next Due", "Certificate", "Source"]],
     registers.map((r, i) => [
       String(i + 1),
       r.type,
       r.asset_name || "—",
       r.inspection_date ? new Date(r.inspection_date).toLocaleDateString("en-GB") : "—",
+      r.next_inspection_due ? new Date(r.next_inspection_due).toLocaleDateString("en-GB") : "—",
       r.certificate_url ? "On file" : "Missing",
+      r.recorded_by ? "Site Manager" : "Subcontractor",
     ]),
-    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 22 }, 3: { cellWidth: 30 }, 4: { cellWidth: 26 } } },
+    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 18 }, 3: { cellWidth: 21 }, 4: { cellWidth: 21 }, 5: { cellWidth: 20 }, 6: { cellWidth: 24 } } },
   );
 
   // Table 3 — Toolbox Talks
   sectionHeader("TABLE 3 · TOOLBOX TALKS");
   runTable(
-    [["#", "Date", "Topic", "Attendees"]],
+    [["#", "Date", "Topic", "Attendees", "Source"]],
     talks.map((t, i) => {
       const attendees = Array.isArray(t.attendance_list) ? (t.attendance_list as unknown[]) : [];
       return [
@@ -190,15 +202,16 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
         new Date(t.date ?? t.created_at).toLocaleDateString("en-GB"),
         t.topic || "—",
         `${attendees.length} · ${attendees.slice(0, 6).map((a) => String(a)).join(", ")}${attendees.length > 6 ? "…" : ""}`,
+        t.recorded_by ? "Site Manager" : "Subcontractor",
       ];
     }),
-    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 22 }, 2: { cellWidth: 45 } } },
+    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 20 }, 2: { cellWidth: 40 }, 4: { cellWidth: 26 } } },
   );
 
   // Table 4 — Look-Ahead
   sectionHeader("TABLE 4 · LOOK-AHEAD WORK PLAN");
   runTable(
-    [["#", "Date", "Work Plan", "Flags"]],
+    [["#", "Date", "Work Plan", "Flags", "Source"]],
     aheads.map((l, i) => {
       const flags: string[] = [];
       if (l.is_high_risk) flags.push("HIGH RISK");
@@ -210,9 +223,10 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
         new Date(l.date ?? l.created_at).toLocaleDateString("en-GB"),
         l.work_plan,
         { content: flagText, styles: flagged ? { textColor: [200, 30, 30], fontStyle: "bold" } : {} },
+        l.recorded_by ? "Site Manager" : "Subcontractor",
       ];
     }),
-    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 22 }, 3: { cellWidth: 40 } } },
+    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 20 }, 3: { cellWidth: 32 }, 4: { cellWidth: 26 } } },
   );
 
 
