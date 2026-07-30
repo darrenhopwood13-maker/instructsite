@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type BibleDocument = {
   id: string; // site_document_id (or programme_upload id for programmes, or model id for models)
-  source: "drawing" | "logistics" | "rams" | "programme" | "report" | "model";
+  source: "drawing" | "logistics" | "rams" | "programme" | "report" | "model" | "pack";
   title: string;
   category: string;
   fileName: string;
@@ -223,7 +223,37 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
       }
     }
 
+    // Issued subcontractor weekly packs (archived as-issued, versioned)
+    {
+      const { data: rows, error } = await supabase
+        .from("subcontractor_pack_issues")
+        .select("id,filename,storage_path,version,byte_size,generated_at,range_start,range_end,subcontractors(company_name)")
+        .eq("project_id", data.projectId);
+      if (error) throw new Error(error.message);
+      for (const row of (rows ?? []) as any[]) {
+        const company =
+          (Array.isArray(row.subcontractors) ? row.subcontractors[0]?.company_name : row.subcontractors?.company_name) ??
+          "Subcontractor";
+        const range = `${row.range_start ?? "start"} → ${row.range_end ?? "today"}`;
+        docs.push({
+          id: row.id,
+          source: "pack",
+          title: `${company} · Weekly Pack v${row.version} · ${range}`,
+          category: "Subcontractor Packs",
+          fileName: row.filename,
+          mimeType: "application/pdf",
+          bucket: "subcontractor-packs",
+          filePath: row.storage_path,
+          sizeBytes: row.byte_size ?? null,
+          uploadedAt: row.generated_at,
+          extractionStatus: null,
+          archived: false,
+        });
+      }
+    }
+
     // Dedupe by (bucket + filePath), keep first occurrence
+
     const seen = new Set<string>();
     const unique = docs.filter((d) => {
       const key = `${d.bucket}::${d.filePath}`;

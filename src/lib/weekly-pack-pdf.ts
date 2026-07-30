@@ -81,7 +81,7 @@ async function loadPdfLibs() {
   return { JsPDF, autoTable };
 }
 
-export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ filename: string }> {
+export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ filename: string; blob: Blob }> {
   const { JsPDF, autoTable } = await loadPdfLibs();
   let { start, end, label } = currentWeekRange();
   if (input.rangeStart || input.rangeEnd) {
@@ -342,5 +342,8 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
   const dateStamp = new Date().toISOString().slice(0, 10);
   const filename = `${safeFile(input.companyName || "Subcontractor")}_Weekly_Pack_${dateStamp}.pdf`;
   pdf.save(filename);
-  return { filename };
+  // Also hand back the bytes so the caller can archive the pack as issued.
+  const blob = pdf.output("blob") as Blob;
+  return { filename, blob };
 }
+

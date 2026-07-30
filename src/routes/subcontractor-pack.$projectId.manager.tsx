@@ -2,14 +2,25 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ExternalLink, Loader2, HardHat, ShieldCheck, MessagesSquare, CalendarRange, FileDown, ChevronRight, Users, PencilLine } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, HardHat, ShieldCheck, MessagesSquare, CalendarRange, FileDown, ChevronRight, Users, PencilLine, History as HistoryIcon, Download } from "lucide-react";
 import { toast } from "sonner";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { getProject } from "@/lib/projects.functions";
 import { getManagerPack, getComplianceSignedUrl } from "@/lib/subcontractor-pack.functions";
+import {
+  createPackIssue,
+  finalizePackIssue,
+  listPackIssues,
+  getPackIssueSignedUrl,
+  PACK_BUCKET,
+  type PackIssue,
+
+} from "@/lib/pack-archive.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { generateWeeklyPackPdf } from "@/lib/weekly-pack-pdf";
 import { PackFormStack, RecordedByBadge } from "@/components/subcontractor/PackForms";
+
 
 export const Route = createFileRoute("/subcontractor-pack/$projectId/manager")({
   head: () => ({ meta: [{ title: "Subcontractors Weekly Pack — Manager" }] }),
@@ -182,7 +193,7 @@ function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string
   );
 }
 
-type TabKey = "labour" | "registers" | "talks" | "lookahead" | "record";
+type TabKey = "labour" | "registers" | "talks" | "lookahead" | "history" | "record";
 
 function SubDetail({
   sub,
@@ -240,10 +251,22 @@ function SubDetail({
   const filteredTalks = filterByDate<any>(sub.toolboxTalks ?? []);
   const filteredLookAheads = filterByDate<any>(sub.lookAheads ?? []);
 
+  const createIssue = useServerFn(createPackIssue);
+  const finalizeIssue = useServerFn(finalizePackIssue);
+  const listIssues = useServerFn(listPackIssues);
+  const qc = useQueryClient();
+
+  const history = useQuery({
+    queryKey: ["pack-issues", projectId, sub.id],
+    queryFn: () => listIssues({ data: { projectId, subcontractorId: sub.id } }),
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
+  });
+
   const download = async () => {
     setDownloading(true);
     try {
-      const { filename } = await generateWeeklyPackPdf({
+      const { filename, blob } = await generateWeeklyPackPdf({
         projectName,
         companyName: sub.company_name,
         workers: filteredWorkers,
@@ -259,6 +282,37 @@ function SubDetail({
       });
 
       toast.success(`Weekly Pack Generated: ${filename}`);
+
+      // Archive the pack exactly as issued — versioned, never overwritten.
+      try {
+        const issue = await createIssue({
+          data: {
+            projectId,
+            subcontractorId: sub.id,
+            rangeStart: startDate || null,
+            rangeEnd: endDate || null,
+            filename,
+            counts: {
+              labour: filteredWorkers.length,
+              registers: filteredRegisters.length,
+              talks: filteredTalks.length,
+              lookAhead: filteredLookAheads.length,
+            },
+          },
+        });
+        const up = await supabase.storage
+          .from(PACK_BUCKET)
+          .upload(issue.storagePath, blob, { contentType: "application/pdf", upsert: false });
+        if (up.error) throw new Error(up.error.message);
+        await finalizeIssue({ data: { issueId: issue.id, byteSize: blob.size } });
+        qc.invalidateQueries({ queryKey: ["pack-issues", projectId, sub.id] });
+        qc.invalidateQueries({ queryKey: ["project-bible", projectId] });
+        toast.success(`Archived to pack history (v${issue.version}).`);
+      } catch (archiveErr) {
+        toast.error(
+          `Pack downloaded, but archiving failed — ${archiveErr instanceof Error ? archiveErr.message : "unknown error"}`,
+        );
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to generate pack");
     } finally {
@@ -271,8 +325,10 @@ function SubDetail({
     { key: "registers", label: "Safety Registers", icon: <ShieldCheck size={13} />, count: filteredRegisters.length },
     { key: "talks", label: "Toolbox Talks", icon: <MessagesSquare size={13} />, count: filteredTalks.length },
     { key: "lookahead", label: "Look-Ahead", icon: <CalendarRange size={13} />, count: filteredLookAheads.length },
+    { key: "history", label: "Pack History", icon: <HistoryIcon size={13} />, count: history.data?.length ?? 0 },
     { key: "record", label: "Record On Behalf", icon: <PencilLine size={13} />, count: 0 },
   ];
+
 
   const dateInputCls =
     "rounded-md border border-white/15 bg-black/40 px-2 py-1.5 font-mono text-[0.7rem] text-foreground outline-none focus:border-alert";
@@ -352,6 +408,10 @@ function SubDetail({
           {tab === "registers" && <RegisterTable registers={filteredRegisters} onOpen={openDoc} />}
           {tab === "talks" && <TalksTable talks={filteredTalks} />}
           {tab === "lookahead" && <LookAheadTable rows={filteredLookAheads} />}
+          {tab === "history" && (
+            <PackHistoryPanel issues={history.data ?? []} loading={history.isLoading} />
+          )}
+
           {tab === "record" && (
             <div>
               <div className="mb-4 rounded-md border border-sky-400/40 bg-sky-400/5 p-4">
@@ -371,6 +431,74 @@ function SubDetail({
     </div>
   );
 }
+
+function PackHistoryPanel({ issues, loading }: { issues: PackIssue[]; loading: boolean }) {
+  const getUrl = useServerFn(getPackIssueSignedUrl);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const download = async (id: string) => {
+    setBusy(id);
+    try {
+      const { url } = await getUrl({ data: { issueId: id } });
+      if (!url) throw new Error("Stored file is unavailable.");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't fetch that pack.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const fmtRange = (a: string | null, b: string | null) =>
+    `${a ? new Date(a + "T00:00:00").toLocaleDateString("en-GB") : "Start"} – ${b ? new Date(b + "T00:00:00").toLocaleDateString("en-GB") : "Today"}`;
+  const fmtSize = (n: number | null) => (n ? `${(n / 1024).toFixed(0)} KB` : "—");
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 p-6 text-xs text-foreground/60">
+        <Loader2 size={14} className="animate-spin" /> Loading pack history…
+      </div>
+    );
+  }
+
+  return (
+    <TableShell
+      head={["Period", "Version", "Issued by", "Issued", "Contents", "Size", ""]}
+      empty="No packs have been issued for this subcontractor yet."
+    >
+      {issues.map((i) => (
+        <tr key={i.id} className="hover:bg-white/[0.02]">
+          <td className="px-3 py-2 font-bold text-foreground">{fmtRange(i.rangeStart, i.rangeEnd)}</td>
+          <td className="px-3 py-2">
+            <span className="rounded-sm border border-alert/50 bg-alert/10 px-2 py-0.5 font-mono text-[0.6rem] font-bold uppercase tracking-widest text-alert">
+              v{i.version}
+            </span>
+          </td>
+          <td className="px-3 py-2 text-foreground/80">{i.generatedByName || "Unknown user"}</td>
+          <td className="px-3 py-2 font-mono text-[0.65rem] text-foreground/70">
+            {new Date(i.generatedAt).toLocaleString("en-GB")}
+          </td>
+          <td className="px-3 py-2 font-mono text-[0.6rem] text-foreground/60">
+            {`${i.counts.labour ?? 0} labour · ${i.counts.registers ?? 0} reg · ${i.counts.talks ?? 0} talks · ${i.counts.lookAhead ?? 0} look-ahead`}
+          </td>
+          <td className="px-3 py-2 font-mono text-[0.65rem] text-foreground/60">{fmtSize(i.byteSize)}</td>
+          <td className="px-3 py-2 text-right">
+            <button
+              type="button"
+              onClick={() => download(i.id)}
+              disabled={busy === i.id}
+              className="inline-flex items-center gap-1.5 rounded-md border border-alert/50 bg-alert/10 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-alert hover:bg-alert/20 disabled:opacity-60"
+            >
+              {busy === i.id ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+              Download
+            </button>
+          </td>
+        </tr>
+      ))}
+    </TableShell>
+  );
+}
+
 
 function TableShell({ head, empty, children }: { head: string[]; empty: string; children: React.ReactNode }) {
   const isEmpty = Array.isArray(children) ? children.length === 0 : !children;
