@@ -23,7 +23,7 @@ function JoinOrgPage() {
       try {
         await joinFn({ data: { slug } });
         setState("done");
-        setTimeout(() => navigate({ to: "/snags" }), 1200);
+        setTimeout(() => navigate({ to: "/snags", search: {} }), 1200);
       } catch (e) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setError((e as any)?.message || "Could not join.");

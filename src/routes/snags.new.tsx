@@ -119,7 +119,8 @@ function NewSnagPage() {
       <div className="aurora-bg" />
       <div className="grain-overlay" />
       <div className="relative mx-auto max-w-4xl px-6 py-10">
-        <Link to="/snags" className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-foreground/60 hover:text-foreground">
+        <Link to="/snags"
+              search={{}} className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-foreground/60 hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back to Snag Master
         </Link>
 

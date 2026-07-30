@@ -583,7 +583,8 @@ function buildSections(): Section[] {
         <>
           <p className="font-bold text-alert">Snag Master</p>
           <p>
-            Top nav → <Link to="/snags" className="text-alert underline">Snag Master</Link> →{" "}
+            Top nav → <Link to="/snags"
+              search={{}} className="text-alert underline">Snag Master</Link> →{" "}
             <b>+ New Scan</b> → snap or upload a photo → The Oracle writes a defect report
             citing UK Building Regs / CDM 2015. Save adds it to the Bible and notifies members.
           </p>
