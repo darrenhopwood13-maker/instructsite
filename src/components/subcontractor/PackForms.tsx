@@ -342,8 +342,9 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
   const [pct, setPct] = useState(0);
 
   const submit = async () => {
-    const verify = window.confirm(
+    const verify = await confirm(
       `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Next Due: ${nextDue || "—"}\n• Inspector: ${inspector.trim() || "—"}\n• Certificate: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to ${type} register?`,
+      "Save register",
     );
     if (!verify) return;
     setBusy(true);
