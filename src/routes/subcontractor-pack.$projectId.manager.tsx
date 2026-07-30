@@ -347,7 +347,7 @@ function SubDetail({
     "rounded-md border border-white/15 bg-black/40 px-2 py-1.5 font-mono text-[0.7rem] text-foreground outline-none focus:border-alert";
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 w-full min-w-0 max-w-full">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
