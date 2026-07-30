@@ -465,8 +465,9 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
       toast.error("Add at least one attendee");
       return;
     }
-    const verify = window.confirm(
+    const verify = await confirm(
       `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Date: ${date || "—"}\n• Presenter: ${presenter.trim() || "—"}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nLog this talk?`,
+      "Log talk",
     );
     if (!verify) return;
     setBusy(true);
