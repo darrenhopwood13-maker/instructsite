@@ -179,9 +179,32 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
       return { ok: false as const, count: 0, unmapped: data.elements.length, reason: "No work zones defined" };
     }
 
+    // Site-setup / logistics zones describe where plant, welfare and access
+    // live — they are NOT places building elements get built. Allocating a
+    // whole house model into "Scaffold Perimeter" is worse than no allocation,
+    // so they are excluded as auto-allocation targets.
+    const LOGISTICS_ZONE =
+      /(scaffold|compound|welfare|site\s*office|skip|waste|storage|coshh|crane\s*standing|lift\s*zone|exclusion|entrance|gate|pedestrian|haul|route|parking|laydown|hoarding)/i;
+    const buildableZones = zones.filter((z) => !LOGISTICS_ZONE.test(z.name));
+    const excludedLogistics = zones.length - buildableZones.length;
+
+    if (buildableZones.length === 0) {
+      return {
+        ok: true as const,
+        count: 0,
+        unmapped: data.elements.length,
+        confidence: { hard: 0, strong: 0, weak: 0 },
+        reason:
+          "Every work zone on this project is a site-logistics zone (scaffold, compound, welfare, skips, exclusion zones). Those describe site setup, not where the building gets built — create build zones (e.g. \"Ground Floor\", \"First Floor\", \"Roof\", \"Substructure\") before auto-allocating.",
+      };
+    }
+
+    // Whole-word matching only: naive substring matching produced nonsense hits.
     const findZone = (candidates: string[]) => {
       for (const c of candidates) {
-        const z = zones.find((z) => z.name.toLowerCase().includes(c.toLowerCase()));
+        const needle = c.toLowerCase().trim();
+        const re = new RegExp(`(^|[^a-z0-9])${needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`, "i");
+        const z = buildableZones.find((z) => re.test(z.name));
         if (z) return z.id;
       }
       return null;
@@ -260,12 +283,16 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
       missedLabels.size > 0
         ? ` (skipped: ${Array.from(missedLabels).join(", ")} — no matching zone)`
         : "";
+    const logisticsNote =
+      excludedLogistics > 0
+        ? ` · ${excludedLogistics} site-logistics zone${excludedLogistics === 1 ? "" : "s"} excluded as targets`
+        : "";
     return {
       ok: true as const,
       count: rows.length,
       unmapped,
       confidence,
-      reason: `Allocated ${rows.length} of ${inspected} · ${confidence.hard} hard · ${confidence.strong} strong · ${confidence.weak} weak${suffix}`,
+      reason: `Allocated ${rows.length} of ${inspected} · ${confidence.hard} hard · ${confidence.strong} strong · ${confidence.weak} weak${suffix}${logisticsNote}`,
     };
   });
 
