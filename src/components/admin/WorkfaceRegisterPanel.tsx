@@ -99,7 +99,7 @@ export function WorkfaceRegisterPanel({ projectId }: { projectId: string }) {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["workfaces", projectId] });
-    qc.invalidateQueries({ queryKey: ["zone-progress", projectId] });
+    qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
   };
 
   const runSuggest = async () => {
