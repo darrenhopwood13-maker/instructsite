@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays } from "lucide-react";
+import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays, Camera } from "lucide-react";
 import { getProject } from "@/lib/projects.functions";
 import {
   listProjectDrawings,
@@ -23,6 +23,8 @@ import { listSubcontractorInvites } from "@/lib/subcontractors.functions";
 import { TRADE_PACKAGES } from "@/lib/trade-packages";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { hazardLabel } from "@/lib/high-risk";
+import { countOpenSnagsForProject } from "@/lib/snags.functions";
+import { rememberProject } from "@/lib/last-project";
 
 
 export const Route = createFileRoute("/projects/$projectId")({
@@ -37,7 +39,17 @@ function ProjectDetail() {
     ensureOracleSession().then(() => setReady(true));
   }, []);
 
+  useEffect(() => {
+    rememberProject(projectId);
+  }, [projectId]);
+
   const getP = useServerFn(getProject);
+  const openSnagsFn = useServerFn(countOpenSnagsForProject);
+  const openSnags = useQuery({
+    queryKey: ["open-snags", projectId],
+    queryFn: () => openSnagsFn({ data: { projectId } }),
+    enabled: ready,
+  });
   const rolesFn = useServerFn(getMyRoles);
   const drawingsFn = useServerFn(listProjectDrawings);
   const logisticsFn = useServerFn(listProjectLogistics);
@@ -158,6 +170,16 @@ function ProjectDetail() {
               className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
             >
               <ClipboardList size={14} /> DABS
+            </Link>
+            <Link
+              to="/snags"
+              search={{ project: projectId }}
+              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+            >
+              <Camera size={14} /> Open Snags
+              <span className="rounded-full bg-alert/20 px-2 py-0.5 text-[0.65rem] text-alert">
+                {openSnags.data?.count ?? 0}
+              </span>
             </Link>
             <Link
               to="/programme/$projectId"

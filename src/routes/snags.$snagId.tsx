@@ -147,6 +147,20 @@ function SnagDetail() {
                   </option>
                 ))}
               </select>
+              <p className="mt-3 text-[0.65rem] uppercase tracking-widest text-foreground/60">Project</p>
+              {snag.project_id ? (
+                <Link
+                  to="/projects/$projectId"
+                  params={{ projectId: snag.project_id }}
+                  className="mt-1 inline-flex items-center rounded-full border border-alert/40 bg-alert/10 px-2.5 py-0.5 text-[0.65rem] uppercase tracking-widest text-alert"
+                >
+                  {(snag as any).projects?.name ?? "View project"}
+                </Link>
+              ) : (
+                <span className="mt-1 inline-flex rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[0.65rem] uppercase tracking-widest text-foreground/60">
+                  Unassigned
+                </span>
+              )}
               <p className="mt-3 text-[0.65rem] uppercase tracking-widest text-foreground/40">
                 Logged {new Date(snag.created_at).toLocaleString()}
               </p>
