@@ -572,8 +572,9 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
     }
     const flags = [highRisk ? "HIGH RISK" : null, permit ? "PERMIT REQUIRED" : null].filter(Boolean).join(" · ") || "none";
     const preview = plan.trim().length > 180 ? plan.trim().slice(0, 180) + "…" : plan.trim();
-    const verify = window.confirm(
+    const verify = await confirm(
       `Please verify this look-ahead:\n\n• Date: ${date || "—"}\n• Flags: ${flags}\n• Plan: ${preview}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nSave look-ahead?`,
+      "Save look-ahead",
     );
     if (!verify) return;
     setBusy(true);
