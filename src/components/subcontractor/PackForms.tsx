@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Users, ShieldCheck, ClipboardList, CalendarClock, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -154,6 +154,56 @@ function Label({ text, children, span }: { text: string; children: React.ReactNo
   );
 }
 
+/**
+ * Non-blocking replacement for window.confirm().
+ *
+ * window.confirm() halts the renderer's main thread, and inside the published
+ * app's iframe (no allow-modals) Chrome suppresses the dialog entirely — the
+ * tab appears frozen and the save silently never runs. This renders an in-app
+ * dialog and resolves a promise instead.
+ */
+function useConfirm() {
+  const [message, setMessage] = useState<string | null>(null);
+  const [confirmLabel, setConfirmLabel] = useState("Confirm");
+  const resolver = useRef<((v: boolean) => void) | null>(null);
+
+  const confirm = useCallback((msg: string, label = "Confirm") => {
+    setMessage(msg);
+    setConfirmLabel(label);
+    return new Promise<boolean>((resolve) => {
+      resolver.current = resolve;
+    });
+  }, []);
+
+  const settle = useCallback((v: boolean) => {
+    setMessage(null);
+    const r = resolver.current;
+    resolver.current = null;
+    r?.(v);
+  }, []);
+
+  const dialog = message ? (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4">
+      <div className="glass-panel w-full max-w-md p-5">
+        <p className="text-[0.6rem] font-bold uppercase tracking-[0.35em] text-alert">Verify</p>
+        <pre className="mt-3 max-h-[50vh] overflow-y-auto whitespace-pre-wrap font-mono text-xs text-foreground/85">
+          {message}
+        </pre>
+        <div className="mt-4 flex justify-end gap-2">
+          <button type="button" onClick={() => settle(false)} className={ghostBtn()}>
+            Cancel
+          </button>
+          <button type="button" onClick={() => settle(true)} className={primaryBtn()}>
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  return { confirm, dialog };
+}
+
 export type PackFormProps = {
   subId: string;
   projectId: string;
@@ -165,6 +215,7 @@ export type PackFormProps = {
 export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackFormProps) {
   const fn = useServerFn(addWorker);
   const dupeFn = useServerFn(checkWorkerDuplicate);
+  const { confirm, dialog } = useConfirm();
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [cardType, setCardType] = useState("");
@@ -179,8 +230,9 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
       toast.error("Worker name required");
       return;
     }
-    const verify = window.confirm(
+    const verify = await confirm(
       `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Card: ${cardType.trim() || "—"} ${cardNumber.trim()}\n• Expiry: ${cardExpiry || "—"}\n• Competency Card File: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to labour roster?`,
+      "Save worker",
     );
     if (!verify) return;
     setBusy(true);
@@ -189,8 +241,9 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
       if (file) {
         const dupe = await dupeFn({ data: { subcontractorId: subId, name: name.trim() } });
         if (dupe.hasCard) {
-          const ok = window.confirm(
+          const ok = await confirm(
             `A competency card is already on file for "${name.trim()}"${dupe.sameDay ? " (uploaded today)" : ""}. Upload another anyway?`,
+            "Upload anyway",
           );
           if (!ok) {
             toast.message("Upload cancelled");
@@ -244,6 +297,7 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
 
   return (
     <AccordionCard icon={<Users size={18} />} eyebrow="01" title="Add Labour" defaultOpen>
+      {dialog}
       <div className="grid gap-3 md:grid-cols-2">
         <Label text="Name">
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls()} />
@@ -277,6 +331,7 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
 export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: PackFormProps) {
   const fn = useServerFn(addRegister);
   const dupeFn = useServerFn(checkRegisterDuplicate);
+  const { confirm, dialog } = useConfirm();
   const [type, setType] = useState<(typeof REGISTER_TYPE_OPTIONS)[number]>("PUWER");
   const [asset, setAsset] = useState("");
   const [date, setDate] = useState("");
@@ -287,8 +342,9 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
   const [pct, setPct] = useState(0);
 
   const submit = async () => {
-    const verify = window.confirm(
+    const verify = await confirm(
       `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Next Due: ${nextDue || "—"}\n• Inspector: ${inspector.trim() || "—"}\n• Certificate: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to ${type} register?`,
+      "Save register",
     );
     if (!verify) return;
     setBusy(true);
@@ -300,7 +356,7 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
         });
         if (dupe.hasCert) {
           const parts = [type, asset || "asset", date || "same date"].join(" · ");
-          const ok = window.confirm(`A certificate already exists for ${parts}. Upload another anyway?`);
+          const ok = await confirm(`A certificate already exists for ${parts}. Upload another anyway?`, "Upload anyway");
           if (!ok) {
             toast.message("Upload cancelled");
             setBusy(false);
@@ -356,6 +412,7 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
 
   return (
     <AccordionCard icon={<ShieldCheck size={18} />} eyebrow="02" title="Safety Registers">
+      {dialog}
       <div className="grid gap-3 md:grid-cols-3">
         <Label text="Register Type">
           <select value={type} onChange={(e) => setType(e.target.value as any)} className={inputCls()}>
@@ -392,6 +449,7 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
 
 export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: PackFormProps) {
   const fn = useServerFn(addToolboxTalk);
+  const { confirm, dialog } = useConfirm();
   const [topic, setTopic] = useState<(typeof TOOLBOX_TOPIC_OPTIONS)[number]>("Manual Handling");
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [presenter, setPresenter] = useState("");
@@ -407,8 +465,9 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
       toast.error("Add at least one attendee");
       return;
     }
-    const verify = window.confirm(
+    const verify = await confirm(
       `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Date: ${date || "—"}\n• Presenter: ${presenter.trim() || "—"}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nLog this talk?`,
+      "Log talk",
     );
     if (!verify) return;
     setBusy(true);
@@ -457,6 +516,7 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
 
   return (
     <AccordionCard icon={<ClipboardList size={18} />} eyebrow="03" title="Toolbox Talk">
+      {dialog}
       <div className="grid gap-3 md:grid-cols-3">
         <Label text="Topic">
           <select value={topic} onChange={(e) => setTopic(e.target.value as any)} className={inputCls()}>
@@ -499,6 +559,7 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
 
 export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackFormProps, "projectId"> & { projectId?: string }) {
   const fn = useServerFn(addLookAhead);
+  const { confirm, dialog } = useConfirm();
   const [plan, setPlan] = useState("");
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [highRisk, setHighRisk] = useState(false);
@@ -512,8 +573,9 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
     }
     const flags = [highRisk ? "HIGH RISK" : null, permit ? "PERMIT REQUIRED" : null].filter(Boolean).join(" · ") || "none";
     const preview = plan.trim().length > 180 ? plan.trim().slice(0, 180) + "…" : plan.trim();
-    const verify = window.confirm(
+    const verify = await confirm(
       `Please verify this look-ahead:\n\n• Date: ${date || "—"}\n• Flags: ${flags}\n• Plan: ${preview}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nSave look-ahead?`,
+      "Save look-ahead",
     );
     if (!verify) return;
     setBusy(true);
@@ -544,6 +606,7 @@ export function AddLookAhead({ subId, onSaved, onBehalf = false }: Omit<PackForm
 
   return (
     <AccordionCard icon={<CalendarClock size={18} />} eyebrow="04" title="Look-Ahead">
+      {dialog}
       <div className="grid gap-3 md:grid-cols-3">
         <Label text="Date">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls()} />
