@@ -81,7 +81,7 @@ async function loadPdfLibs() {
   return { JsPDF, autoTable };
 }
 
-export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ filename: string }> {
+export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ filename: string; blob: Blob }> {
   const { JsPDF, autoTable } = await loadPdfLibs();
   let { start, end, label } = currentWeekRange();
   if (input.rangeStart || input.rangeEnd) {
