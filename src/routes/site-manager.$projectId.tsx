@@ -293,7 +293,7 @@ function SiteManagerPage() {
           />
         </section>
 
-        <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard label="Active Pins" value={String(onSitePins.length)} />
           <StatCard
             label="Operatives On Site"
