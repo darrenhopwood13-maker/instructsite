@@ -13,6 +13,8 @@ import {
   listPackIssues,
   getPackIssueSignedUrl,
   PACK_BUCKET,
+  type PackIssue,
+
 } from "@/lib/pack-archive.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
