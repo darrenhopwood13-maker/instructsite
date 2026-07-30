@@ -47,7 +47,7 @@ const OrangeBtn = ({
     >
       {children}
     </span>
-    <span className="font-mono text-[10px] tracking-widest text-slate-700 uppercase">
+    <span className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
       {label}
     </span>
   </button>

@@ -173,10 +173,12 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, 
         )}
 
         {isStreaming && (
-          <ol className="rounded-xl border border-white/10 bg-white/[0.02] p-3 space-y-2 mb-4">
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 mb-4">
             <div className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase mb-1">
               ▸ Progress
             </div>
+            <ol className="space-y-2">
+
             {STEPS.map((label, i) => {
               const done = i < stepIdx;
               const current = i === stepIdx;
@@ -211,8 +213,10 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, 
                 </li>
               );
             })}
-          </ol>
+            </ol>
+          </div>
         )}
+
 
         {output && <ToolingResults markdown={output} />}
       </div>
