@@ -3,6 +3,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, ArrowLeft, Save, Trash2, HardHat, Lightbulb, Scale, ShieldAlert, FileText } from "lucide-react";
 import { analyzeSnag, createSnag, type SnagReportT } from "@/lib/snags.functions";
+import { listMyProjects } from "@/lib/projects.functions";
+import { useQuery } from "@tanstack/react-query";
+import { LAST_PROJECT_KEY } from "@/lib/last-project";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { ReportViewer } from "@/components/reports/ReportViewer";
 import { snagReportToMarkdown } from "@/lib/report-format";
@@ -46,6 +49,23 @@ function NewSnagPage() {
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [projectId, setProjectId] = useState<string>("");
+
+  const projectsFn = useServerFn(listMyProjects);
+  const projects = useQuery({
+    queryKey: ["my-projects"],
+    queryFn: () => projectsFn(),
+    enabled: ready,
+  });
+
+  // Default to the most recently visited project
+  useEffect(() => {
+    const list = projects.data;
+    if (!list || list.length === 0 || projectId) return;
+    const last = typeof window !== "undefined" ? localStorage.getItem(LAST_PROJECT_KEY) : null;
+    const match = last && list.some((p) => p.id === last) ? last : list[0].id;
+    setProjectId(match);
+  }, [projects.data, projectId]);
 
   async function handleFile(file: File) {
     setError(null);
@@ -76,10 +96,14 @@ function NewSnagPage() {
 
   async function handleSave() {
     if (!report || !photoPath || saving) return;
+    if (!projectId) {
+      toast.error("Pick the project this snag belongs to first.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const { id } = await saveFn({ data: { photoPath, report } });
+      const { id } = await saveFn({ data: { photoPath, projectId, report } });
       toast.success("Snag saved to the register.");
       navigate({ to: "/snags/$snagId", params: { snagId: id } });
     } catch (e) {
@@ -105,6 +129,33 @@ function NewSnagPage() {
         >
           New Snag
         </h1>
+
+        <div className="glass-btn mt-6 rounded-xl border border-white/10 p-4">
+          <label
+            htmlFor="snag-project"
+            className="text-[0.65rem] uppercase tracking-widest text-foreground/60"
+          >
+            Project <span className="text-alert">*</span>
+          </label>
+          <select
+            id="snag-project"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-sm text-foreground focus:border-alert focus:outline-none"
+          >
+            <option value="">Select a project…</option>
+            {(projects.data ?? []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          {projects.isFetched && (projects.data ?? []).length === 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              No projects yet — create one before logging snags.
+            </p>
+          )}
+        </div>
 
         {!previewUrl && ready && (
           <div className="glass-btn mt-8 rounded-2xl border border-dashed border-white/20 p-10 text-center">
@@ -191,7 +242,7 @@ function NewSnagPage() {
                   <div className="flex flex-wrap gap-3">
                     <button
                       type="button"
-                      disabled={saving}
+                      disabled={saving || !projectId}
                       onClick={handleSave}
                       className="glass-orange inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm uppercase tracking-widest disabled:opacity-50"
                     >
