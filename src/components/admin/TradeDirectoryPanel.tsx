@@ -13,6 +13,10 @@ import {
   Building2,
   ArrowRight,
   UserCog,
+  Mail,
+  RefreshCw,
+  Clock,
+  UserPlus,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -24,7 +28,11 @@ import {
   listUnassignedSiteManagers,
   addSiteManagerToProject,
   assignPackageManager,
+  refreshSubcontractorInvite,
+  inviteSiteManager,
 } from "@/lib/subcontractors.functions";
+import { formatSentDate, daysAgo, expiryCountdown } from "@/lib/invite-format";
+import { errorMessage } from "@/lib/error-message";
 
 import { TRADE_PACKAGES } from "@/lib/trade-packages";
 
@@ -42,6 +50,8 @@ export function TradeDirectoryPanel({
   const unassignedManagersFn = useServerFn(listUnassignedSiteManagers);
   const addManagerFn = useServerFn(addSiteManagerToProject);
   const assignPmFn = useServerFn(assignPackageManager);
+  const refreshInviteFn = useServerFn(refreshSubcontractorInvite);
+  const inviteManagerFn = useServerFn(inviteSiteManager);
   const qc = useQueryClient();
 
   const invites = useQuery({
@@ -81,6 +91,67 @@ export function TradeDirectoryPanel({
       toast.error(e?.message ?? "Failed to add Site Manager.");
     } finally {
       setAddingManager(false);
+    }
+  };
+
+  const [managerEmail, setManagerEmail] = useState("");
+  const [managerName, setManagerName] = useState("");
+  const [invitingManager, setInvitingManager] = useState(false);
+  const [showManagerInvite, setShowManagerInvite] = useState(false);
+  const [rowBusy, setRowBusy] = useState<string | null>(null);
+
+  const inviteAManager = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!managerEmail.trim() || invitingManager) return;
+    setInvitingManager(true);
+    try {
+      const res = await inviteManagerFn({
+        data: { projectId, email: managerEmail.trim(), fullName: managerName.trim() || null },
+      });
+      qc.invalidateQueries({ queryKey: ["project-site-managers", projectId] });
+      qc.invalidateQueries({ queryKey: ["unassigned-site-managers", projectId] });
+      setManagerEmail("");
+      setManagerName("");
+      if (res.attached) {
+        toast.success("Site Manager invited and added to this project.");
+      } else if (res.emailed) {
+        toast.success("Invite emailed — they join the project once they sign in.");
+      } else {
+        toast.error(res.emailError ?? "Could not send that invite.");
+      }
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Could not invite that Site Manager."));
+    } finally {
+      setInvitingManager(false);
+    }
+  };
+
+  const copyInviteLink = async (inviteId: string) => {
+    setRowBusy(inviteId);
+    try {
+      const res = await refreshInviteFn({ data: { inviteId, resendEmail: false } });
+      const url = `${window.location.origin}/invite/${res.token}`;
+      await navigator.clipboard.writeText(url);
+      qc.invalidateQueries({ queryKey: ["subcontractor-invites", projectId] });
+      toast.success("Fresh invite link copied to clipboard.");
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Could not generate an invite link."));
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+  const resendInvite = async (inviteId: string) => {
+    setRowBusy(inviteId);
+    try {
+      const res = await refreshInviteFn({ data: { inviteId, resendEmail: true } });
+      qc.invalidateQueries({ queryKey: ["subcontractor-invites", projectId] });
+      if (res.emailed) toast.success(`Invite re-sent to ${res.email}.`);
+      else toast.error(res.emailError ?? "Invite link refreshed, but the email did not send.");
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Could not resend that invite."));
+    } finally {
+      setRowBusy(null);
     }
   };
 
@@ -183,32 +254,75 @@ export function TradeDirectoryPanel({
             {(siteManagers.error as Error)?.message ?? "Failed to load site managers."}
           </p>
         )}
-        <div className="mt-1.5 flex items-center gap-1.5">
-          <select
-            value={pickedManagerId}
-            onChange={(e) => setPickedManagerId(e.target.value)}
-            className="min-w-0 flex-1 rounded-sm border border-white/15 bg-black/50 px-1.5 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/80 outline-none focus:border-alert"
-          >
-            <option value="">
-              {(unassignedManagers.data ?? []).length === 0
-                ? "No unassigned Site Managers found"
-                : "Add a Site Manager…"}
-            </option>
-            {(unassignedManagers.data ?? []).map((m) => (
-              <option key={m.user_id} value={m.user_id}>
-                {m.full_name ?? "Unnamed"}
-              </option>
-            ))}
-          </select>
+        {(unassignedManagers.data ?? []).length > 0 ? (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <select
+              value={pickedManagerId}
+              onChange={(e) => setPickedManagerId(e.target.value)}
+              className="min-w-0 flex-1 rounded-sm border border-white/15 bg-black/50 px-1.5 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/80 outline-none focus:border-alert"
+            >
+              <option value="">Add a Site Manager…</option>
+              {(unassignedManagers.data ?? []).map((m) => (
+                <option key={m.user_id} value={m.user_id}>
+                  {m.full_name ?? "Unnamed"}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={addManagerToProject}
+              disabled={!pickedManagerId || addingManager}
+              className="shrink-0 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-alert transition hover:bg-alert/20 disabled:opacity-40"
+            >
+              Add
+            </button>
+          </div>
+        ) : !showManagerInvite ? (
           <button
             type="button"
-            onClick={addManagerToProject}
-            disabled={!pickedManagerId || addingManager}
-            className="shrink-0 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-alert transition hover:bg-alert/20 disabled:opacity-40"
+            onClick={() => setShowManagerInvite(true)}
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert transition hover:bg-alert/20"
           >
-            Add
+            <UserPlus size={11} /> Invite a Site Manager
           </button>
-        </div>
+        ) : (
+          <form onSubmit={inviteAManager} className="mt-1.5 grid gap-1.5">
+            <input
+              type="email"
+              required
+              value={managerEmail}
+              onChange={(e) => setManagerEmail(e.target.value)}
+              placeholder="site.manager@company.co.uk"
+              className="rounded-sm border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-alert"
+            />
+            <input
+              value={managerName}
+              onChange={(e) => setManagerName(e.target.value)}
+              placeholder="Full name (optional)"
+              className="rounded-sm border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-alert"
+            />
+            <div className="flex items-center gap-1.5">
+              <button
+                type="submit"
+                disabled={invitingManager || !managerEmail.trim()}
+                className="flex-1 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert transition hover:bg-alert/20 disabled:opacity-40"
+              >
+                {invitingManager ? "Sending…" : "Send Invite"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowManagerInvite(false)}
+                className="rounded-sm border border-white/20 px-2 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/60 hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+            <p className="text-[0.6rem] leading-snug text-foreground/50">
+              They receive a secure sign-in link and are added to this project as a Site
+              Manager, so they can be picked as a Package Manager below.
+            </p>
+          </form>
+        )}
         {managers.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {managers.map((m) => (
@@ -322,6 +436,11 @@ export function TradeDirectoryPanel({
           </p>
         )}
         {list.map((inv: any) => {
+          const pending = !inv.revoked_at && !inv.accepted_at;
+          const inviteEmail =
+            inv.corporate_email || inv.pm_email || inv.supervisor_email || null;
+          const expiry = expiryCountdown(inv.expires_at);
+          const busyRow = rowBusy === inv.id;
           const status = inv.revoked_at
             ? { label: "Revoked", cls: "border-destructive/60 text-destructive-foreground" }
             : inv.accepted_at
@@ -332,7 +451,7 @@ export function TradeDirectoryPanel({
           return (
             <div
               key={inv.id}
-              className="flex items-center justify-between gap-2 border-b border-white/8 px-2.5 py-2 last:border-b-0"
+              className="flex flex-wrap items-start justify-between gap-2 border-b border-white/8 px-2.5 py-2 last:border-b-0"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate font-mono text-xs text-foreground/90">{inv.company_name}</p>
@@ -346,6 +465,52 @@ export function TradeDirectoryPanel({
                     </span>
                   ))}
                 </div>
+                {pending && (
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[0.55rem] text-foreground/55">
+                    <span className="inline-flex items-center gap-1">
+                      <Mail size={9} />
+                      {inviteEmail ?? "No contact email on file"}
+                    </span>
+                    <span>Sent {formatSentDate(inv.created_at)} · {daysAgo(inv.created_at)}</span>
+                    <span
+                      className={`inline-flex items-center gap-1 ${
+                        expiry.expired
+                          ? "text-destructive-foreground"
+                          : expiry.urgent
+                            ? "text-alert"
+                            : "text-foreground/55"
+                      }`}
+                    >
+                      <Clock size={9} />
+                      {expiry.label}
+                    </span>
+                  </div>
+                )}
+                {pending && (
+                  <div className="mt-1 flex flex-wrap items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => copyInviteLink(inv.id)}
+                      disabled={busyRow}
+                      className="inline-flex items-center gap-1 rounded-sm border border-emerald-400/50 bg-emerald-400/10 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-emerald-200 transition hover:bg-emerald-400/20 disabled:opacity-40"
+                    >
+                      <Copy size={9} /> Copy Invite Link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => resendInvite(inv.id)}
+                      disabled={busyRow || !inviteEmail}
+                      title={
+                        inviteEmail
+                          ? `Resend to ${inviteEmail}`
+                          : "No contact email on this invite — copy the link instead"
+                      }
+                      className="inline-flex items-center gap-1 rounded-sm border border-alert/50 bg-alert/10 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-alert transition hover:bg-alert/20 disabled:opacity-40"
+                    >
+                      <RefreshCw size={9} className={busyRow ? "animate-spin" : ""} /> Resend Invite
+                    </button>
+                  </div>
+                )}
               </div>
               <span
                 className={`inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest ${status.cls}`}
@@ -353,22 +518,32 @@ export function TradeDirectoryPanel({
                 {status.label === "Accepted" && <Check size={10} />}
                 {status.label}
               </span>
-              <div className="flex items-center gap-1" title="Package Manager">
-                <UserCog size={11} className="shrink-0 text-foreground/40" />
-                <select
-                  value={inv.package_manager_id ?? ""}
-                  onChange={(e) => assignManager(inv.id, e.target.value || null)}
-                  disabled={managers.length === 0}
-                  className="rounded-sm border border-white/15 bg-black/50 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/80 outline-none focus:border-alert disabled:opacity-40"
+              {managers.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setShowManagerInvite(true)}
+                  title="No Site Manager on this project yet"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-sm border border-alert/50 bg-alert/10 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-alert transition hover:bg-alert/20"
                 >
-                  <option value="">Unassigned</option>
-                  {managers.map((m) => (
-                    <option key={m.user_id} value={m.user_id}>
-                      {m.full_name ?? "Unnamed"}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <UserPlus size={9} /> Invite a Site Manager
+                </button>
+              ) : (
+                <div className="flex items-center gap-1" title="Package Manager">
+                  <UserCog size={11} className="shrink-0 text-foreground/40" />
+                  <select
+                    value={inv.package_manager_id ?? ""}
+                    onChange={(e) => assignManager(inv.id, e.target.value || null)}
+                    className="rounded-sm border border-white/15 bg-black/50 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/80 outline-none focus:border-alert"
+                  >
+                    <option value="">Unassigned</option>
+                    {managers.map((m) => (
+                      <option key={m.user_id} value={m.user_id}>
+                        {m.full_name ?? "Unnamed"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {!inv.revoked_at && !inv.accepted_at && (
                 <button
                   type="button"

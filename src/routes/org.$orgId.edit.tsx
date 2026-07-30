@@ -16,8 +16,7 @@ import {
   UserPlus,
   Copy,
   X,
-  Check,
-} from "lucide-react";
+  Check, RefreshCw } from "lucide-react";
 import {
   getMyOrg,
   getOrgById,
@@ -25,12 +24,14 @@ import {
   listOrgInvites,
   inviteOrgMember,
   revokeOrgInvite,
+  resendOrgInvite,
   listOrgMembersFor,
   removeOrgMember,
   updateOrgMemberRole,
 } from "@/lib/orgs.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { toast } from "sonner";
+import { formatSentDate, daysAgo } from "@/lib/invite-format";
 import { errorMessage } from "@/lib/error-message";
 
 
@@ -300,6 +301,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
   const membersFn = useServerFn(listOrgMembersFor);
   const inviteFn = useServerFn(inviteOrgMember);
   const revokeFn = useServerFn(revokeOrgInvite);
+  const resendFn = useServerFn(resendOrgInvite);
   const removeFn = useServerFn(removeOrgMember);
   const updateRoleFn = useServerFn(updateOrgMemberRole);
 
@@ -357,6 +359,18 @@ function MembersPanel({ orgId }: { orgId: string }) {
       toast.success("Invitation revoked.");
     } catch (e2) {
       toast.error(errorMessage(e2, "Couldn't revoke that invitation."));
+    }
+  }
+
+  async function resendInvite(id: string) {
+    setRowBusy(id);
+    try {
+      const res = await resendFn({ data: { inviteId: id } });
+      toast.success(`Invitation re-sent to ${res.email}.`);
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Couldn't resend that invitation."));
+    } finally {
+      setRowBusy(null);
     }
   }
 
@@ -475,7 +489,8 @@ function MembersPanel({ orgId }: { orgId: string }) {
               key={i.id}
               className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-white/10 bg-black/30 p-2 text-xs"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
                 <span className="text-foreground/80">{i.email}</span>
                 <span className="rounded bg-alert/20 px-2 py-0.5 text-[0.6rem] uppercase tracking-widest text-alert">
                   {i.role === "admin" ? "Project Admin" : i.role === "pm" ? "PM / Org Admin" : "Sub"}
@@ -485,8 +500,23 @@ function MembersPanel({ orgId }: { orgId: string }) {
                     Additional
                   </span>
                 )}
+                </div>
+                <p className="text-[0.6rem] uppercase tracking-widest text-foreground/45">
+                  Sent {formatSentDate(i.created_at)} · {daysAgo(i.created_at)} · link does not
+                  expire
+                </p>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => resendInvite(i.id)}
+                  disabled={rowBusy === i.id}
+                  className="glass-btn inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.65rem] uppercase tracking-widest disabled:opacity-50"
+                  title="Resend invite email"
+                >
+                  <RefreshCw size={11} className={rowBusy === i.id ? "animate-spin" : ""} />
+                  Resend
+                </button>
                 <button
                   type="button"
                   onClick={() => copyLink(i.token)}

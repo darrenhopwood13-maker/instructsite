@@ -605,6 +605,28 @@ export const revokeOrgInvite = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Re-send the magic link for a pending organisation invite. */
+export const resendOrgInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ inviteId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    assertOwner(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inv, error } = await supabaseAdmin
+      .from("org_invites")
+      .select("email, token, status")
+      .eq("id", data.inviteId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!inv) throw new Error("Invite not found.");
+    if (inv.status !== "pending") throw new Error(`That invite is already ${inv.status}.`);
+
+    const { sendInviteEmail } = await import("@/lib/invite-email.server");
+    const res = await sendInviteEmail(inv.email as string, `/join-org/invite/${inv.token}`);
+    if (!res.sent) throw new Error(res.reason ?? "Could not send that invitation email.");
+    return { ok: true, email: inv.email as string };
+  });
+
 export const getInviteByToken = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ token: z.string().uuid() }).parse(i))
