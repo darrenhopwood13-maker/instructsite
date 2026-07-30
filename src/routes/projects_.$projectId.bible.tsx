@@ -13,6 +13,8 @@ import { archiveDocument, restoreDocument } from "@/lib/document-lifecycle.funct
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { DocumentCard } from "@/components/project-bible/DocumentCard";
 import { DocumentViewerDialog } from "@/components/project-bible/DocumentViewerDialog";
+import { toast } from "sonner";
+import { errorMessage } from "@/lib/error-message";
 
 export const Route = createFileRoute("/projects_/$projectId/bible")({
   head: () => ({ meta: [{ title: "Project Bible — instructSite" }] }),
@@ -59,11 +61,19 @@ function ProjectBiblePage() {
 
   const archiveM = useMutation({
     mutationFn: (id: string) => archiveFn({ data: { siteDocumentId: id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["project-bible", projectId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project-bible", projectId] });
+      toast.success("Document archived.");
+    },
+    onError: (e) => toast.error(errorMessage(e, "Couldn't archive that document.")),
   });
   const restoreM = useMutation({
     mutationFn: (id: string) => restoreFn({ data: { siteDocumentId: id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["project-bible", projectId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project-bible", projectId] });
+      toast.success("Document restored.");
+    },
+    onError: (e) => toast.error(errorMessage(e, "Couldn't restore that document.")),
   });
 
   const [query, setQuery] = useState("");

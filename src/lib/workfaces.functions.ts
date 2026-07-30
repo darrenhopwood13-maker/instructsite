@@ -52,7 +52,31 @@ export const suggestWorkfaces = createServerFn({ method: "POST" })
       } as never,
     );
     if (error) throw new Error(error.message);
-    return { created: ((rows ?? []) as unknown[]).length };
+
+    // When nothing is created the user needs to know WHY: no zones, no
+    // accepted packages, or everything already covered.
+    const [zones, packages, existing] = await Promise.all([
+      (context.supabase as any)
+        .from("work_zones")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", data.projectId),
+      (context.supabase as any)
+        .from("subcontractor_invites")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", data.projectId),
+      (context.supabase as any)
+        .from("workfaces")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", data.projectId)
+        .neq("status", "archived"),
+    ]);
+
+    return {
+      created: ((rows ?? []) as unknown[]).length,
+      zoneCount: zones.count ?? 0,
+      packageCount: packages.count ?? 0,
+      existingCount: existing.count ?? 0,
+    };
   });
 
 async function getWorkfaceProjectId(supabase: any, workfaceId: string): Promise<string> {
