@@ -2541,7 +2541,6 @@ export type Database = {
         Returns: number
       }
       org_admin_count: { Args: { _org_id: string }; Returns: number }
-      public_function_names: { Args: never; Returns: string[] }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
