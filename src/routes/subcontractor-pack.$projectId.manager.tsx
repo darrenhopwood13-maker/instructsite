@@ -240,10 +240,22 @@ function SubDetail({
   const filteredTalks = filterByDate<any>(sub.toolboxTalks ?? []);
   const filteredLookAheads = filterByDate<any>(sub.lookAheads ?? []);
 
+  const createIssue = useServerFn(createPackIssue);
+  const finalizeIssue = useServerFn(finalizePackIssue);
+  const listIssues = useServerFn(listPackIssues);
+  const qc = useQueryClient();
+
+  const history = useQuery({
+    queryKey: ["pack-issues", projectId, sub.id],
+    queryFn: () => listIssues({ data: { projectId, subcontractorId: sub.id } }),
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
+  });
+
   const download = async () => {
     setDownloading(true);
     try {
-      const { filename } = await generateWeeklyPackPdf({
+      const { filename, blob } = await generateWeeklyPackPdf({
         projectName,
         companyName: sub.company_name,
         workers: filteredWorkers,
@@ -259,6 +271,37 @@ function SubDetail({
       });
 
       toast.success(`Weekly Pack Generated: ${filename}`);
+
+      // Archive the pack exactly as issued — versioned, never overwritten.
+      try {
+        const issue = await createIssue({
+          data: {
+            projectId,
+            subcontractorId: sub.id,
+            rangeStart: startDate || null,
+            rangeEnd: endDate || null,
+            filename,
+            counts: {
+              labour: filteredWorkers.length,
+              registers: filteredRegisters.length,
+              talks: filteredTalks.length,
+              lookAhead: filteredLookAheads.length,
+            },
+          },
+        });
+        const up = await supabase.storage
+          .from(PACK_BUCKET)
+          .upload(issue.storagePath, blob, { contentType: "application/pdf", upsert: false });
+        if (up.error) throw new Error(up.error.message);
+        await finalizeIssue({ data: { issueId: issue.id, byteSize: blob.size } });
+        qc.invalidateQueries({ queryKey: ["pack-issues", projectId, sub.id] });
+        qc.invalidateQueries({ queryKey: ["project-bible", projectId] });
+        toast.success(`Archived to pack history (v${issue.version}).`);
+      } catch (archiveErr) {
+        toast.error(
+          `Pack downloaded, but archiving failed — ${archiveErr instanceof Error ? archiveErr.message : "unknown error"}`,
+        );
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to generate pack");
     } finally {
@@ -271,8 +314,10 @@ function SubDetail({
     { key: "registers", label: "Safety Registers", icon: <ShieldCheck size={13} />, count: filteredRegisters.length },
     { key: "talks", label: "Toolbox Talks", icon: <MessagesSquare size={13} />, count: filteredTalks.length },
     { key: "lookahead", label: "Look-Ahead", icon: <CalendarRange size={13} />, count: filteredLookAheads.length },
+    { key: "history", label: "Pack History", icon: <History size={13} />, count: history.data?.length ?? 0 },
     { key: "record", label: "Record On Behalf", icon: <PencilLine size={13} />, count: 0 },
   ];
+
 
   const dateInputCls =
     "rounded-md border border-white/15 bg-black/40 px-2 py-1.5 font-mono text-[0.7rem] text-foreground outline-none focus:border-alert";
