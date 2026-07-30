@@ -412,6 +412,7 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
 
   return (
     <AccordionCard icon={<ShieldCheck size={18} />} eyebrow="02" title="Safety Registers">
+      {dialog}
       <div className="grid gap-3 md:grid-cols-3">
         <Label text="Register Type">
           <select value={type} onChange={(e) => setType(e.target.value as any)} className={inputCls()}>
