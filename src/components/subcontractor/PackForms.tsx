@@ -230,8 +230,9 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
       toast.error("Worker name required");
       return;
     }
-    const verify = window.confirm(
+    const verify = await confirm(
       `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Card: ${cardType.trim() || "—"} ${cardNumber.trim()}\n• Expiry: ${cardExpiry || "—"}\n• Competency Card File: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to labour roster?`,
+      "Save worker",
     );
     if (!verify) return;
     setBusy(true);
@@ -240,8 +241,9 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
       if (file) {
         const dupe = await dupeFn({ data: { subcontractorId: subId, name: name.trim() } });
         if (dupe.hasCard) {
-          const ok = window.confirm(
+          const ok = await confirm(
             `A competency card is already on file for "${name.trim()}"${dupe.sameDay ? " (uploaded today)" : ""}. Upload another anyway?`,
+            "Upload anyway",
           );
           if (!ok) {
             toast.message("Upload cancelled");
