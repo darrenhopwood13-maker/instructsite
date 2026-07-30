@@ -46,16 +46,21 @@ export function collectMigratedFunctionNames(): Set<string> {
   const names = new Set<string>();
   if (!existsSync(MIGRATIONS)) return names;
   const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql")).sort();
-  const createRe = /create\s+(?:or\s+replace\s+)?function\s+(?:public\.)?"?([a-zA-Z0-9_]+)"?\s*\(/gi;
-  const dropRe = /drop\s+function\s+(?:if\s+exists\s+)?(?:public\.)?"?([a-zA-Z0-9_]+)"?\s*\(/gi;
+  // Single pass in statement order so a DROP followed by a re-CREATE keeps the function.
+  const stmtRe =
+    /(create\s+(?:or\s+replace\s+)?function|drop\s+function(?:\s+if\s+exists)?|grant\s+execute\s+on\s+function)\s+(?:public\.)?"?([a-zA-Z0-9_]+)"?\s*\(/gi;
   for (const file of files) {
     const sql = readFileSync(join(MIGRATIONS, file), "utf8");
     let m: RegExpExecArray | null;
-    while ((m = createRe.exec(sql))) names.add(m[1]);
-    while ((m = dropRe.exec(sql))) names.delete(m[1]);
+    stmtRe.lastIndex = 0;
+    while ((m = stmtRe.exec(sql))) {
+      if (/^drop/i.test(m[1])) names.delete(m[2]);
+      else names.add(m[2]);
+    }
   }
   return names;
 }
+
 
 describe("RPC contract", () => {
   it("finds RPC call sites to check", () => {
