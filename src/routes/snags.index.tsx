@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Camera, Plus, ShieldAlert, Loader2 } from "lucide-react";
 import { listSnags } from "@/lib/snags.functions";
 import { getMyOrg } from "@/lib/orgs.functions";
+import { listMyProjects } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 type StatusFilter = "all" | "open" | "in_progress" | "closed" | "disputed";
@@ -32,6 +33,9 @@ const STATUS_PILL: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/snags/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    project: typeof search.project === "string" ? search.project : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Snag Master — instructSite" },
@@ -45,16 +49,30 @@ function SnagsPage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const { project: projectSearch } = Route.useSearch();
+  const [projectFilter, setProjectFilter] = useState<string>(projectSearch ?? "all");
   useEffect(() => {
     ensureOracleSession().then(() => setReady(true));
   }, []);
   const listFn = useServerFn(listSnags);
   const orgFn = useServerFn(getMyOrg);
+  const projectsFn = useServerFn(listMyProjects);
+  const projects = useQuery({
+    queryKey: ["my-projects"],
+    queryFn: () => projectsFn(),
+    enabled: ready,
+  });
 
   const org = useQuery({ queryKey: ["my-org"], queryFn: () => orgFn(), enabled: ready });
   const snags = useQuery({
-    queryKey: ["snags", filter],
-    queryFn: () => listFn({ data: { status: filter } }),
+    queryKey: ["snags", filter, projectFilter],
+    queryFn: () =>
+      listFn({
+        data: {
+          status: filter,
+          ...(projectFilter !== "all" ? { projectId: projectFilter } : {}),
+        },
+      }),
     enabled: ready && !!org.data,
   });
 
@@ -121,6 +139,20 @@ function SnagsPage() {
               {STATUS_LABELS[s]}
             </button>
           ))}
+
+          <select
+            aria-label="Filter by project"
+            value={projectFilter}
+            onChange={(e) => setProjectFilter(e.target.value)}
+            className="rounded-full border border-white/10 bg-black/40 px-4 py-1.5 text-xs uppercase tracking-widest text-foreground/80 focus:border-alert focus:outline-none"
+          >
+            <option value="all">All projects</option>
+            {(projects.data ?? []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="mt-8">
@@ -174,6 +206,9 @@ function SnagsPage() {
                   </div>
                   <div className="p-4">
                     <p className="line-clamp-2 text-sm font-semibold text-foreground">{s.defect_title}</p>
+                    <span className="mt-2 inline-flex max-w-full items-center gap-1 truncate rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[0.6rem] uppercase tracking-widest text-foreground/70">
+                      {s.projectName ?? "Unassigned"}
+                    </span>
                     <div className="mt-3 flex items-center justify-between text-[0.65rem] uppercase tracking-widest">
                       <span className="text-foreground/50">{s.trade || "General"}</span>
                       <span className={`rounded-full px-2 py-0.5 ${STATUS_PILL[s.status] ?? ""}`}>
