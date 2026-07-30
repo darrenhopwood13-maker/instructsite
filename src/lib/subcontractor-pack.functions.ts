@@ -109,6 +109,10 @@ export const addWorker = createServerFn({ method: "POST" })
         name: z.string().trim().min(1).max(120),
         role: z.string().trim().max(80).optional().nullable(),
         competencyCardUrl: z.string().trim().max(500).optional().nullable(),
+        cardType: z.string().trim().max(80).optional().nullable(),
+        cardNumber: z.string().trim().max(80).optional().nullable(),
+        cardExpiry: z.string().trim().optional().nullable(),
+        onBehalf: z.boolean().optional().default(false),
       })
       .parse(i),
   )
@@ -118,6 +122,10 @@ export const addWorker = createServerFn({ method: "POST" })
       name: data.name,
       role: data.role || null,
       competency_card_url: data.competencyCardUrl || null,
+      card_type: data.cardType || null,
+      card_number: data.cardNumber || null,
+      card_expiry: data.cardExpiry || null,
+      recorded_by: data.onBehalf ? context.userId : null,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -133,6 +141,9 @@ export const addRegister = createServerFn({ method: "POST" })
         assetName: z.string().trim().max(200).optional().nullable(),
         inspectionDate: z.string().trim().optional().nullable(),
         certificateUrl: z.string().trim().max(500).optional().nullable(),
+        nextInspectionDue: z.string().trim().optional().nullable(),
+        inspector: z.string().trim().max(160).optional().nullable(),
+        onBehalf: z.boolean().optional().default(false),
       })
       .parse(i),
   )
@@ -143,6 +154,9 @@ export const addRegister = createServerFn({ method: "POST" })
       asset_name: data.assetName || null,
       inspection_date: data.inspectionDate || null,
       certificate_url: data.certificateUrl || null,
+      next_inspection_due: data.nextInspectionDue || null,
+      inspector: data.inspector || null,
+      recorded_by: data.onBehalf ? context.userId : null,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -156,6 +170,11 @@ export const addToolboxTalk = createServerFn({ method: "POST" })
         subcontractorId: z.string().uuid(),
         topic: z.enum(TOOLBOX_TOPICS),
         attendees: z.array(z.string().trim().min(1)).max(200),
+        date: z.string().trim().optional().nullable(),
+        presenter: z.string().trim().max(160).optional().nullable(),
+        notes: z.string().trim().max(4000).optional().nullable(),
+        attachmentUrl: z.string().trim().max(500).optional().nullable(),
+        onBehalf: z.boolean().optional().default(false),
       })
       .parse(i),
   )
@@ -164,6 +183,11 @@ export const addToolboxTalk = createServerFn({ method: "POST" })
       subcontractor_id: data.subcontractorId,
       topic: data.topic,
       attendance_list: data.attendees,
+      ...(data.date ? { date: data.date } : {}),
+      presenter: data.presenter || null,
+      notes: data.notes || null,
+      attachment_url: data.attachmentUrl || null,
+      recorded_by: data.onBehalf ? context.userId : null,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -178,6 +202,8 @@ export const addLookAhead = createServerFn({ method: "POST" })
         workPlan: z.string().trim().max(4000),
         isHighRisk: z.boolean().default(false),
         permitRequired: z.boolean().default(false),
+        date: z.string().trim().optional().nullable(),
+        onBehalf: z.boolean().optional().default(false),
       })
       .parse(i),
   )
@@ -187,6 +213,8 @@ export const addLookAhead = createServerFn({ method: "POST" })
       work_plan: data.workPlan,
       is_high_risk: data.isHighRisk,
       permit_required: data.permitRequired,
+      ...(data.date ? { date: data.date } : {}),
+      recorded_by: data.onBehalf ? context.userId : null,
     });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -273,10 +301,10 @@ export const getManagerPack = createServerFn({ method: "POST" })
     const detailed = await Promise.all(
       rows.map(async (s) => {
         const [w, r, t, l] = await Promise.all([
-          context.supabase.from("workers").select("id,name,role,competency_card_url,created_at").eq("subcontractor_id", s.id).order("created_at", { ascending: false }),
-          context.supabase.from("registers").select("id,type,asset_name,inspection_date,certificate_url,created_at").eq("subcontractor_id", s.id).order("created_at", { ascending: false }),
-          context.supabase.from("toolbox_talks").select("id,topic,attendance_list,date,created_at").eq("subcontractor_id", s.id).order("date", { ascending: false }).limit(100),
-          context.supabase.from("look_aheads").select("id,work_plan,is_high_risk,permit_required,date,created_at").eq("subcontractor_id", s.id).order("date", { ascending: false }).limit(100),
+          context.supabase.from("workers").select("id,name,role,competency_card_url,card_type,card_number,card_expiry,recorded_by,created_at").eq("subcontractor_id", s.id).order("created_at", { ascending: false }),
+          context.supabase.from("registers").select("id,type,asset_name,inspection_date,next_inspection_due,inspector,certificate_url,recorded_by,created_at").eq("subcontractor_id", s.id).order("created_at", { ascending: false }),
+          context.supabase.from("toolbox_talks").select("id,topic,attendance_list,date,presenter,notes,attachment_url,recorded_by,created_at").eq("subcontractor_id", s.id).order("date", { ascending: false }).limit(100),
+          context.supabase.from("look_aheads").select("id,work_plan,is_high_risk,permit_required,date,recorded_by,created_at").eq("subcontractor_id", s.id).order("date", { ascending: false }).limit(100),
         ]);
         return {
           ...s,
