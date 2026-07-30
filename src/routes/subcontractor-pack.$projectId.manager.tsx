@@ -62,10 +62,11 @@ function ManagerPackPage() {
   const active = useMemo(() => subs.find((s) => s.id === activeId) ?? null, [subs, activeId]);
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
+    <div className="relative min-h-[calc(100vh-4rem)] w-full max-w-full overflow-x-hidden bg-background">
       <div className="aurora-bg" />
       <div className="grain-overlay" />
-      <div className="relative mx-auto max-w-7xl px-6 py-10">
+      <div className="relative mx-auto w-full min-w-0 max-w-7xl px-6 py-10">
+
         <Link
           to="/site-manager/$projectId"
           params={{ projectId }}
