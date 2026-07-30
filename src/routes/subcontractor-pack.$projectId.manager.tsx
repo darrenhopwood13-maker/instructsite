@@ -2,14 +2,23 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ExternalLink, Loader2, HardHat, ShieldCheck, MessagesSquare, CalendarRange, FileDown, ChevronRight, Users, PencilLine } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, HardHat, ShieldCheck, MessagesSquare, CalendarRange, FileDown, ChevronRight, Users, PencilLine, History as HistoryIcon, Download } from "lucide-react";
 import { toast } from "sonner";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { getProject } from "@/lib/projects.functions";
 import { getManagerPack, getComplianceSignedUrl } from "@/lib/subcontractor-pack.functions";
+import {
+  createPackIssue,
+  finalizePackIssue,
+  listPackIssues,
+  getPackIssueSignedUrl,
+  PACK_BUCKET,
+} from "@/lib/pack-archive.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { generateWeeklyPackPdf } from "@/lib/weekly-pack-pdf";
 import { PackFormStack, RecordedByBadge } from "@/components/subcontractor/PackForms";
+
 
 export const Route = createFileRoute("/subcontractor-pack/$projectId/manager")({
   head: () => ({ meta: [{ title: "Subcontractors Weekly Pack — Manager" }] }),
