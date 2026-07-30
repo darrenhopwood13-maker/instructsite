@@ -213,8 +213,10 @@ export const ToolingTerminal = ({ output, isStreaming, activeFunction, onReset, 
                 </li>
               );
             })}
-          </ol>
+            </ol>
+          </div>
         )}
+
 
         {output && <ToolingResults markdown={output} />}
       </div>
