@@ -33,6 +33,7 @@ import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { toast } from "sonner";
 import { formatSentDate, daysAgo } from "@/lib/invite-format";
 import { errorMessage } from "@/lib/error-message";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 
 export const Route = createFileRoute("/org/$orgId/edit")({
@@ -375,7 +376,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
   }
 
   async function removeMember(id: string) {
-    if (!window.confirm("Remove this member from the organisation?")) return;
+    if (!(await confirm("Remove this member from the organisation?", "Remove"))) return;
     setRowBusy(id);
     try {
       await removeFn({ data: { memberId: id } });
