@@ -356,7 +356,7 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
         });
         if (dupe.hasCert) {
           const parts = [type, asset || "asset", date || "same date"].join(" · ");
-          const ok = window.confirm(`A certificate already exists for ${parts}. Upload another anyway?`);
+          const ok = await confirm(`A certificate already exists for ${parts}. Upload another anyway?`, "Upload anyway");
           if (!ok) {
             toast.message("Upload cancelled");
             setBusy(false);
