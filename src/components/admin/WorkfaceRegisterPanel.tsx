@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { errorMessage } from "@/lib/error-message";
 import { Layers, Sparkles, Check, Pencil, Archive, PlusCircle, GitMerge } from "lucide-react";
 import {
   listWorkfaces,
@@ -59,13 +60,23 @@ export function WorkfaceRegisterPanel({ projectId }: { projectId: string }) {
     try {
       const res = await suggestFn({ data: { projectId } });
       invalidate();
-      toast.success(
-        res.created > 0
-          ? `${res.created} workface${res.created === 1 ? "" : "s"} proposed from zones + packages.`
-          : "No new workfaces to propose — all zone/package pairs already covered.",
-      );
+      if (res.created > 0) {
+        toast.success(
+          `${res.created} workface${res.created === 1 ? "" : "s"} proposed from zones + packages.`,
+        );
+      } else if (!res.zoneCount) {
+        toast.warning("Nothing proposed — this project has no work zones yet. Add zones first.");
+      } else if (!res.packageCount) {
+        toast.warning(
+          "Nothing proposed — no subcontractor packages on this project yet. Invite a package first.",
+        );
+      } else {
+        toast.info(
+          `Nothing new to propose — all ${res.zoneCount} zone(s) x ${res.packageCount} package(s) are already covered by ${res.existingCount} workface(s).`,
+        );
+      }
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to suggest workfaces.");
+      toast.error(errorMessage(e, "Failed to suggest workfaces."));
     } finally {
       setSuggesting(false);
     }
@@ -77,7 +88,7 @@ export function WorkfaceRegisterPanel({ projectId }: { projectId: string }) {
       invalidate();
       toast.success("Workface confirmed.");
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to confirm.");
+      toast.error(errorMessage(e, "Failed to confirm."));
     }
   };
 
@@ -97,7 +108,7 @@ export function WorkfaceRegisterPanel({ projectId }: { projectId: string }) {
       invalidate();
       toast.success("Workface updated.");
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to update.");
+      toast.error(errorMessage(e, "Failed to update."));
     }
   };
 
@@ -107,7 +118,7 @@ export function WorkfaceRegisterPanel({ projectId }: { projectId: string }) {
       invalidate();
       toast.success("Workface archived.");
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to archive.");
+      toast.error(errorMessage(e, "Failed to archive."));
     }
   };
 
@@ -121,7 +132,7 @@ export function WorkfaceRegisterPanel({ projectId }: { projectId: string }) {
       invalidate();
       toast.success("Workface added.");
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to add workface.");
+      toast.error(errorMessage(e, "Failed to add workface."));
     }
   };
 
