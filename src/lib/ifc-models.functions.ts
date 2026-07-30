@@ -269,6 +269,72 @@ export const autoAllocateModelElements = createServerFn({ method: "POST" })
     };
   });
 
+const elementInput = z.object({
+  globalId: z.string().min(1).max(64),
+  expressId: z.number().int().nonnegative().optional(),
+  ifcType: z.string().max(64),
+  name: z.string().max(300).nullable().optional(),
+  objectType: z.string().max(300).nullable().optional(),
+  longName: z.string().max(300).nullable().optional(),
+  storey: z.string().max(200).nullable().optional(),
+});
+
+/** Persist the client-side model scan so the mapping table has real labels. */
+export const saveModelElements = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        modelId: z.string().uuid(),
+        elements: z.array(elementInput).max(20000),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    if (data.elements.length === 0) return { ok: true as const, count: 0 };
+    const payload = data.elements.map((e) => ({
+      model_id: data.modelId,
+      global_id: e.globalId,
+      express_id: e.expressId ?? null,
+      ifc_type: e.ifcType,
+      name: e.name ?? null,
+      object_type: e.objectType ?? null,
+      long_name: e.longName ?? null,
+      storey: e.storey ?? null,
+    }));
+    // Chunked to keep each request comfortably inside payload limits.
+    for (let i = 0; i < payload.length; i += 500) {
+      const { error } = await context.supabase
+        .from("ifc_model_elements")
+        .upsert(payload.slice(i, i + 500), { onConflict: "model_id,global_id" });
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true as const, count: payload.length };
+  });
+
+/** Stored catalogue for the active model — drives the mapping table labels. */
+export const listModelElements = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => projectIdInput.parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: model } = await context.supabase
+      .from("project_ifc_models")
+      .select("id")
+      .eq("project_id", data.projectId)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (!model) return [];
+
+    const { data: rows, error } = await context.supabase
+      .from("ifc_model_elements")
+      .select("global_id, express_id, ifc_type, name, object_type, long_name, storey")
+      .eq("model_id", model.id)
+      .order("ifc_type")
+      .limit(20000);
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
 export const listIfcModels = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => projectIdInput.parse(i))
