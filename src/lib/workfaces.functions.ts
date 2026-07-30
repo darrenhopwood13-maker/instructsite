@@ -38,8 +38,9 @@ export const listWorkfaces = createServerFn({ method: "GET" })
   });
 
 // Runs the auto-suggestion pass: proposes one workface per active
-// zone x accepted package pair that doesn't already have one. Safe to
-// call repeatedly — never duplicates an existing non-archived pairing.
+// zone x package pair that doesn't already have one — regardless of
+// whether the subcontractor invite has been accepted yet (only revoked
+// invites are skipped). Safe to call repeatedly.
 export const suggestWorkfaces = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
@@ -54,16 +55,18 @@ export const suggestWorkfaces = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     // When nothing is created the user needs to know WHY: no zones, no
-    // accepted packages, or everything already covered.
+    // packages, or everything already covered.
     const [zones, packages, existing] = await Promise.all([
       (context.supabase as any)
         .from("work_zones")
         .select("id", { count: "exact", head: true })
-        .eq("project_id", data.projectId),
+        .eq("project_id", data.projectId)
+        .neq("status", "archived"),
       (context.supabase as any)
         .from("subcontractor_invites")
-        .select("id", { count: "exact", head: true })
-        .eq("project_id", data.projectId),
+        .select("id, accepted_at")
+        .eq("project_id", data.projectId)
+        .is("revoked_at", null),
       (context.supabase as any)
         .from("workfaces")
         .select("id", { count: "exact", head: true })
@@ -71,10 +74,12 @@ export const suggestWorkfaces = createServerFn({ method: "POST" })
         .neq("status", "archived"),
     ]);
 
+    const pkgRows = (packages.data ?? []) as { accepted_at: string | null }[];
     return {
       created: ((rows ?? []) as unknown[]).length,
       zoneCount: zones.count ?? 0,
-      packageCount: packages.count ?? 0,
+      packageCount: pkgRows.length,
+      pendingCount: pkgRows.filter((p) => !p.accepted_at).length,
       existingCount: existing.count ?? 0,
     };
   });
@@ -110,16 +115,61 @@ export const renameWorkface = createServerFn({ method: "POST" })
         workfaceId: z.string().uuid(),
         name: z.string().trim().min(1).max(160),
         stage: z.string().trim().max(60).optional().nullable(),
+        zoneId: z.string().uuid(),
+        packageInviteId: z.string().uuid(),
       })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as any)
       .from("workfaces")
-      .update({ name: data.name, stage: data.stage || null })
+      .update({
+        name: data.name,
+        stage: data.stage || null,
+        zone_id: data.zoneId,
+        package_invite_id: data.packageInviteId,
+      })
       .eq("id", data.workfaceId);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// Zone + package options for the register's pickers. A workface must be
+// bound to both, otherwise it cannot drive per-package or zone progress.
+export const listWorkfaceOptions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const [zones, packages] = await Promise.all([
+      (context.supabase as any)
+        .from("work_zones")
+        .select("id, name, level, status")
+        .eq("project_id", data.projectId)
+        .neq("status", "archived")
+        .order("name"),
+      (context.supabase as any)
+        .from("subcontractor_invites")
+        .select("id, company_name, trade_packages, accepted_at")
+        .eq("project_id", data.projectId)
+        .is("revoked_at", null)
+        .order("company_name"),
+    ]);
+    if (zones.error) throw new Error(zones.error.message);
+    if (packages.error) throw new Error(packages.error.message);
+    return {
+      zones: (zones.data ?? []) as {
+        id: string;
+        name: string;
+        level: string | null;
+        status: string;
+      }[],
+      packages: (packages.data ?? []) as {
+        id: string;
+        company_name: string;
+        trade_packages: string[] | null;
+        accepted_at: string | null;
+      }[],
+    };
   });
 
 // Manual creation — for the "manual anytime" case: temporary works,
@@ -132,8 +182,8 @@ export const createWorkfaceManual = createServerFn({ method: "POST" })
         projectId: z.string().uuid(),
         name: z.string().trim().min(1).max(160),
         stage: z.string().trim().max(60).optional().nullable(),
-        zoneId: z.string().uuid().optional().nullable(),
-        packageInviteId: z.string().uuid().optional().nullable(),
+        zoneId: z.string().uuid(),
+        packageInviteId: z.string().uuid(),
       })
       .parse(i),
   )
