@@ -156,19 +156,27 @@ function ToolingPage() {
       }
 
       if (!assistantSoFar.trim()) {
+        setLastFailed(fn);
         toast.error("The Oracle returned nothing", {
-          description: "Try adding a photo, PDF, or a more specific question.",
+          description: "The stream ended empty. Press RETRY to run it again.",
         });
       }
     } catch (err) {
       console.error(err);
-      toast.error("Oracle comms dropped", {
-        description: err instanceof Error ? err.message : "Unknown error",
+      const aborted = err instanceof DOMException && err.name === "AbortError";
+      setLastFailed(fn);
+      toast.error(aborted ? "The Oracle timed out" : "Oracle comms dropped", {
+        description: aborted
+          ? "No response within 2 minutes. Press RETRY to run it again."
+          : err instanceof Error ? err.message : "Unknown error",
       });
     } finally {
+      window.clearTimeout(timeout);
+      inFlightRef.current = false;
       setIsStreaming(false);
     }
   };
+
 
   return (
     <div className="min-h-screen">
