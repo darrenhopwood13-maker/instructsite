@@ -182,6 +182,37 @@ function RegisterPartnerPage() {
     setForm((f) => ({ ...EMPTY, projectId: f.projectId }));
   };
 
+  if (rolesResolved && !isAdmin) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-[#f5f3ee] text-neutral-900">
+        <div className="mx-auto max-w-2xl px-6 py-24 text-center">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-full border-2 border-neutral-900/20 bg-white">
+            <ShieldCheck size={22} className="text-neutral-500" />
+          </span>
+          <h1
+            className="mt-6 text-3xl font-black tracking-tight"
+            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          >
+            Access Denied
+          </h1>
+          <p className="mt-4 text-sm leading-relaxed text-neutral-600">
+            Registering trade partners and generating access tokens is restricted to project
+            administrators. Ask a project admin to enrol this subcontractor.
+          </p>
+          <div className="mt-10">
+            <Link
+              to="/projects"
+              className="inline-flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-[0.32em] text-neutral-500 hover:text-neutral-900"
+            >
+              <ArrowLeft size={12} /> Back to Projects
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#f5f3ee] text-neutral-900">
       <div className="mx-auto max-w-6xl px-6 py-12">
