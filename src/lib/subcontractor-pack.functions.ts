@@ -340,12 +340,16 @@ export const getManagerPack = createServerFn({ method: "POST" })
     const { resolveUserNames } = await import("@/lib/user-names.server");
     const allIds: (string | null)[] = [];
     for (const s of detailed as any[]) {
+      allIds.push(s.assigned_site_manager_id ?? null);
       for (const key of ["workers", "registers", "toolboxTalks", "lookAheads"]) {
         for (const row of s[key] as any[]) allIds.push(row.recorded_by ?? null);
       }
     }
     const names = await resolveUserNames(context.supabase, allIds);
     for (const s of detailed as any[]) {
+      s.assigned_site_manager_name = s.assigned_site_manager_id
+        ? names.get(s.assigned_site_manager_id) ?? null
+        : null;
       for (const key of ["workers", "registers", "toolboxTalks", "lookAheads"]) {
         s[key] = (s[key] as any[]).map((row) => ({
           ...row,
