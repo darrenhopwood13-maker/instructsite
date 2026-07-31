@@ -80,16 +80,12 @@ function SnagsPage() {
       <div className="mx-auto max-w-2xl px-6 py-20 text-center">
         <ShieldAlert className="mx-auto h-10 w-10 text-alert" />
         <h1 className="mt-4 text-3xl font-extrabold uppercase tracking-tight text-foreground" style={{ fontFamily: "'Zen Dots', sans-serif" }}>
-          Join an Organisation
+          No Organisation Access
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          Snag Master is scoped per organisation. Claim an admin seat or join with an invite link.
+          Snag Master is scoped per organisation and your account isn&apos;t linked to one yet.
+          Ask your organisation admin to give you access.
         </p>
-        <div className="mt-6 flex justify-center gap-3">
-          <Link to="/org" className="glass-orange rounded-lg px-5 py-3 text-sm uppercase tracking-widest">
-            Set up my org
-          </Link>
-        </div>
       </div>
     );
   }
