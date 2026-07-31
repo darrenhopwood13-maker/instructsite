@@ -395,9 +395,19 @@ function SubDetail({
               {sub.company_name}
             </h2>
             <p className="mt-1 text-xs text-foreground/60">
-              Manager · <span className="text-foreground/80">{sub.manager_name || "—"}</span> · Since{" "}
-              {new Date(sub.created_at).toLocaleDateString()}
+              Site manager ·{" "}
+              <span className="text-foreground/80">
+                {sub.assigned_site_manager_name || "Unassigned"}
+              </span>{" "}
+              · Since {new Date(sub.created_at).toLocaleDateString()}
             </p>
+            {sub.manager_name &&
+              sub.manager_name.trim().toLowerCase() !==
+                String(sub.company_name).trim().toLowerCase() && (
+                <p className="mt-1 text-xs text-foreground/60">
+                  Sub contact · <span className="text-foreground/80">{sub.manager_name}</span>
+                </p>
+              )}
           </div>
         </div>
 
