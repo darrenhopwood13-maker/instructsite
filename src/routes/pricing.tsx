@@ -14,13 +14,13 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "Three tiers for construction operations at Tier-1 scale. Baseline £299/mo, Structure £599/mo, and Apex bespoke enterprise deployments.",
+          "InstructSite plan information is not currently published. Contact info@instructsite.com to discuss access.",
       },
       { property: "og:title", content: "InstructSite Pricing" },
       {
         property: "og:description",
         content:
-          "Baseline £299/mo essential command surface, Structure £599/mo adds BIM + Randall, Apex bespoke ERP/SSO/Green-Mesh.",
+          "InstructSite plan information is not currently published. Contact info@instructsite.com.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
