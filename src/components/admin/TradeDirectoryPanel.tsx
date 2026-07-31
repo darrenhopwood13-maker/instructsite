@@ -53,7 +53,18 @@ export function TradeDirectoryPanel({
   const assignPmFn = useServerFn(assignPackageManager);
   const refreshInviteFn = useServerFn(refreshSubcontractorInvite);
   const inviteManagerFn = useServerFn(inviteSiteManager);
+  const rolesFn = useServerFn(getMyRoles);
   const qc = useQueryClient();
+
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    enabled: ready,
+    retry: false,
+  });
+  const roles = rolesQ.data?.roles ?? [];
+  const isAdmin = roles.includes("master_admin") || roles.includes("project_admin");
+
 
   const invites = useQuery({
     queryKey: ["subcontractor-invites", projectId],
