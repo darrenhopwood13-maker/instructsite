@@ -194,6 +194,38 @@ function OrgPage() {
   // NON-FOUNDER: unchanged claim / member views
   // ============================================================
   if (!org.data) {
+    const eligible = claimable.data?.eligible === true;
+    const claimOrgs = claimable.data?.orgs ?? [];
+
+    if (claimable.isFetched && !eligible) {
+      return (
+        <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
+          <div className="aurora-bg" />
+          <div className="relative mx-auto max-w-3xl px-6 py-14">
+            <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
+              Organisation
+            </p>
+            <h1
+              className="mt-2 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
+              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+            >
+              Organisation Access
+            </h1>
+            <div className="mt-6 flex items-start gap-3 rounded-md border border-alert/50 bg-alert/10 p-4 text-sm text-foreground">
+              <ShieldCheck size={16} className="mt-0.5 shrink-0 text-alert" />
+              <div>
+                <p className="font-bold uppercase tracking-widest text-alert">Access denied</p>
+                <p className="mt-1 text-foreground/80">
+                  Your account already holds a role on this platform, so it cannot claim an
+                  organisation. Ask your organisation admin to add you to the right organisation.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-background">
         <div className="aurora-bg" />
@@ -206,7 +238,7 @@ function OrgPage() {
             Claim your organisation
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            Pick a test organisation to run as its master admin. Each org holds one admin + up to two subcontractors.
+            Pick an organisation that has no owner yet to run as its master admin.
           </p>
 
           {error && (
@@ -217,12 +249,12 @@ function OrgPage() {
 
           <div className="mt-8 space-y-3">
             {claimable.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-            {(claimable.data ?? []).length === 0 && !claimable.isLoading && (
+            {claimOrgs.length === 0 && !claimable.isLoading && (
               <p className="text-sm text-muted-foreground">
-                All test orgs have admins. Ask an admin for a subcontractor invite link.
+                All organisations have owners. Ask an admin for an invite link.
               </p>
             )}
-            {(claimable.data ?? []).map((o) => (
+            {claimOrgs.map((o) => (
               <div
                 key={o.id}
                 className="glass-btn flex items-center justify-between rounded-xl border border-white/10 p-4"
