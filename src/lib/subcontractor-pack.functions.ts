@@ -308,8 +308,29 @@ export const getManagerPack = createServerFn({ method: "POST" })
         };
       }),
     );
+
+    // Resolve every recorded_by id once, then stamp a display name on each row so
+    // the UI badges and the weekly pack PDF can name the individual manager.
+    const { resolveUserNames } = await import("@/lib/user-names.server");
+    const allIds: (string | null)[] = [];
+    for (const s of detailed as any[]) {
+      for (const key of ["workers", "registers", "toolboxTalks", "lookAheads"]) {
+        for (const row of s[key] as any[]) allIds.push(row.recorded_by ?? null);
+      }
+    }
+    const names = await resolveUserNames(context.supabase, allIds);
+    for (const s of detailed as any[]) {
+      for (const key of ["workers", "registers", "toolboxTalks", "lookAheads"]) {
+        s[key] = (s[key] as any[]).map((row) => ({
+          ...row,
+          recorded_by_name: row.recorded_by ? names.get(row.recorded_by) ?? null : null,
+        }));
+      }
+    }
+
     return { subcontractors: detailed };
   });
+
 
 
 export const checkWorkerDuplicate = createServerFn({ method: "POST" })

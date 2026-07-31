@@ -32,13 +32,31 @@ export function ghostBtn(extra = "") {
   return `inline-flex items-center justify-center gap-2 rounded-md border border-white/15 px-3 py-2 text-[0.65rem] uppercase tracking-widest text-foreground/70 hover:border-alert hover:text-alert ${extra}`;
 }
 
-export function RecordedByBadge() {
+export function RecordedByBadge({ name, at }: { name?: string | null; at?: string | null } = {}) {
+  // Individual attribution for compliance. Falls back to the generic label for
+  // legacy rows where the recording user can no longer be resolved.
+  const who = (name ?? "").trim() || "Site Manager";
+  let when = "";
+  if (at) {
+    const d = new Date(at);
+    if (!Number.isNaN(d.getTime())) {
+      when = d.toLocaleString(undefined, {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
   return (
     <span className="rounded-sm border border-sky-400/70 bg-sky-400/10 px-1.5 py-0.5 font-mono text-[0.5rem] font-bold uppercase tracking-widest text-sky-300">
-      Recorded by Site Manager
+      Recorded by {who}
+      {when ? ` · ${when}` : ""}
     </span>
   );
 }
+
 
 export function AccordionCard({
   icon,
@@ -200,7 +218,7 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
     const verify =
       skipConfirm ||
       (await confirm(
-        `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Card: ${cardType.trim() || "—"} ${cardNumber.trim()}\n• Expiry: ${cardExpiry || "—"}\n• Competency Card File: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to labour roster?`,
+        `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Card: ${cardType.trim() || "—"} ${cardNumber.trim()}\n• Expiry: ${cardExpiry || "—"}\n• Competency Card File: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY with your name and the time." : ""}\n\nAdd to labour roster?`,
         "Save worker",
       ));
     if (!verify) return;
@@ -365,7 +383,7 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
     const verify =
       skipConfirm ||
       (await confirm(
-        `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Next Due: ${nextDue || "—"}\n• Inspector: ${inspector.trim() || "—"}\n• Certificate: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to ${type} register?`,
+        `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Next Due: ${nextDue || "—"}\n• Inspector: ${inspector.trim() || "—"}\n• Certificate: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY with your name and the time." : ""}\n\nAdd to ${type} register?`,
         "Save register",
       ));
     if (!verify) return;
@@ -559,7 +577,7 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
     const verify =
       skipConfirm ||
       (await confirm(
-        `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Date: ${date || "—"}\n• Presenter: ${presenter.trim() || "—"}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nLog this talk?`,
+        `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Date: ${date || "—"}\n• Presenter: ${presenter.trim() || "—"}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}${onBehalf ? "\n\nThis will be stamped RECORDED BY with your name and the time." : ""}\n\nLog this talk?`,
         "Log talk",
       ));
     if (!verify) return;
@@ -733,7 +751,7 @@ export function AddLookAhead({
     const verify =
       skipConfirm ||
       (await confirm(
-        `Please verify this look-ahead:\n\n• Date: ${date || "—"}\n• Flags: ${flags}\n• Plan: ${preview}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nSave look-ahead?`,
+        `Please verify this look-ahead:\n\n• Date: ${date || "—"}\n• Flags: ${flags}\n• Plan: ${preview}${onBehalf ? "\n\nThis will be stamped RECORDED BY with your name and the time." : ""}\n\nSave look-ahead?`,
         "Save look-ahead",
       ));
     if (!verify) return;

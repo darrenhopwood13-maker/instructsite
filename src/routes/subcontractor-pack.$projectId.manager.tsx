@@ -434,7 +434,7 @@ function SubDetail({
                 <p className="mt-1 text-sm text-foreground/80">
                   You are logging records for <span className="font-bold text-foreground">{sub.company_name}</span>.
                   Every entry saved here is stamped with your user id and shown as
-                  <span className="mx-1 font-mono text-sky-300">RECORDED BY SITE MANAGER</span>
+                  <span className="mx-1 font-mono text-sky-300">RECORDED BY {"{"}your name{"}"}</span>
                   so the audit trail stays honest.
                 </p>
               </div>
@@ -554,7 +554,7 @@ function LabourTable({ workers, onOpen }: { workers: any[]; onOpen: (p?: string 
           <td className="px-3 py-2 font-bold text-foreground">
             <div className="flex flex-wrap items-center gap-2">
               {w.name}
-              {w.recorded_by && <RecordedByBadge />}
+              {w.recorded_by && <RecordedByBadge name={(w as any).recorded_by_name} at={w.created_at} />}
             </div>
           </td>
           <td className="px-3 py-2 text-foreground/80">
@@ -603,7 +603,7 @@ function RegisterTable({ registers, onOpen }: { registers: any[]; onOpen: (p?: s
           <td className="px-3 py-2 text-foreground/85">
             <div className="flex flex-wrap items-center gap-2">
               {r.asset_name || "—"}
-              {r.recorded_by && <RecordedByBadge />}
+              {r.recorded_by && <RecordedByBadge name={(r as any).recorded_by_name} at={r.created_at} />}
             </div>
             {r.inspector && (
               <p className="mt-0.5 font-mono text-[0.6rem] text-foreground/50">Inspector · {r.inspector}</p>
@@ -649,7 +649,7 @@ function TalksTable({ talks }: { talks: any[] }) {
             <td className="px-3 py-2 font-bold text-foreground">
               <div className="flex flex-wrap items-center gap-2">
                 {t.topic}
-                {t.recorded_by && <RecordedByBadge />}
+                {t.recorded_by && <RecordedByBadge name={(t as any).recorded_by_name} at={t.created_at} />}
               </div>
               {t.presenter && (
                 <p className="mt-0.5 font-mono text-[0.6rem] text-foreground/50">Presenter · {t.presenter}</p>
@@ -681,7 +681,7 @@ function LookAheadTable({ rows }: { rows: any[] }) {
               <p className="whitespace-pre-wrap">{l.work_plan}</p>
               {l.recorded_by && (
                 <div className="mt-1">
-                  <RecordedByBadge />
+                  <RecordedByBadge name={(l as any).recorded_by_name} at={l.created_at} />
                 </div>
               )}
             </td>
