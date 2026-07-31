@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Plus, FolderOpen, MapPin, ShieldAlert } from "lucide-react";
 import { listMyProjects, getMyRoles, listMyOrgsForProjectCreation } from "@/lib/projects.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { roleLabel } from "@/lib/role-labels";
 
 export const Route = createFileRoute("/projects/")({
   head: () => ({
@@ -82,7 +83,7 @@ function ProjectsPage() {
               </span>
             ) : (
               <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.3em] text-foreground/70">
-                Signed in as {roles.data.roles.join(", ") || "member"}
+                Signed in as {roles.data.roles.map(roleLabel).join(", ") || "Member"}
               </span>
             )}
           </div>
