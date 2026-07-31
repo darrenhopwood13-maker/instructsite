@@ -79,35 +79,86 @@ export const getMyOrg = createServerFn({ method: "GET" })
     };
   });
 
-/** All orgs with no admin yet — used by the claim screen. */
+/**
+ * A user may only be offered the org-claim flow when they are a genuine
+ * blank-slate account: no org membership at all AND no app role at all.
+ * Anyone else (site managers, subcontractors, QS, admins…) is Forbidden.
+ */
+async function assertClaimEligible(context: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any;
+  userId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  claims: any;
+}): Promise<void> {
+  if (isOwnerFromClaims(context.claims)) {
+    throw new Error("Forbidden: the platform owner does not claim organisations.");
+  }
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const { data: memberships } = await supabaseAdmin
+    .from("org_members")
+    .select("id")
+    .eq("user_id", context.userId)
+    .limit(1);
+  if (memberships && memberships.length > 0) {
+    throw new Error("Forbidden: you already belong to an organisation.");
+  }
+
+  const { data: roles } = await supabaseAdmin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", context.userId)
+    .limit(1);
+  if (roles && roles.length > 0) {
+    throw new Error("Forbidden: your account already holds a role on this platform.");
+  }
+}
+
+export type ClaimableOrgsResult = {
+  eligible: boolean;
+  orgs: { id: string; name: string; slug: string }[];
+};
+
+/** Orgs with no owner/admin yet — only ever returned to blank-slate accounts. */
 export const listClaimableOrgs = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
+  .handler(async ({ context }): Promise<ClaimableOrgsResult> => {
+    try {
+      await assertClaimEligible(context);
+    } catch {
+      return { eligible: false, orgs: [] };
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: orgs, error } = await supabaseAdmin
       .from("orgs")
       .select("id, name, slug")
       .order("name");
     if (error) throw new Error(error.message);
-    const { data: admins } = await supabaseAdmin
+    const { data: owners } = await supabaseAdmin
       .from("org_members")
-      .select("org_id")
-      .eq("role", "admin");
-    const claimed = new Set((admins ?? []).map((r) => r.org_id));
-    return (orgs ?? []).filter((o) => !claimed.has(o.id));
+      .select("org_id, role")
+      .in("role", ["admin", "owner"]);
+    const claimed = new Set((owners ?? []).map((r) => r.org_id));
+    return { eligible: true, orgs: (orgs ?? []).filter((o) => !claimed.has(o.id)) };
   });
 
 export const claimOrgAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ orgId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: existingRows } = await context.supabase
+    // Hard server-side gate — never trust the client to have hidden the button.
+    await assertClaimEligible(context);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existingOwners } = await supabaseAdmin
       .from("org_members")
       .select("id")
-      .eq("user_id", context.userId)
+      .eq("org_id", data.orgId)
+      .in("role", ["admin", "owner"])
       .limit(1);
-    if (existingRows && existingRows.length > 0) {
-      throw new Error("You already belong to an organisation.");
+    if (existingOwners && existingOwners.length > 0) {
+      throw new Error("Forbidden: this organisation already has an owner.");
     }
 
     const { error } = await context.supabase.from("org_members").insert({
