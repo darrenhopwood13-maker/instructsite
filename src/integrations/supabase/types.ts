@@ -2511,6 +2511,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_project_subcontractor_directory: {
+        Args: { _project_id: string }
+        Returns: {
+          accepted_at: string
+          company_name: string
+          created_at: string
+          id: string
+          pm_name: string
+          supervisor_name: string
+          trade_packages: string[]
+        }[]
+      }
       list_unassigned_site_managers: {
         Args: { _project_id: string }
         Returns: {

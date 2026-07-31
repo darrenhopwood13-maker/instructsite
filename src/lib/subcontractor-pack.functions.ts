@@ -234,18 +234,19 @@ export const getManagerPack = createServerFn({ method: "POST" })
     // project page shows. A `subcontractors` row is only lazily created when a
     // sub opens their portal — until then we materialise one on read so
     // PUWER/LOLER/toolbox records can be recorded against a stable id.
+    // Invites are read through a security-definer directory RPC: the table's own
+    // RLS is admin-only, so a site manager would otherwise see an empty list and
+    // the pack manager would disagree with the Trade Directory.
     const [invitesRes, existingSubsRes] = await Promise.all([
-      context.supabase
-        .from("subcontractor_invites")
-        .select("id, company_name, trade_packages, pm_name, supervisor_name, accepted_at, revoked_at, expires_at, created_at")
-        .eq("project_id", data.projectId)
-        .is("revoked_at", null)
-        .order("company_name", { ascending: true }),
+      context.supabase.rpc("list_project_subcontractor_directory" as never, {
+        _project_id: data.projectId,
+      } as never),
       context.supabase
         .from("subcontractors")
         .select("id, company_name, manager_name, created_at")
         .eq("project_id", data.projectId),
     ]);
+
     if (invitesRes.error) throw new Error(invitesRes.error.message);
     if (existingSubsRes.error) throw new Error(existingSubsRes.error.message);
 
