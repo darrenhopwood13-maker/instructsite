@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Copy, Check, Building2, UserSquare2, HardHat, QrCode, ShieldCheck, Eye } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { listMyProjects } from "@/lib/projects.functions";
+import { listMyProjects, getMyRoles } from "@/lib/projects.functions";
 import { createSubcontractorInvite } from "@/lib/subcontractors.functions";
 import { getSubcontractorSeatUsage } from "@/lib/subscriptions.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
@@ -66,12 +66,24 @@ function RegisterPartnerPage() {
   const listFn = useServerFn(listMyProjects);
   const createFn = useServerFn(createSubcontractorInvite);
   const seatFn = useServerFn(getSubcontractorSeatUsage);
+  const rolesFn = useServerFn(getMyRoles);
+
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    enabled: ready,
+    staleTime: 60_000,
+  });
+  const roles = rolesQ.data?.roles ?? [];
+  const isAdmin = roles.includes("master_admin") || roles.includes("project_admin");
+  const rolesResolved = ready && rolesQ.isSuccess;
 
   const projects = useQuery({
     queryKey: ["my-projects"],
     queryFn: () => listFn(),
-    enabled: ready,
+    enabled: ready && isAdmin,
   });
+
 
   const [form, setForm] = useState<FormState>(EMPTY);
   const [busy, setBusy] = useState(false);
@@ -86,7 +98,7 @@ function RegisterPartnerPage() {
   // Seat usage lookup: only queries once a project + company are picked.
   const seats = useQuery({
     queryKey: ["seat-usage", form.projectId, form.companyName.trim().toLowerCase()],
-    enabled: ready && !!form.projectId && form.companyName.trim().length >= 2,
+    enabled: ready && isAdmin && !!form.projectId && form.companyName.trim().length >= 2,
     queryFn: () =>
       seatFn({
         data: {
@@ -118,7 +130,9 @@ function RegisterPartnerPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return toast.error("Forbidden: project admin role required.");
     if (!form.projectId) return toast.error("Select a project first.");
+
     if (!form.companyName.trim()) return toast.error("Company name is required.");
     if (!form.tradePackage) return toast.error("Select a trade package.");
     if (capFull) return toast.error("Maximum Capacity Reached · 3 seats per subcontractor.");
@@ -167,6 +181,37 @@ function RegisterPartnerPage() {
     setResult(null);
     setForm((f) => ({ ...EMPTY, projectId: f.projectId }));
   };
+
+  if (rolesResolved && !isAdmin) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-[#f5f3ee] text-neutral-900">
+        <div className="mx-auto max-w-2xl px-6 py-24 text-center">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-full border-2 border-neutral-900/20 bg-white">
+            <ShieldCheck size={22} className="text-neutral-500" />
+          </span>
+          <h1
+            className="mt-6 text-3xl font-black tracking-tight"
+            style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+          >
+            Access Denied
+          </h1>
+          <p className="mt-4 text-sm leading-relaxed text-neutral-600">
+            Registering trade partners and generating access tokens is restricted to project
+            administrators. Ask a project admin to enrol this subcontractor.
+          </p>
+          <div className="mt-10">
+            <Link
+              to="/projects"
+              className="inline-flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-[0.32em] text-neutral-500 hover:text-neutral-900"
+            >
+              <ArrowLeft size={12} /> Back to Projects
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#f5f3ee] text-neutral-900">
@@ -323,16 +368,19 @@ function RegisterPartnerPage() {
               </Link>
               <button
                 type="submit"
-                disabled={busy || capFull}
+                disabled={busy || capFull || !isAdmin}
                 className="inline-flex items-center gap-2 rounded-md border-2 border-[#1d3f8a] bg-[#1d3f8a] px-6 py-3 text-[0.7rem] font-extrabold uppercase tracking-[0.28em] text-white shadow-[4px_4px_0_0_rgba(15,23,42,0.35)] transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <QrCode size={14} />
-                {capFull
-                  ? "Maximum Capacity Reached"
-                  : busy
-                    ? "Saving…"
-                    : "Save Partner & Generate Access Tokens"}
+                {!isAdmin
+                  ? "Admin Access Required"
+                  : capFull
+                    ? "Maximum Capacity Reached"
+                    : busy
+                      ? "Saving…"
+                      : "Save Partner & Generate Access Tokens"}
               </button>
+
             </div>
           </form>
         )}
