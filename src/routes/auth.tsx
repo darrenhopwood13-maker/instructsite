@@ -1,3 +1,4 @@
+import { BILLING_ENABLED } from "@/config/features";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -178,9 +179,9 @@ function AuthPage() {
 
   const routeSignedIn = async () => {
     try {
-      // Trial gate
+      // Trial gate (billing surfaces disabled → no trial enforcement)
       try {
-        const profile = await getMyProfile();
+        const profile = BILLING_ENABLED ? await getMyProfile() : null;
         if (profile?.trial_ends_at) {
           const expired = new Date(profile.trial_ends_at).getTime() < Date.now();
           if (expired) {

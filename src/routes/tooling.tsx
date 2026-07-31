@@ -84,7 +84,7 @@ function ToolingPage() {
           /* ignore */
         }
         if (resp.status === 429) toast.error("Rate limit", { description: msg });
-        else if (resp.status === 402) toast.error("Credits required", { description: msg });
+        else if (resp.status === 402) toast.error("AI service unavailable", { description: msg });
         else toast.error("Oracle error", { description: msg });
         setLastFailed(fn);
         return;

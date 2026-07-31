@@ -43,6 +43,7 @@ export function BespokeUpgradeModal({
     }
   }, [open, defaultEmail, defaultName]);
 
+  if (!BILLING_ENABLED) return null;
   if (!open) return null;
 
   const featureName = feature ? FEATURE_LABEL[feature] : "Apex tier";

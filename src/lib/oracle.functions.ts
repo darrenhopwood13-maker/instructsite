@@ -317,7 +317,7 @@ export const runOracleCommand = createServerFn({ method: "POST" })
         throw new Error("Oracle is rate-limited. Please retry in a moment.");
       }
       if (/402|credit/i.test(msg)) {
-        throw new Error("Oracle credits exhausted. Add credits in Settings → Plans & credits.");
+        throw new Error("The Oracle is temporarily unavailable. Please try again shortly.");
       }
       throw new Error(`Oracle model call failed: ${msg}`);
     }
@@ -397,7 +397,7 @@ export const askProjectOracle = createServerFn({ method: "POST" })
     } catch (e: any) {
       const msg: string = e?.message ?? String(e);
       if (/rate.?limit|429/i.test(msg)) throw new Error("Oracle is rate-limited. Please retry in a moment.");
-      if (/402|credit/i.test(msg)) throw new Error("Oracle credits exhausted. Add credits in Settings → Plans & credits.");
+      if (/402|credit/i.test(msg)) throw new Error("The Oracle is temporarily unavailable. Please try again shortly.");
       throw new Error(`Oracle model call failed: ${msg}`);
     }
 

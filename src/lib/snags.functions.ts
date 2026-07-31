@@ -204,7 +204,7 @@ export const analyzeSnag = createServerFn({ method: "POST" })
         const body = await resp.text().catch(() => "");
         await supabaseAdmin.storage.from("snag-photos").remove([photoPath]).catch(() => {});
         if (resp.status === 429) throw new Error("Rate limit hit — hold on and try again in a moment.");
-        if (resp.status === 402) throw new Error("Out of AI credits — top up the workspace to keep the Oracle online.");
+        if (resp.status === 402) throw new Error("The Oracle is temporarily unavailable. Please try again shortly.");
         throw new Error(`AI gateway ${resp.status}: ${body.slice(0, 400) || "no body"}`);
       }
 
