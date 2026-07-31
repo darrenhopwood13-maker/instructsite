@@ -6,10 +6,13 @@ import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, CreditCard } from "lucide-react";
 import { PricingTiers } from "@/components/subscriptions/PricingTiers";
 import { BespokeUpgradeModal } from "@/components/subscriptions/BespokeUpgradeModal";
+import { NotAvailablePanel } from "@/components/subscriptions/NotAvailablePanel";
 import {
   createCheckoutSession,
   getProjectSubscription,
+  canManageBilling,
 } from "@/lib/subscriptions.functions";
+import { BILLING_ENABLED } from "@/config/features";
 import type { Tier } from "@/lib/access";
 
 export const Route = createFileRoute("/billing/$projectId")({
@@ -17,10 +20,50 @@ export const Route = createFileRoute("/billing/$projectId")({
     meta: [
       { title: "Billing · InstructSite" },
       { name: "description", content: "Manage your InstructSite subscription tier and billing." },
+      { name: "robots", content: "noindex" },
     ],
   }),
-  component: BillingPage,
+  component: BillingRoute,
 });
+
+function BillingRoute() {
+  if (!BILLING_ENABLED) {
+    return (
+      <NotAvailablePanel
+        title="Not available"
+        message="Billing is not available on this workspace."
+      />
+    );
+  }
+  return <BillingGate />;
+}
+
+/** Client-side role gate — mirrors the server-side check in subscriptions.functions.ts. */
+function BillingGate() {
+  const { projectId } = Route.useParams();
+  const permFn = useServerFn(canManageBilling);
+  const perm = useQuery({
+    queryKey: ["billing-permission", projectId],
+    queryFn: () => permFn({ data: { projectId } }),
+  });
+
+  if (perm.isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0A192F] px-6 py-24 text-center text-xs uppercase tracking-[0.32em] text-white/40">
+        Checking access…
+      </div>
+    );
+  }
+  if (!perm.data?.allowed) {
+    return (
+      <NotAvailablePanel
+        title="Access denied"
+        message="Billing is restricted to project administrators."
+      />
+    );
+  }
+  return <BillingPage />;
+}
 
 function BillingPage() {
   const { projectId } = Route.useParams();
@@ -59,7 +102,7 @@ function BillingPage() {
         setLoadingTier(null);
         return;
       }
-      throw new Error("Stripe session did not return a URL.");
+      throw new Error("Checkout session did not return a URL.");
     } catch (err) {
       toast.error((err as Error).message);
       setLoadingTier(null);
@@ -116,7 +159,7 @@ function BillingPage() {
         </section>
 
         <p className="mt-10 flex items-center gap-2 text-xs text-white/50">
-          <CreditCard size={12} /> Secured by Stripe · Invoices sent via email
+          <CreditCard size={12} /> Payments secured · Invoices sent via email
           <ExternalLink size={11} />
         </p>
       </div>
