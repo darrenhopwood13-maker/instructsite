@@ -19,14 +19,22 @@ function randomToken(): string {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+/**
+ * Hard server-side gate: only project_admin (for this project) or master_admin
+ * may create subcontractor records or mint invite tokens. A site_manager is
+ * explicitly NOT allowed, and the check cannot be bypassed from the client.
+ */
 async function assertProjectAdmin(supabase: any, projectId: string, userId: string) {
-  const { data, error } = await supabase.rpc("is_project_admin", {
-    _project_id: projectId,
-    _user_id: userId,
-  });
+  const [{ data: isAdmin, error }, { data: isMaster }] = await Promise.all([
+    supabase.rpc("is_project_admin", { _project_id: projectId, _user_id: userId }),
+    supabase.rpc("has_role", { _user_id: userId, _role: "master_admin" }),
+  ]);
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Project admin role required.");
+  if (!isAdmin && !isMaster) {
+    throw new Error("Forbidden: project_admin or master_admin role required.");
+  }
 }
+
 
 export const createSubcontractorInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
