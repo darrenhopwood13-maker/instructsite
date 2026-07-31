@@ -1,9 +1,19 @@
 import type jsPDF from "jspdf";
 
-type Worker = { name: string; role?: string | null; competency_card_url?: string | null; card_type?: string | null; card_number?: string | null; card_expiry?: string | null; recorded_by?: string | null; created_at: string };
-type Register = { type: string; asset_name?: string | null; inspection_date?: string | null; next_inspection_due?: string | null; inspector?: string | null; certificate_url?: string | null; recorded_by?: string | null; created_at: string };
-type ToolboxTalk = { topic: string; attendance_list?: unknown; date?: string | null; presenter?: string | null; recorded_by?: string | null; created_at: string };
-type LookAhead = { work_plan: string; is_high_risk?: boolean; permit_required?: boolean; date?: string | null; recorded_by?: string | null; created_at: string };
+type Worker = { name: string; role?: string | null; competency_card_url?: string | null; card_type?: string | null; card_number?: string | null; card_expiry?: string | null; recorded_by?: string | null; recorded_by_name?: string | null; created_at: string };
+type Register = { type: string; asset_name?: string | null; inspection_date?: string | null; next_inspection_due?: string | null; inspector?: string | null; certificate_url?: string | null; recorded_by?: string | null; recorded_by_name?: string | null; created_at: string };
+type ToolboxTalk = { topic: string; attendance_list?: unknown; date?: string | null; presenter?: string | null; recorded_by?: string | null; recorded_by_name?: string | null; created_at: string };
+type LookAhead = { work_plan: string; is_high_risk?: boolean; permit_required?: boolean; date?: string | null; recorded_by?: string | null; recorded_by_name?: string | null; created_at: string };
+
+/** Individual attribution for the Source column — names the manager who recorded it. */
+function sourceLabel(row: { recorded_by?: string | null; recorded_by_name?: string | null; created_at: string }) {
+  if (!row.recorded_by) return "Subcontractor";
+  const who = (row.recorded_by_name ?? "").trim() || "Site Manager";
+  let when = "";
+  const d = new Date(row.created_at);
+  if (!Number.isNaN(d.getTime())) when = d.toLocaleDateString("en-GB");
+  return `Recorded by ${who}${when ? ` (${when})` : ""}`;
+}
 
 export type WeeklyPackInput = {
   projectName: string;
@@ -170,9 +180,9 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
       w.role || "—",
       [w.card_type, w.card_number].filter(Boolean).join(" ") || "—",
       w.competency_card_url ? "On file" : "Missing",
-      w.recorded_by ? "Site Manager" : "Subcontractor",
+      sourceLabel(w),
     ]),
-    { columnStyles: { 0: { cellWidth: 8 }, 4: { cellWidth: 24 }, 5: { cellWidth: 26 } } },
+    { columnStyles: { 0: { cellWidth: 8 }, 4: { cellWidth: 24 }, 5: { cellWidth: 40 } } },
   );
 
   // Table 2 — Safety Registers
@@ -186,9 +196,9 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
       r.inspection_date ? new Date(r.inspection_date).toLocaleDateString("en-GB") : "—",
       r.next_inspection_due ? new Date(r.next_inspection_due).toLocaleDateString("en-GB") : "—",
       r.certificate_url ? "On file" : "Missing",
-      r.recorded_by ? "Site Manager" : "Subcontractor",
+      sourceLabel(r),
     ]),
-    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 18 }, 3: { cellWidth: 21 }, 4: { cellWidth: 21 }, 5: { cellWidth: 20 }, 6: { cellWidth: 24 } } },
+    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 18 }, 3: { cellWidth: 21 }, 4: { cellWidth: 21 }, 5: { cellWidth: 20 }, 6: { cellWidth: 36 } } },
   );
 
   // Table 3 — Toolbox Talks
@@ -202,10 +212,10 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
         new Date(t.date ?? t.created_at).toLocaleDateString("en-GB"),
         t.topic || "—",
         `${attendees.length} · ${attendees.slice(0, 6).map((a) => String(a)).join(", ")}${attendees.length > 6 ? "…" : ""}`,
-        t.recorded_by ? "Site Manager" : "Subcontractor",
+        sourceLabel(t),
       ];
     }),
-    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 20 }, 2: { cellWidth: 40 }, 4: { cellWidth: 26 } } },
+    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 20 }, 2: { cellWidth: 40 }, 4: { cellWidth: 38 } } },
   );
 
   // Table 4 — Look-Ahead
@@ -223,10 +233,10 @@ export async function generateWeeklyPackPdf(input: WeeklyPackInput): Promise<{ f
         new Date(l.date ?? l.created_at).toLocaleDateString("en-GB"),
         l.work_plan,
         { content: flagText, styles: flagged ? { textColor: [200, 30, 30], fontStyle: "bold" } : {} },
-        l.recorded_by ? "Site Manager" : "Subcontractor",
+        sourceLabel(l),
       ];
     }),
-    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 20 }, 3: { cellWidth: 32 }, 4: { cellWidth: 26 } } },
+    { columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 20 }, 3: { cellWidth: 32 }, 4: { cellWidth: 38 } } },
   );
 
 
