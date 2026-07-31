@@ -1,5 +1,6 @@
 import { Check, Sparkles } from "lucide-react";
 import type { Tier } from "@/lib/access";
+import { BILLING_ENABLED } from "@/config/features";
 
 interface TierDef {
   key: Tier;
@@ -71,6 +72,7 @@ interface Props {
 }
 
 export function PricingTiers({ currentTier, onSelect, loadingTier, compact }: Props) {
+  if (!BILLING_ENABLED) return null;
   return (
     <div className={`grid gap-4 ${compact ? "md:grid-cols-3" : "md:grid-cols-3"}`}>
       {TIER_DEFS.map((t) => {

@@ -4,11 +4,13 @@ import { ArrowLeft } from "lucide-react";
 import { PricingTiers } from "@/components/subscriptions/PricingTiers";
 import { BespokeUpgradeModal } from "@/components/subscriptions/BespokeUpgradeModal";
 import type { Tier } from "@/lib/access";
+import { BILLING_ENABLED } from "@/config/features";
+import { NotAvailablePanel } from "@/components/subscriptions/NotAvailablePanel";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing · InstructSite — Baseline · Structure · Apex" },
+      { title: "Pricing · InstructSite" },
       {
         name: "description",
         content:
@@ -22,12 +24,25 @@ export const Route = createFileRoute("/pricing")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "robots", content: "noindex" },
     ],
   }),
   component: PricingPage,
 });
 
 function PricingPage() {
+  if (!BILLING_ENABLED) {
+    return (
+      <NotAvailablePanel
+        title="Not available"
+        message="Plan information is not available at the moment. Get in touch at info@instructsite.com."
+      />
+    );
+  }
+  return <PricingContent />;
+}
+
+function PricingContent() {
   const [bespokeOpen, setBespokeOpen] = useState(false);
 
   const handleSelect = (tier: Tier) => {

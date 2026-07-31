@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { BILLING_ENABLED } from "@/config/features";
 
 /**
  * Stripe webhook — verifies signature, syncs project_subscriptions.
@@ -8,6 +9,7 @@ export const Route = createFileRoute("/api/public/webhooks/stripe")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        if (!BILLING_ENABLED) return new Response("Not found", { status: 404 });
         const secret = process.env.STRIPE_SECRET_KEY;
         const whSecret = process.env.STRIPE_WEBHOOK_SECRET;
         if (!secret || !whSecret) {
