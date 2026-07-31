@@ -194,7 +194,7 @@ export const Route = createFileRoute("/api/oracle-stream")({
             status === 429
               ? "Rate limit hit — hold on and try again in a moment."
               : status === 402
-                ? "Out of Lovable AI credits — top up the workspace to keep the Oracle online."
+                ? "The Oracle is temporarily unavailable. Please try again shortly."
                 : `AI gateway error (${status})`;
           console.error("Oracle upstream error:", status, errText);
           return new Response(JSON.stringify({ error: msg }), {

@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { MailCheck, ArrowLeft } from "lucide-react";
+import { BILLING_ENABLED } from "@/config/features";
+import { NotAvailablePanel } from "@/components/subscriptions/NotAvailablePanel";
 
 export const Route = createFileRoute("/trial-ended")({
   head: () => ({
@@ -12,6 +14,14 @@ export const Route = createFileRoute("/trial-ended")({
 });
 
 function TrialEnded() {
+  if (!BILLING_ENABLED) {
+    return (
+      <NotAvailablePanel
+        title="Not available"
+        message="This page is not available."
+      />
+    );
+  }
   return (
     <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
       <div className="mx-auto max-w-2xl px-6 py-24 text-center">

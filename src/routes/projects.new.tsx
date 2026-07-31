@@ -41,7 +41,7 @@ function humanizeError(e: unknown): string {
   if (/429|rate limit/i.test(raw))
     return "Oracle is busy (rate-limited). Wait a moment and try again.";
   if (/402|credit/i.test(raw))
-    return "AI credits exhausted for this workspace. Top up credits to continue.";
+    return "The AI service is temporarily unavailable for this workspace. Please try again shortly.";
   return raw;
 }
 

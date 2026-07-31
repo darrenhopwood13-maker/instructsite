@@ -3,6 +3,7 @@ import { Lock, ArrowUpRight } from "lucide-react";
 import { useProjectAccess, FEATURE_LABEL, type FeatureKey } from "@/lib/access";
 import { BespokeUpgradeModal } from "@/components/subscriptions/BespokeUpgradeModal";
 import { useNavigate } from "@tanstack/react-router";
+import { BILLING_ENABLED } from "@/config/features";
 
 /**
  * Wrap any feature that requires a specific subscription tier.
@@ -24,6 +25,9 @@ export function FeatureGate({
   const access = useProjectAccess(projectId);
   const [modalOpen, setModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Billing disabled — nothing is tier-gated and no upgrade prompts render.
+  if (!BILLING_ENABLED) return <>{children}</>;
 
   if (access.loading) {
     return <div className="h-8 w-32 animate-pulse rounded bg-[#1E293B]/30" aria-busy />;

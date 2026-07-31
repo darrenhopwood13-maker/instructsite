@@ -4,6 +4,7 @@ import { X, Loader2, Check, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { requestBespokeUpgrade } from "@/lib/subscriptions.functions";
 import { FEATURE_LABEL, type FeatureKey } from "@/lib/access";
+import { BILLING_ENABLED } from "@/config/features";
 
 interface Props {
   open: boolean;
@@ -42,6 +43,7 @@ export function BespokeUpgradeModal({
     }
   }, [open, defaultEmail, defaultName]);
 
+  if (!BILLING_ENABLED) return null;
   if (!open) return null;
 
   const featureName = feature ? FEATURE_LABEL[feature] : "Apex tier";

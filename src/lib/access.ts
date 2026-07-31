@@ -6,6 +6,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getProjectSubscription } from "@/lib/subscriptions.functions";
+import { BILLING_ENABLED } from "@/config/features";
 
 export type Tier = "baseline" | "structure" | "apex";
 
@@ -47,6 +48,7 @@ export const FEATURE_LABEL: Record<FeatureKey, string> = {
 const RANK: Record<Tier, number> = { baseline: 0, structure: 1, apex: 2 };
 
 export function checkAccess(currentTier: Tier | null, feature: FeatureKey): boolean {
+  if (!BILLING_ENABLED) return true;
   const need = FEATURE_TIER[feature];
   const have = currentTier ?? "baseline";
   return RANK[have] >= RANK[need];
@@ -56,7 +58,7 @@ export function useProjectSubscription(projectId: string | undefined) {
   const fn = useServerFn(getProjectSubscription);
   return useQuery({
     queryKey: ["project-subscription", projectId],
-    enabled: !!projectId,
+    enabled: BILLING_ENABLED && !!projectId,
     queryFn: () => fn({ data: { projectId: projectId! } }),
     staleTime: 60_000,
   });
