@@ -1,21 +1,35 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-const TIERS = ["baseline", "structure", "apex"] as const;
-
-async function assertProjectAdmin(supabase: any, projectId: string, userId: string) {
-  const { data, error } = await supabase.rpc("is_project_admin", {
-    _project_id: projectId,
-    _user_id: userId,
-  });
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Project admin role required.");
-}
+import {
+  TIERS,
+  assertBillingEnabled,
+  assertProjectAdmin,
+  isBillingManager,
+} from "@/lib/subscriptions.server";
 
 /**
- * Read the current subscription for a project. Any project member can read;
- * unknown/missing rows default to a baseline trial state.
+ * Permission probe for the billing surface — project_admin or master_admin.
+ */
+export const canManageBilling = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ projectId: z.string().uuid() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    assertBillingEnabled();
+    return {
+      allowed: await isBillingManager(
+        context.supabase,
+        data.projectId,
+        context.userId,
+      ),
+    };
+  });
+
+/**
+ * Read the current subscription for a project. Requires project_admin or
+ * master_admin; unknown/missing rows default to a baseline trial state.
  */
 export const getProjectSubscription = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -23,6 +37,8 @@ export const getProjectSubscription = createServerFn({ method: "GET" })
     z.object({ projectId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ data, context }) => {
+    assertBillingEnabled();
+    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
     const { data: row, error } = await context.supabase
       .from("project_subscriptions")
       .select(
@@ -59,6 +75,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
+    assertBillingEnabled();
     await assertProjectAdmin(context.supabase, data.projectId, context.userId);
 
     const priceId =
@@ -135,6 +152,7 @@ export const requestBespokeUpgrade = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
+    assertBillingEnabled();
     await assertProjectAdmin(context.supabase, data.projectId, context.userId);
     const { data: row, error } = await context.supabase
       .from("bespoke_upgrade_requests")
