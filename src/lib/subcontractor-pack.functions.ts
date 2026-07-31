@@ -309,6 +309,8 @@ export const getManagerPack = createServerFn({ method: "POST" })
         id: s.id,
         company_name: s.company_name,
         manager_name: s.manager_name ?? null,
+        assigned_site_manager_id: null,
+        assigned_site_manager_name: null,
         trade_packages: [],
         status: "active",
         created_at: s.created_at,
