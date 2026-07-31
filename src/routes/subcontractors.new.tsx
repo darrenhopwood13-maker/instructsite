@@ -66,12 +66,24 @@ function RegisterPartnerPage() {
   const listFn = useServerFn(listMyProjects);
   const createFn = useServerFn(createSubcontractorInvite);
   const seatFn = useServerFn(getSubcontractorSeatUsage);
+  const rolesFn = useServerFn(getMyRoles);
+
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    enabled: ready,
+    staleTime: 60_000,
+  });
+  const roles = rolesQ.data?.roles ?? [];
+  const isAdmin = roles.includes("master_admin") || roles.includes("project_admin");
+  const rolesResolved = ready && rolesQ.isSuccess;
 
   const projects = useQuery({
     queryKey: ["my-projects"],
     queryFn: () => listFn(),
-    enabled: ready,
+    enabled: ready && isAdmin,
   });
+
 
   const [form, setForm] = useState<FormState>(EMPTY);
   const [busy, setBusy] = useState(false);
