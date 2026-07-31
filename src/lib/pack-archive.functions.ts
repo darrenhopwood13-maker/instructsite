@@ -141,39 +141,12 @@ export const listPackIssues = createServerFn({ method: "POST" })
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
 
-    const ids = Array.from(new Set(((rows ?? []) as any[]).map((r) => r.generated_by).filter(Boolean)));
-    const names = new Map<string, string>();
-    if (ids.length) {
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .in("user_id", ids);
-      for (const p of (profs ?? []) as any[]) {
-        const n = (p.full_name ?? "").trim();
-        if (n) names.set(p.user_id, n);
-      }
-      // Fall back to the auth account (email local-part) for users without a
-      // profile row or a blank name. Only truly deleted accounts stay unknown.
-      const missing = ids.filter((id) => !names.get(id));
-      if (missing.length) {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        await Promise.all(
-          missing.map(async (id) => {
-            const { data: u } = await supabaseAdmin.auth.admin.getUserById(id as string);
-            const meta = (u?.user?.user_metadata ?? {}) as Record<string, unknown>;
-            const metaName =
-              typeof meta.full_name === "string"
-                ? meta.full_name.trim()
-                : typeof meta.name === "string"
-                  ? meta.name.trim()
-                  : "";
-            const email = u?.user?.email ?? "";
-            const resolved = metaName || (email ? email.split("@")[0] : "");
-            if (resolved) names.set(id as string, resolved);
-          }),
-        );
-      }
-    }
+    const { resolveUserNames } = await import("@/lib/user-names.server");
+    const names = await resolveUserNames(
+      supabase,
+      ((rows ?? []) as any[]).map((r) => r.generated_by),
+    );
+
 
     return ((rows ?? []) as any[]).map((r) => ({
       id: r.id,
