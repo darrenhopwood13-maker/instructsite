@@ -236,6 +236,10 @@ function NewProject() {
           </div>
         )}
 
+        {/* Hide the whole creation flow when access is denied — the banner is the
+            only thing an ineligible user should see. */}
+        {(!ready || canCreate) && (
+          <>
         {/* AI Instant Setup */}
         <AiDropZone
           disabled={!canCreate || scanning}
@@ -374,6 +378,8 @@ function NewProject() {
             </button>
           </div>
         </form>
+          </>
+        )}
       </div>
     </div>
   );
