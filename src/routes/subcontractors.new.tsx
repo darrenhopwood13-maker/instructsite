@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Copy, Check, Building2, UserSquare2, HardHat, QrCode, ShieldCheck, Eye } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { listMyProjects } from "@/lib/projects.functions";
+import { listMyProjects, getMyRoles } from "@/lib/projects.functions";
 import { createSubcontractorInvite } from "@/lib/subcontractors.functions";
 import { getSubcontractorSeatUsage } from "@/lib/subscriptions.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
@@ -98,7 +98,7 @@ function RegisterPartnerPage() {
   // Seat usage lookup: only queries once a project + company are picked.
   const seats = useQuery({
     queryKey: ["seat-usage", form.projectId, form.companyName.trim().toLowerCase()],
-    enabled: ready && !!form.projectId && form.companyName.trim().length >= 2,
+    enabled: ready && isAdmin && !!form.projectId && form.companyName.trim().length >= 2,
     queryFn: () =>
       seatFn({
         data: {
