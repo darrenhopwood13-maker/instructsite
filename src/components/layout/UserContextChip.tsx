@@ -6,27 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Building2, HardHat, User as UserIcon, LogOut } from "lucide-react";
 import { getSessionContext } from "@/lib/session.functions";
 import { getProject } from "@/lib/projects.functions";
+import { roleLabel } from "@/lib/role-labels";
 
-function roleLabel(role: string): string {
-  switch (role) {
-    case "master_admin":
-      return "Master Admin";
-    case "project_admin":
-      return "Project Admin";
-    case "site_manager":
-      return "Site Manager";
-    case "subcontractor":
-      return "Subcontractor";
-    case "qs":
-      return "QS";
-    case "admin":
-      return "Project Admin";
-    case "pm":
-      return "Project Manager / Org Admin";
-    default:
-      return role.replace(/_/g, " ");
-  }
-}
 
 function initials(name: string): string {
   return name
