@@ -130,7 +130,9 @@ function RegisterPartnerPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return toast.error("Forbidden: project admin role required.");
     if (!form.projectId) return toast.error("Select a project first.");
+
     if (!form.companyName.trim()) return toast.error("Company name is required.");
     if (!form.tradePackage) return toast.error("Select a trade package.");
     if (capFull) return toast.error("Maximum Capacity Reached · 3 seats per subcontractor.");
