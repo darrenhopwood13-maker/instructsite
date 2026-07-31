@@ -32,13 +32,31 @@ export function ghostBtn(extra = "") {
   return `inline-flex items-center justify-center gap-2 rounded-md border border-white/15 px-3 py-2 text-[0.65rem] uppercase tracking-widest text-foreground/70 hover:border-alert hover:text-alert ${extra}`;
 }
 
-export function RecordedByBadge() {
+export function RecordedByBadge({ name, at }: { name?: string | null; at?: string | null } = {}) {
+  // Individual attribution for compliance. Falls back to the generic label for
+  // legacy rows where the recording user can no longer be resolved.
+  const who = (name ?? "").trim() || "Site Manager";
+  let when = "";
+  if (at) {
+    const d = new Date(at);
+    if (!Number.isNaN(d.getTime())) {
+      when = d.toLocaleString(undefined, {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
   return (
     <span className="rounded-sm border border-sky-400/70 bg-sky-400/10 px-1.5 py-0.5 font-mono text-[0.5rem] font-bold uppercase tracking-widest text-sky-300">
-      Recorded by Site Manager
+      Recorded by {who}
+      {when ? ` · ${when}` : ""}
     </span>
   );
 }
+
 
 export function AccordionCard({
   icon,
