@@ -434,7 +434,7 @@ function SubDetail({
                 <p className="mt-1 text-sm text-foreground/80">
                   You are logging records for <span className="font-bold text-foreground">{sub.company_name}</span>.
                   Every entry saved here is stamped with your user id and shown as
-                  <span className="mx-1 font-mono text-sky-300">RECORDED BY SITE MANAGER</span>
+                  <span className="mx-1 font-mono text-sky-300">RECORDED BY {"{"}your name{"}"}</span>
                   so the audit trail stays honest.
                 </p>
               </div>
