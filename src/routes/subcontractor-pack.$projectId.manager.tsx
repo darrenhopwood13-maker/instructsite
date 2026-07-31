@@ -143,8 +143,14 @@ function SubCard({ sub, onOpen }: { sub: Sub; onOpen: () => void }) {
           {sub.company_name}
         </p>
         <p className="mt-1 text-[0.65rem] uppercase tracking-widest text-foreground/50">
-          Manager · {sub.manager_name || "—"}
+          Site manager · {sub.assigned_site_manager_name || "Unassigned"}
         </p>
+        {sub.manager_name &&
+          sub.manager_name.trim().toLowerCase() !== String(sub.company_name).trim().toLowerCase() && (
+            <p className="mt-1 text-[0.65rem] uppercase tracking-widest text-foreground/50">
+              Sub contact · {sub.manager_name}
+            </p>
+          )}
         <div className="mt-3 flex flex-wrap gap-1.5">
           {sub.status === "pending" && (
             <span className="rounded-sm border border-amber-400 bg-amber-400/10 px-2 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-amber-300">
@@ -389,9 +395,19 @@ function SubDetail({
               {sub.company_name}
             </h2>
             <p className="mt-1 text-xs text-foreground/60">
-              Manager · <span className="text-foreground/80">{sub.manager_name || "—"}</span> · Since{" "}
-              {new Date(sub.created_at).toLocaleDateString()}
+              Site manager ·{" "}
+              <span className="text-foreground/80">
+                {sub.assigned_site_manager_name || "Unassigned"}
+              </span>{" "}
+              · Since {new Date(sub.created_at).toLocaleDateString()}
             </p>
+            {sub.manager_name &&
+              sub.manager_name.trim().toLowerCase() !==
+                String(sub.company_name).trim().toLowerCase() && (
+                <p className="mt-1 text-xs text-foreground/60">
+                  Sub contact · <span className="text-foreground/80">{sub.manager_name}</span>
+                </p>
+              )}
           </div>
         </div>
 

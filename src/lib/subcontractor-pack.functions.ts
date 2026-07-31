@@ -255,8 +255,29 @@ export const getManagerPack = createServerFn({ method: "POST" })
       existingByName.set(String(s.company_name).trim().toLowerCase(), s);
     }
 
+    // The Trade Directory dropdown writes subcontractor_invites.package_manager_id.
+    // The directory RPC doesn't expose it and the table's own RLS is admin-only,
+    // so read just that column with the admin client (caller membership is already
+    // proven by the RPC returning rows at all).
+    const inviteIds = ((invitesRes.data ?? []) as any[]).map((i) => i.id as string);
+    const managerIdByInvite = new Map<string, string | null>();
+    if (inviteIds.length) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: assigns } = await supabaseAdmin
+          .from("subcontractor_invites")
+          .select("id, package_manager_id")
+          .in("id", inviteIds);
+        for (const a of (assigns ?? []) as any[]) {
+          managerIdByInvite.set(a.id as string, (a.package_manager_id as string | null) ?? null);
+        }
+      } catch {
+        // Assignment lookup unavailable — rows fall back to unassigned.
+      }
+    }
+
     // Fold invites in first (authoritative list of who should be on site).
-    type Row = { id: string; company_name: string; manager_name: string | null; trade_packages: string[]; status: "pending" | "active"; created_at: string };
+    type Row = { id: string; company_name: string; manager_name: string | null; assigned_site_manager_id: string | null; assigned_site_manager_name: string | null; trade_packages: string[]; status: "pending" | "active"; created_at: string };
     const rows: Row[] = [];
     const seen = new Set<string>();
     for (const inv of (invitesRes.data ?? []) as any[]) {
@@ -273,6 +294,8 @@ export const getManagerPack = createServerFn({ method: "POST" })
         id: subId,
         company_name: inv.company_name,
         manager_name: (existing?.manager_name as string | null) ?? (inv.pm_name as string | null) ?? (inv.supervisor_name as string | null) ?? null,
+        assigned_site_manager_id: managerIdByInvite.get(inv.id as string) ?? null,
+        assigned_site_manager_name: null,
         trade_packages: (inv.trade_packages as string[] | null) ?? [],
         status: inv.accepted_at ? "active" : "pending",
         created_at: inv.created_at,
@@ -286,6 +309,8 @@ export const getManagerPack = createServerFn({ method: "POST" })
         id: s.id,
         company_name: s.company_name,
         manager_name: s.manager_name ?? null,
+        assigned_site_manager_id: null,
+        assigned_site_manager_name: null,
         trade_packages: [],
         status: "active",
         created_at: s.created_at,
@@ -315,12 +340,16 @@ export const getManagerPack = createServerFn({ method: "POST" })
     const { resolveUserNames } = await import("@/lib/user-names.server");
     const allIds: (string | null)[] = [];
     for (const s of detailed as any[]) {
+      allIds.push(s.assigned_site_manager_id ?? null);
       for (const key of ["workers", "registers", "toolboxTalks", "lookAheads"]) {
         for (const row of s[key] as any[]) allIds.push(row.recorded_by ?? null);
       }
     }
     const names = await resolveUserNames(context.supabase, allIds);
     for (const s of detailed as any[]) {
+      s.assigned_site_manager_name = s.assigned_site_manager_id
+        ? names.get(s.assigned_site_manager_id) ?? null
+        : null;
       for (const key of ["workers", "registers", "toolboxTalks", "lookAheads"]) {
         s[key] = (s[key] as any[]).map((row) => ({
           ...row,
