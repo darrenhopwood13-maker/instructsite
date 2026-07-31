@@ -34,6 +34,7 @@ import {
 import { formatSentDate, daysAgo, expiryCountdown } from "@/lib/invite-format";
 import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
+import { getMyRoles } from "@/lib/projects.functions";
 
 import { TRADE_PACKAGES } from "@/lib/trade-packages";
 
@@ -53,7 +54,18 @@ export function TradeDirectoryPanel({
   const assignPmFn = useServerFn(assignPackageManager);
   const refreshInviteFn = useServerFn(refreshSubcontractorInvite);
   const inviteManagerFn = useServerFn(inviteSiteManager);
+  const rolesFn = useServerFn(getMyRoles);
   const qc = useQueryClient();
+
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    enabled: ready,
+    retry: false,
+  });
+  const roles = rolesQ.data?.roles ?? [];
+  const isAdmin = roles.includes("master_admin") || roles.includes("project_admin");
+
 
   const invites = useQuery({
     queryKey: ["subcontractor-invites", projectId],
@@ -233,17 +245,32 @@ export function TradeDirectoryPanel({
             Project Trade Directory
           </p>
         </div>
-        <Link
-          to="/subcontractors/new"
-          search={{ projectId } as any}
-          className="inline-flex items-center gap-1.5 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1 text-alert transition hover:bg-alert/20"
-        >
-          <Building2 size={10} />
-          <span className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.2em]">
-            Full Registry
-          </span>
-          <ArrowRight size={10} />
-        </Link>
+        {isAdmin && (
+          <div className="flex items-center gap-1.5">
+            <Link
+              to="/subcontractors/new"
+              search={{ projectId } as any}
+              className="inline-flex items-center gap-1.5 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1 text-alert transition hover:bg-alert/20"
+            >
+              <Building2 size={10} />
+              <span className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.2em]">
+                Register Trade Partner
+              </span>
+              <ArrowRight size={10} />
+            </Link>
+            <Link
+              to="/subcontractor-pack/$projectId/manager"
+              params={{ projectId }}
+              className="inline-flex items-center gap-1.5 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1 text-alert transition hover:bg-alert/20"
+            >
+              <HardHat size={10} />
+              <span className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.2em]">
+                Full Registry
+              </span>
+              <ArrowRight size={10} />
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="mt-2 rounded-md border border-white/10 bg-black/40 p-2">
