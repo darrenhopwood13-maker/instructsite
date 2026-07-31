@@ -218,7 +218,7 @@ export function AddLabour({ subId, projectId, onSaved, onBehalf = false }: PackF
     const verify =
       skipConfirm ||
       (await confirm(
-        `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Card: ${cardType.trim() || "—"} ${cardNumber.trim()}\n• Expiry: ${cardExpiry || "—"}\n• Competency Card File: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to labour roster?`,
+        `Please verify this labour entry:\n\n• Name: ${name.trim()}\n• Role: ${role.trim() || "—"}\n• Card: ${cardType.trim() || "—"} ${cardNumber.trim()}\n• Expiry: ${cardExpiry || "—"}\n• Competency Card File: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY with your name and the time." : ""}\n\nAdd to labour roster?`,
         "Save worker",
       ));
     if (!verify) return;
@@ -383,7 +383,7 @@ export function AddRegister({ subId, projectId, onSaved, onBehalf = false }: Pac
     const verify =
       skipConfirm ||
       (await confirm(
-        `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Next Due: ${nextDue || "—"}\n• Inspector: ${inspector.trim() || "—"}\n• Certificate: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nAdd to ${type} register?`,
+        `Please verify this register entry:\n\n• Type: ${type}\n• Asset: ${asset.trim() || "—"}\n• Inspection Date: ${date || "—"}\n• Next Due: ${nextDue || "—"}\n• Inspector: ${inspector.trim() || "—"}\n• Certificate: ${file ? file.name : "none attached"}${onBehalf ? "\n\nThis will be stamped RECORDED BY with your name and the time." : ""}\n\nAdd to ${type} register?`,
         "Save register",
       ));
     if (!verify) return;
@@ -577,7 +577,7 @@ export function AddToolboxTalk({ subId, projectId, onSaved, onBehalf = false }: 
     const verify =
       skipConfirm ||
       (await confirm(
-        `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Date: ${date || "—"}\n• Presenter: ${presenter.trim() || "—"}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nLog this talk?`,
+        `Please verify this toolbox talk:\n\n• Topic: ${topic}\n• Date: ${date || "—"}\n• Presenter: ${presenter.trim() || "—"}\n• Attendees (${list.length}): ${list.slice(0, 8).join(", ")}${list.length > 8 ? "…" : ""}${onBehalf ? "\n\nThis will be stamped RECORDED BY with your name and the time." : ""}\n\nLog this talk?`,
         "Log talk",
       ));
     if (!verify) return;
@@ -751,7 +751,7 @@ export function AddLookAhead({
     const verify =
       skipConfirm ||
       (await confirm(
-        `Please verify this look-ahead:\n\n• Date: ${date || "—"}\n• Flags: ${flags}\n• Plan: ${preview}${onBehalf ? "\n\nThis will be stamped RECORDED BY SITE MANAGER." : ""}\n\nSave look-ahead?`,
+        `Please verify this look-ahead:\n\n• Date: ${date || "—"}\n• Flags: ${flags}\n• Plan: ${preview}${onBehalf ? "\n\nThis will be stamped RECORDED BY with your name and the time." : ""}\n\nSave look-ahead?`,
         "Save look-ahead",
       ));
     if (!verify) return;
