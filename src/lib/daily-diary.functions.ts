@@ -105,7 +105,7 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
     // they hold a project_members row with role_on_project = 'qs'.
     const { data: diary, error: fetchErr } = await context.supabase
       .from("daily_site_diaries")
-      .select("id, completion_pct, project_id")
+      .select("id, completion_pct, project_id, zone_id")
       .eq("id", data.diaryId)
       .single();
     if (fetchErr || !diary) throw new Error("Diary not found.");
@@ -147,17 +147,28 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
 
     // Approving via this path clears any prior rejection metadata; rejecting
     // records the manager's written reason and remeasure flag.
+    //
+    // Zone colour in the IFC viewport is driven by
+    // daily_site_diaries.qs_status = 'approved' (aggregated per zone by the
+    // zone_runtime_progress RPC that listZoneRuntimeState reads), so approval
+    // is what actually flips a zone green — there is no separate "verified"
+    // column on work_zones and none is invented here. ifc_synced is the
+    // existing per-diary flag recording that the model has picked the row up,
+    // so it is kept honest alongside the status.
+    const hasZone = !!(diary as any).zone_id;
     const patch: Record<string, unknown> =
       data.status === "rejected"
         ? {
             qs_status: "rejected",
             qs_rejection_reason: data.reason ?? null,
             qs_remeasure_required: !!data.remeasureRequired,
+            ...(hasZone ? { ifc_synced: false } : {}),
           }
         : {
             qs_status: "approved",
             qs_rejection_reason: null,
             qs_remeasure_required: false,
+            ...(hasZone ? { ifc_synced: true } : {}),
           };
 
     // The only UPDATE policy on daily_site_diaries is is_project_admin(), so a
