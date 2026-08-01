@@ -553,6 +553,69 @@ function QsEvidenceModal({
 
 
 
+type AmendmentRow = {
+  id: string;
+  reason: string | null;
+  previous_manager_completion_pct: number | null;
+  new_manager_completion_pct: number | null;
+  previous_qs_status: string | null;
+  new_qs_status: string | null;
+  previous_qs_verified_pct: number | null;
+  new_qs_verified_pct: number | null;
+  created_at: string;
+};
+
+function formatDay(value: string): string {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** Plain-English sentence for one audited QS decision. */
+function amendmentSentence(a: AmendmentRow): string {
+  const when = formatDay(a.created_at);
+  const prev = a.previous_qs_verified_pct;
+  const next = a.new_qs_verified_pct;
+  if (a.new_qs_status === "rejected") {
+    return `QS rejected the claim on ${when}`;
+  }
+  if (next != null && prev != null && next !== prev) {
+    const verb = next < prev ? "reduced" : "increased";
+    return `QS ${verb} verified completion from ${prev} per cent to ${next} per cent on ${when}`;
+  }
+  if (next != null) {
+    return `QS verified completion at ${next} per cent on ${when}`;
+  }
+  return `QS ${a.new_qs_status ?? "updated"} the claim on ${when}`;
+}
+
+function AmendmentHistory({ diaryId }: { diaryId: string }) {
+  const fn = useServerFn(listDiaryAmendments);
+  const q = useQuery({
+    queryKey: ["diary-amendments", diaryId],
+    queryFn: () => fn({ data: { diaryId } }),
+    staleTime: 60_000,
+  });
+  const rows = ((q.data ?? []) as unknown) as AmendmentRow[];
+  if (rows.length === 0) return null;
+  return (
+    <ul className="mt-1.5 space-y-1 border-l border-white/10 pl-2">
+      {rows.map((a) => (
+        <li key={a.id}>
+          <p className="text-[0.6rem] uppercase tracking-widest text-foreground/60">
+            {amendmentSentence(a)}
+          </p>
+          {a.reason && (
+            <p className="whitespace-pre-wrap text-[0.65rem] italic text-foreground/50">
+              "{a.reason}"
+            </p>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function QsVerificationQueue({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const listFn = useServerFn(listQsQueue);
