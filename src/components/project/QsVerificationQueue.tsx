@@ -403,21 +403,36 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                     </>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setInspecting(r)}
-                    className="inline-flex items-center gap-1 rounded-md border-2 border-green-500 bg-green-500/10 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-green-400 hover:bg-green-500/20"
-                  >
-                    <CheckCircle2 size={12} /> Inspect & Authorise
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openReject(r)}
-                    className="inline-flex items-center gap-1 rounded-md border border-white/15 px-3 py-1.5 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-red-500 hover:text-red-400"
-                  >
-                    <XCircle size={12} /> Reject
-                  </button>
+                <div className="flex flex-wrap gap-2">
+                  {isManager && (
+                    <button
+                      type="button"
+                      onClick={() => setInspecting(r)}
+                      className="inline-flex items-center gap-1 rounded-md border-2 border-green-500 bg-green-500/10 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-green-400 hover:bg-green-500/20"
+                    >
+                      <CheckCircle2 size={12} /> Inspect & Authorise
+                    </button>
+                  )}
+                  {isQs && (
+                    <button
+                      type="button"
+                      onClick={() => approveAsQs(r)}
+                      disabled={approvingId === r.id}
+                      className="inline-flex items-center gap-1 rounded-md border-2 border-green-500 bg-green-500/10 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-green-400 hover:bg-green-500/20 disabled:opacity-40"
+                    >
+                      <CheckCircle2 size={12} />{" "}
+                      {approvingId === r.id ? "Approving…" : "Verify & Approve"}
+                    </button>
+                  )}
+                  {(isManager || isQs) && (
+                    <button
+                      type="button"
+                      onClick={() => openReject(r)}
+                      className="inline-flex items-center gap-1 rounded-md border border-white/15 px-3 py-1.5 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-red-500 hover:text-red-400"
+                    >
+                      <XCircle size={12} /> Reject
+                    </button>
+                  )}
                 </div>
               </div>
             </li>
