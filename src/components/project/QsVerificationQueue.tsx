@@ -746,6 +746,16 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                     "{r.qs_rejection_reason}"
                   </p>
                 )}
+                {r.qs_status === "approved" && r.qs_verified_pct != null && (
+                  <p className="mt-1 text-[0.6rem] uppercase tracking-widest text-emerald-400">
+                    QS verified {r.qs_verified_pct}%
+                  </p>
+                )}
+                {r.qs_status === "approved" && r.qs_notes && (
+                  <p className="mt-1 whitespace-pre-wrap text-[0.65rem] italic text-emerald-300/90">
+                    "{r.qs_notes}"
+                  </p>
+                )}
               </li>
             ))}
           </ul>
@@ -759,6 +769,16 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
           onAuthorised={onAuthorised}
         />
       )}
+
+      {qsReviewing && (
+        <QsEvidenceModal
+          diary={qsReviewing}
+          onClose={() => setQsReviewing(null)}
+          onApproved={onQsApproved}
+          onOpenPhoto={openSignedPhoto}
+        />
+      )}
+
 
       {lightbox && (
         <PhotoLightbox
