@@ -21,13 +21,32 @@ type DiaryRow = {
   progress_status: string | null;
   completion_pct: number | null;
   manager_completion_pct: number | null;
+  manager_notes?: string | null;
+  manager_photo_urls?: string[] | null;
+  inspected_at?: string | null;
   notes: string | null;
   qs_status: string | null;
   qs_rejection_reason: string | null;
   qs_remeasure_required: boolean | null;
+  qs_verified_pct?: number | null;
+  qs_notes?: string | null;
   photo_urls: string[] | null;
   work_zones?: { name?: string | null; level?: string | null } | null;
+  project_drawings?: { drawing_no?: string | null; title?: string | null } | null;
 };
+
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function formatHours(row: DiaryRow): string {
   const logged = Number(row.hours_logged ?? 0);
