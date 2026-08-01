@@ -112,8 +112,12 @@ export function NotificationBell() {
         )}
       </button>
 
-      {open && (
-        <div className="glass-panel absolute right-0 top-12 z-[70] w-80 overflow-hidden rounded-xl border border-white/10 shadow-2xl">
+      {open && typeof document !== "undefined" && createPortal(
+        <div
+          ref={panelRef}
+          style={{ top: pos?.top ?? 64, right: pos?.right ?? 16 }}
+          className="glass-panel fixed z-[9999] w-80 max-w-[calc(100vw-1rem)] overflow-hidden rounded-xl border border-white/10 shadow-2xl"
+        >
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <p className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-alert">
               Notifications
