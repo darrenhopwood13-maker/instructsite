@@ -392,16 +392,7 @@ function QsEvidenceModal({
               diary.work_zones?.level ? ` · ${diary.work_zones.level}` : ""
             }`}
           />
-          <EvidenceCell
-            label="Drawing"
-            value={
-              diary.project_drawings
-                ? `${diary.project_drawings.drawing_no ?? "—"}${
-                    diary.project_drawings.title ? ` · ${diary.project_drawings.title}` : ""
-                  }`
-                : "—"
-            }
-          />
+          <EvidenceCell label="Drawing" value={drawingLabel(diary)} />
           <EvidenceCell label="Trade package" value={diary.trade_package ?? "Untagged"} />
           <EvidenceCell label="Operatives" value={diary.operative_count ?? "—"} />
           <EvidenceCell label="Hours logged" value={formatHours(diary)} />
