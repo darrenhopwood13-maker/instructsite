@@ -25,6 +25,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SnagsIndexRouteImport } from './routes/snags.index'
+import { Route as QsIndexRouteImport } from './routes/qs.index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as OrgIndexRouteImport } from './routes/org.index'
 import { Route as SubcontractorsNewRouteImport } from './routes/subcontractors.new'
@@ -138,6 +139,11 @@ const IndexRoute = IndexRouteImport.update({
 const SnagsIndexRoute = SnagsIndexRouteImport.update({
   id: '/snags/',
   path: '/snags/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QsIndexRoute = QsIndexRouteImport.update({
+  id: '/qs/',
+  path: '/qs/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
@@ -356,6 +362,7 @@ export interface FileRoutesByFullPath {
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org/': typeof OrgIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/qs/': typeof QsIndexRoute
   '/snags/': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -407,6 +414,7 @@ export interface FileRoutesByTo {
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org': typeof OrgIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/qs': typeof QsIndexRoute
   '/snags': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -460,6 +468,7 @@ export interface FileRoutesById {
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org/': typeof OrgIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/qs/': typeof QsIndexRoute
   '/snags/': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -514,6 +523,7 @@ export interface FileRouteTypes {
     | '/subcontractors/new'
     | '/org/'
     | '/projects/'
+    | '/qs/'
     | '/snags/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -565,6 +575,7 @@ export interface FileRouteTypes {
     | '/subcontractors/new'
     | '/org'
     | '/projects'
+    | '/qs'
     | '/snags'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -617,6 +628,7 @@ export interface FileRouteTypes {
     | '/subcontractors/new'
     | '/org/'
     | '/projects/'
+    | '/qs/'
     | '/snags/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -669,6 +681,7 @@ export interface RootRouteChildren {
   SubcontractorsNewRoute: typeof SubcontractorsNewRoute
   OrgIndexRoute: typeof OrgIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  QsIndexRoute: typeof QsIndexRoute
   SnagsIndexRoute: typeof SnagsIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -794,6 +807,13 @@ declare module '@tanstack/react-router' {
       path: '/snags'
       fullPath: '/snags/'
       preLoaderRoute: typeof SnagsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qs/': {
+      id: '/qs/'
+      path: '/qs'
+      fullPath: '/qs/'
+      preLoaderRoute: typeof QsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/': {
@@ -1101,6 +1121,7 @@ const rootRouteChildren: RootRouteChildren = {
   SubcontractorsNewRoute: SubcontractorsNewRoute,
   OrgIndexRoute: OrgIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  QsIndexRoute: QsIndexRoute,
   SnagsIndexRoute: SnagsIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
