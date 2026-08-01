@@ -858,6 +858,28 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
           <p className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.35em] text-foreground/50">
             Cumulative approved progress
           </p>
+          {stateQ.isError && (
+            <div className="mb-2 rounded-md border border-alert/40 bg-alert/10 px-3 py-2">
+              <p className="text-[0.6rem] font-bold uppercase tracking-widest text-alert">
+                Progress unavailable
+              </p>
+              <p className="mt-1 text-xs text-foreground/70">
+                {errorMessage(stateQ.error, "Could not load zone progress.")}
+              </p>
+              <button
+                type="button"
+                onClick={() => stateQ.refetch()}
+                className="mt-2 rounded-md border border-white/15 px-2 py-1 text-[0.6rem] uppercase tracking-widest text-foreground/80 hover:bg-white/5"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {!stateQ.isError && zoneProgress.length === 0 && (
+            <p className="text-xs text-foreground/50">
+              {stateQ.isLoading ? "Loading zone progress…" : "No work zones yet."}
+            </p>
+          )}
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
             {zoneProgress.map((z) => {
               const barColor =
