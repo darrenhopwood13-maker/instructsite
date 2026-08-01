@@ -499,9 +499,42 @@ export const inviteQs = createServerFn({ method: "POST" })
     const nextPath = `/qs/${data.projectId}`;
 
     const { sendInviteEmail, findAuthUserByEmail } = await import("@/lib/invite-email.server");
+
+    // Duplicate guard: if this email already exists and is already a QS on
+    // this project, say so politely instead of re-inviting or erroring.
+    const existingUser = await findAuthUserByEmail(email);
+    if (existingUser) {
+      const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+      const { data: already } = await admin
+        .from("project_members")
+        .select("id")
+        .eq("project_id", data.projectId)
+        .eq("user_id", existingUser.id)
+        .eq("role_on_project", "qs")
+        .limit(1);
+      if (already && already.length > 0) {
+        return {
+          ok: true,
+          emailed: false,
+          emailError: null,
+          attached: true,
+          alreadyInvited: true as const,
+        };
+      }
+    }
+
     const sendResult = await sendInviteEmail(email, nextPath);
 
-    const user = await findAuthUserByEmail(email);
+    const user = existingUser;
+    if (!user) {
+      return {
+        ok: sendResult.sent,
+        emailed: sendResult.sent,
+        emailError: sendResult.reason ?? null,
+        attached: false,
+      };
+    }
+
     if (!user) {
       return {
         ok: sendResult.sent,
