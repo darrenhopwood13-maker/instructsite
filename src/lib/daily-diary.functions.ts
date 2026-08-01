@@ -155,9 +155,11 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // Fetch the diary first: a qs user is only authorised on projects where
     // they hold a project_members row with role_on_project = 'qs'.
-    const { data: diary, error: fetchErr } = await context.supabase
-      .from("daily_site_diaries")
-      .select("id, completion_pct, project_id, zone_id")
+    const { data: diary, error: fetchErr } = await (context.supabase
+      .from("daily_site_diaries") as any)
+      .select(
+        "id, completion_pct, manager_completion_pct, qs_verified_pct, qs_status, project_id, zone_id, subcontractor_id, trade_package, work_zones(name, level)",
+      )
       .eq("id", data.diaryId)
       .single();
     if (fetchErr || !diary) throw new Error("Diary not found.");
