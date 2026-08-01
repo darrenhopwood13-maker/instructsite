@@ -649,6 +649,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
     qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
     qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
     qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
+    qc.invalidateQueries({ queryKey: ["diary-amendments"] });
   };
 
   const [inspecting, setInspecting] = useState<DiaryRow | null>(null);
@@ -693,6 +694,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
       setRejecting(null);
       qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
       qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
+    qc.invalidateQueries({ queryKey: ["diary-amendments"] });
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to reject diary.");
     } finally {
@@ -705,6 +707,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
     qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
     qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
     qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
+    qc.invalidateQueries({ queryKey: ["diary-amendments"] });
   };
 
   const rows = ((q.data ?? []) as unknown) as DiaryRow[];
