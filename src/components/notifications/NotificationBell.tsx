@@ -167,7 +167,8 @@ export function NotificationBell() {
               ))
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
