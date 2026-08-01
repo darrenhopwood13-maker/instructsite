@@ -9,6 +9,7 @@ import {
   signDiaryPhotos,
   managerAuthoriseDiary,
 } from "@/lib/daily-diary.functions";
+import { getMyRoles } from "@/lib/projects.functions";
 
 type DiaryRow = {
   id: string;
