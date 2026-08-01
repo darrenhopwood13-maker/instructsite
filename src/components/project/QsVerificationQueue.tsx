@@ -689,12 +689,10 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                   {isQs && (
                     <button
                       type="button"
-                      onClick={() => approveAsQs(r)}
-                      disabled={approvingId === r.id}
+                      onClick={() => setQsReviewing(r)}
                       className="inline-flex items-center gap-1 rounded-md border-2 border-green-500 bg-green-500/10 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-green-400 hover:bg-green-500/20 disabled:opacity-40"
                     >
-                      <CheckCircle2 size={12} />{" "}
-                      {approvingId === r.id ? "Approving…" : "Verify & Approve"}
+                      <CheckCircle2 size={12} /> Verify &amp; Approve
                     </button>
                   )}
                   {(isManager || isQs) && (
