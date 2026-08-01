@@ -672,6 +672,12 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                     <span className="text-alert">{r.progress_status}</span> · Completion{" "}
                     <span className="text-alert">{r.completion_pct}%</span>
                   </p>
+                  <ProgressLineage
+                    className="mt-2"
+                    claimed={r.completion_pct}
+                    managerVerified={r.manager_completion_pct}
+                    qsVerified={r.qs_verified_pct}
+                  />
                   {r.notes && (
                     <p className="mt-2 rounded-sm border border-white/10 bg-black/30 p-2 text-xs italic text-foreground/70">
                       "{r.notes}"
