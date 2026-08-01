@@ -192,9 +192,11 @@ export type Database = {
           photo_urls: string[]
           progress_status: string
           project_id: string
+          qs_notes: string | null
           qs_rejection_reason: string | null
           qs_remeasure_required: boolean
           qs_status: string
+          qs_verified_pct: number | null
           scheduled_finish: string
           start_time: string
           subcontractor_id: string
@@ -224,9 +226,11 @@ export type Database = {
           photo_urls?: string[]
           progress_status: string
           project_id: string
+          qs_notes?: string | null
           qs_rejection_reason?: string | null
           qs_remeasure_required?: boolean
           qs_status?: string
+          qs_verified_pct?: number | null
           scheduled_finish: string
           start_time: string
           subcontractor_id: string
@@ -256,9 +260,11 @@ export type Database = {
           photo_urls?: string[]
           progress_status?: string
           project_id?: string
+          qs_notes?: string | null
           qs_rejection_reason?: string | null
           qs_remeasure_required?: boolean
           qs_status?: string
+          qs_verified_pct?: number | null
           scheduled_finish?: string
           start_time?: string
           subcontractor_id?: string
