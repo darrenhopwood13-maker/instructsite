@@ -19,6 +19,11 @@ export function NotificationBell() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // The header uses backdrop-blur, which creates its own stacking context, so a
+  // z-indexed panel inside it can never paint above the page content. The panel
+  // is portalled to <body> and positioned from the button's viewport rect.
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
 
   const q = useQuery({
     queryKey: ["notifications", "me"],
@@ -27,10 +32,35 @@ export function NotificationBell() {
     refetchOnWindowFocus: true,
   });
 
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const el = wrapRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setPos({
+        top: r.bottom + 8,
+        right: Math.max(8, window.innerWidth - r.right),
+      });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+      const t = e.target as Node;
+      if (
+        wrapRef.current &&
+        !wrapRef.current.contains(t) &&
+        !(panelRef.current && panelRef.current.contains(t))
+      ) {
         setOpen(false);
       }
     };
