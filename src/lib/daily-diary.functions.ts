@@ -76,7 +76,41 @@ export const listQsQueue = createServerFn({ method: "GET" })
       .order("checkout_time", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const list = (rows ?? []) as any[];
+
+    // Drawing reference: the diary's drawing_id IS populated, but sheets
+    // uploaded as plain images have drawing_no / revision / title all NULL on
+    // project_drawings, so the embed resolves to a dash. Resolve the metadata
+    // server side with the admin client (also immune to any embed-level RLS
+    // difference for a qs member) and fall back to the underlying
+    // site_documents file name, which carries the real sheet reference.
+    const drawingIds = Array.from(
+      new Set(list.map((r) => r.drawing_id).filter((d): d is string => !!d)),
+    );
+    if (drawingIds.length > 0) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: dwgs } = await (supabaseAdmin.from("project_drawings") as any)
+          .select("id, drawing_no, revision, title, pack_name, site_documents(file_name)")
+          .in("id", drawingIds);
+        const byId = new Map<string, any>();
+        for (const d of (dwgs ?? []) as any[]) byId.set(d.id, d);
+        for (const r of list) {
+          const d = r.drawing_id ? byId.get(r.drawing_id) : null;
+          if (!d) continue;
+          const fileName: string | null = d.site_documents?.file_name ?? null;
+          r.project_drawings = {
+            drawing_no: d.drawing_no ?? null,
+            revision: d.revision ?? null,
+            title: d.title ?? null,
+            file_name: fileName,
+          };
+        }
+      } catch (e) {
+        console.error("listQsQueue: drawing metadata resolve failed", e);
+      }
+    }
+    return list;
   });
 
 export const setDiaryQsStatus = createServerFn({ method: "POST" })
