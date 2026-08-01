@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, XCircle, ImageIcon, X, ClipboardCheck } from "lucide-react";
@@ -278,7 +278,7 @@ function InspectionModal({
   );
 }
 
-function EvidenceCell({ label, value }: { label: string; value: React.ReactNode }) {
+function EvidenceCell({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rounded-sm border border-white/10 bg-black/30 px-2 py-1.5">
       <p className="text-[0.55rem] font-bold uppercase tracking-widest text-foreground/50">
