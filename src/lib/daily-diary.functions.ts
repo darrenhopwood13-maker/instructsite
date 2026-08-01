@@ -105,7 +105,7 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
     // they hold a project_members row with role_on_project = 'qs'.
     const { data: diary, error: fetchErr } = await context.supabase
       .from("daily_site_diaries")
-      .select("id, completion_pct, project_id")
+      .select("id, completion_pct, project_id, zone_id")
       .eq("id", data.diaryId)
       .single();
     if (fetchErr || !diary) throw new Error("Diary not found.");
