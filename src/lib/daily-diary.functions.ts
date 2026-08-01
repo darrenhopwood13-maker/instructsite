@@ -235,8 +235,97 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
       .update(patch)
       .eq("id", data.diaryId);
     if (error) throw new Error(error.message);
+
+    const d = diary as any;
+    const prevQsPct = d.qs_verified_pct == null ? null : Number(d.qs_verified_pct);
+    const newQsPct =
+      data.status === "approved" ? (data.qsVerifiedPct ?? null) : prevQsPct;
+    const reasonText =
+      data.status === "approved"
+        ? (data.qsNotes ?? "QS approved.")
+        : (data.reason ?? "QS rejected.");
+
+    // Permanent audit trail — never overwrite completion_pct or
+    // manager_completion_pct, just record the movement.
+    try {
+      await (supabaseAdmin.from("diary_amendments") as any).insert({
+        diary_id: data.diaryId,
+        project_id: d.project_id,
+        reason: reasonText,
+        previous_manager_completion_pct: d.manager_completion_pct ?? null,
+        new_manager_completion_pct: d.manager_completion_pct ?? null,
+        previous_qs_status: d.qs_status ?? null,
+        new_qs_status: data.status,
+        previous_qs_verified_pct: prevQsPct,
+        new_qs_verified_pct: newQsPct == null ? null : Math.round(Number(newQsPct)),
+        changed_by: context.userId,
+      });
+    } catch (e) {
+      console.error("setDiaryQsStatus: amendment log failed", e);
+    }
+
+    // Notify the site managers, project/master admin and the subcontractor
+    // when a QS rejects, or approves at a figure that differs from what was
+    // already on record.
+    try {
+      const claimed = d.completion_pct == null ? null : Number(d.completion_pct);
+      const managerPct =
+        d.manager_completion_pct == null ? null : Number(d.manager_completion_pct);
+      const onRecord = managerPct ?? claimed;
+      const differs =
+        data.status === "approved" &&
+        newQsPct != null &&
+        onRecord != null &&
+        Number(newQsPct) !== onRecord;
+
+      if (data.status === "rejected" || differs) {
+        const { notifyUsers, resolveProjectDecisionRecipients } = await import(
+          "@/lib/notify.server"
+        );
+        const recipients = await resolveProjectDecisionRecipients({
+          projectId: d.project_id,
+          subcontractorId: d.subcontractor_id ?? null,
+          excludeUserId: context.userId,
+        });
+        const zoneName = d.work_zones?.name ?? "no zone";
+        const trade = d.trade_package ?? "Untagged package";
+        const title =
+          data.status === "rejected"
+            ? `QS rejected the claim of ${onRecord ?? 0} per cent`
+            : `QS verified at ${newQsPct} per cent, claimed ${onRecord ?? 0} per cent`;
+        const variance =
+          data.status === "rejected"
+            ? "The claim has been rejected and must be re-measured and resubmitted."
+            : `That is a variance of ${
+                Number(newQsPct) - Number(onRecord ?? 0)
+              } percentage points against the figure on record.`;
+        const body = `${trade} in ${zoneName}. ${variance} Reason: ${reasonText}`;
+
+        await notifyUsers({
+          recipients,
+          projectId: d.project_id,
+          kind: data.status === "rejected" ? "qs_rejected" : "qs_verified",
+          title,
+          body,
+          linkTo: `/projects/${d.project_id}?diary=${data.diaryId}`,
+          idempotencyBase: `qs-decision:${data.diaryId}:${data.status}:${newQsPct ?? "na"}`,
+          emailParagraphs: [
+            `${trade} in ${zoneName}.`,
+            variance,
+            `Measurement reason in full: ${reasonText}`,
+            data.status === "rejected"
+              ? "The model and the valuation continue to reflect the last approved figure until this claim is re-measured and approved."
+              : "The model and the valuation now reflect the QS figure.",
+          ],
+        });
+      }
+    } catch (e) {
+      console.error("setDiaryQsStatus: notification fan-out failed", e);
+    }
+
     return { ok: true };
   });
+
 
 
 export const listArchivedToday = createServerFn({ method: "GET" })
