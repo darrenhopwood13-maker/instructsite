@@ -410,3 +410,118 @@ export const inviteSiteManager = createServerFn({ method: "POST" })
       attached: true,
     };
   });
+
+// =========================================================
+// QUANTITY SURVEYOR (QS)
+// =========================================================
+
+export const listProjectQs = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("project_members")
+      .select("user_id")
+      .eq("project_id", data.projectId)
+      .eq("role_on_project", "qs");
+    if (error) throw new Error(error.message);
+    const ids = (rows ?? []).map((r) => r.user_id);
+    if (ids.length === 0) return [] as { user_id: string; full_name: string | null }[];
+    const { data: profs } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", ids);
+    const nameOf = new Map((profs ?? []).map((p) => [p.user_id, p.full_name]));
+    return ids.map((id) => ({ user_id: id, full_name: nameOf.get(id) ?? null }));
+  });
+
+export const listUnassignedQs = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: qsRoles, error }, { data: members }] = await Promise.all([
+      supabaseAdmin.from("user_roles").select("user_id").eq("role", "qs"),
+      supabaseAdmin.from("project_members").select("user_id").eq("project_id", data.projectId),
+    ]);
+    if (error) throw new Error(error.message);
+    const assigned = new Set((members ?? []).map((m) => m.user_id));
+    const ids = (qsRoles ?? []).map((r) => r.user_id).filter((id) => !assigned.has(id));
+    if (ids.length === 0) return [] as { user_id: string; full_name: string | null }[];
+    const { data: profs } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", ids);
+    const nameOf = new Map((profs ?? []).map((p) => [p.user_id, p.full_name]));
+    return ids.map((id) => ({ user_id: id, full_name: nameOf.get(id) ?? null }));
+  });
+
+/**
+ * Invite a Quantity Surveyor onto the project by email. Mirrors
+ * inviteSiteManager exactly, but grants the qs role and lands the invitee on
+ * the QS workspace for the project.
+ */
+export const inviteQs = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        projectId: z.string().uuid(),
+        email: z.string().trim().email().max(200),
+        fullName: z.string().trim().max(120).optional().nullable(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
+    const email = data.email.toLowerCase();
+    const nextPath = `/qs/${data.projectId}`;
+
+    const { sendInviteEmail, findAuthUserByEmail } = await import("@/lib/invite-email.server");
+    const sendResult = await sendInviteEmail(email, nextPath);
+
+    const user = await findAuthUserByEmail(email);
+    if (!user) {
+      return {
+        ok: sendResult.sent,
+        emailed: sendResult.sent,
+        emailError: sendResult.reason ?? null,
+        attached: false,
+      };
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: user.id, role: "qs" }, { onConflict: "user_id,role" });
+    const { data: existingMember } = await supabaseAdmin
+      .from("project_members")
+      .select("id")
+      .eq("project_id", data.projectId)
+      .eq("user_id", user.id)
+      .eq("role_on_project", "qs")
+      .limit(1);
+    if (!existingMember || existingMember.length === 0) {
+      const { error: memberErr } = await supabaseAdmin
+        .from("project_members")
+        .insert({ project_id: data.projectId, user_id: user.id, role_on_project: "qs" });
+      if (memberErr && !/duplicate key/i.test(memberErr.message)) {
+        throw new Error(memberErr.message);
+      }
+    }
+    if (data.fullName?.trim()) {
+      await supabaseAdmin
+        .from("profiles")
+        .upsert({ user_id: user.id, full_name: data.fullName.trim() }, { onConflict: "user_id" });
+    }
+
+    return {
+      ok: true,
+      emailed: sendResult.sent,
+      emailError: sendResult.reason ?? null,
+      attached: true,
+    };
+  });
