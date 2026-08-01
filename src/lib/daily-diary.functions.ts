@@ -101,8 +101,17 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    // Server-side role gate: only site_manager, project_admin, or master_admin
-    // may set QS status. Subcontractors are hard-blocked.
+    // Fetch the diary first: a qs user is only authorised on projects where
+    // they hold a project_members row with role_on_project = 'qs'.
+    const { data: diary, error: fetchErr } = await context.supabase
+      .from("daily_site_diaries")
+      .select("id, completion_pct, project_id")
+      .eq("id", data.diaryId)
+      .single();
+    if (fetchErr || !diary) throw new Error("Diary not found.");
+
+    // Server-side role gate: site_manager, project_admin, master_admin (as
+    // before), plus qs when assigned to this project.
     const roles: Array<"master_admin" | "project_admin" | "site_manager"> = [
       "master_admin",
       "project_admin",
@@ -111,19 +120,30 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
     const checks = await Promise.all(
       roles.map((r) => context.supabase.rpc("has_role", { _user_id: context.userId, _role: r })),
     );
-    const authorised = checks.some((c) => c.data === true);
+    let authorised = checks.some((c) => c.data === true);
+
     if (!authorised) {
-      throw new Error(
-        "Forbidden: QS approval requires site_manager, project_admin, or master_admin role.",
-      );
+      const { data: isQs } = await context.supabase.rpc("has_role", {
+        _user_id: context.userId,
+        _role: "qs",
+      });
+      if (isQs === true) {
+        const { data: membership } = await context.supabase
+          .from("project_members")
+          .select("id")
+          .eq("project_id", (diary as any).project_id)
+          .eq("user_id", context.userId)
+          .eq("role_on_project", "qs")
+          .limit(1);
+        authorised = !!membership && membership.length > 0;
+      }
     }
 
-    const { data: diary, error: fetchErr } = await context.supabase
-      .from("daily_site_diaries")
-      .select("id, completion_pct")
-      .eq("id", data.diaryId)
-      .single();
-    if (fetchErr || !diary) throw new Error("Diary not found.");
+    if (!authorised) {
+      throw new Error(
+        "Forbidden: QS approval requires site_manager, project_admin, master_admin, or an assigned qs role.",
+      );
+    }
 
     // Approving via this path clears any prior rejection metadata; rejecting
     // records the manager's written reason and remeasure flag.
@@ -140,12 +160,17 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
             qs_remeasure_required: false,
           };
 
-    const { error } = await (context.supabase.from("daily_site_diaries") as any)
+    // The only UPDATE policy on daily_site_diaries is is_project_admin(), so a
+    // site_manager/qs would silently update zero rows through the user-scoped
+    // client. The code-level role check above is the real authorisation.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin.from("daily_site_diaries") as any)
       .update(patch)
       .eq("id", data.diaryId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const listArchivedToday = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
