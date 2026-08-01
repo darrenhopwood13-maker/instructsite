@@ -186,6 +186,8 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
             qs_status: "approved",
             qs_rejection_reason: null,
             qs_remeasure_required: false,
+            qs_verified_pct: data.qsVerifiedPct ?? null,
+            qs_notes: data.qsNotes ?? null,
             ...(hasZone ? { ifc_synced: true } : {}),
           };
 
