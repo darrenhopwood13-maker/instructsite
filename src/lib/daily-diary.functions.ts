@@ -70,7 +70,7 @@ export const listQsQueue = createServerFn({ method: "GET" })
     const { data: rows, error } = await (context.supabase
       .from("daily_site_diaries") as any)
       .select(
-        "id, trade_package, operative_count, hours_logged, start_time, checkout_time, progress_status, completion_pct, manager_completion_pct, manager_notes, manager_photo_urls, inspected_by, inspected_at, notes, qs_status, qs_rejection_reason, qs_remeasure_required, ifc_synced, photo_urls, zone_id, workface_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
+        "id, trade_package, operative_count, hours_logged, start_time, checkout_time, progress_status, completion_pct, manager_completion_pct, manager_notes, manager_photo_urls, inspected_by, inspected_at, notes, qs_status, qs_rejection_reason, qs_remeasure_required, qs_verified_pct, qs_notes, ifc_synced, photo_urls, zone_id, workface_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
       )
       .eq("project_id", data.projectId)
       .order("checkout_time", { ascending: false })
@@ -88,6 +88,8 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
         status: z.enum(["approved", "rejected"]),
         reason: z.string().trim().min(1).max(2000).optional(),
         remeasureRequired: z.boolean().optional(),
+        qsVerifiedPct: z.number().min(0).max(100).optional(),
+        qsNotes: z.string().trim().max(2000).optional(),
       })
       .superRefine((val, ctx) => {
         if (val.status === "rejected" && (!val.reason || val.reason.length < 10)) {
@@ -96,6 +98,22 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
             path: ["reason"],
             message: "A rejection reason (10+ characters) is required.",
           });
+        }
+        if (val.status === "approved") {
+          if (val.qsVerifiedPct === undefined) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["qsVerifiedPct"],
+              message: "A QS verified completion percentage is required to approve.",
+            });
+          }
+          if (!val.qsNotes || val.qsNotes.length < 10) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["qsNotes"],
+              message: "Measurement notes (10+ characters) are required to approve.",
+            });
+          }
         }
       })
       .parse(i),
@@ -168,6 +186,8 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
             qs_status: "approved",
             qs_rejection_reason: null,
             qs_remeasure_required: false,
+            qs_verified_pct: data.qsVerifiedPct ?? null,
+            qs_notes: data.qsNotes ?? null,
             ...(hasZone ? { ifc_synced: true } : {}),
           };
 

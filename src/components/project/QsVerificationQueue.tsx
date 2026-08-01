@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, XCircle, ImageIcon, X, ClipboardCheck } from "lucide-react";
@@ -21,13 +21,32 @@ type DiaryRow = {
   progress_status: string | null;
   completion_pct: number | null;
   manager_completion_pct: number | null;
+  manager_notes?: string | null;
+  manager_photo_urls?: string[] | null;
+  inspected_at?: string | null;
   notes: string | null;
   qs_status: string | null;
   qs_rejection_reason: string | null;
   qs_remeasure_required: boolean | null;
+  qs_verified_pct?: number | null;
+  qs_notes?: string | null;
   photo_urls: string[] | null;
   work_zones?: { name?: string | null; level?: string | null } | null;
+  project_drawings?: { drawing_no?: string | null; title?: string | null } | null;
 };
+
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function formatHours(row: DiaryRow): string {
   const logged = Number(row.hours_logged ?? 0);
@@ -259,6 +278,258 @@ function InspectionModal({
   );
 }
 
+function EvidenceCell({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="rounded-sm border border-white/10 bg-black/30 px-2 py-1.5">
+      <p className="text-[0.55rem] font-bold uppercase tracking-widest text-foreground/50">
+        {label}
+      </p>
+      <p className="mt-0.5 text-xs text-foreground/90">{value}</p>
+    </div>
+  );
+}
+
+function QsEvidenceModal({
+  diary,
+  onClose,
+  onApproved,
+  onOpenPhoto,
+}: {
+  diary: DiaryRow;
+  onClose: () => void;
+  onApproved: () => void;
+  onOpenPhoto: (paths: string[], index: number) => void;
+}) {
+  const setStatusFn = useServerFn(setDiaryQsStatus);
+  const claimed = diary.completion_pct ?? 0;
+  const [pct, setPct] = useState(claimed);
+  const [notes, setNotes] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const subPhotos = diary.photo_urls ?? [];
+  const mgrPhotos = diary.manager_photo_urls ?? [];
+  const canSubmit = confirmed && notes.trim().length >= 10 && !busy;
+
+  const submit = async () => {
+    if (!canSubmit) return;
+    setBusy(true);
+    try {
+      await setStatusFn({
+        data: {
+          diaryId: diary.id,
+          status: "approved",
+          qsVerifiedPct: pct,
+          qsNotes: notes.trim(),
+        },
+      });
+      toast.success("Approved — claim verified and pushed to the model.");
+      onApproved();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to approve diary.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+      onClick={() => !busy && onClose()}
+    >
+      <div
+        className="glass-panel max-h-[92vh] w-full max-w-2xl overflow-y-auto border-l-4 border-l-emerald-500 p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="inline-flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.28em] text-emerald-400">
+              <ClipboardCheck size={13} /> QS Evidence Review
+            </p>
+            <p className="mt-1 text-sm font-bold text-foreground">
+              {diary.trade_package ?? "Untagged"} · {diary.work_zones?.name ?? "no zone"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => !busy && onClose()}
+            className="rounded-sm border border-white/20 p-1 text-foreground/60 hover:text-foreground"
+            aria-label="Close"
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+          <EvidenceCell
+            label="Work zone"
+            value={`${diary.work_zones?.name ?? "No zone"}${
+              diary.work_zones?.level ? ` · ${diary.work_zones.level}` : ""
+            }`}
+          />
+          <EvidenceCell
+            label="Drawing"
+            value={
+              diary.project_drawings
+                ? `${diary.project_drawings.drawing_no ?? "—"}${
+                    diary.project_drawings.title ? ` · ${diary.project_drawings.title}` : ""
+                  }`
+                : "—"
+            }
+          />
+          <EvidenceCell label="Trade package" value={diary.trade_package ?? "Untagged"} />
+          <EvidenceCell label="Operatives" value={diary.operative_count ?? "—"} />
+          <EvidenceCell label="Hours logged" value={formatHours(diary)} />
+          <EvidenceCell label="Progress status" value={diary.progress_status ?? "—"} />
+          <EvidenceCell label="Start" value={formatDateTime(diary.start_time)} />
+          <EvidenceCell label="Checkout" value={formatDateTime(diary.checkout_time)} />
+        </div>
+
+        <div className="mt-3 rounded-sm border border-white/10 bg-black/30 p-3">
+          <p className="text-[0.55rem] font-bold uppercase tracking-widest text-foreground/50">
+            Site manager claimed completion
+          </p>
+          <p className="mt-0.5 text-4xl font-extrabold leading-none text-alert">{claimed}%</p>
+          {diary.notes && (
+            <p className="mt-2 whitespace-pre-wrap text-xs italic text-foreground/70">
+              "{diary.notes}"
+            </p>
+          )}
+        </div>
+
+        {diary.manager_completion_pct != null && (
+          <div className="mt-2 rounded-sm border border-emerald-500/30 bg-emerald-500/5 p-3">
+            <p className="text-[0.55rem] font-bold uppercase tracking-widest text-emerald-400">
+              Manager verified — {diary.manager_completion_pct}%
+            </p>
+            {diary.manager_notes && (
+              <p className="mt-1 whitespace-pre-wrap text-xs italic text-foreground/70">
+                "{diary.manager_notes}"
+              </p>
+            )}
+            <p className="mt-1 text-[0.6rem] uppercase tracking-widest text-foreground/50">
+              Inspected {formatDateTime(diary.inspected_at)}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4">
+          <p className="text-[0.6rem] font-bold uppercase tracking-widest text-foreground/60">
+            Photographic evidence
+          </p>
+          {subPhotos.length === 0 && mgrPhotos.length === 0 ? (
+            <p className="mt-2 rounded-sm border border-amber-400/40 bg-amber-400/5 px-2 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300">
+              No photographic evidence attached — verify on site before signing
+            </p>
+          ) : (
+            <>
+              {subPhotos.length > 0 && (
+                <>
+                  <p className="mt-2 text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                    Subcontractor checkout ({subPhotos.length})
+                  </p>
+                  <DiaryPhotoGrid
+                    paths={subPhotos}
+                    onOpen={(_url, index) => onOpenPhoto(subPhotos, index)}
+                  />
+                </>
+              )}
+              {mgrPhotos.length > 0 && (
+                <>
+                  <p className="mt-2 text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                    Manager inspection ({mgrPhotos.length})
+                  </p>
+                  <DiaryPhotoGrid
+                    paths={mgrPhotos}
+                    onOpen={(_url, index) => onOpenPhoto(mgrPhotos, index)}
+                  />
+                </>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="mt-5 border-t border-white/10 pt-4">
+          <label className="block">
+            <span className="text-[0.6rem] font-bold uppercase tracking-widest text-foreground/60">
+              QS verified completion
+            </span>
+            <div className="mt-2 flex items-center gap-3">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={pct}
+                onChange={(e) => setPct(Number(e.target.value))}
+                className="w-full accent-emerald-500"
+              />
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={pct}
+                onChange={(e) =>
+                  setPct(Math.max(0, Math.min(100, Number(e.target.value) || 0)))
+                }
+                className="w-20 rounded-md border border-white/15 bg-black/50 px-2 py-1 text-xs text-foreground outline-none focus:border-emerald-500"
+              />
+            </div>
+          </label>
+
+          <label className="mt-3 block">
+            <span className="text-[0.6rem] font-bold uppercase tracking-widest text-foreground/60">
+              Measurement notes
+            </span>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="What did you measure, and how? e.g. Tape-measured 18 of 30 linear metres of blockwork to Zone B, cross-checked against drawing A-102."
+              className="mt-1.5 w-full rounded-md border border-white/15 bg-black/50 px-2.5 py-2 text-xs text-foreground outline-none focus:border-emerald-500"
+            />
+            <span className="mt-1 block text-[0.6rem] text-foreground/50">
+              {notes.trim().length} / 10 min characters
+            </span>
+          </label>
+
+          <label className="mt-3 flex items-start gap-2 rounded-md border border-white/10 bg-black/30 p-2.5">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => setConfirmed(e.target.checked)}
+              className="mt-0.5 accent-emerald-500"
+            />
+            <span className="text-[0.7rem] leading-tight text-foreground/80">
+              I have reviewed the evidence above and measured this claim.
+            </span>
+          </label>
+
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!canSubmit}
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border-2 border-emerald-500 bg-emerald-500/10 px-3 py-2 text-[0.6rem] font-bold uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-40"
+            >
+              <CheckCircle2 size={13} /> {busy ? "Approving…" : "Verify and Approve"}
+            </button>
+            <button
+              type="button"
+              onClick={() => !busy && onClose()}
+              disabled={busy}
+              className="rounded-md border border-white/15 px-3 py-2 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-white/30 disabled:opacity-40"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
 export function QsVerificationQueue({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const listFn = useServerFn(listQsQueue);
@@ -275,23 +546,25 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
     roles.includes("project_admin") ||
     roles.includes("site_manager");
   const isQs = roles.includes("qs");
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-
-  const approveAsQs = async (r: DiaryRow) => {
-    setApprovingId(r.id);
-    try {
-      await setStatusFn({ data: { diaryId: r.id, status: "approved" } });
-      toast.success("Approved — claim verified and pushed to the model.");
-      qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
-      qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
-      qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
-    } catch (err: any) {
-      toast.error(err?.message ?? "Failed to approve diary.");
-    } finally {
-      setApprovingId(null);
-    }
-  };
+  const [qsReviewing, setQsReviewing] = useState<DiaryRow | null>(null);
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
+
+  const openSignedPhoto = (paths: string[], index: number) => {
+    const cache = qc.getQueryData<Array<{ path: string; url: string | null }>>([
+      "diary-photo-signed",
+      paths.join("|"),
+    ]);
+    const urls = (cache ?? []).map((c) => c.url).filter((u): u is string => !!u);
+    if (urls.length > 0) setLightbox({ urls, index });
+  };
+
+  const onQsApproved = () => {
+    setQsReviewing(null);
+    qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
+    qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
+    qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
+  };
+
   const [inspecting, setInspecting] = useState<DiaryRow | null>(null);
   const [rejecting, setRejecting] = useState<DiaryRow | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -416,12 +689,10 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                   {isQs && (
                     <button
                       type="button"
-                      onClick={() => approveAsQs(r)}
-                      disabled={approvingId === r.id}
+                      onClick={() => setQsReviewing(r)}
                       className="inline-flex items-center gap-1 rounded-md border-2 border-green-500 bg-green-500/10 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-green-400 hover:bg-green-500/20 disabled:opacity-40"
                     >
-                      <CheckCircle2 size={12} />{" "}
-                      {approvingId === r.id ? "Approving…" : "Verify & Approve"}
+                      <CheckCircle2 size={12} /> Verify &amp; Approve
                     </button>
                   )}
                   {(isManager || isQs) && (
@@ -475,6 +746,16 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                     "{r.qs_rejection_reason}"
                   </p>
                 )}
+                {r.qs_status === "approved" && r.qs_verified_pct != null && (
+                  <p className="mt-1 text-[0.6rem] uppercase tracking-widest text-emerald-400">
+                    QS verified {r.qs_verified_pct}%
+                  </p>
+                )}
+                {r.qs_status === "approved" && r.qs_notes && (
+                  <p className="mt-1 whitespace-pre-wrap text-[0.65rem] italic text-emerald-300/90">
+                    "{r.qs_notes}"
+                  </p>
+                )}
               </li>
             ))}
           </ul>
@@ -488,6 +769,16 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
           onAuthorised={onAuthorised}
         />
       )}
+
+      {qsReviewing && (
+        <QsEvidenceModal
+          diary={qsReviewing}
+          onClose={() => setQsReviewing(null)}
+          onApproved={onQsApproved}
+          onOpenPhoto={openSignedPhoto}
+        />
+      )}
+
 
       {lightbox && (
         <PhotoLightbox
