@@ -194,6 +194,15 @@ function ProjectDetail() {
             >
               <CalendarDays size={14} /> Randall Diary
             </Link>
+            {(isMainContractor || isQs) && (
+              <Link
+                to="/qs/$projectId"
+                params={{ projectId }}
+                className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+              >
+                <ClipboardCheck size={14} /> QS Verification
+              </Link>
+            )}
             {isMainContractor && (
               <Link
                 to="/site-manager/$projectId"
@@ -204,6 +213,26 @@ function ProjectDetail() {
               </Link>
             )}
           </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-6">
+          <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-foreground/50">
+            QS Verification
+          </p>
+          {(
+            [
+              ["Pending", qsCounts.pending],
+              ["Approved", qsCounts.approved],
+              ["Rejected", qsCounts.rejected],
+            ] as const
+          ).map(([label, count]) => (
+            <div key={label}>
+              <p className="text-[0.6rem] font-bold uppercase tracking-[0.3em] text-foreground/50">
+                {label}
+              </p>
+              <p className="text-lg font-extrabold text-foreground">{count}</p>
+            </div>
+          ))}
         </div>
 
         {project.data?.scope_brief && (
