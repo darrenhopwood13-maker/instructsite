@@ -304,6 +304,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
       );
       setRejecting(null);
       qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
+      qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to reject diary.");
     } finally {
