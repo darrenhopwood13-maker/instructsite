@@ -785,6 +785,13 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                     "{r.qs_notes}"
                   </p>
                 )}
+                <ProgressLineage
+                  className="mt-1.5"
+                  claimed={r.completion_pct}
+                  managerVerified={r.manager_completion_pct}
+                  qsVerified={r.qs_verified_pct}
+                />
+                <AmendmentHistory diaryId={r.id} />
               </li>
             ))}
           </ul>
