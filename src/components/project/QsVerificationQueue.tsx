@@ -546,23 +546,25 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
     roles.includes("project_admin") ||
     roles.includes("site_manager");
   const isQs = roles.includes("qs");
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-
-  const approveAsQs = async (r: DiaryRow) => {
-    setApprovingId(r.id);
-    try {
-      await setStatusFn({ data: { diaryId: r.id, status: "approved" } });
-      toast.success("Approved — claim verified and pushed to the model.");
-      qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
-      qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
-      qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
-    } catch (err: any) {
-      toast.error(err?.message ?? "Failed to approve diary.");
-    } finally {
-      setApprovingId(null);
-    }
-  };
+  const [qsReviewing, setQsReviewing] = useState<DiaryRow | null>(null);
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
+
+  const openSignedPhoto = (paths: string[], index: number) => {
+    const cache = qc.getQueryData<Array<{ path: string; url: string | null }>>([
+      "diary-photo-signed",
+      paths.join("|"),
+    ]);
+    const urls = (cache ?? []).map((c) => c.url).filter((u): u is string => !!u);
+    if (urls.length > 0) setLightbox({ urls, index });
+  };
+
+  const onQsApproved = () => {
+    setQsReviewing(null);
+    qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
+    qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
+    qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
+  };
+
   const [inspecting, setInspecting] = useState<DiaryRow | null>(null);
   const [rejecting, setRejecting] = useState<DiaryRow | null>(null);
   const [rejectReason, setRejectReason] = useState("");
