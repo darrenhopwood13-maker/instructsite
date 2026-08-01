@@ -413,6 +413,13 @@ function QsEvidenceModal({
           )}
         </div>
 
+        <ProgressLineage
+          className="mt-2"
+          claimed={diary.completion_pct}
+          managerVerified={diary.manager_completion_pct}
+          qsVerified={diary.qs_verified_pct}
+        />
+
         {diary.manager_completion_pct != null && (
           <div className="mt-2 rounded-sm border border-emerald-500/30 bg-emerald-500/5 p-3">
             <p className="text-[0.55rem] font-bold uppercase tracking-widest text-emerald-400">
