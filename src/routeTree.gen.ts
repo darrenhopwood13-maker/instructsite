@@ -32,6 +32,7 @@ import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontract
 import { Route as SnagsNewRouteImport } from './routes/snags.new'
 import { Route as SnagsSnagIdRouteImport } from './routes/snags.$snagId'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
+import { Route as QsProjectIdRouteImport } from './routes/qs.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
@@ -172,6 +173,11 @@ const SnagsSnagIdRoute = SnagsSnagIdRouteImport.update({
 const SiteManagerProjectIdRoute = SiteManagerProjectIdRouteImport.update({
   id: '/site-manager/$projectId',
   path: '/site-manager/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QsProjectIdRoute = QsProjectIdRouteImport.update({
+  id: '/qs/$projectId',
+  path: '/qs/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
@@ -342,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/qs/$projectId': typeof QsProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
@@ -392,6 +399,7 @@ export interface FileRoutesByTo {
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/qs/$projectId': typeof QsProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
@@ -444,6 +452,7 @@ export interface FileRoutesById {
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/qs/$projectId': typeof QsProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
@@ -497,6 +506,7 @@ export interface FileRouteTypes {
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/qs/$projectId'
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
@@ -547,6 +557,7 @@ export interface FileRouteTypes {
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/qs/$projectId'
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
@@ -598,6 +609,7 @@ export interface FileRouteTypes {
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/qs/$projectId'
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
@@ -649,6 +661,7 @@ export interface RootRouteChildren {
   ProgrammeProjectIdRoute: typeof ProgrammeProjectIdRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
+  QsProjectIdRoute: typeof QsProjectIdRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
   SnagsSnagIdRoute: typeof SnagsSnagIdRoute
   SnagsNewRoute: typeof SnagsNewRoute
@@ -830,6 +843,13 @@ declare module '@tanstack/react-router' {
       path: '/site-manager/$projectId'
       fullPath: '/site-manager/$projectId'
       preLoaderRoute: typeof SiteManagerProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qs/$projectId': {
+      id: '/qs/$projectId'
+      path: '/qs/$projectId'
+      fullPath: '/qs/$projectId'
+      preLoaderRoute: typeof QsProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/new': {
@@ -1073,6 +1093,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProgrammeProjectIdRoute: ProgrammeProjectIdRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
+  QsProjectIdRoute: QsProjectIdRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
   SnagsSnagIdRoute: SnagsSnagIdRoute,
   SnagsNewRoute: SnagsNewRoute,
