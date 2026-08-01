@@ -15,6 +15,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
 import { UserContextChip } from "@/components/layout/UserContextChip";
 import { SettingsMenu } from "@/components/layout/SettingsMenu";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 
 import appCss from "../styles.css?url";
@@ -579,6 +580,7 @@ function AuthNav() {
               instructSite.ai
             </a>
           </Button>
+          <NotificationBell />
           <SettingsMenu isOwner={isOwner} />
         </>
       ) : (

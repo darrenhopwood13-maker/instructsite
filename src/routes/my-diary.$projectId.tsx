@@ -16,6 +16,7 @@ import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listMyDiaryFeed } from "@/lib/my-diary.functions";
 import { getProjectWeather } from "@/lib/weather.functions";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
+import { ProgressLineage } from "@/components/common/ProgressLineage";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
 export const Route = createFileRoute("/my-diary/$projectId")({
@@ -47,6 +48,8 @@ type DiaryEntry = {
   hours_logged: number | null;
   progress_status: string | null;
   completion_pct: number | null;
+  manager_completion_pct: number | null;
+  qs_verified_pct: number | null;
   notes: string | null;
   photo_urls: string[] | null;
   qs_status: string | null;
@@ -311,6 +314,12 @@ function MyDiaryPage() {
                           </span>
                         )}
                       </div>
+                      <ProgressLineage
+                        className="mt-2"
+                        claimed={d.completion_pct}
+                        managerVerified={d.manager_completion_pct}
+                        qsVerified={d.qs_verified_pct}
+                      />
                       {d.notes && <p className="mt-1.5 text-xs text-foreground/70">{d.notes}</p>}
                     </div>
                   ))}

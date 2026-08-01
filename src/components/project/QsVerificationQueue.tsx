@@ -8,8 +8,10 @@ import {
   setDiaryQsStatus,
   signDiaryPhotos,
   managerAuthoriseDiary,
+  listDiaryAmendments,
 } from "@/lib/daily-diary.functions";
 import { getMyRoles } from "@/lib/projects.functions";
+import { ProgressLineage } from "@/components/common/ProgressLineage";
 
 type DiaryRow = {
   id: string;
@@ -32,8 +34,31 @@ type DiaryRow = {
   qs_notes?: string | null;
   photo_urls: string[] | null;
   work_zones?: { name?: string | null; level?: string | null } | null;
-  project_drawings?: { drawing_no?: string | null; title?: string | null } | null;
+  project_drawings?: {
+    drawing_no?: string | null;
+    revision?: string | null;
+    title?: string | null;
+    file_name?: string | null;
+  } | null;
 };
+
+/**
+ * Drawing reference. Sheets uploaded as plain images carry no extracted
+ * drawing_no / revision / title, so fall back to the source file name, which
+ * is where the real sheet reference lives (e.g. "WBH-A-101 GA Plan Rev A.png").
+ */
+function drawingLabel(row: DiaryRow): string {
+  const d = row.project_drawings;
+  if (!d) return "—";
+  const parts = [
+    d.drawing_no ?? null,
+    d.revision ? `Rev ${d.revision}` : null,
+    d.title ?? null,
+  ].filter(Boolean) as string[];
+  if (parts.length > 0) return parts.join(" · ");
+  if (d.file_name) return d.file_name.replace(/\.[a-z0-9]+$/i, "");
+  return "—";
+}
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
@@ -367,16 +392,7 @@ function QsEvidenceModal({
               diary.work_zones?.level ? ` · ${diary.work_zones.level}` : ""
             }`}
           />
-          <EvidenceCell
-            label="Drawing"
-            value={
-              diary.project_drawings
-                ? `${diary.project_drawings.drawing_no ?? "—"}${
-                    diary.project_drawings.title ? ` · ${diary.project_drawings.title}` : ""
-                  }`
-                : "—"
-            }
-          />
+          <EvidenceCell label="Drawing" value={drawingLabel(diary)} />
           <EvidenceCell label="Trade package" value={diary.trade_package ?? "Untagged"} />
           <EvidenceCell label="Operatives" value={diary.operative_count ?? "—"} />
           <EvidenceCell label="Hours logged" value={formatHours(diary)} />
@@ -396,6 +412,13 @@ function QsEvidenceModal({
             </p>
           )}
         </div>
+
+        <ProgressLineage
+          className="mt-2"
+          claimed={diary.completion_pct}
+          managerVerified={diary.manager_completion_pct}
+          qsVerified={diary.qs_verified_pct}
+        />
 
         {diary.manager_completion_pct != null && (
           <div className="mt-2 rounded-sm border border-emerald-500/30 bg-emerald-500/5 p-3">
@@ -530,6 +553,69 @@ function QsEvidenceModal({
 
 
 
+type AmendmentRow = {
+  id: string;
+  reason: string | null;
+  previous_manager_completion_pct: number | null;
+  new_manager_completion_pct: number | null;
+  previous_qs_status: string | null;
+  new_qs_status: string | null;
+  previous_qs_verified_pct: number | null;
+  new_qs_verified_pct: number | null;
+  created_at: string;
+};
+
+function formatDay(value: string): string {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** Plain-English sentence for one audited QS decision. */
+function amendmentSentence(a: AmendmentRow): string {
+  const when = formatDay(a.created_at);
+  const prev = a.previous_qs_verified_pct;
+  const next = a.new_qs_verified_pct;
+  if (a.new_qs_status === "rejected") {
+    return `QS rejected the claim on ${when}`;
+  }
+  if (next != null && prev != null && next !== prev) {
+    const verb = next < prev ? "reduced" : "increased";
+    return `QS ${verb} verified completion from ${prev} per cent to ${next} per cent on ${when}`;
+  }
+  if (next != null) {
+    return `QS verified completion at ${next} per cent on ${when}`;
+  }
+  return `QS ${a.new_qs_status ?? "updated"} the claim on ${when}`;
+}
+
+function AmendmentHistory({ diaryId }: { diaryId: string }) {
+  const fn = useServerFn(listDiaryAmendments);
+  const q = useQuery({
+    queryKey: ["diary-amendments", diaryId],
+    queryFn: () => fn({ data: { diaryId } }),
+    staleTime: 60_000,
+  });
+  const rows = ((q.data ?? []) as unknown) as AmendmentRow[];
+  if (rows.length === 0) return null;
+  return (
+    <ul className="mt-1.5 space-y-1 border-l border-white/10 pl-2">
+      {rows.map((a) => (
+        <li key={a.id}>
+          <p className="text-[0.6rem] uppercase tracking-widest text-foreground/60">
+            {amendmentSentence(a)}
+          </p>
+          {a.reason && (
+            <p className="whitespace-pre-wrap text-[0.65rem] italic text-foreground/50">
+              "{a.reason}"
+            </p>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function QsVerificationQueue({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const listFn = useServerFn(listQsQueue);
@@ -563,6 +649,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
     qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
     qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
     qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
+    qc.invalidateQueries({ queryKey: ["diary-amendments"] });
   };
 
   const [inspecting, setInspecting] = useState<DiaryRow | null>(null);
@@ -607,6 +694,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
       setRejecting(null);
       qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
       qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
+    qc.invalidateQueries({ queryKey: ["diary-amendments"] });
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to reject diary.");
     } finally {
@@ -619,6 +707,7 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
     qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
     qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
     qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
+    qc.invalidateQueries({ queryKey: ["diary-amendments"] });
   };
 
   const rows = ((q.data ?? []) as unknown) as DiaryRow[];
@@ -649,6 +738,12 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                     <span className="text-alert">{r.progress_status}</span> · Completion{" "}
                     <span className="text-alert">{r.completion_pct}%</span>
                   </p>
+                  <ProgressLineage
+                    className="mt-2"
+                    claimed={r.completion_pct}
+                    managerVerified={r.manager_completion_pct}
+                    qsVerified={r.qs_verified_pct}
+                  />
                   {r.notes && (
                     <p className="mt-2 rounded-sm border border-white/10 bg-black/30 p-2 text-xs italic text-foreground/70">
                       "{r.notes}"
@@ -756,6 +851,13 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                     "{r.qs_notes}"
                   </p>
                 )}
+                <ProgressLineage
+                  className="mt-1.5"
+                  claimed={r.completion_pct}
+                  managerVerified={r.manager_completion_pct}
+                  qsVerified={r.qs_verified_pct}
+                />
+                <AmendmentHistory diaryId={r.id} />
               </li>
             ))}
           </ul>

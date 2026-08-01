@@ -319,8 +319,10 @@ export type Database = {
           id: string
           new_manager_completion_pct: number | null
           new_qs_status: string | null
+          new_qs_verified_pct: number | null
           previous_manager_completion_pct: number | null
           previous_qs_status: string | null
+          previous_qs_verified_pct: number | null
           project_id: string
           reason: string
         }
@@ -331,8 +333,10 @@ export type Database = {
           id?: string
           new_manager_completion_pct?: number | null
           new_qs_status?: string | null
+          new_qs_verified_pct?: number | null
           previous_manager_completion_pct?: number | null
           previous_qs_status?: string | null
+          previous_qs_verified_pct?: number | null
           project_id: string
           reason: string
         }
@@ -343,8 +347,10 @@ export type Database = {
           id?: string
           new_manager_completion_pct?: number | null
           new_qs_status?: string | null
+          new_qs_verified_pct?: number | null
           previous_manager_completion_pct?: number | null
           previous_qs_status?: string | null
+          previous_qs_verified_pct?: number | null
           project_id?: string
           reason?: string
         }

@@ -76,7 +76,41 @@ export const listQsQueue = createServerFn({ method: "GET" })
       .order("checkout_time", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const list = (rows ?? []) as any[];
+
+    // Drawing reference: the diary's drawing_id IS populated, but sheets
+    // uploaded as plain images have drawing_no / revision / title all NULL on
+    // project_drawings, so the embed resolves to a dash. Resolve the metadata
+    // server side with the admin client (also immune to any embed-level RLS
+    // difference for a qs member) and fall back to the underlying
+    // site_documents file name, which carries the real sheet reference.
+    const drawingIds = Array.from(
+      new Set(list.map((r) => r.drawing_id).filter((d): d is string => !!d)),
+    );
+    if (drawingIds.length > 0) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: dwgs } = await (supabaseAdmin.from("project_drawings") as any)
+          .select("id, drawing_no, revision, title, pack_name, site_documents(file_name)")
+          .in("id", drawingIds);
+        const byId = new Map<string, any>();
+        for (const d of (dwgs ?? []) as any[]) byId.set(d.id, d);
+        for (const r of list) {
+          const d = r.drawing_id ? byId.get(r.drawing_id) : null;
+          if (!d) continue;
+          const fileName: string | null = d.site_documents?.file_name ?? null;
+          r.project_drawings = {
+            drawing_no: d.drawing_no ?? null,
+            revision: d.revision ?? null,
+            title: d.title ?? null,
+            file_name: fileName,
+          };
+        }
+      } catch (e) {
+        console.error("listQsQueue: drawing metadata resolve failed", e);
+      }
+    }
+    return list;
   });
 
 export const setDiaryQsStatus = createServerFn({ method: "POST" })
@@ -121,9 +155,11 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // Fetch the diary first: a qs user is only authorised on projects where
     // they hold a project_members row with role_on_project = 'qs'.
-    const { data: diary, error: fetchErr } = await context.supabase
-      .from("daily_site_diaries")
-      .select("id, completion_pct, project_id, zone_id")
+    const { data: diary, error: fetchErr } = await (context.supabase
+      .from("daily_site_diaries") as any)
+      .select(
+        "id, completion_pct, manager_completion_pct, qs_verified_pct, qs_status, project_id, zone_id, subcontractor_id, trade_package, work_zones(name, level)",
+      )
       .eq("id", data.diaryId)
       .single();
     if (fetchErr || !diary) throw new Error("Diary not found.");
@@ -199,8 +235,97 @@ export const setDiaryQsStatus = createServerFn({ method: "POST" })
       .update(patch)
       .eq("id", data.diaryId);
     if (error) throw new Error(error.message);
+
+    const d = diary as any;
+    const prevQsPct = d.qs_verified_pct == null ? null : Number(d.qs_verified_pct);
+    const newQsPct =
+      data.status === "approved" ? (data.qsVerifiedPct ?? null) : prevQsPct;
+    const reasonText =
+      data.status === "approved"
+        ? (data.qsNotes ?? "QS approved.")
+        : (data.reason ?? "QS rejected.");
+
+    // Permanent audit trail — never overwrite completion_pct or
+    // manager_completion_pct, just record the movement.
+    try {
+      await (supabaseAdmin.from("diary_amendments") as any).insert({
+        diary_id: data.diaryId,
+        project_id: d.project_id,
+        reason: reasonText,
+        previous_manager_completion_pct: d.manager_completion_pct ?? null,
+        new_manager_completion_pct: d.manager_completion_pct ?? null,
+        previous_qs_status: d.qs_status ?? null,
+        new_qs_status: data.status,
+        previous_qs_verified_pct: prevQsPct,
+        new_qs_verified_pct: newQsPct == null ? null : Math.round(Number(newQsPct)),
+        changed_by: context.userId,
+      });
+    } catch (e) {
+      console.error("setDiaryQsStatus: amendment log failed", e);
+    }
+
+    // Notify the site managers, project/master admin and the subcontractor
+    // when a QS rejects, or approves at a figure that differs from what was
+    // already on record.
+    try {
+      const claimed = d.completion_pct == null ? null : Number(d.completion_pct);
+      const managerPct =
+        d.manager_completion_pct == null ? null : Number(d.manager_completion_pct);
+      const onRecord = managerPct ?? claimed;
+      const differs =
+        data.status === "approved" &&
+        newQsPct != null &&
+        onRecord != null &&
+        Number(newQsPct) !== onRecord;
+
+      if (data.status === "rejected" || differs) {
+        const { notifyUsers, resolveProjectDecisionRecipients } = await import(
+          "@/lib/notify.server"
+        );
+        const recipients = await resolveProjectDecisionRecipients({
+          projectId: d.project_id,
+          subcontractorId: d.subcontractor_id ?? null,
+          excludeUserId: context.userId,
+        });
+        const zoneName = d.work_zones?.name ?? "no zone";
+        const trade = d.trade_package ?? "Untagged package";
+        const title =
+          data.status === "rejected"
+            ? `QS rejected the claim of ${onRecord ?? 0} per cent`
+            : `QS verified at ${newQsPct} per cent, claimed ${onRecord ?? 0} per cent`;
+        const variance =
+          data.status === "rejected"
+            ? "The claim has been rejected and must be re-measured and resubmitted."
+            : `That is a variance of ${
+                Number(newQsPct) - Number(onRecord ?? 0)
+              } percentage points against the figure on record.`;
+        const body = `${trade} in ${zoneName}. ${variance} Reason: ${reasonText}`;
+
+        await notifyUsers({
+          recipients,
+          projectId: d.project_id,
+          kind: data.status === "rejected" ? "qs_rejected" : "qs_verified",
+          title,
+          body,
+          linkTo: `/projects/${d.project_id}?diary=${data.diaryId}`,
+          idempotencyBase: `qs-decision:${data.diaryId}:${data.status}:${newQsPct ?? "na"}`,
+          emailParagraphs: [
+            `${trade} in ${zoneName}.`,
+            variance,
+            `Measurement reason in full: ${reasonText}`,
+            data.status === "rejected"
+              ? "The model and the valuation continue to reflect the last approved figure until this claim is re-measured and approved."
+              : "The model and the valuation now reflect the QS figure.",
+          ],
+        });
+      }
+    } catch (e) {
+      console.error("setDiaryQsStatus: notification fan-out failed", e);
+    }
+
     return { ok: true };
   });
+
 
 
 export const listArchivedToday = createServerFn({ method: "GET" })
@@ -340,7 +465,7 @@ export const listDiaryAmendments = createServerFn({ method: "GET" })
     const { data: rows, error } = await (context.supabase as any)
       .from("diary_amendments")
       .select(
-        "id, reason, previous_manager_completion_pct, new_manager_completion_pct, previous_qs_status, new_qs_status, created_at, changed_by",
+        "id, reason, previous_manager_completion_pct, new_manager_completion_pct, previous_qs_status, new_qs_status, previous_qs_verified_pct, new_qs_verified_pct, created_at, changed_by",
       )
       .eq("diary_id", data.diaryId)
       .order("created_at", { ascending: false });
