@@ -853,7 +853,7 @@ export function BimModelViewer({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      {zoneProgress.length > 0 && (
+      {(zoneProgress.length > 0 || stateQ.isError || stateQ.isLoading) && (
         <div className="border-t border-white/10 px-4 py-3">
           <p className="mb-2 text-[0.6rem] font-bold uppercase tracking-[0.35em] text-foreground/50">
             Cumulative approved progress
