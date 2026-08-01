@@ -30,6 +30,8 @@ import {
   assignPackageManager,
   refreshSubcontractorInvite,
   inviteSiteManager,
+  inviteQs,
+  listProjectQs,
 } from "@/lib/subcontractors.functions";
 import { formatSentDate, daysAgo, expiryCountdown } from "@/lib/invite-format";
 import { errorMessage } from "@/lib/error-message";
@@ -55,6 +57,8 @@ export function TradeDirectoryPanel({
   const refreshInviteFn = useServerFn(refreshSubcontractorInvite);
   const inviteManagerFn = useServerFn(inviteSiteManager);
   const rolesFn = useServerFn(getMyRoles);
+  const inviteQsFn = useServerFn(inviteQs);
+  const projectQsFn = useServerFn(listProjectQs);
   const qc = useQueryClient();
 
   const rolesQ = useQuery({
@@ -138,6 +142,46 @@ export function TradeDirectoryPanel({
       setInvitingManager(false);
     }
   };
+
+  // --- Quantity Surveyor invites (admin only) -----------------------------
+  const projectQs = useQuery({
+    queryKey: ["project-qs", projectId],
+    queryFn: () => projectQsFn({ data: { projectId } }),
+    enabled: ready && isAdmin,
+    retry: false,
+  });
+
+  const [qsEmail, setQsEmail] = useState("");
+  const [qsName, setQsName] = useState("");
+  const [invitingQs, setInvitingQs] = useState(false);
+  const [showQsInvite, setShowQsInvite] = useState(false);
+
+  const inviteAQs = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!qsEmail.trim() || invitingQs) return;
+    setInvitingQs(true);
+    try {
+      const res = await inviteQsFn({
+        data: { projectId, email: qsEmail.trim(), fullName: qsName.trim() || null },
+      });
+      qc.invalidateQueries({ queryKey: ["project-qs", projectId] });
+      setQsEmail("");
+      setQsName("");
+      if (res.attached) {
+        toast.success("Quantity Surveyor invited and added to this project.");
+      } else if (res.emailed) {
+        toast.success("Invite emailed — they join the project once they sign in.");
+      } else {
+        toast.error(res.emailError ?? "Could not send that invite.");
+      }
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Could not invite that Quantity Surveyor."));
+    } finally {
+      setInvitingQs(false);
+    }
+  };
+
+
 
   const copyInviteLink = async (inviteId: string) => {
     setRowBusy(inviteId);
@@ -386,6 +430,87 @@ export function TradeDirectoryPanel({
           </div>
         )}
       </div>
+
+      {isAdmin && (
+        <div className="mt-2 rounded-md border border-white/10 bg-black/40 p-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="flex items-center gap-1 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-foreground/60">
+              <UserCog size={10} /> Quantity Surveyors ({(projectQs.data ?? []).length})
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setShowQsInvite((open) => !open)}
+              className="h-7 border-alert/60 bg-alert/10 px-2 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert hover:bg-alert/20 hover:text-alert"
+            >
+              <UserPlus size={11} /> Invite a QS
+            </Button>
+          </div>
+          {projectQs.isError && (
+            <p className="mt-1 rounded-sm border border-destructive/50 bg-destructive/10 px-1.5 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-destructive-foreground">
+              {(projectQs.error as Error)?.message ?? "Failed to load quantity surveyors."}
+            </p>
+          )}
+          {showQsInvite && (
+            <form onSubmit={inviteAQs} className="mt-1.5 grid gap-1.5">
+              <input
+                type="email"
+                required
+                value={qsEmail}
+                onChange={(e) => setQsEmail(e.target.value)}
+                placeholder="quantity.surveyor@company.co.uk"
+                className="rounded-sm border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-alert"
+              />
+              <input
+                value={qsName}
+                onChange={(e) => setQsName(e.target.value)}
+                placeholder="Full name (optional)"
+                className="rounded-sm border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-alert"
+              />
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="submit"
+                  disabled={invitingQs || !qsEmail.trim()}
+                  className="flex-1 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert transition hover:bg-alert/20 disabled:opacity-40"
+                >
+                  {invitingQs ? "Sending…" : "Send Invite"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowQsInvite(false)}
+                  className="rounded-sm border border-white/20 px-2 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/60 hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+              <p className="text-[0.6rem] leading-snug text-foreground/50">
+                They receive a secure sign-in link and are added to this project as a
+                Quantity Surveyor, so they can verify diary claims.
+              </p>
+            </form>
+          )}
+          {(projectQs.data ?? []).length > 0 ? (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {(projectQs.data ?? []).map((m) => (
+                <span
+                  key={m.user_id}
+                  className="rounded-sm border border-white/15 px-1 py-0.5 font-mono text-[0.5rem] uppercase tracking-widest text-foreground/70"
+                >
+                  {m.full_name ?? "Unnamed"}
+                  {m.email ? ` · ${m.email}` : ""}
+                </span>
+              ))}
+            </div>
+          ) : (
+            !showQsInvite && (
+              <p className="mt-1.5 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                No Quantity Surveyors on this project yet
+              </p>
+            )
+          )}
+        </div>
+      )}
 
       {invites.isError && (
         <p className="mt-2 rounded-sm border border-destructive/60 bg-destructive/10 px-2 py-1.5 font-mono text-[0.6rem] uppercase tracking-widest text-destructive-foreground">
