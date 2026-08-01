@@ -57,6 +57,8 @@ export function TradeDirectoryPanel({
   const refreshInviteFn = useServerFn(refreshSubcontractorInvite);
   const inviteManagerFn = useServerFn(inviteSiteManager);
   const rolesFn = useServerFn(getMyRoles);
+  const inviteQsFn = useServerFn(inviteQs);
+  const projectQsFn = useServerFn(listProjectQs);
   const qc = useQueryClient();
 
   const rolesQ = useQuery({
