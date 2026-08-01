@@ -465,7 +465,7 @@ export const listDiaryAmendments = createServerFn({ method: "GET" })
     const { data: rows, error } = await (context.supabase as any)
       .from("diary_amendments")
       .select(
-        "id, reason, previous_manager_completion_pct, new_manager_completion_pct, previous_qs_status, new_qs_status, created_at, changed_by",
+        "id, reason, previous_manager_completion_pct, new_manager_completion_pct, previous_qs_status, new_qs_status, previous_qs_verified_pct, new_qs_verified_pct, created_at, changed_by",
       )
       .eq("diary_id", data.diaryId)
       .order("created_at", { ascending: false });
