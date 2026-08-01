@@ -70,7 +70,7 @@ export const listQsQueue = createServerFn({ method: "GET" })
     const { data: rows, error } = await (context.supabase
       .from("daily_site_diaries") as any)
       .select(
-        "id, trade_package, operative_count, hours_logged, start_time, checkout_time, progress_status, completion_pct, manager_completion_pct, manager_notes, manager_photo_urls, inspected_by, inspected_at, notes, qs_status, qs_rejection_reason, qs_remeasure_required, ifc_synced, photo_urls, zone_id, workface_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
+        "id, trade_package, operative_count, hours_logged, start_time, checkout_time, progress_status, completion_pct, manager_completion_pct, manager_notes, manager_photo_urls, inspected_by, inspected_at, notes, qs_status, qs_rejection_reason, qs_remeasure_required, qs_verified_pct, qs_notes, ifc_synced, photo_urls, zone_id, workface_id, drawing_id, work_zones(name, level), project_drawings(drawing_no, title)",
       )
       .eq("project_id", data.projectId)
       .order("checkout_time", { ascending: false })
