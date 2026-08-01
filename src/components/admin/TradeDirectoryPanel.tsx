@@ -143,6 +143,46 @@ export function TradeDirectoryPanel({
     }
   };
 
+  // --- Quantity Surveyor invites (admin only) -----------------------------
+  const projectQs = useQuery({
+    queryKey: ["project-qs", projectId],
+    queryFn: () => projectQsFn({ data: { projectId } }),
+    enabled: ready && isAdmin,
+    retry: false,
+  });
+
+  const [qsEmail, setQsEmail] = useState("");
+  const [qsName, setQsName] = useState("");
+  const [invitingQs, setInvitingQs] = useState(false);
+  const [showQsInvite, setShowQsInvite] = useState(false);
+
+  const inviteAQs = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!qsEmail.trim() || invitingQs) return;
+    setInvitingQs(true);
+    try {
+      const res = await inviteQsFn({
+        data: { projectId, email: qsEmail.trim(), fullName: qsName.trim() || null },
+      });
+      qc.invalidateQueries({ queryKey: ["project-qs", projectId] });
+      setQsEmail("");
+      setQsName("");
+      if (res.attached) {
+        toast.success("Quantity Surveyor invited and added to this project.");
+      } else if (res.emailed) {
+        toast.success("Invite emailed — they join the project once they sign in.");
+      } else {
+        toast.error(res.emailError ?? "Could not send that invite.");
+      }
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Could not invite that Quantity Surveyor."));
+    } finally {
+      setInvitingQs(false);
+    }
+  };
+
+
+
   const copyInviteLink = async (inviteId: string) => {
     setRowBusy(inviteId);
     try {
