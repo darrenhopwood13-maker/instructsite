@@ -262,6 +262,34 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const listFn = useServerFn(listQsQueue);
   const setStatusFn = useServerFn(setDiaryQsStatus);
+  const rolesFn = useServerFn(getMyRoles);
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    staleTime: 60_000,
+  });
+  const roles = rolesQ.data?.roles ?? [];
+  const isManager =
+    roles.includes("master_admin") ||
+    roles.includes("project_admin") ||
+    roles.includes("site_manager");
+  const isQs = roles.includes("qs");
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+
+  const approveAsQs = async (r: DiaryRow) => {
+    setApprovingId(r.id);
+    try {
+      await setStatusFn({ data: { diaryId: r.id, status: "approved" } });
+      toast.success("Approved — claim verified and pushed to the model.");
+      qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
+      qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
+      qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to approve diary.");
+    } finally {
+      setApprovingId(null);
+    }
+  };
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
   const [inspecting, setInspecting] = useState<DiaryRow | null>(null);
   const [rejecting, setRejecting] = useState<DiaryRow | null>(null);
