@@ -428,13 +428,31 @@ export const listProjectQs = createServerFn({ method: "GET" })
       .eq("role_on_project", "qs");
     if (error) throw new Error(error.message);
     const ids = (rows ?? []).map((r) => r.user_id);
-    if (ids.length === 0) return [] as { user_id: string; full_name: string | null }[];
+    if (ids.length === 0)
+      return [] as { user_id: string; full_name: string | null; email: string | null }[];
     const { data: profs } = await supabaseAdmin
       .from("profiles")
       .select("user_id, full_name")
       .in("user_id", ids);
     const nameOf = new Map((profs ?? []).map((p) => [p.user_id, p.full_name]));
-    return ids.map((id) => ({ user_id: id, full_name: nameOf.get(id) ?? null }));
+    // Emails live in auth, not profiles, so resolve them one by one (a project
+    // only ever carries a handful of QS seats).
+    const emails = await Promise.all(
+      ids.map(async (id) => {
+        try {
+          const { data: u } = await supabaseAdmin.auth.admin.getUserById(id);
+          return [id, u?.user?.email ?? null] as const;
+        } catch {
+          return [id, null] as const;
+        }
+      }),
+    );
+    const emailOf = new Map(emails);
+    return ids.map((id) => ({
+      user_id: id,
+      full_name: nameOf.get(id) ?? null,
+      email: emailOf.get(id) ?? null,
+    }));
   });
 
 export const listUnassignedQs = createServerFn({ method: "GET" })
