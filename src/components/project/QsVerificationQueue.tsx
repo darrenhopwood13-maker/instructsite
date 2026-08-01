@@ -9,6 +9,7 @@ import {
   signDiaryPhotos,
   managerAuthoriseDiary,
 } from "@/lib/daily-diary.functions";
+import { getMyRoles } from "@/lib/projects.functions";
 
 type DiaryRow = {
   id: string;
@@ -262,6 +263,34 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
   const qc = useQueryClient();
   const listFn = useServerFn(listQsQueue);
   const setStatusFn = useServerFn(setDiaryQsStatus);
+  const rolesFn = useServerFn(getMyRoles);
+  const rolesQ = useQuery({
+    queryKey: ["my-roles"],
+    queryFn: () => rolesFn(),
+    staleTime: 60_000,
+  });
+  const roles = rolesQ.data?.roles ?? [];
+  const isManager =
+    roles.includes("master_admin") ||
+    roles.includes("project_admin") ||
+    roles.includes("site_manager");
+  const isQs = roles.includes("qs");
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+
+  const approveAsQs = async (r: DiaryRow) => {
+    setApprovingId(r.id);
+    try {
+      await setStatusFn({ data: { diaryId: r.id, status: "approved" } });
+      toast.success("Approved — claim verified and pushed to the model.");
+      qc.invalidateQueries({ queryKey: ["qs-queue", projectId] });
+      qc.invalidateQueries({ queryKey: ["zone-completion", projectId] });
+      qc.invalidateQueries({ queryKey: ["zone-runtime", projectId] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to approve diary.");
+    } finally {
+      setApprovingId(null);
+    }
+  };
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
   const [inspecting, setInspecting] = useState<DiaryRow | null>(null);
   const [rejecting, setRejecting] = useState<DiaryRow | null>(null);
@@ -374,21 +403,36 @@ export function QsVerificationQueue({ projectId }: { projectId: string }) {
                     </>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setInspecting(r)}
-                    className="inline-flex items-center gap-1 rounded-md border-2 border-green-500 bg-green-500/10 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-green-400 hover:bg-green-500/20"
-                  >
-                    <CheckCircle2 size={12} /> Inspect & Authorise
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openReject(r)}
-                    className="inline-flex items-center gap-1 rounded-md border border-white/15 px-3 py-1.5 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-red-500 hover:text-red-400"
-                  >
-                    <XCircle size={12} /> Reject
-                  </button>
+                <div className="flex flex-wrap gap-2">
+                  {isManager && (
+                    <button
+                      type="button"
+                      onClick={() => setInspecting(r)}
+                      className="inline-flex items-center gap-1 rounded-md border-2 border-green-500 bg-green-500/10 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-green-400 hover:bg-green-500/20"
+                    >
+                      <CheckCircle2 size={12} /> Inspect & Authorise
+                    </button>
+                  )}
+                  {isQs && (
+                    <button
+                      type="button"
+                      onClick={() => approveAsQs(r)}
+                      disabled={approvingId === r.id}
+                      className="inline-flex items-center gap-1 rounded-md border-2 border-green-500 bg-green-500/10 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-green-400 hover:bg-green-500/20 disabled:opacity-40"
+                    >
+                      <CheckCircle2 size={12} />{" "}
+                      {approvingId === r.id ? "Approving…" : "Verify & Approve"}
+                    </button>
+                  )}
+                  {(isManager || isQs) && (
+                    <button
+                      type="button"
+                      onClick={() => openReject(r)}
+                      className="inline-flex items-center gap-1 rounded-md border border-white/15 px-3 py-1.5 text-[0.6rem] uppercase tracking-widest text-foreground/60 hover:border-red-500 hover:text-red-400"
+                    >
+                      <XCircle size={12} /> Reject
+                    </button>
+                  )}
                 </div>
               </div>
             </li>
