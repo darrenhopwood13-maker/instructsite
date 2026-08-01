@@ -25,6 +25,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SnagsIndexRouteImport } from './routes/snags.index'
+import { Route as QsIndexRouteImport } from './routes/qs.index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as OrgIndexRouteImport } from './routes/org.index'
 import { Route as SubcontractorsNewRouteImport } from './routes/subcontractors.new'
@@ -32,6 +33,7 @@ import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontract
 import { Route as SnagsNewRouteImport } from './routes/snags.new'
 import { Route as SnagsSnagIdRouteImport } from './routes/snags.$snagId'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
+import { Route as QsProjectIdRouteImport } from './routes/qs.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
@@ -139,6 +141,11 @@ const SnagsIndexRoute = SnagsIndexRouteImport.update({
   path: '/snags/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QsIndexRoute = QsIndexRouteImport.update({
+  id: '/qs/',
+  path: '/qs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
@@ -172,6 +179,11 @@ const SnagsSnagIdRoute = SnagsSnagIdRouteImport.update({
 const SiteManagerProjectIdRoute = SiteManagerProjectIdRouteImport.update({
   id: '/site-manager/$projectId',
   path: '/site-manager/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QsProjectIdRoute = QsProjectIdRouteImport.update({
+  id: '/qs/$projectId',
+  path: '/qs/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
@@ -342,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/qs/$projectId': typeof QsProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
@@ -349,6 +362,7 @@ export interface FileRoutesByFullPath {
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org/': typeof OrgIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/qs/': typeof QsIndexRoute
   '/snags/': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -392,6 +406,7 @@ export interface FileRoutesByTo {
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/qs/$projectId': typeof QsProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
@@ -399,6 +414,7 @@ export interface FileRoutesByTo {
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org': typeof OrgIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/qs': typeof QsIndexRoute
   '/snags': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -444,6 +460,7 @@ export interface FileRoutesById {
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/qs/$projectId': typeof QsProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
@@ -451,6 +468,7 @@ export interface FileRoutesById {
   '/subcontractors/new': typeof SubcontractorsNewRoute
   '/org/': typeof OrgIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/qs/': typeof QsIndexRoute
   '/snags/': typeof SnagsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -497,6 +515,7 @@ export interface FileRouteTypes {
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/qs/$projectId'
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
@@ -504,6 +523,7 @@ export interface FileRouteTypes {
     | '/subcontractors/new'
     | '/org/'
     | '/projects/'
+    | '/qs/'
     | '/snags/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -547,6 +567,7 @@ export interface FileRouteTypes {
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/qs/$projectId'
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
@@ -554,6 +575,7 @@ export interface FileRouteTypes {
     | '/subcontractors/new'
     | '/org'
     | '/projects'
+    | '/qs'
     | '/snags'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -598,6 +620,7 @@ export interface FileRouteTypes {
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/qs/$projectId'
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
@@ -605,6 +628,7 @@ export interface FileRouteTypes {
     | '/subcontractors/new'
     | '/org/'
     | '/projects/'
+    | '/qs/'
     | '/snags/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -649,6 +673,7 @@ export interface RootRouteChildren {
   ProgrammeProjectIdRoute: typeof ProgrammeProjectIdRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
+  QsProjectIdRoute: typeof QsProjectIdRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
   SnagsSnagIdRoute: typeof SnagsSnagIdRoute
   SnagsNewRoute: typeof SnagsNewRoute
@@ -656,6 +681,7 @@ export interface RootRouteChildren {
   SubcontractorsNewRoute: typeof SubcontractorsNewRoute
   OrgIndexRoute: typeof OrgIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  QsIndexRoute: typeof QsIndexRoute
   SnagsIndexRoute: typeof SnagsIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -783,6 +809,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SnagsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/qs/': {
+      id: '/qs/'
+      path: '/qs'
+      fullPath: '/qs/'
+      preLoaderRoute: typeof QsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/': {
       id: '/projects/'
       path: '/projects'
@@ -830,6 +863,13 @@ declare module '@tanstack/react-router' {
       path: '/site-manager/$projectId'
       fullPath: '/site-manager/$projectId'
       preLoaderRoute: typeof SiteManagerProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qs/$projectId': {
+      id: '/qs/$projectId'
+      path: '/qs/$projectId'
+      fullPath: '/qs/$projectId'
+      preLoaderRoute: typeof QsProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/new': {
@@ -1073,6 +1113,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProgrammeProjectIdRoute: ProgrammeProjectIdRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
+  QsProjectIdRoute: QsProjectIdRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
   SnagsSnagIdRoute: SnagsSnagIdRoute,
   SnagsNewRoute: SnagsNewRoute,
@@ -1080,6 +1121,7 @@ const rootRouteChildren: RootRouteChildren = {
   SubcontractorsNewRoute: SubcontractorsNewRoute,
   OrgIndexRoute: OrgIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  QsIndexRoute: QsIndexRoute,
   SnagsIndexRoute: SnagsIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,

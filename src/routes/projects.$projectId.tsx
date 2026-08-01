@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays, Camera } from "lucide-react";
+import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays, Camera, ClipboardCheck } from "lucide-react";
 import { getProject } from "@/lib/projects.functions";
+import { listQsQueue } from "@/lib/daily-diary.functions";
 import {
   listProjectDrawings,
   listProjectLogistics,
@@ -73,6 +74,31 @@ function ProjectDetail() {
     rolesQ.data?.roles?.includes("project_admin");
   const isMainContractor =
     isAdmin || rolesQ.data?.roles?.includes("site_manager");
+  const isQs = rolesQ.data?.roles?.includes("qs");
+
+  // Read-only QS verification counts, derived client-side from the queue.
+  const qsQueueFn = useServerFn(listQsQueue);
+  const qsQueue = useQuery({
+    queryKey: ["qs-queue", projectId],
+    queryFn: () => qsQueueFn({ data: { projectId } }),
+    enabled: ready,
+    staleTime: 30_000,
+  });
+  const qsCounts = useMemo(() => {
+    const rows = (qsQueue.data ?? []) as Array<{ qs_status?: string | null }>;
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    for (const r of rows) {
+      const s = (r.qs_status ?? "pending").toLowerCase();
+      if (s === "approved") approved += 1;
+      else if (s === "rejected") rejected += 1;
+      else pending += 1;
+    }
+    return { pending, approved, rejected };
+  }, [qsQueue.data]);
+
+
 
 
   const project = useQuery({
@@ -194,6 +220,15 @@ function ProjectDetail() {
             >
               <CalendarDays size={14} /> Randall Diary
             </Link>
+            {(isMainContractor || isQs) && (
+              <Link
+                to="/qs/$projectId"
+                params={{ projectId }}
+                className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+              >
+                <ClipboardCheck size={14} /> QS Verification
+              </Link>
+            )}
             {isMainContractor && (
               <Link
                 to="/site-manager/$projectId"
@@ -204,6 +239,26 @@ function ProjectDetail() {
               </Link>
             )}
           </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-6">
+          <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-foreground/50">
+            QS Verification
+          </p>
+          {(
+            [
+              ["Pending", qsCounts.pending],
+              ["Approved", qsCounts.approved],
+              ["Rejected", qsCounts.rejected],
+            ] as const
+          ).map(([label, count]) => (
+            <div key={label}>
+              <p className="text-[0.6rem] font-bold uppercase tracking-[0.3em] text-foreground/50">
+                {label}
+              </p>
+              <p className="text-lg font-extrabold text-foreground">{count}</p>
+            </div>
+          ))}
         </div>
 
         {project.data?.scope_brief && (
