@@ -73,6 +73,31 @@ function ProjectDetail() {
     rolesQ.data?.roles?.includes("project_admin");
   const isMainContractor =
     isAdmin || rolesQ.data?.roles?.includes("site_manager");
+  const isQs = rolesQ.data?.roles?.includes("qs");
+
+  // Read-only QS verification counts, derived client-side from the queue.
+  const qsQueueFn = useServerFn(listQsQueue);
+  const qsQueue = useQuery({
+    queryKey: ["qs-queue", projectId],
+    queryFn: () => qsQueueFn({ data: { projectId } }),
+    enabled: ready,
+    staleTime: 30_000,
+  });
+  const qsCounts = useMemo(() => {
+    const rows = (qsQueue.data ?? []) as Array<{ qs_status?: string | null }>;
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    for (const r of rows) {
+      const s = (r.qs_status ?? "pending").toLowerCase();
+      if (s === "approved") approved += 1;
+      else if (s === "rejected") rejected += 1;
+      else pending += 1;
+    }
+    return { pending, approved, rejected };
+  }, [qsQueue.data]);
+
+
 
 
   const project = useQuery({
