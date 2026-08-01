@@ -580,6 +580,7 @@ function AuthNav() {
               instructSite.ai
             </a>
           </Button>
+          <NotificationBell />
           <SettingsMenu isOwner={isOwner} />
         </>
       ) : (
