@@ -167,7 +167,9 @@ export function TradeDirectoryPanel({
       qc.invalidateQueries({ queryKey: ["project-qs", projectId] });
       setQsEmail("");
       setQsName("");
-      if (res.attached) {
+      if ("alreadyInvited" in res && res.alreadyInvited) {
+        toast.success("That person is already a Quantity Surveyor on this project.");
+      } else if (res.attached) {
         toast.success("Quantity Surveyor invited and added to this project.");
       } else if (res.emailed) {
         toast.success("Invite emailed — they join the project once they sign in.");
