@@ -8,8 +8,10 @@ import {
   setDiaryQsStatus,
   signDiaryPhotos,
   managerAuthoriseDiary,
+  listDiaryAmendments,
 } from "@/lib/daily-diary.functions";
 import { getMyRoles } from "@/lib/projects.functions";
+import { ProgressLineage } from "@/components/common/ProgressLineage";
 
 type DiaryRow = {
   id: string;
@@ -32,8 +34,31 @@ type DiaryRow = {
   qs_notes?: string | null;
   photo_urls: string[] | null;
   work_zones?: { name?: string | null; level?: string | null } | null;
-  project_drawings?: { drawing_no?: string | null; title?: string | null } | null;
+  project_drawings?: {
+    drawing_no?: string | null;
+    revision?: string | null;
+    title?: string | null;
+    file_name?: string | null;
+  } | null;
 };
+
+/**
+ * Drawing reference. Sheets uploaded as plain images carry no extracted
+ * drawing_no / revision / title, so fall back to the source file name, which
+ * is where the real sheet reference lives (e.g. "WBH-A-101 GA Plan Rev A.png").
+ */
+function drawingLabel(row: DiaryRow): string {
+  const d = row.project_drawings;
+  if (!d) return "—";
+  const parts = [
+    d.drawing_no ?? null,
+    d.revision ? `Rev ${d.revision}` : null,
+    d.title ?? null,
+  ].filter(Boolean) as string[];
+  if (parts.length > 0) return parts.join(" · ");
+  if (d.file_name) return d.file_name.replace(/\.[a-z0-9]+$/i, "");
+  return "—";
+}
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
