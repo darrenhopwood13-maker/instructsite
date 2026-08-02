@@ -2511,6 +2511,14 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      issue_activity_permit: {
+        Args: {
+          _activity_id: string
+          _permit_type: string
+          _valid_hours?: number
+        }
+        Returns: string
+      }
       issue_pin_permit: {
         Args: { _pin_id: string; _valid_hours?: number }
         Returns: string
@@ -2579,6 +2587,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      revoke_permit: {
+        Args: { _permit_id: string; _reason?: string }
+        Returns: boolean
       }
       site_document_project_ids: {
         Args: { _document_id: string }
