@@ -90,13 +90,25 @@ function PermitsPage() {
   const activities = reg.data?.activities ?? [];
   const unlinkedPins = reg.data?.unlinkedPins ?? [];
 
-  const outstanding = activities.filter((a) => a.permit_status === "required");
-  const permitted = activities.filter((a) =>
-    (a.permits ?? []).some((p) => isPermitLive(p)),
+  const permitted = activities.filter((a) => (a.permits ?? []).some((p) => isPermitLive(p)));
+  // Expired = a permit that ran out without being renewed or revoked, and the
+  // activity has nothing live covering it. This is the "needs attention" state.
+  const expired = activities.filter(
+    (a) =>
+      !(a.permits ?? []).some((p) => isPermitLive(p)) &&
+      (a.permits ?? []).some((p) => isPermitExpired(p)),
+  );
+  const expiredIds = new Set(expired.map((a) => a.id));
+  const outstanding = activities.filter(
+    (a) => a.permit_status === "required" && !expiredIds.has(a.id),
   );
   const history = activities.filter(
-    (a) => (a.permits ?? []).length > 0 && !(a.permits ?? []).some(isPermitLive),
+    (a) =>
+      (a.permits ?? []).length > 0 &&
+      !(a.permits ?? []).some(isPermitLive) &&
+      !expiredIds.has(a.id),
   );
+
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["permit-register", projectId] });
