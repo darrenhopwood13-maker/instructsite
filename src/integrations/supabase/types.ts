@@ -974,6 +974,64 @@ export type Database = {
         }
         Relationships: []
       }
+      permit_events: {
+        Row: {
+          activity_id: string | null
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          permit_id: string | null
+          project_id: string
+          reason: string | null
+        }
+        Insert: {
+          activity_id?: string | null
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          permit_id?: string | null
+          project_id: string
+          reason?: string | null
+        }
+        Update: {
+          activity_id?: string | null
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          permit_id?: string | null
+          project_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permit_events_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permit_events_permit_id_fkey"
+            columns: ["permit_id"]
+            isOneToOne: false
+            referencedRelation: "permits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permit_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permits: {
         Row: {
           activity_id: string | null
@@ -2457,6 +2515,10 @@ export type Database = {
           _reason: string
         }
         Returns: string
+      }
+      backfill_pin_activities: {
+        Args: { _project_id?: string }
+        Returns: number
       }
       can_admin_site_document: {
         Args: { _document_id: string; _user_id: string }
