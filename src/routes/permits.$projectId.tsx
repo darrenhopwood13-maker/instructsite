@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   ArrowLeft,
+  ChevronDown,
+  Clock,
   Loader2,
   ShieldAlert,
   ShieldCheck,
@@ -15,10 +17,17 @@ import {
   listPermitRegister,
   issueActivityPermit,
   revokePermit,
+  type PermitRow,
 } from "@/lib/permits.functions";
 import { issuePinPermit } from "@/lib/live-activity.functions";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { HIGH_RISK_CATEGORIES, hazardLabel, type HazardKey } from "@/lib/high-risk";
+import {
+  isPermitLive,
+  isPermitExpired,
+  permitLifecycle,
+  LIFECYCLE_LABEL,
+} from "@/lib/permit-status";
 
 export const Route = createFileRoute("/permits/$projectId")({
   head: () => ({
@@ -42,11 +51,6 @@ export const Route = createFileRoute("/permits/$projectId")({
   component: PermitsPage,
 });
 
-function isPermitLive(p: { status: string; valid_to: string | null }) {
-  return (
-    p.status === "active" && (!p.valid_to || new Date(p.valid_to).getTime() > Date.now())
-  );
-}
 
 function PermitsPage() {
   const { projectId } = Route.useParams();
