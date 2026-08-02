@@ -33,12 +33,28 @@ export const deleteProject = createServerFn({ method: "POST" })
     if (project.name.trim() !== data.confirmName.trim()) {
       throw new Error("Project name confirmation does not match.");
     }
+
+    // Purge bucket objects BEFORE the rows disappear — once the cascade runs
+    // we can no longer discover the paths. Best effort: never blocks delete.
+    let storage: { removed: Record<string, number>; errors: string[] } = {
+      removed: {},
+      errors: [],
+    };
+    try {
+      const { purgeProjectStorage } = await import("@/lib/project-storage-purge.server");
+      storage = await purgeProjectStorage(data.projectId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[deleteProject] storage purge failed", message);
+      storage = { removed: {}, errors: [message] };
+    }
+
     const { error } = await context.supabase
       .from("projects")
       .delete()
       .eq("id", data.projectId);
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, storage };
   });
 
 export const deleteDrawing = createServerFn({ method: "POST" })
