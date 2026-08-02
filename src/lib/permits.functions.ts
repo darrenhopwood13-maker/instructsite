@@ -11,7 +11,7 @@ export type PermitEventRow = {
   actor_id: string | null;
   actor_name?: string | null;
   reason: string | null;
-  metadata: Record<string, unknown> | null;
+  metadata: Record<string, string | number | boolean | null> | null;
   created_at: string;
 };
 
