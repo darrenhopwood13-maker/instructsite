@@ -20,7 +20,12 @@ const ExtractSchema = z.object({
   tasks: z.array(TaskSchema).default([]),
 });
 
-export type ProgrammeTask = z.infer<typeof TaskSchema>;
+type TaskShape = z.infer<typeof TaskSchema>;
+export type ProgrammeTask = Omit<TaskShape, "taskRef" | "predecessors" | "durationDays"> & {
+  taskRef?: string;
+  predecessors?: string[];
+  durationDays?: number | undefined;
+};
 
 export type ProgrammeCompileResult = {
   tasks: ProgrammeTask[];
@@ -157,7 +162,8 @@ function cleanTaskName(raw: string): string {
     .replace(/\b(?:start|finish|end|duration|dur|activity id|task mode|baseline|early|late|planned|actual)\b/gi, " ")
     .replace(/\b\d+(?:\.\d+)?\s*(?:d|day|days|w|wk|week|weeks|hrs?|hours?)\b/gi, " ")
     .replace(/\b\d{1,3}%\b/g, " ")
-    .replace(/^[\s\d.#\-–—_:|/\\]+/, "")
+    .replace(/^[\s#\-–—_:|/\\]+/, "")
+    .replace(/^\d+(?:\.\d+)*[.)\-:]?(?=\s)\s*/, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
