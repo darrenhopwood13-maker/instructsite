@@ -13,6 +13,21 @@ export type PermitRow = {
   issued_by_name?: string | null;
 };
 
+export type UnlinkedPinRow = {
+  id: string;
+  trade_package: string | null;
+  notes: string | null;
+  operative_count: number;
+  permit_required: boolean;
+  permit_status: string;
+  high_risk_flags: string[];
+  start_time: string;
+  scheduled_finish: string;
+  status: string;
+  zone_id: string | null;
+  work_zones: { name: string; level: string | null } | null;
+};
+
 export type ActivityRegisterRow = {
   id: string;
   description: string;
@@ -88,7 +103,7 @@ export const listPermitRegister = createServerFn({ method: "GET" })
         ...a,
         requested_by_name: names.get(a.subcontractor_id) ?? null,
       })),
-      unlinkedPins: (pins ?? []) as unknown as Array<Record<string, unknown>>,
+      unlinkedPins: (pins ?? []) as unknown as UnlinkedPinRow[],
     };
   });
 
