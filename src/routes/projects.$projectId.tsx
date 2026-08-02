@@ -222,7 +222,13 @@ function ProjectDetail() {
                   {permitsCount.data?.outstanding}
                 </span>
               )}
+              {(permitsCount.data?.expired ?? 0) > 0 && (
+                <span className="rounded-full bg-alert/20 px-2 py-0.5 text-[0.65rem] font-bold text-alert">
+                  {permitsCount.data?.expired} expired
+                </span>
+              )}
             </Link>
+
             <Link
               to="/snags"
               search={{ project: projectId }}

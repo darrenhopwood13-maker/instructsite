@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   ArrowLeft,
+  ChevronDown,
+  Clock,
   Loader2,
   ShieldAlert,
   ShieldCheck,
@@ -15,10 +17,17 @@ import {
   listPermitRegister,
   issueActivityPermit,
   revokePermit,
+  type PermitRow,
 } from "@/lib/permits.functions";
 import { issuePinPermit } from "@/lib/live-activity.functions";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { HIGH_RISK_CATEGORIES, hazardLabel, type HazardKey } from "@/lib/high-risk";
+import {
+  isPermitLive,
+  isPermitExpired,
+  permitLifecycle,
+  LIFECYCLE_LABEL,
+} from "@/lib/permit-status";
 
 export const Route = createFileRoute("/permits/$projectId")({
   head: () => ({
@@ -42,11 +51,6 @@ export const Route = createFileRoute("/permits/$projectId")({
   component: PermitsPage,
 });
 
-function isPermitLive(p: { status: string; valid_to: string | null }) {
-  return (
-    p.status === "active" && (!p.valid_to || new Date(p.valid_to).getTime() > Date.now())
-  );
-}
 
 function PermitsPage() {
   const { projectId } = Route.useParams();
@@ -86,13 +90,25 @@ function PermitsPage() {
   const activities = reg.data?.activities ?? [];
   const unlinkedPins = reg.data?.unlinkedPins ?? [];
 
-  const outstanding = activities.filter((a) => a.permit_status === "required");
-  const permitted = activities.filter((a) =>
-    (a.permits ?? []).some((p) => isPermitLive(p)),
+  const permitted = activities.filter((a) => (a.permits ?? []).some((p) => isPermitLive(p)));
+  // Expired = a permit that ran out without being renewed or revoked, and the
+  // activity has nothing live covering it. This is the "needs attention" state.
+  const expired = activities.filter(
+    (a) =>
+      !(a.permits ?? []).some((p) => isPermitLive(p)) &&
+      (a.permits ?? []).some((p) => isPermitExpired(p)),
+  );
+  const expiredIds = new Set(expired.map((a) => a.id));
+  const outstanding = activities.filter(
+    (a) => a.permit_status === "required" && !expiredIds.has(a.id),
   );
   const history = activities.filter(
-    (a) => (a.permits ?? []).length > 0 && !(a.permits ?? []).some(isPermitLive),
+    (a) =>
+      (a.permits ?? []).length > 0 &&
+      !(a.permits ?? []).some(isPermitLive) &&
+      !expiredIds.has(a.id),
   );
+
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["permit-register", projectId] });
@@ -149,6 +165,15 @@ function PermitsPage() {
               : "Read-only view · permit issuance is restricted to site managers and project admins."}
           </p>
         )}
+
+        {expired.length > 0 && (
+          <p className="mt-4 flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 px-4 py-3 text-xs font-bold uppercase tracking-widest text-alert">
+            <Clock size={14} /> {expired.length}{" "}
+            {expired.length === 1 ? "permit has" : "permits have"} expired without being
+            renewed or revoked — work must stop until re-issued.
+          </p>
+        )}
+
 
         {reg.isLoading && (
           <p className="mt-8 flex items-center gap-2 text-sm text-foreground/60">
@@ -282,7 +307,60 @@ function PermitsPage() {
                         </div>
                       ) : null
                     }
-                  />
+                  >
+                    <PermitHistory permits={a.permits ?? []} />
+                  </Row>
+
+                );
+              })}
+            </div>
+          )}
+        </Section>
+
+        {/* EXPIRED — needs attention */}
+        <Section title="Expired — Needs Attention" tone="red" count={expired.length}>
+          {expired.length === 0 ? (
+            <Empty text="No permits have lapsed without being renewed or revoked." />
+          ) : (
+            <div className="space-y-2">
+              {expired.map((a) => {
+                const lapsed = (a.permits ?? []).filter((p) => isPermitExpired(p));
+                return (
+                  <Row
+                    key={a.id}
+                    tone="red"
+                    title={a.description}
+                    meta={[
+                      a.work_zones?.name ?? null,
+                      ...lapsed.map(
+                        (p) =>
+                          `${hazardLabel(p.permit_type)} · lapsed ${
+                            p.valid_to ? new Date(p.valid_to).toLocaleString() : "—"
+                          }${p.issued_by_name ? ` · issued by ${p.issued_by_name}` : ""}`,
+                      ),
+                    ]}
+                    flags={a.high_risk_flags ?? []}
+                    action={
+                      canIssue ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setIssueTarget({
+                              kind: "activity",
+                              id: a.id,
+                              label: a.description,
+                              flags: a.high_risk_flags ?? [],
+                            })
+                          }
+                          className="rounded-md bg-alert px-3 py-1.5 text-[0.6rem] font-extrabold uppercase tracking-widest text-black"
+                        >
+                          Renew Permit
+                        </button>
+                      ) : null
+                    }
+                  >
+                    <PermitHistory permits={a.permits ?? []} />
+                  </Row>
                 );
               })}
             </div>
@@ -290,7 +368,7 @@ function PermitsPage() {
         </Section>
 
         {/* HISTORY */}
-        <Section title="Expired / Revoked" tone="grey" count={history.length}>
+        <Section title="Closed / Revoked" tone="grey" count={history.length}>
           {history.length === 0 ? (
             <Empty text="No closed permits yet." />
           ) : (
@@ -302,16 +380,19 @@ function PermitsPage() {
                   title={a.description}
                   meta={(a.permits ?? []).map(
                     (p) =>
-                      `${hazardLabel(p.permit_type)} · ${p.status} · ${
+                      `${hazardLabel(p.permit_type)} · ${LIFECYCLE_LABEL[permitLifecycle(p)]} · ${
                         p.valid_to ? new Date(p.valid_to).toLocaleString() : "—"
                       }`,
                   )}
                   flags={a.high_risk_flags ?? []}
-                />
+                >
+                  <PermitHistory permits={a.permits ?? []} />
+                </Row>
               ))}
             </div>
           )}
         </Section>
+
       </div>
 
       {issueTarget && issueTarget.kind === "activity" && (
@@ -332,6 +413,8 @@ function PermitsPage() {
   );
 }
 
+type Tone = "amber" | "green" | "grey" | "red";
+
 function Section({
   title,
   count,
@@ -340,12 +423,19 @@ function Section({
 }: {
   title: string;
   count: number;
-  tone: "amber" | "green" | "grey";
+  tone: Tone;
   children: React.ReactNode;
 }) {
   const color =
-    tone === "amber" ? "text-amber-300" : tone === "green" ? "text-emerald-300" : "text-foreground/50";
-  const Icon = tone === "amber" ? ShieldAlert : tone === "green" ? ShieldCheck : ShieldX;
+    tone === "amber"
+      ? "text-amber-300"
+      : tone === "green"
+        ? "text-emerald-300"
+        : tone === "red"
+          ? "text-alert"
+          : "text-foreground/50";
+  const Icon =
+    tone === "amber" ? ShieldAlert : tone === "green" ? ShieldCheck : tone === "red" ? Clock : ShieldX;
   return (
     <section className="mt-8">
       <h2
@@ -366,25 +456,87 @@ function Empty({ text }: { text: string }) {
   );
 }
 
+/** Expandable audit timeline for every permit attached to an activity. */
+function PermitHistory({ permits }: { permits: PermitRow[] }) {
+  const [open, setOpen] = useState(false);
+  const events = permits.flatMap((p) =>
+    (p.events ?? []).map((e) => ({ ...e, permit_type: p.permit_type })),
+  );
+  if (permits.length === 0) return null;
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1 text-[0.6rem] font-bold uppercase tracking-widest text-foreground/50 hover:text-foreground"
+      >
+        <ChevronDown
+          size={12}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
+        Permit history · {events.length}
+      </button>
+      {open && (
+        <ol className="mt-2 space-y-1.5 border-l border-white/15 pl-3">
+          {events.length === 0 && (
+            <li className="text-[0.65rem] text-foreground/40">
+              No audit entries recorded (permit predates the audit trail).
+            </li>
+          )}
+          {events.map((e) => (
+            <li key={e.id} className="text-[0.65rem] text-foreground/70">
+              <span
+                className={`font-mono uppercase tracking-widest ${
+                  e.event_type === "revoked"
+                    ? "text-alert"
+                    : e.event_type === "issued"
+                      ? "text-emerald-300"
+                      : "text-amber-300"
+                }`}
+              >
+                {e.event_type}
+              </span>{" "}
+              · {hazardLabel(e.permit_type)} · {new Date(e.created_at).toLocaleString()}
+              {e.actor_name ? ` · ${e.actor_name}` : ""}
+              {e.reason ? (
+                <span className="block text-foreground/50">“{e.reason}”</span>
+              ) : null}
+            </li>
+          ))}
+          {permits.map((p) => (
+            <li key={`state-${p.id}`} className="text-[0.6rem] uppercase tracking-widest text-foreground/40">
+              Current: {hazardLabel(p.permit_type)} · {LIFECYCLE_LABEL[permitLifecycle(p)]}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 function Row({
   title,
   meta,
   flags,
   action,
   tone = "amber",
+  children,
 }: {
   title: string;
   meta: Array<string | null>;
   flags: string[];
   action?: React.ReactNode;
-  tone?: "amber" | "green" | "grey";
+  tone?: Tone;
+  children?: React.ReactNode;
 }) {
   const border =
     tone === "amber"
       ? "border-amber-400/60"
       : tone === "green"
         ? "border-emerald-400/50"
-        : "border-white/10";
+        : tone === "red"
+          ? "border-alert"
+          : "border-white/10";
   return (
     <div
       className={`glass-panel flex flex-wrap items-start justify-between gap-3 border ${border} p-3`}
@@ -406,9 +558,11 @@ function Row({
             ))}
           </div>
         )}
+        {children}
       </div>
       {action}
     </div>
+
   );
 }
 

@@ -3,6 +3,18 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { HIGH_RISK_CATEGORIES } from "@/lib/high-risk";
 
+export type PermitEventRow = {
+  id: string;
+  permit_id: string | null;
+  activity_id: string | null;
+  event_type: string;
+  actor_id: string | null;
+  actor_name?: string | null;
+  reason: string | null;
+  metadata: Record<string, string | number | boolean | null> | null;
+  created_at: string;
+};
+
 export type PermitRow = {
   id: string;
   permit_type: string;
@@ -11,7 +23,9 @@ export type PermitRow = {
   valid_to: string | null;
   issued_by: string | null;
   issued_by_name?: string | null;
+  events?: PermitEventRow[];
 };
+
 
 export type UnlinkedPinRow = {
   id: string;
@@ -78,12 +92,22 @@ export const listPermitRegister = createServerFn({ method: "GET" })
       .limit(200);
     if (pErr) throw new Error(pErr.message);
 
-    // Resolve issuer + requester display names in one pass.
+    // Audit trail for every permit on this project.
+    const { data: events } = await context.supabase
+      .from("permit_events")
+      .select("id,permit_id,activity_id,event_type,actor_id,reason,metadata,created_at")
+      .eq("project_id", data.projectId)
+      .order("created_at", { ascending: true })
+      .limit(2000);
+    const eventRows = (events ?? []) as unknown as PermitEventRow[];
+
+    // Resolve issuer + requester + actor display names in one pass.
     const ids = new Set<string>();
     for (const a of rows) {
       if (a.subcontractor_id) ids.add(a.subcontractor_id);
       for (const p of a.permits ?? []) if (p.issued_by) ids.add(p.issued_by);
     }
+    for (const e of eventRows) if (e.actor_id) ids.add(e.actor_id);
     const names = new Map<string, string>();
     if (ids.size) {
       const { data: profs } = await context.supabase
@@ -92,9 +116,20 @@ export const listPermitRegister = createServerFn({ method: "GET" })
         .in("user_id", [...ids]);
       for (const p of profs ?? []) if (p.full_name) names.set(p.user_id, p.full_name);
     }
+
+    const byPermit = new Map<string, PermitEventRow[]>();
+    for (const e of eventRows) {
+      e.actor_name = e.actor_id ? (names.get(e.actor_id) ?? null) : null;
+      if (!e.permit_id) continue;
+      const list = byPermit.get(e.permit_id) ?? [];
+      list.push(e);
+      byPermit.set(e.permit_id, list);
+    }
+
     for (const a of rows) {
       for (const p of a.permits ?? []) {
         p.issued_by_name = p.issued_by ? (names.get(p.issued_by) ?? null) : null;
+        p.events = byPermit.get(p.id) ?? [];
       }
     }
 
@@ -106,6 +141,7 @@ export const listPermitRegister = createServerFn({ method: "GET" })
       unlinkedPins: (pins ?? []) as unknown as UnlinkedPinRow[],
     };
   });
+
 
 export const issueActivityPermit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -171,5 +207,20 @@ export const countOutstandingPermits = createServerFn({ method: "GET" })
       .neq("status", "archived");
     if (pErr) throw new Error(pErr.message);
 
-    return { outstanding: (actCount ?? 0) + (pinCount ?? 0) };
+    // Permits still marked active whose validity window has passed — expired
+    // work that nobody has renewed or revoked. Computed from valid_to, no cron.
+    const { count: expCount, error: eErr } = await context.supabase
+      .from("permits")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", data.projectId)
+      .eq("status", "active")
+      .not("valid_to", "is", null)
+      .lt("valid_to", new Date().toISOString());
+    if (eErr) throw new Error(eErr.message);
+
+    return {
+      outstanding: (actCount ?? 0) + (pinCount ?? 0),
+      expired: expCount ?? 0,
+    };
   });
+
