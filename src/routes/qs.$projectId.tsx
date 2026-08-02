@@ -7,6 +7,7 @@ import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { QsVerificationQueue } from "@/components/project/QsVerificationQueue";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
+import { countOutstandingPermits } from "@/lib/permits.functions";
 
 export const Route = createFileRoute("/qs/$projectId")({
   head: () => ({
