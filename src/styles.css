@@ -158,10 +158,6 @@
 }
 
 
-@keyframes shimmer-diagonal {
-  0% { transform: translateX(-150%) skewX(-20deg); }
-  100% { transform: translateX(200%) skewX(-20deg); }
-}
 @keyframes shimmer {
   0% { background-position: 0% 50%; }
   100% { background-position: 200% 50%; }
@@ -178,20 +174,7 @@
   100% { transform: translateY(360%); opacity: 0; }
 }
 
-@utility shimmer-btn {
-  position: relative;
-  overflow: hidden;
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.18) 45%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.18) 55%, transparent 70%);
-    transform: translateX(-150%) skewX(-20deg);
-    animation: shimmer-diagonal 3.2s ease-in-out infinite;
-    pointer-events: none;
-    border-radius: inherit;
-  }
-}
+
 
 @utility glass-panel {
   background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
