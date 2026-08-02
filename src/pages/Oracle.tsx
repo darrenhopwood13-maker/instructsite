@@ -166,6 +166,14 @@ const OraclePage = () => {
     }
     setProjectId(localProjectId);
 
+    if (!localProjectId) {
+      setError(
+        "No project selected. Open a project and use “Lock to Oracle” so answers stay scoped to that project's documents.",
+      );
+      setLoadingKey(null);
+      return;
+    }
+
     try {
       await ensureOracleSession();
       const result = await invokeOracle({
