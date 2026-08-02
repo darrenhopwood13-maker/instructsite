@@ -140,16 +140,18 @@ function pickKey(row: Record<string, unknown>, candidates: string[]): string | n
 function inferTrade(name: string): string {
   const n = name.toLowerCase();
   const trades: [string, string[]][] = [
-    ["Groundworks", ["ground", "excavat", "drain", "duct", "foundation", "slab", "substructure", "piling"]],
+    ["Groundworks", ["ground", "excavat", "drain", "foundation", "slab", "substructure", "piling"]],
     ["Concrete", ["concrete", "pour", "formwork", "rebar", "rc frame"]],
     ["Steelwork", ["steel", "frame", "beam", "column", "decking"]],
     ["Envelope", ["roof", "clad", "curtain", "window", "facade", "façade", "brick"]],
-    ["MEP", ["mep", "mechanical", "electrical", "plumb", "hvac", "sprinkler", "containment", "commission"]],
+    ["MEP", ["mep", "mechanical", "electrical", "plumb", "hvac", "duct", "sprinkler", "containment", "commission"]],
     ["Drylining", ["drylin", "partition", "plasterboard", "ceiling", "skim"]],
     ["Fit-out", ["fit out", "fit-out", "joinery", "floor finish", "decorate", "paint", "tiling"]],
     ["External Works", ["external", "landscap", "paving", "kerb", "road", "car park"]],
   ];
-  return trades.find(([, keys]) => keys.some((k) => n.includes(k)))?.[0] ?? "General";
+  // Word-ish boundary so "soundproofing" doesn't match "roof".
+  const hit = (k: string) => new RegExp(`(?<![a-z])${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i").test(n);
+  return trades.find(([, keys]) => keys.some(hit))?.[0] ?? "General";
 }
 
 function inferLocation(name: string): string {
