@@ -91,13 +91,16 @@ function DabsPage() {
   const [infoPinId, setInfoPinId] = useState<string | null>(null);
   const [operatives, setOperatives] = useState(1);
   const [taskNotes, setTaskNotes] = useState("");
+  const [activityDescription, setActivityDescription] = useState("");
   const [startTime, setStartTime] = useState(() => toLocalInput(new Date()));
   const [finishTime, setFinishTime] = useState(() =>
     toLocalInput(new Date(Date.now() + 8 * 3600 * 1000)),
   );
   const [busy, setBusy] = useState(false);
 
-  const detectedHazards = detectHazards(`${trade} ${taskNotes}`);
+  const detectedHazards = detectHazards(
+    `${trade} ${taskNotes} ${activityDescription}`,
+  );
   const willFlagPermit = detectedHazards.length > 0;
 
   const handleDrop = (coords: { xPct: number; yPct: number }) => {
@@ -131,6 +134,7 @@ function DabsPage() {
           yPct: pending.yPct,
           notes: taskNotes.trim() || undefined,
           highRiskFlags: detectedHazards,
+          activityDescription: activityDescription.trim() || undefined,
         },
       });
       if ((result as any)?.permit_required) {
@@ -142,6 +146,7 @@ function DabsPage() {
       }
       setPending(null);
       setTaskNotes("");
+      setActivityDescription("");
       qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to save pin.");
@@ -185,6 +190,13 @@ function DabsPage() {
             className="inline-flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-alert hover:bg-alert hover:text-black transition-colors"
           >
             <ClipboardList size={14} /> Subcontractors Pack
+          </Link>
+          <Link
+            to="/permits/$projectId"
+            params={{ projectId }}
+            className="ml-2 inline-flex items-center gap-2 rounded-md border-2 border-amber-400 bg-amber-400/10 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-amber-300 transition-colors hover:bg-amber-400 hover:text-black"
+          >
+            <ShieldAlert size={14} /> Permit Register
           </Link>
         </div>
 
@@ -431,6 +443,20 @@ function DabsPage() {
                 placeholder="e.g. Welding steel brackets on Level 3 scaffold near riser shaft."
                 className="mt-1 w-full rounded-md border border-white/15 bg-black/40 px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-alert"
               />
+            </label>
+            <label className="mt-3 block">
+              <span className="text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+                Activity / Paper Briefing (goes to the permit register)
+              </span>
+              <input
+                value={activityDescription}
+                onChange={(e) => setActivityDescription(e.target.value)}
+                placeholder="e.g. Hot works — welding brackets, Level 3 riser"
+                className="mt-1 w-full rounded-md border border-white/15 bg-black/40 px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-alert"
+              />
+              <span className="mt-1 block text-[0.6rem] text-foreground/40">
+                Leave blank to reuse the trade package and task description.
+              </span>
             </label>
             {willFlagPermit && (
               <p className="mt-2 flex items-start gap-1.5 rounded-md border-2 border-amber-400 bg-amber-400/10 px-2.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300">

@@ -31,6 +31,7 @@ import {
   hazardLabel,
 } from "@/lib/high-risk";
 import { countOpenSnagsForProject } from "@/lib/snags.functions";
+import { countOutstandingPermits } from "@/lib/permits.functions";
 import { rememberProject } from "@/lib/last-project";
 
 
@@ -56,6 +57,13 @@ function ProjectDetail() {
     queryKey: ["open-snags", projectId],
     queryFn: () => openSnagsFn({ data: { projectId } }),
     enabled: ready,
+  });
+  const permitsCountFn = useServerFn(countOutstandingPermits);
+  const permitsCount = useQuery({
+    queryKey: ["permits-outstanding", projectId],
+    queryFn: () => permitsCountFn({ data: { projectId } }),
+    enabled: ready,
+    refetchInterval: 30_000,
   });
   const rolesFn = useServerFn(getMyRoles);
   const drawingsFn = useServerFn(listProjectDrawings);
@@ -202,6 +210,18 @@ function ProjectDetail() {
               className="btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
             >
               <ClipboardList size={14} /> DABS
+            </Link>
+            <Link
+              to="/permits/$projectId"
+              params={{ projectId }}
+              className="btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+            >
+              <ShieldAlert size={14} /> Permits
+              {(permitsCount.data?.outstanding ?? 0) > 0 && (
+                <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[0.65rem] font-bold text-amber-300">
+                  {permitsCount.data?.outstanding}
+                </span>
+              )}
             </Link>
             <Link
               to="/snags"

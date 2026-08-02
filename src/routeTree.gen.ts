@@ -37,6 +37,7 @@ import { Route as QsProjectIdRouteImport } from './routes/qs.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as ProgrammeProjectIdRouteImport } from './routes/programme.$projectId'
+import { Route as PermitsProjectIdRouteImport } from './routes/permits.$projectId'
 import { Route as OrganisationRestRouteImport } from './routes/organisation.$rest'
 import { Route as OrgNewRouteImport } from './routes/org.new'
 import { Route as OrgOrgIdRouteImport } from './routes/org.$orgId'
@@ -201,6 +202,11 @@ const ProgrammeProjectIdRoute = ProgrammeProjectIdRouteImport.update({
   path: '/programme/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PermitsProjectIdRoute = PermitsProjectIdRouteImport.update({
+  id: '/permits/$projectId',
+  path: '/permits/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrganisationRestRoute = OrganisationRestRouteImport.update({
   id: '/$rest',
   path: '/$rest',
@@ -351,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/org/$orgId': typeof OrgOrgIdRouteWithChildren
   '/org/new': typeof OrgNewRoute
   '/organisation/$rest': typeof OrganisationRestRoute
+  '/permits/$projectId': typeof PermitsProjectIdRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -403,6 +410,7 @@ export interface FileRoutesByTo {
   '/my-diary/$projectId': typeof MyDiaryProjectIdRoute
   '/org/new': typeof OrgNewRoute
   '/organisation/$rest': typeof OrganisationRestRoute
+  '/permits/$projectId': typeof PermitsProjectIdRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -457,6 +465,7 @@ export interface FileRoutesById {
   '/org/$orgId': typeof OrgOrgIdRouteWithChildren
   '/org/new': typeof OrgNewRoute
   '/organisation/$rest': typeof OrganisationRestRoute
+  '/permits/$projectId': typeof PermitsProjectIdRoute
   '/programme/$projectId': typeof ProgrammeProjectIdRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -512,6 +521,7 @@ export interface FileRouteTypes {
     | '/org/$orgId'
     | '/org/new'
     | '/organisation/$rest'
+    | '/permits/$projectId'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -564,6 +574,7 @@ export interface FileRouteTypes {
     | '/my-diary/$projectId'
     | '/org/new'
     | '/organisation/$rest'
+    | '/permits/$projectId'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -617,6 +628,7 @@ export interface FileRouteTypes {
     | '/org/$orgId'
     | '/org/new'
     | '/organisation/$rest'
+    | '/permits/$projectId'
     | '/programme/$projectId'
     | '/projects/$projectId'
     | '/projects/new'
@@ -670,6 +682,7 @@ export interface RootRouteChildren {
   MyDiaryProjectIdRoute: typeof MyDiaryProjectIdRoute
   OrgOrgIdRoute: typeof OrgOrgIdRouteWithChildren
   OrgNewRoute: typeof OrgNewRoute
+  PermitsProjectIdRoute: typeof PermitsProjectIdRoute
   ProgrammeProjectIdRoute: typeof ProgrammeProjectIdRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
@@ -893,6 +906,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgrammeProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/permits/$projectId': {
+      id: '/permits/$projectId'
+      path: '/permits/$projectId'
+      fullPath: '/permits/$projectId'
+      preLoaderRoute: typeof PermitsProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/organisation/$rest': {
       id: '/organisation/$rest'
       path: '/$rest'
@@ -1110,6 +1130,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyDiaryProjectIdRoute: MyDiaryProjectIdRoute,
   OrgOrgIdRoute: OrgOrgIdRouteWithChildren,
   OrgNewRoute: OrgNewRoute,
+  PermitsProjectIdRoute: PermitsProjectIdRoute,
   ProgrammeProjectIdRoute: ProgrammeProjectIdRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
