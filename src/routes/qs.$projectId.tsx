@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { ArrowLeft, MapPin, ShieldAlert } from "lucide-react";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { QsVerificationQueue } from "@/components/project/QsVerificationQueue";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
@@ -96,6 +96,8 @@ function QsProjectPage() {
           )}
         </div>
 
+        {allowLoad && <PermitAlertStrip projectId={projectId} />}
+
         {allowLoad && (
           <div className="mt-8">
             <QsVerificationQueue projectId={projectId} />
@@ -103,5 +105,25 @@ function QsProjectPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function PermitAlertStrip({ projectId }: { projectId: string }) {
+  const countFn = useServerFn(countOutstandingPermits);
+  const q = useQuery({
+    queryKey: ["permits-outstanding", projectId],
+    queryFn: () => countFn({ data: { projectId } }),
+    refetchInterval: 30_000,
+  });
+  const n = q.data?.outstanding ?? 0;
+  if (n === 0) return null;
+  return (
+    <Link
+      to="/permits/$projectId"
+      params={{ projectId }}
+      className="mt-6 flex items-center gap-2 rounded-md border-2 border-amber-400 bg-amber-400/10 px-4 py-3 text-xs font-bold uppercase tracking-widest text-amber-300 hover:bg-amber-400/20"
+    >
+      <ShieldAlert size={14} /> {n} high-risk {n === 1 ? "activity is" : "activities are"} awaiting a permit to work — view register
+    </Link>
   );
 }
