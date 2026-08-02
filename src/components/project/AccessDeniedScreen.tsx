@@ -1,4 +1,4 @@
-import { Link, useParams, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 
 export function AccessDeniedScreen({ message }: { message?: string }) {
