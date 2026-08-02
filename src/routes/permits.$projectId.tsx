@@ -298,7 +298,10 @@ function PermitsPage() {
                         </div>
                       ) : null
                     }
-                  />
+                  >
+                    <PermitHistory permits={a.permits ?? []} />
+                  </Row>
+
                 );
               })}
             </div>
