@@ -19,6 +19,8 @@ export const createLivePin = createServerFn({ method: "POST" })
         yPct: z.number().min(0).max(1),
         notes: z.string().trim().max(1000).optional(),
         highRiskFlags: z.array(z.string().trim().max(64)).max(20).optional(),
+        /** Paper-briefing description recorded against the activities register. */
+        activityDescription: z.string().trim().max(2000).optional(),
       })
       .parse(i),
   )
@@ -43,7 +45,40 @@ export const createLivePin = createServerFn({ method: "POST" })
       .select("id,permit_required,permit_status,high_risk_flags,hazard_scanned")
       .single();
     if (error) throw new Error(error.message);
-    return row;
+
+    // Mirror the pin into the activities register (the paper briefing record),
+    // so the permit trigger + permit register have something to hang off.
+    const description =
+      data.activityDescription?.trim() ||
+      [data.tradePackage?.trim(), data.notes?.trim()].filter(Boolean).join(" — ") ||
+      "Site activity briefing";
+
+    const { data: act, error: aErr } = await context.supabase
+      .from("activities")
+      .insert({
+        project_id: data.projectId,
+        subcontractor_id: context.userId,
+        drawing_id: data.drawingId ?? null,
+        zone_id: data.zoneId ?? null,
+        description,
+        // Use the flags the DB trigger actually derived, not the client's guess.
+        high_risk_flags: (row?.high_risk_flags ?? data.highRiskFlags ?? []) as string[],
+      })
+      .select("id,permit_status")
+      .single();
+
+    if (aErr) {
+      // Never block the pin drop on the register write.
+      console.error("[live-pin] activity register write failed:", aErr.message);
+      return row;
+    }
+
+    await (context.supabase as any)
+      .from("live_site_activity")
+      .update({ activity_id: act.id })
+      .eq("id", row.id);
+
+    return { ...row, activity_id: act.id, activity_permit_status: act.permit_status };
   });
 
 export const listLivePins = createServerFn({ method: "GET" })
