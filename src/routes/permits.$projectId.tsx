@@ -305,8 +305,58 @@ function PermitsPage() {
           )}
         </Section>
 
+        {/* EXPIRED — needs attention */}
+        <Section title="Expired — Needs Attention" tone="red" count={expired.length}>
+          {expired.length === 0 ? (
+            <Empty text="No permits have lapsed without being renewed or revoked." />
+          ) : (
+            <div className="space-y-2">
+              {expired.map((a) => {
+                const lapsed = (a.permits ?? []).filter((p) => isPermitExpired(p));
+                return (
+                  <Row
+                    key={a.id}
+                    tone="red"
+                    title={a.description}
+                    meta={[
+                      a.work_zones?.name ?? null,
+                      ...lapsed.map(
+                        (p) =>
+                          `${hazardLabel(p.permit_type)} · lapsed ${
+                            p.valid_to ? new Date(p.valid_to).toLocaleString() : "—"
+                          }${p.issued_by_name ? ` · issued by ${p.issued_by_name}` : ""}`,
+                      ),
+                    ]}
+                    flags={a.high_risk_flags ?? []}
+                    action={
+                      canIssue ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setIssueTarget({
+                              kind: "activity",
+                              id: a.id,
+                              label: a.description,
+                              flags: a.high_risk_flags ?? [],
+                            })
+                          }
+                          className="rounded-md bg-alert px-3 py-1.5 text-[0.6rem] font-extrabold uppercase tracking-widest text-black"
+                        >
+                          Renew Permit
+                        </button>
+                      ) : null
+                    }
+                  >
+                    <PermitHistory permits={a.permits ?? []} />
+                  </Row>
+                );
+              })}
+            </div>
+          )}
+        </Section>
+
         {/* HISTORY */}
-        <Section title="Expired / Revoked" tone="grey" count={history.length}>
+        <Section title="Closed / Revoked" tone="grey" count={history.length}>
           {history.length === 0 ? (
             <Empty text="No closed permits yet." />
           ) : (
@@ -318,16 +368,19 @@ function PermitsPage() {
                   title={a.description}
                   meta={(a.permits ?? []).map(
                     (p) =>
-                      `${hazardLabel(p.permit_type)} · ${p.status} · ${
+                      `${hazardLabel(p.permit_type)} · ${LIFECYCLE_LABEL[permitLifecycle(p)]} · ${
                         p.valid_to ? new Date(p.valid_to).toLocaleString() : "—"
                       }`,
                   )}
                   flags={a.high_risk_flags ?? []}
-                />
+                >
+                  <PermitHistory permits={a.permits ?? []} />
+                </Row>
               ))}
             </div>
           )}
         </Section>
+
       </div>
 
       {issueTarget && issueTarget.kind === "activity" && (
