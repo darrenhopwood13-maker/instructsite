@@ -3,6 +3,18 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { HIGH_RISK_CATEGORIES } from "@/lib/high-risk";
 
+export type PermitEventRow = {
+  id: string;
+  permit_id: string | null;
+  activity_id: string | null;
+  event_type: string;
+  actor_id: string | null;
+  actor_name?: string | null;
+  reason: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
 export type PermitRow = {
   id: string;
   permit_type: string;
@@ -11,7 +23,9 @@ export type PermitRow = {
   valid_to: string | null;
   issued_by: string | null;
   issued_by_name?: string | null;
+  events?: PermitEventRow[];
 };
+
 
 export type UnlinkedPinRow = {
   id: string;
