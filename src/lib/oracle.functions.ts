@@ -380,6 +380,8 @@ export const askProjectOracle = createServerFn({ method: "POST" })
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
 
+    await assertProjectMember(context.supabase, context.userId, data.projectId);
+
     const keywords = extractKeywords(data.question);
     const { snippets, docs } = await retrieveSnippets(
       context.supabase,
