@@ -207,5 +207,20 @@ export const countOutstandingPermits = createServerFn({ method: "GET" })
       .neq("status", "archived");
     if (pErr) throw new Error(pErr.message);
 
-    return { outstanding: (actCount ?? 0) + (pinCount ?? 0) };
+    // Permits still marked active whose validity window has passed — expired
+    // work that nobody has renewed or revoked. Computed from valid_to, no cron.
+    const { count: expCount, error: eErr } = await context.supabase
+      .from("permits")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", data.projectId)
+      .eq("status", "active")
+      .not("valid_to", "is", null)
+      .lt("valid_to", new Date().toISOString());
+    if (eErr) throw new Error(eErr.message);
+
+    return {
+      outstanding: (actCount ?? 0) + (pinCount ?? 0),
+      expired: expCount ?? 0,
+    };
   });
+
