@@ -401,6 +401,8 @@ function PermitsPage() {
   );
 }
 
+type Tone = "amber" | "green" | "grey" | "red";
+
 function Section({
   title,
   count,
@@ -409,12 +411,19 @@ function Section({
 }: {
   title: string;
   count: number;
-  tone: "amber" | "green" | "grey";
+  tone: Tone;
   children: React.ReactNode;
 }) {
   const color =
-    tone === "amber" ? "text-amber-300" : tone === "green" ? "text-emerald-300" : "text-foreground/50";
-  const Icon = tone === "amber" ? ShieldAlert : tone === "green" ? ShieldCheck : ShieldX;
+    tone === "amber"
+      ? "text-amber-300"
+      : tone === "green"
+        ? "text-emerald-300"
+        : tone === "red"
+          ? "text-alert"
+          : "text-foreground/50";
+  const Icon =
+    tone === "amber" ? ShieldAlert : tone === "green" ? ShieldCheck : tone === "red" ? Clock : ShieldX;
   return (
     <section className="mt-8">
       <h2
@@ -435,25 +444,87 @@ function Empty({ text }: { text: string }) {
   );
 }
 
+/** Expandable audit timeline for every permit attached to an activity. */
+function PermitHistory({ permits }: { permits: PermitRow[] }) {
+  const [open, setOpen] = useState(false);
+  const events = permits.flatMap((p) =>
+    (p.events ?? []).map((e) => ({ ...e, permit_type: p.permit_type })),
+  );
+  if (permits.length === 0) return null;
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1 text-[0.6rem] font-bold uppercase tracking-widest text-foreground/50 hover:text-foreground"
+      >
+        <ChevronDown
+          size={12}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
+        Permit history · {events.length}
+      </button>
+      {open && (
+        <ol className="mt-2 space-y-1.5 border-l border-white/15 pl-3">
+          {events.length === 0 && (
+            <li className="text-[0.65rem] text-foreground/40">
+              No audit entries recorded (permit predates the audit trail).
+            </li>
+          )}
+          {events.map((e) => (
+            <li key={e.id} className="text-[0.65rem] text-foreground/70">
+              <span
+                className={`font-mono uppercase tracking-widest ${
+                  e.event_type === "revoked"
+                    ? "text-alert"
+                    : e.event_type === "issued"
+                      ? "text-emerald-300"
+                      : "text-amber-300"
+                }`}
+              >
+                {e.event_type}
+              </span>{" "}
+              · {hazardLabel(e.permit_type)} · {new Date(e.created_at).toLocaleString()}
+              {e.actor_name ? ` · ${e.actor_name}` : ""}
+              {e.reason ? (
+                <span className="block text-foreground/50">“{e.reason}”</span>
+              ) : null}
+            </li>
+          ))}
+          {permits.map((p) => (
+            <li key={`state-${p.id}`} className="text-[0.6rem] uppercase tracking-widest text-foreground/40">
+              Current: {hazardLabel(p.permit_type)} · {LIFECYCLE_LABEL[permitLifecycle(p)]}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 function Row({
   title,
   meta,
   flags,
   action,
   tone = "amber",
+  children,
 }: {
   title: string;
   meta: Array<string | null>;
   flags: string[];
   action?: React.ReactNode;
-  tone?: "amber" | "green" | "grey";
+  tone?: Tone;
+  children?: React.ReactNode;
 }) {
   const border =
     tone === "amber"
       ? "border-amber-400/60"
       : tone === "green"
         ? "border-emerald-400/50"
-        : "border-white/10";
+        : tone === "red"
+          ? "border-alert"
+          : "border-white/10";
   return (
     <div
       className={`glass-panel flex flex-wrap items-start justify-between gap-3 border ${border} p-3`}
@@ -475,9 +546,11 @@ function Row({
             ))}
           </div>
         )}
+        {children}
       </div>
       {action}
     </div>
+
   );
 }
 
