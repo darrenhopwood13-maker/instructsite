@@ -142,7 +142,7 @@ export function ZoneMap({
                       label: `${selected.name}${selected.level ? ` · L${selected.level}` : ""}`,
                     })
                   }
-                  className="glass-orange inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+                  className="btn-primary inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
                 >
                   <Sparkles size={10} /> Lock to Oracle
                 </button>
@@ -161,7 +161,7 @@ export function ZoneMap({
                       label: `${selected.name}${selected.level ? ` · L${selected.level}` : ""}`,
                     })
                   }
-                  className="glass-btn inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+                  className="btn-secondary inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
                 >
                   Ask Oracle
                 </Link>

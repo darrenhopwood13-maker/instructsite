@@ -560,7 +560,7 @@ export function TradeDirectoryPanel({
         <button
           type="submit"
           disabled={busy || !companyName.trim() || !inviteEmail.trim() || packages.length === 0}
-          className="glass-orange inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.6rem] uppercase tracking-widest disabled:opacity-40"
+          className="btn-primary inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.6rem] uppercase tracking-widest disabled:opacity-40"
         >
           <PlusCircle size={11} /> Generate Subcontractor Access
         </button>

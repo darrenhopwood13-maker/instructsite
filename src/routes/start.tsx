@@ -113,7 +113,7 @@ function StartPage() {
             you straight to the real screen. Want the deep dive? Read <Link to="/manual" className="underline decoration-alert underline-offset-2">the full manual</Link>.
           </p>
           <div className="mt-6 flex justify-center print:hidden">
-            <a href="#m1" className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm uppercase tracking-widest">
+            <a href="#m1" className="btn-primary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm uppercase tracking-widest">
               Start
             </a>
           </div>
@@ -202,7 +202,7 @@ function StartPage() {
                       href={resolveDeepLink(m.deepLink, latestProjectId)}
                       target="_blank"
                       rel="noreferrer"
-                      className="glass-orange inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
+                      className="btn-primary inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
                     >
                       Try it now <ExternalLink size={12} />
                     </a>

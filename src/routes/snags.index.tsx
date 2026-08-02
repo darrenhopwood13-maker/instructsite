@@ -113,7 +113,7 @@ function SnagsPage() {
           <button
             type="button"
             onClick={() => navigate({ to: "/snags/new" })}
-            className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-6 py-4 text-sm uppercase tracking-wider"
+            className="btn-primary inline-flex items-center gap-2 rounded-xl px-6 py-4 text-sm uppercase tracking-wider"
           >
             <Camera className="h-5 w-5" />
             New Snag
@@ -156,14 +156,14 @@ function SnagsPage() {
               <Loader2 className="h-4 w-4 animate-spin" /> Loading snags…
             </div>
           ) : (snags.data ?? []).length === 0 ? (
-            <div className="glass-btn rounded-2xl border border-white/10 p-10 text-center">
+            <div className="btn-secondary rounded-2xl border border-white/10 p-10 text-center">
               <Camera className="mx-auto h-10 w-10 text-foreground/40" />
               <p className="mt-3 text-sm uppercase tracking-widest text-foreground/60">No snags yet</p>
               <p className="mt-1 text-xs text-muted-foreground">Snap a photo of a defect to get your first report.</p>
               <button
                 type="button"
                 onClick={() => navigate({ to: "/snags/new" })}
-                className="glass-orange mt-6 inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm uppercase tracking-wider"
+                className="btn-primary mt-6 inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm uppercase tracking-wider"
               >
                 <Plus className="h-4 w-4" /> Add first snag
               </button>
@@ -175,7 +175,7 @@ function SnagsPage() {
                   key={s.id}
                   to="/snags/$snagId"
                   params={{ snagId: s.id }}
-                  className="glass-btn group overflow-hidden rounded-2xl border border-white/10 transition hover:border-alert/50"
+                  className="btn-secondary group overflow-hidden rounded-2xl border border-white/10 transition hover:border-alert/50"
                 >
                   <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/40">
                     {s.photoUrl ? (

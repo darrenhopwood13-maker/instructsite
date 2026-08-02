@@ -88,7 +88,7 @@ function SnagDetail() {
     return (
       <div className="mx-auto max-w-2xl px-6 py-20 text-center">
         <p className="text-muted-foreground">Snag not found.</p>
-        <Link to="/snags" className="glass-btn mt-4 inline-flex rounded-lg px-4 py-2 text-xs uppercase tracking-widest">
+        <Link to="/snags" className="btn-secondary mt-4 inline-flex rounded-lg px-4 py-2 text-xs uppercase tracking-widest">
           Back
         </Link>
       </div>
@@ -134,7 +134,7 @@ function SnagDetail() {
               </button>
             )}
 
-            <div className="glass-btn mt-5 rounded-xl border border-white/10 p-4">
+            <div className="btn-secondary mt-5 rounded-xl border border-white/10 p-4">
               <p className="text-[0.65rem] uppercase tracking-widest text-foreground/60">Status</p>
               <select
                 value={snag.status}
@@ -172,7 +172,7 @@ function SnagDetail() {
               <button
                 type="button"
                 onClick={() => setReportOpen(true)}
-                className="glass-orange inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
+                className="btn-primary inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
               >
                 <FileText className="h-4 w-4" /> View Full Report
               </button>
@@ -210,7 +210,7 @@ function SnagDetail() {
                   type="button"
                   disabled={posting || !comment.trim()}
                   onClick={sendComment}
-                  className="glass-orange inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-widest disabled:opacity-50"
+                  className="btn-primary inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-widest disabled:opacity-50"
                 >
                   {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   Post

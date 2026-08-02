@@ -65,7 +65,7 @@ function ProjectsPage() {
           {canCreate && (
             <Link
               to="/projects/new"
-              className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
+              className="btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
             >
               <Plus size={16} /> New Project
             </Link>

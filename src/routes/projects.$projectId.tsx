@@ -199,14 +199,14 @@ function ProjectDetail() {
             <Link
               to="/dabs/$projectId"
               params={{ projectId }}
-              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+              className="btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
             >
               <ClipboardList size={14} /> DABS
             </Link>
             <Link
               to="/snags"
               search={{ project: projectId }}
-              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+              className="btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
             >
               <Camera size={14} /> Open Snags
               <span className="rounded-full bg-alert/20 px-2 py-0.5 text-[0.65rem] text-alert">
@@ -216,7 +216,7 @@ function ProjectDetail() {
             <Link
               to="/programme/$projectId"
               params={{ projectId }}
-              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+              className="btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
             >
               <CalendarDays size={14} /> Randall Diary
             </Link>
@@ -224,7 +224,7 @@ function ProjectDetail() {
               <Link
                 to="/qs/$projectId"
                 params={{ projectId }}
-                className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+                className="btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
               >
                 <ClipboardCheck size={14} /> QS Verification
               </Link>
@@ -233,7 +233,7 @@ function ProjectDetail() {
               <Link
                 to="/site-manager/$projectId"
                 params={{ projectId }}
-                className="glass-orange inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+                className="btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
               >
                 <ShieldAlert size={14} /> Site Manager
               </Link>

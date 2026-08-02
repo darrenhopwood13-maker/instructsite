@@ -134,7 +134,7 @@ function NewSnagPage() {
           New Snag
         </h1>
 
-        <div className="glass-btn mt-6 rounded-xl border border-white/10 p-4">
+        <div className="btn-secondary mt-6 rounded-xl border border-white/10 p-4">
           <label
             htmlFor="snag-project"
             className="text-[0.65rem] uppercase tracking-widest text-foreground/60"
@@ -162,7 +162,7 @@ function NewSnagPage() {
         </div>
 
         {!previewUrl && ready && (
-          <div className="glass-btn mt-8 rounded-2xl border border-dashed border-white/20 p-10 text-center">
+          <div className="btn-secondary mt-8 rounded-2xl border border-dashed border-white/20 p-10 text-center">
             <Camera className="mx-auto h-12 w-12 text-foreground/50" />
             <p className="mt-4 text-sm uppercase tracking-widest text-foreground/70">
               Photograph the defect
@@ -174,14 +174,14 @@ function NewSnagPage() {
               <button
                 type="button"
                 onClick={() => cameraRef.current?.click()}
-                className="glass-orange inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm uppercase tracking-widest"
+                className="btn-primary inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm uppercase tracking-widest"
               >
                 <Camera className="h-4 w-4" /> Take Photo
               </button>
               <button
                 type="button"
                 onClick={() => inputRef.current?.click()}
-                className="glass-btn inline-flex items-center gap-2 rounded-lg border border-white/15 px-5 py-3 text-sm uppercase tracking-widest"
+                className="btn-secondary inline-flex items-center gap-2 rounded-lg border border-white/15 px-5 py-3 text-sm uppercase tracking-widest"
               >
                 Upload from device
               </button>
@@ -213,7 +213,7 @@ function NewSnagPage() {
 
             <div>
               {loading && (
-                <div className="glass-btn flex items-center gap-3 rounded-2xl border border-white/10 p-6">
+                <div className="btn-secondary flex items-center gap-3 rounded-2xl border border-white/10 p-6">
                   <Loader2 className="h-5 w-5 animate-spin text-alert" />
                   <div>
                     <p className="text-sm uppercase tracking-widest text-foreground">The Foreman is inspecting…</p>
@@ -233,7 +233,7 @@ function NewSnagPage() {
                       setPreviewUrl(null);
                       setError(null);
                     }}
-                    className="glass-btn mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-xs uppercase tracking-widest"
+                    className="btn-secondary mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-xs uppercase tracking-widest"
                   >
                     Try another photo
                   </button>
@@ -248,7 +248,7 @@ function NewSnagPage() {
                       type="button"
                       disabled={saving || !projectId}
                       onClick={handleSave}
-                      className="glass-orange inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm uppercase tracking-widest disabled:opacity-50"
+                      className="btn-primary inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm uppercase tracking-widest disabled:opacity-50"
                     >
                       {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                       Save snag
@@ -307,12 +307,12 @@ export function ReportView({ report }: { report: SnagReportT }) {
         </div>
       </div>
 
-      <div className="glass-btn rounded-xl border border-white/10 p-4">
+      <div className="btn-secondary rounded-xl border border-white/10 p-4">
         <p className="text-xs uppercase tracking-widest text-foreground/60">Description</p>
         <p className="mt-2 text-sm leading-relaxed text-foreground/90">{report.description}</p>
       </div>
 
-      <div className="glass-btn rounded-xl border border-white/10 p-4">
+      <div className="btn-secondary rounded-xl border border-white/10 p-4">
         <p className="text-xs uppercase tracking-widest text-foreground/60">Root cause</p>
         <p className="mt-2 text-sm leading-relaxed text-foreground/90">{report.cause}</p>
       </div>

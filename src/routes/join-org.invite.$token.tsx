@@ -87,7 +87,7 @@ function AcceptInvitePage() {
           <button
             type="button"
             onClick={accept}
-            className="glass-orange shimmer-btn mt-6 inline-flex rounded-xl px-6 py-3 text-sm uppercase tracking-wider"
+            className="btn-primary mt-6 inline-flex rounded-xl px-6 py-3 text-sm uppercase tracking-wider"
           >
             Accept Invite
           </button>

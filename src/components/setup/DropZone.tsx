@@ -380,7 +380,7 @@ export function DropZone({
               <button
                 type="button"
                 onClick={() => packDup.resolve("replace")}
-                className="glass-orange rounded-md px-3 py-2 text-xs uppercase tracking-widest"
+                className="btn-primary rounded-md px-3 py-2 text-xs uppercase tracking-widest"
               >
                 Replace existing sheets
               </button>
@@ -435,7 +435,7 @@ export function DropZone({
               <button
                 type="button"
                 onClick={() => dup.resolve("revision", dup.matches[0].id)}
-                className="glass-orange rounded-md px-3 py-2 text-xs uppercase tracking-widest"
+                className="btn-primary rounded-md px-3 py-2 text-xs uppercase tracking-widest"
               >
                 Replace as new revision
               </button>

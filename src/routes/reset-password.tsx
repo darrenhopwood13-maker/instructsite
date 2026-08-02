@@ -118,7 +118,7 @@ function ResetPasswordPage() {
               <button
                 type="button"
                 onClick={() => navigate({ to: nextPath ?? "/auth", replace: true })}
-                className="glass-orange shimmer-btn inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
+                className="btn-primary inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
               >
                 <ArrowRight size={14} />
                 {nextPath ? "Continue" : "Back to sign in"}
@@ -168,7 +168,7 @@ function ResetPasswordPage() {
                 <button
                   type="submit"
                   disabled={busy || !hasRecoveryLink}
-                  className="glass-orange shimmer-btn inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider disabled:opacity-50"
+                  className="btn-primary inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider disabled:opacity-50"
                 >
                   {busy ? <Loader2 className="animate-spin" size={14} /> : <ArrowRight size={14} />}
                   Update password

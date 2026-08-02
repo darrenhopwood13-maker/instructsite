@@ -111,7 +111,7 @@ function OrgDetailPage() {
             <Link
               to="/org/$orgId/edit"
               params={{ orgId }}
-              className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+              className="btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
             >
               <Pencil size={14} /> Edit
             </Link>
@@ -184,7 +184,7 @@ function OrgDetailPage() {
             {(members.data ?? []).map((m) => (
               <div
                 key={m.id}
-                className="glass-btn flex items-center justify-between rounded-xl border border-white/10 p-3"
+                className="btn-secondary flex items-center justify-between rounded-xl border border-white/10 p-3"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm text-foreground">

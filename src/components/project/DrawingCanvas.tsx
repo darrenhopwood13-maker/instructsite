@@ -309,7 +309,7 @@ export function DrawingCanvas({
               <button
                 type="button"
                 onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
-                className="glass-orange inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+                className="btn-primary inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
               >
                 <Sparkles size={10} /> Lock to Oracle
               </button>
@@ -317,7 +317,7 @@ export function DrawingCanvas({
                 to="/oracle"
                 search={{ drawingId: selected.id, label } as never}
                 onClick={() => onLockOracle({ kind: "drawing", id: selected.id, label })}
-                className="glass-btn inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
+                className="btn-secondary inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-1 text-[0.6rem] uppercase tracking-widest"
               >
                 Ask Oracle
               </Link>

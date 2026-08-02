@@ -163,7 +163,7 @@ function EditOrgPage() {
             <Link
               to="/org/$orgId"
               params={{ orgId }}
-              className="glass-btn inline-flex rounded-xl px-4 py-2.5 text-sm uppercase tracking-wider"
+              className="btn-secondary inline-flex rounded-xl px-4 py-2.5 text-sm uppercase tracking-wider"
             >
               Back to Organisation
             </Link>
@@ -270,14 +270,14 @@ function EditOrgPage() {
             <Link
               to="/org/$orgId"
               params={{ orgId }}
-              className="glass-btn rounded-xl px-4 py-2.5 text-sm uppercase tracking-wider"
+              className="btn-secondary rounded-xl px-4 py-2.5 text-sm uppercase tracking-wider"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={!canSubmit || !isOwner}
-              className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm uppercase tracking-wider disabled:opacity-40"
+              className="btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm uppercase tracking-wider disabled:opacity-40"
             >
               {saving ? (
                 <>
@@ -514,7 +514,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
                   type="button"
                   onClick={() => resendInvite(i.id)}
                   disabled={rowBusy === i.id}
-                  className="glass-btn inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.65rem] uppercase tracking-widest disabled:opacity-50"
+                  className="btn-secondary inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.65rem] uppercase tracking-widest disabled:opacity-50"
                   title="Resend invite email"
                 >
                   <RefreshCw size={11} className={rowBusy === i.id ? "animate-spin" : ""} />
@@ -523,7 +523,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
                 <button
                   type="button"
                   onClick={() => copyLink(i.token)}
-                  className="glass-btn inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.65rem] uppercase tracking-widest"
+                  className="btn-secondary inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.65rem] uppercase tracking-widest"
                   title="Copy invite link"
                 >
                   {copied === i.token ? <Check size={11} /> : <Copy size={11} />}
@@ -568,7 +568,7 @@ function MembersPanel({ orgId }: { orgId: string }) {
           <button
             type="submit"
             disabled={busy}
-            className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs uppercase tracking-wider disabled:opacity-40"
+            className="btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs uppercase tracking-wider disabled:opacity-40"
           >
             {busy ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />}
             Send Invite

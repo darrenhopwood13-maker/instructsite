@@ -138,7 +138,7 @@ function OrgPage() {
             </div>
             <Link
               to="/org/new"
-              className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
+              className="btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
             >
               <Plus size={16} /> New Organisation
             </Link>
@@ -257,7 +257,7 @@ function OrgPage() {
             {claimOrgs.map((o) => (
               <div
                 key={o.id}
-                className="glass-btn flex items-center justify-between rounded-xl border border-white/10 p-4"
+                className="btn-secondary flex items-center justify-between rounded-xl border border-white/10 p-4"
               >
                 <div>
                   <p className="text-sm font-semibold text-foreground">{o.name}</p>
@@ -267,7 +267,7 @@ function OrgPage() {
                   type="button"
                   onClick={() => claim(o.id)}
                   disabled={claiming === o.id}
-                  className="glass-orange inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-widest disabled:opacity-50"
+                  className="btn-primary inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-widest disabled:opacity-50"
                 >
                   {claiming === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                   Claim as admin
@@ -299,7 +299,7 @@ function OrgPage() {
         </p>
 
         {isAdmin && org.data.org && (
-          <div className="glass-btn mt-8 rounded-2xl border border-white/10 p-5">
+          <div className="btn-secondary mt-8 rounded-2xl border border-white/10 p-5">
             <p className="text-xs uppercase tracking-widest text-foreground/60">Invite subcontractor</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Share this link with a subcontractor. Max 2 subcontractor seats per org.
@@ -311,7 +311,7 @@ function OrgPage() {
               <button
                 type="button"
                 onClick={copyLink}
-                className="glass-orange inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
+                className="btn-primary inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
               >
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 {copied ? "Copied" : "Copy"}
@@ -326,7 +326,7 @@ function OrgPage() {
           </p>
           <div className="mt-3 space-y-2">
             {(members.data?.members ?? []).map((m) => (
-              <div key={m.id} className="glass-btn flex items-center justify-between rounded-xl border border-white/10 p-3">
+              <div key={m.id} className="btn-secondary flex items-center justify-between rounded-xl border border-white/10 p-3">
                 <div>
                   <p className="text-sm text-foreground">{m.user_id.slice(0, 8)}…</p>
                   <p className="text-[0.65rem] uppercase tracking-widest text-foreground/50">{m.role}</p>
@@ -346,7 +346,7 @@ function OrgPage() {
         </section>
 
         <div className="mt-8">
-          <Link to="/snags" className="glass-btn inline-flex rounded-lg px-4 py-2 text-xs uppercase tracking-widest">
+          <Link to="/snags" className="btn-secondary inline-flex rounded-lg px-4 py-2 text-xs uppercase tracking-widest">
             → Go to Snag Master
           </Link>
         </div>
