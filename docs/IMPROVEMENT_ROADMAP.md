@@ -11,11 +11,11 @@ Priorities are P0 (must ship before real users), P1 (fill core gaps), P2 (polish
 
 ## P1 — Fill core gaps
 
-- [ ] **Project-scope Oracle.** Add `project_id` to the document lookup (join via `site_documents`). Read the `sessionStorage` "oracle:context" that the UI already writes and pass `projectId` to `runOracleCommand`.
-- [ ] **Wire QS photo viewer.** Signed URLs for each `photo_urls` entry, thumbnail grid inside the QS Queue card, click-to-fullscreen. Right now QS only sees a count.
-- [ ] **Verify FK cascade** on project delete. Migration to ensure `ON DELETE CASCADE` on every child FK (`live_site_activity`, `daily_site_diaries`, `project_drawings`, `work_zones`, `project_ifc_models`, etc.) so `deleteProject` succeeds.
+- [x] **Project-scope Oracle.** `runOracleCommand` now requires `projectId`; both it and `askProjectOracle` call `assertProjectMember` (server-side `is_project_member`) before retrieval, and `retrieveSnippets` builds an allowlist of `site_document_id`s from the project's drawings/logistics plans/RAMS/bible reports and only queries `.in("id", …)` on that list. `document_contents` SELECT policy widened from uploader-only to project-member (`can_view_site_document`). **DONE**
+- [x] **Wire QS photo viewer.** Signed-URL thumbnail grid with click-to-fullscreen lives in `QsEvidenceModal` inside `QsVerificationQueue`. **DONE**
+- [x] **Verify FK cascade** on project delete. Every FK referencing `public.projects` is `ON DELETE CASCADE` or `SET NULL` (verified live: zero gaps). A `BEFORE DELETE` trigger on `projects` also removes the owning `site_documents` rows behind drawings/logistics/RAMS/bible reports. Regression guard: `project_delete_cascade_gaps()` + `src/lib/fk-cascade.test.ts`. **DONE**
 - [ ] **Activities + permits.** Either wire the `activities` table + `permits` UI + `auto_flag_permit_required` trigger into DABS (paper-briefing description, permit issuance, high-risk auto-flag) or drop them from the schema. Recommendation: wire them — permit control is table-stakes for construction.
-- [ ] **Proper login flow.** Replace anonymous sessions with email/password + Google OAuth. Add `_authenticated` layout gate. Invitations flow so masters can add project members by email.
+- [x] **Proper login flow.** Real Supabase email/password sign-up / sign-in / reset / sign-out at `/auth` + `/reset-password`; roles live in `user_roles` and are enforced by RLS and `SECURITY DEFINER` helpers (`has_role`, `is_project_member`, `is_project_admin`), not client checks. Anonymous/self-enrolment paths removed: `dev_claim_master_admin` RPC dropped, `src/lib/dev-admin.functions.ts` deleted, the "Dev Override" button removed from `AccessDeniedScreen`, and upload-time auto-enrolment in `tier1-uploads.functions.ts` replaced with a hard membership check. Google OAuth still outstanding. **DONE (except Google OAuth)**
 
 ## P2 — Workflow polish
 
