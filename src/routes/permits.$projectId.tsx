@@ -166,6 +166,15 @@ function PermitsPage() {
           </p>
         )}
 
+        {expired.length > 0 && (
+          <p className="mt-4 flex items-center gap-2 rounded-md border-2 border-alert bg-alert/10 px-4 py-3 text-xs font-bold uppercase tracking-widest text-alert">
+            <Clock size={14} /> {expired.length}{" "}
+            {expired.length === 1 ? "permit has" : "permits have"} expired without being
+            renewed or revoked — work must stop until re-issued.
+          </p>
+        )}
+
+
         {reg.isLoading && (
           <p className="mt-8 flex items-center gap-2 text-sm text-foreground/60">
             <Loader2 size={14} className="animate-spin" /> Loading register…
