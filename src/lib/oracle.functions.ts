@@ -254,7 +254,7 @@ export const runOracleCommand = createServerFn({ method: "POST" })
     z
       .object({
         key: z.string().min(1),
-        projectId: z.string().uuid().optional(),
+        projectId: z.string().uuid({ message: "Oracle requires a project context." }),
         lockedContext: z
           .object({
             kind: z.enum(["drawing", "zone"]),
@@ -276,10 +276,12 @@ export const runOracleCommand = createServerFn({ method: "POST" })
       throw new Error("Missing LOVABLE_API_KEY");
     }
 
+    await assertProjectMember(context.supabase, context.userId, data.projectId);
+
     const { snippets, docs } = await retrieveSnippets(
       context.supabase,
       prompt.keywords,
-      data.projectId ?? null,
+      data.projectId,
     );
     const contextBlock = formatContext(snippets, docs);
     const lockLine = data.lockedContext
