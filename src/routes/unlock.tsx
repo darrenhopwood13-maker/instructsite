@@ -102,7 +102,7 @@ function UnlockPage() {
         <button
           type="submit"
           disabled={busy || !password.trim()}
-          className="glass-orange shimmer-btn mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-[0.3em] disabled:opacity-40"
+          className="btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-[0.3em] disabled:opacity-40"
         >
           {busy ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
           Enter

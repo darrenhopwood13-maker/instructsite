@@ -325,7 +325,7 @@ function DabsPage() {
                     <button
                       type="button"
                       onClick={() => setCheckoutPin(p)}
-                      className="glass-orange shimmer-btn mt-3 flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-xs font-bold uppercase tracking-widest"
+                      className="btn-primary mt-3 flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-xs font-bold uppercase tracking-widest"
                     >
                       <LogOut size={14} /> {label}
                     </button>
@@ -347,7 +347,7 @@ function DabsPage() {
             <Link
               to="/site-manager/$projectId"
               params={{ projectId }}
-              className="glass-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+              className="btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
             >
               <ClipboardList size={14} /> Site Manager Command Tower
             </Link>
@@ -451,7 +451,7 @@ function DabsPage() {
               <button
                 type="submit"
                 disabled={busy}
-                className="glass-orange shimmer-btn rounded-md px-5 py-2 text-xs uppercase tracking-widest disabled:opacity-40"
+                className="btn-primary rounded-md px-5 py-2 text-xs uppercase tracking-widest disabled:opacity-40"
               >
                 {busy ? "Saving…" : "Confirm Briefing"}
               </button>

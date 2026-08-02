@@ -349,7 +349,7 @@ function ProgrammePage() {
                 type="button"
                 disabled={compileMut.isPending}
                 onClick={() => fileInput.current?.click()}
-                className="glass-orange inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider disabled:opacity-50"
+                className="btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider disabled:opacity-50"
               >
                 {compileMut.isPending ? (
                   <>
@@ -421,7 +421,7 @@ function ProgrammePage() {
               type="button"
               disabled={!canPrev}
               onClick={() => setDate(shiftDate(date, -1))}
-              className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-wider disabled:opacity-40"
+              className="btn-secondary inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-wider disabled:opacity-40"
             >
               <ChevronLeft size={14} /> Previous Day
             </button>
@@ -450,7 +450,7 @@ function ProgrammePage() {
               type="button"
               disabled={!canNext}
               onClick={() => setDate(shiftDate(date, 1))}
-              className="glass-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-wider disabled:opacity-40"
+              className="btn-secondary inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs uppercase tracking-wider disabled:opacity-40"
             >
               Next Day <ChevronRight size={14} />
             </button>
@@ -467,7 +467,7 @@ function ProgrammePage() {
               <button
                 type="button"
                 onClick={() => setReportOpen(true)}
-                className="glass-orange inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[0.65rem] uppercase tracking-widest"
+                className="btn-primary inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[0.65rem] uppercase tracking-widest"
               >
                 <FileText className="h-3.5 w-3.5" /> View Full Report
               </button>
@@ -540,7 +540,7 @@ function ProgrammePage() {
                 type="button"
                 disabled={!draft.trim() || noteMut.isPending}
                 onClick={() => noteMut.mutate(draft.trim())}
-                className="glass-orange inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-wider disabled:opacity-40"
+                className="btn-primary inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs uppercase tracking-wider disabled:opacity-40"
               >
                 {noteMut.isPending ? (
                   <>

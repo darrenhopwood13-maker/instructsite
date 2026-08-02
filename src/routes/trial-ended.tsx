@@ -38,7 +38,7 @@ function TrialEnded() {
         <div className="mt-10 inline-flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-8">
           <MailCheck className="text-alert" size={36} />
           <a href="mailto:info@instructsite.com?subject=Continuing%20after%20trial%20—%20instructSite"
-             className="btn-3d-orange inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm uppercase tracking-[0.3em]">
+             className="btn-primary inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm uppercase tracking-[0.3em]">
             info@instructsite.com
           </a>
           <p className="text-xs text-foreground/60">We usually reply the same working day.</p>

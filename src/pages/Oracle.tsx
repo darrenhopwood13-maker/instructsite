@@ -272,7 +272,7 @@ const OraclePage = () => {
         />
 
         {showScanUi && !scanLoading && !scanReport && !scanError && (
-          <div className="mt-8 glass-btn rounded-2xl border border-dashed border-white/20 p-10 text-center">
+          <div className="mt-8 btn-secondary rounded-2xl border border-dashed border-white/20 p-10 text-center">
             <Camera className="mx-auto h-12 w-12 text-foreground/50" />
             <p className="mt-4 text-sm uppercase tracking-widest text-foreground/70">Snap or upload a site photo</p>
             <p className="mt-2 text-xs text-muted-foreground">The Oracle will analyse it with full design, architectural, structural and regulatory expertise.</p>
@@ -280,14 +280,14 @@ const OraclePage = () => {
               <button
                 type="button"
                 onClick={() => cameraRef.current?.click()}
-                className="glass-orange inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm uppercase tracking-widest"
+                className="btn-primary inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm uppercase tracking-widest"
               >
                 <Camera className="h-4 w-4" /> Take Photo
               </button>
               <button
                 type="button"
                 onClick={() => uploadRef.current?.click()}
-                className="glass-btn inline-flex items-center gap-2 rounded-lg border border-white/15 px-5 py-3 text-sm uppercase tracking-widest"
+                className="btn-secondary inline-flex items-center gap-2 rounded-lg border border-white/15 px-5 py-3 text-sm uppercase tracking-widest"
               >
                 Upload from device
               </button>
@@ -309,7 +309,7 @@ const OraclePage = () => {
             </div>
             <div>
               {scanLoading && (
-                <div className="glass-btn flex items-center gap-3 rounded-2xl border border-white/10 p-6">
+                <div className="btn-secondary flex items-center gap-3 rounded-2xl border border-white/10 p-6">
                   <Loader2 className="h-5 w-5 animate-spin text-alert" />
                   <div>
                     <p className="text-sm uppercase tracking-widest text-foreground">The Oracle is scanning…</p>
@@ -323,12 +323,12 @@ const OraclePage = () => {
                   <button
                     type="button"
                     onClick={() => { setScanPreview(null); setShowScanUi(true); cameraRef.current?.click(); }}
-                    className="glass-btn mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-xs uppercase tracking-widest"
+                    className="btn-secondary mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-xs uppercase tracking-widest"
                   >Try another photo</button>
                 </div>
               )}
               {scanReport && !scanLoading && (
-                <div className="glass-btn rounded-xl border border-white/10 p-4">
+                <div className="btn-secondary rounded-xl border border-white/10 p-4">
                   <p className="text-[0.65rem] uppercase tracking-[0.35em] text-alert">Assessment</p>
                   <h3 className="mt-1 text-xl font-extrabold text-foreground">{scanReport.assessmentTitle}</h3>
                   {scanReport.tradeInvolved && (

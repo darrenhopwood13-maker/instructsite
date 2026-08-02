@@ -149,7 +149,7 @@ function BookDemoFAB() {
   return (
     <a
       href="mailto:info@instructsite.com?subject=Book%20a%20demo%20—%20instructSite"
-      className="btn-3d-orange float-y fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full px-5 py-3 text-xs uppercase tracking-[0.3em]"
+      className="btn-primary float-y fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full px-5 py-3 text-xs uppercase tracking-[0.3em]"
     >
       <PhoneCall size={14} /> Book a demo
     </a>
@@ -385,7 +385,7 @@ function AuthPage() {
               {notice && <div className="rounded-md border border-alert/45 bg-alert/10 px-3 py-2 text-xs text-foreground">{notice}</div>}
 
               <button type="submit" disabled={busy}
-                      className="glass-orange shimmer-btn inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider disabled:opacity-50">
+                      className="btn-primary inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider disabled:opacity-50">
                 {busy ? <Loader2 className="animate-spin" size={14} /> : <ArrowRight size={14} />}
                 {mode === "signin" ? "Sign in" : mode === "signup" ? "Start 7-day free trial" : "Send reset email"}
               </button>

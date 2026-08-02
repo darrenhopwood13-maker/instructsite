@@ -244,14 +244,14 @@ export function WorkfaceRegisterPanel({ projectId }: { projectId: string }) {
           type="button"
           onClick={runSuggest}
           disabled={suggesting}
-          className="glass-orange inline-flex items-center gap-2 rounded-md px-3 py-2 text-[0.65rem] uppercase tracking-widest disabled:opacity-40"
+          className="btn-primary inline-flex items-center gap-2 rounded-md px-3 py-2 text-[0.65rem] uppercase tracking-widest disabled:opacity-40"
         >
           <Sparkles size={12} /> {suggesting ? "Suggesting…" : "Suggest from Zones + Packages"}
         </button>
         <button
           type="button"
           onClick={() => setShowManualForm((v) => !v)}
-          className="glass-btn inline-flex items-center gap-2 rounded-md px-3 py-2 text-[0.65rem] uppercase tracking-widest"
+          className="btn-secondary inline-flex items-center gap-2 rounded-md px-3 py-2 text-[0.65rem] uppercase tracking-widest"
         >
           <PlusCircle size={12} /> Add Manually
         </button>

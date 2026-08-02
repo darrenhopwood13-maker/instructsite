@@ -162,7 +162,7 @@ export function MasterAdminHUD({
               <button
                 type="submit"
                 disabled={busyCreate || !zoneName.trim()}
-                className="glass-orange inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[0.65rem] uppercase tracking-widest disabled:opacity-40"
+                className="btn-primary inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[0.65rem] uppercase tracking-widest disabled:opacity-40"
               >
                 <PlusCircle size={12} /> Create
               </button>

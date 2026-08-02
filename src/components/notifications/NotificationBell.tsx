@@ -102,7 +102,7 @@ export function NotificationBell() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
-        className="glass-btn relative inline-flex h-9 w-9 items-center justify-center rounded-lg"
+        className="btn-secondary relative inline-flex h-9 w-9 items-center justify-center rounded-lg"
       >
         <Bell className="h-4 w-4" />
         {unread > 0 && (

@@ -52,7 +52,7 @@ function JoinOrgPage() {
           <button
             type="button"
             onClick={() => navigate({ to: "/" })}
-            className="glass-btn mt-6 inline-flex rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
+            className="btn-secondary mt-6 inline-flex rounded-lg px-4 py-2 text-xs uppercase tracking-widest"
           >
             Home
           </button>

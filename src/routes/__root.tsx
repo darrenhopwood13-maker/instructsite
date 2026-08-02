@@ -601,7 +601,7 @@ function AuthNav() {
               instructSite.ai
             </a>
           </Button>
-          <Link to="/auth" className="glass-orange rounded-lg px-4 py-2 text-sm uppercase tracking-widest">
+          <Link to="/auth" className="btn-primary rounded-lg px-4 py-2 text-sm uppercase tracking-widest">
             Sign in
           </Link>
         </>

@@ -218,7 +218,7 @@ export function SettingsMenu({ isOwner }: { isOwner: boolean }) {
         <button
           type="button"
           aria-label="Settings"
-          className="glass-btn relative inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
+          className="btn-secondary relative inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
         >
           <Settings className="h-3.5 w-3.5" />
           <span>Settings</span>

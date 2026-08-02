@@ -322,14 +322,14 @@ function NewOrgPage() {
           <div className="flex items-center justify-end gap-3">
             <Link
               to="/org"
-              className="glass-btn rounded-xl px-4 py-2.5 text-sm uppercase tracking-wider"
+              className="btn-secondary rounded-xl px-4 py-2.5 text-sm uppercase tracking-wider"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={!canSubmit || !isOwner}
-              className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm uppercase tracking-wider disabled:opacity-40"
+              className="btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm uppercase tracking-wider disabled:opacity-40"
             >
               {saving ? (
                 <>

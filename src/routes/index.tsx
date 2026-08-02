@@ -96,7 +96,7 @@ function Index() {
             {signedIn ? (
               <button
                 onClick={() => navigate({ to: "/projects" })}
-                className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm uppercase tracking-wider"
+                className="btn-primary inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm uppercase tracking-wider"
               >
                 Enter portal <ArrowRight size={14} />
               </button>
@@ -105,13 +105,13 @@ function Index() {
                 <Link
                   to="/auth"
                   search={{ trial: "start" }}
-                  className="btn-3d-orange inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm uppercase tracking-wider"
+                  className="btn-primary inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm uppercase tracking-wider"
                 >
                   Start 7-day free trial <ArrowRight size={14} />
                 </Link>
                 <Link
                   to="/auth"
-                  className="glass-btn inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm uppercase tracking-wider"
+                  className="btn-secondary inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm uppercase tracking-wider"
                 >
                   <ShieldAlert size={14} /> Sign in
                 </Link>

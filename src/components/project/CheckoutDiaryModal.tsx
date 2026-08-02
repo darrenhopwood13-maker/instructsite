@@ -277,7 +277,7 @@ export function CheckoutDiaryModal({ pin, onClose }: Props) {
           <button
             type="submit"
             disabled={submitting || uploading}
-            className="glass-orange shimmer-btn rounded-md px-5 py-2 text-xs font-bold uppercase tracking-widest disabled:opacity-40"
+            className="btn-primary rounded-md px-5 py-2 text-xs font-bold uppercase tracking-widest disabled:opacity-40"
           >
             {submitting ? "Submitting…" : "Submit Daily Diary"}
           </button>

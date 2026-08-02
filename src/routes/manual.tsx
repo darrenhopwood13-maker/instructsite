@@ -76,7 +76,7 @@ function ManualPage() {
           <a
             href={pdfAsset.url}
             download="instructSite-manual.pdf"
-            className="glass-orange shimmer-btn inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
+            className="btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm uppercase tracking-wider"
           >
             <Download size={16} /> Download PDF
           </a>
