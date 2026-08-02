@@ -122,12 +122,34 @@ function scoreChunk(chunk: string, keywords: string[]): number {
   return score;
 }
 
+/**
+ * Hard project scope gate. Retrieval NEVER runs without a verified membership
+ * check for the project the query claims to be about.
+ */
+async function assertProjectMember(
+  supabase: any,
+  userId: string,
+  projectId: string,
+): Promise<void> {
+  const { data, error } = await supabase.rpc("is_project_member", {
+    _project_id: projectId,
+    _user_id: userId,
+  });
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Access denied: you are not a member of this project.");
+}
+
 async function scopedDocumentIds(
   supabase: any,
   projectId: string,
 ): Promise<string[]> {
   const ids = new Set<string>();
-  const tables = ["project_drawings", "logistics_plans", "rams_documents"] as const;
+  const tables = [
+    "project_drawings",
+    "logistics_plans",
+    "rams_documents",
+    "project_bible_reports",
+  ] as const;
   for (const t of tables) {
     const { data, error } = await supabase
       .from(t)
@@ -144,22 +166,20 @@ async function scopedDocumentIds(
 async function retrieveSnippets(
   supabase: any,
   keywords: string[],
-  projectId: string | null,
+  projectId: string,
 ): Promise<{ snippets: Snippet[]; docs: SiteDocument[] }> {
-  let query = supabase
+  // Scope first: only documents that belong to THIS project are ever queried.
+  const ids = await scopedDocumentIds(supabase, projectId);
+  if (ids.length === 0) return { snippets: [], docs: [] };
+
+  const query = supabase
     .from("site_documents")
     .select(
       "id,file_name,file_path,mime_type,bucket,created_at,extraction_status,extraction_error,document_contents(content,char_count,extraction_status,extraction_error)",
     )
-    .order("created_at", { ascending: false });
-
-  if (projectId) {
-    const ids = await scopedDocumentIds(supabase, projectId);
-    if (ids.length === 0) return { snippets: [], docs: [] };
-    query = query.in("id", ids).limit(MAX_DOCS * 3);
-  } else {
-    query = query.limit(MAX_DOCS);
-  }
+    .in("id", ids)
+    .order("created_at", { ascending: false })
+    .limit(MAX_DOCS * 3);
 
   const { data: rows, error } = await query;
   if (error) throw new Error(error.message);
@@ -234,7 +254,7 @@ export const runOracleCommand = createServerFn({ method: "POST" })
     z
       .object({
         key: z.string().min(1),
-        projectId: z.string().uuid().optional(),
+        projectId: z.string().uuid({ message: "Oracle requires a project context." }),
         lockedContext: z
           .object({
             kind: z.enum(["drawing", "zone"]),
@@ -256,10 +276,12 @@ export const runOracleCommand = createServerFn({ method: "POST" })
       throw new Error("Missing LOVABLE_API_KEY");
     }
 
+    await assertProjectMember(context.supabase, context.userId, data.projectId);
+
     const { snippets, docs } = await retrieveSnippets(
       context.supabase,
       prompt.keywords,
-      data.projectId ?? null,
+      data.projectId,
     );
     const contextBlock = formatContext(snippets, docs);
     const lockLine = data.lockedContext
@@ -357,6 +379,8 @@ export const askProjectOracle = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
+
+    await assertProjectMember(context.supabase, context.userId, data.projectId);
 
     const keywords = extractKeywords(data.question);
     const { snippets, docs } = await retrieveSnippets(

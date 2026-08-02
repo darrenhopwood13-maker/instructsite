@@ -2470,7 +2470,6 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
-      dev_claim_master_admin: { Args: { _project_id?: string }; Returns: Json }
       email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
@@ -2565,6 +2564,14 @@ export type Database = {
         Returns: number
       }
       org_admin_count: { Args: { _org_id: string }; Returns: number }
+      project_delete_cascade_gaps: {
+        Args: never
+        Returns: {
+          child_column: string
+          child_table: string
+          delete_rule: string
+        }[]
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {

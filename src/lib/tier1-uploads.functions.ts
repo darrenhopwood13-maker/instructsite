@@ -71,16 +71,8 @@ async function ensureProjectAccess(
   });
   if (error) throw new Error(error.message);
   if (data) return;
-
-  // Oracle sessions are anonymous — auto-enroll the current session as a
-  // viewer via the service-role client (project_members RLS blocks self-insert).
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { error: insertErr } = await supabaseAdmin
-    .from("project_members")
-    .insert({ project_id: projectId, user_id: userId, role_on_project: "subcontractor" });
-  if (insertErr && !/duplicate|unique/i.test(insertErr.message ?? "")) {
-    throw new Error("You are not a member of this project.");
-  }
+  // No self-enrolment: membership must be granted by a project admin or invite.
+  throw new Error("Access denied: you are not a member of this project.");
 }
 
 
