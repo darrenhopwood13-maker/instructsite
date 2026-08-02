@@ -4,6 +4,9 @@ import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
 const TaskSchema = z.object({
+  taskRef: z.preprocess((value) => value ?? "", z.string()).default(""),
+  predecessors: z.preprocess((value) => value ?? [], z.array(z.string())).default([]),
+  durationDays: z.preprocess((value) => (value === null ? undefined : value), z.number().int().positive().optional()),
   taskName: z.string(),
   startDate: z.string(),
   endDate: z.string(),
@@ -17,7 +20,12 @@ const ExtractSchema = z.object({
   tasks: z.array(TaskSchema).default([]),
 });
 
-export type ProgrammeTask = z.infer<typeof TaskSchema>;
+type TaskShape = z.infer<typeof TaskSchema>;
+export type ProgrammeTask = Omit<TaskShape, "taskRef" | "predecessors" | "durationDays"> & {
+  taskRef?: string;
+  predecessors?: string[];
+  durationDays?: number | undefined;
+};
 
 export type ProgrammeCompileResult = {
   tasks: ProgrammeTask[];
@@ -111,6 +119,9 @@ const NAME_KEYS = ["task", "task name", "activity", "activity name", "name", "de
 const START_KEYS = ["start", "start date", "startdate", "begin", "begin date", "planned start", "baseline start", "early start", "target start", "start_date"];
 const END_KEYS = ["end", "end date", "enddate", "finish", "finish date", "planned finish", "baseline finish", "early finish", "target finish", "completion", "end_date", "finish_date"];
 const TRADE_KEYS = ["trade", "discipline", "contractor", "subcontractor", "resource", "responsibility", "role"];
+const REF_KEYS = ["task id", "taskid", "task_id", "activity id", "activity_id", "id", "uid", "ref", "task ref"];
+const PRED_KEYS = ["predecessors", "predecessor", "preds", "depends on", "dependencies", "predecessor id", "predecessors (ids)"];
+const DURATION_KEYS = ["duration (days)", "duration days", "duration", "days", "dur"];
 const LOC_KEYS = ["location", "zone", "area", "level", "floor", "wbs", "phase", "block", "plot"];
 
 function pickKey(row: Record<string, unknown>, candidates: string[]): string | null {
@@ -129,16 +140,18 @@ function pickKey(row: Record<string, unknown>, candidates: string[]): string | n
 function inferTrade(name: string): string {
   const n = name.toLowerCase();
   const trades: [string, string[]][] = [
-    ["Groundworks", ["ground", "excavat", "drain", "duct", "foundation", "slab", "substructure", "piling"]],
+    ["Groundworks", ["ground", "excavat", "drain", "foundation", "slab", "substructure", "piling"]],
     ["Concrete", ["concrete", "pour", "formwork", "rebar", "rc frame"]],
     ["Steelwork", ["steel", "frame", "beam", "column", "decking"]],
     ["Envelope", ["roof", "clad", "curtain", "window", "facade", "façade", "brick"]],
-    ["MEP", ["mep", "mechanical", "electrical", "plumb", "hvac", "sprinkler", "containment", "commission"]],
+    ["MEP", ["mep", "mechanical", "electrical", "plumb", "hvac", "duct", "sprinkler", "containment", "commission"]],
     ["Drylining", ["drylin", "partition", "plasterboard", "ceiling", "skim"]],
     ["Fit-out", ["fit out", "fit-out", "joinery", "floor finish", "decorate", "paint", "tiling"]],
     ["External Works", ["external", "landscap", "paving", "kerb", "road", "car park"]],
   ];
-  return trades.find(([, keys]) => keys.some((k) => n.includes(k)))?.[0] ?? "General";
+  // Word-ish boundary so "soundproofing" doesn't match "roof".
+  const hit = (k: string) => new RegExp(`(?<![a-z])${k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i").test(n);
+  return trades.find(([, keys]) => keys.some(hit))?.[0] ?? "General";
 }
 
 function inferLocation(name: string): string {
@@ -151,7 +164,8 @@ function cleanTaskName(raw: string): string {
     .replace(/\b(?:start|finish|end|duration|dur|activity id|task mode|baseline|early|late|planned|actual)\b/gi, " ")
     .replace(/\b\d+(?:\.\d+)?\s*(?:d|day|days|w|wk|week|weeks|hrs?|hours?)\b/gi, " ")
     .replace(/\b\d{1,3}%\b/g, " ")
-    .replace(/^[\s\d.#\-–—_:|/\\]+/, "")
+    .replace(/^[\s#\-–—_:|/\\]+/, "")
+    .replace(/^\d+(?:\.\d+)*[.)\-:]?(?=\s)\s*/, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
@@ -168,6 +182,14 @@ function normaliseTask(t: ProgrammeTask): ProgrammeTask | null {
   const end = normalizeDate(t.endDate);
   const name = cleanTaskName(t.taskName);
   const task = {
+    taskRef: (t.taskRef ?? "").trim(),
+    predecessors: (t.predecessors ?? []).map((p) => p.trim()).filter(Boolean),
+    durationDays:
+      t.durationDays && t.durationDays > 0
+        ? t.durationDays
+        : start && end
+          ? Math.max(1, diffDays(start, end && end < start ? start : end) + 1)
+          : undefined,
     taskName: name,
     startDate: start,
     endDate: end && end < start ? start : end,
@@ -182,10 +204,20 @@ function mergeTasks(all: ProgrammeTask[]): ProgrammeTask[] {
   for (const raw of all) {
     const t = normaliseTask(raw);
     if (!t) continue;
-    const key = `${t.taskName.toLowerCase()}|${t.startDate}|${t.endDate}`;
+    const key = t.taskRef
+      ? `ref:${t.taskRef.toLowerCase()}`
+      : `${t.taskName.toLowerCase()}|${t.startDate}|${t.endDate}`;
     if (!seen.has(key)) seen.set(key, t);
   }
   return [...seen.values()].sort((a, b) => a.startDate.localeCompare(b.startDate));
+}
+
+function parsePredecessors(raw: string): string[] {
+  return String(raw ?? "")
+    .replace(/^"+|"+$/g, "")
+    .split(/[,;|]/)
+    .map((p) => p.trim())
+    .filter(Boolean);
 }
 
 function parseCsvToTasks(text: string): ProgrammeTask[] {
@@ -204,10 +236,17 @@ function parseCsvToTasks(text: string): ProgrammeTask[] {
   if (!nameKey || !startKey || !endKey) return [];
   const tradeKey = pickKey(first, TRADE_KEYS);
   const locKey = pickKey(first, LOC_KEYS);
+  const refKey = pickKey(first, REF_KEYS);
+  const predKey = pickKey(first, PRED_KEYS);
+  const durKey = pickKey(first, DURATION_KEYS);
 
   return mergeTasks(rows.map((row) => {
     const name = String(row[nameKey] ?? "").trim();
+    const dur = durKey ? Number(String(row[durKey] ?? "").trim()) : NaN;
     return {
+      taskRef: refKey ? String(row[refKey] ?? "").trim() : "",
+      predecessors: predKey ? parsePredecessors(String(row[predKey] ?? "")) : [],
+      durationDays: Number.isFinite(dur) && dur > 0 ? Math.round(dur) : undefined,
       taskName: name,
       startDate: String(row[startKey] ?? ""),
       endDate: String(row[endKey] ?? ""),

@@ -129,7 +129,11 @@ export const enqueueProgrammeJob = createServerFn({ method: "POST" })
         end_date: t.endDate,
         location: t.location || null,
         trade: t.trade || null,
+        task_ref: t.taskRef || null,
+        predecessors: t.predecessors ?? [],
+        duration_days: t.durationDays ?? null,
       }));
+
 
       await supabaseAdmin
         .from("programme_reference_tasks")

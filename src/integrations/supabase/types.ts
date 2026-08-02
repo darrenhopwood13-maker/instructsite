@@ -1229,40 +1229,49 @@ export type Database = {
         Row: {
           allowed_days: number | null
           created_at: string
+          duration_days: number | null
           end_date: string
           id: string
           location: string | null
           plain_english: string
+          predecessors: string[]
           programme_upload_id: string
           project_id: string
           start_date: string
           task_name: string
+          task_ref: string | null
           trade: string | null
         }
         Insert: {
           allowed_days?: number | null
           created_at?: string
+          duration_days?: number | null
           end_date: string
           id?: string
           location?: string | null
           plain_english: string
+          predecessors?: string[]
           programme_upload_id: string
           project_id: string
           start_date: string
           task_name: string
+          task_ref?: string | null
           trade?: string | null
         }
         Update: {
           allowed_days?: number | null
           created_at?: string
+          duration_days?: number | null
           end_date?: string
           id?: string
           location?: string | null
           plain_english?: string
+          predecessors?: string[]
           programme_upload_id?: string
           project_id?: string
           start_date?: string
           task_name?: string
+          task_ref?: string | null
           trade?: string | null
         }
         Relationships: [
@@ -1287,6 +1296,7 @@ export type Database = {
           created_at: string
           file_name: string
           id: string
+          is_test: boolean
           mime_type: string | null
           project_id: string
           status: string
@@ -1298,6 +1308,7 @@ export type Database = {
           created_at?: string
           file_name: string
           id?: string
+          is_test?: boolean
           mime_type?: string | null
           project_id: string
           status?: string
@@ -1309,6 +1320,7 @@ export type Database = {
           created_at?: string
           file_name?: string
           id?: string
+          is_test?: boolean
           mime_type?: string | null
           project_id?: string
           status?: string
