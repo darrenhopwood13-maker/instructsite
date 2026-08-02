@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, ShieldAlert } from "lucide-react";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { QsVerificationQueue } from "@/components/project/QsVerificationQueue";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
