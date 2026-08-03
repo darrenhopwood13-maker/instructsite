@@ -509,7 +509,7 @@ function SubcontractorCockpit() {
           />
         </section>
 
-        <section className="mt-6">
+        <section className="mt-6 flex flex-wrap gap-2">
           <Link
             to="/dabs/$projectId"
             params={{ projectId }}
@@ -517,7 +517,15 @@ function SubcontractorCockpit() {
           >
             <ClipboardList size={12} /> Full DABS View
           </Link>
+          <Link
+            to="/short-term/$projectId"
+            params={{ projectId }}
+            className="btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[0.65rem] uppercase tracking-wider"
+          >
+            <ClipboardList size={12} /> Short-Term Programmes
+          </Link>
         </section>
+
       </div>
 
       {/* ---- Briefing modal ---- */}

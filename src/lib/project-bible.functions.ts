@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type BibleDocument = {
   id: string; // site_document_id (or programme_upload id for programmes, or model id for models)
-  source: "drawing" | "logistics" | "rams" | "programme" | "report" | "model" | "pack";
+  source: "drawing" | "logistics" | "rams" | "programme" | "report" | "model" | "pack" | "short_term";
   title: string;
   category: string;
   fileName: string;
@@ -251,6 +251,41 @@ export const listProjectBibleDocuments = createServerFn({ method: "GET" })
         });
       }
     }
+
+    // Accepted short-term programmes, filed under the subcontractor they belong to.
+    // Only accepted ones are filed: a draft or pending programme is still being
+    // negotiated, so it is not a record of anything yet.
+    {
+      const { data: rows, error } = await supabase
+        .from("short_term_programmes")
+        .select(
+          "id,title,company_name,package_label,subcontractor_accepted_at," +
+            "site_documents(id,file_name,file_path,bucket,mime_type,file_size,created_at,extraction_status,archived_at)",
+        )
+        .eq("project_id", data.projectId)
+        .eq("status", "accepted");
+      if (error) throw new Error(error.message);
+      for (const row of (rows ?? []) as any[]) {
+        const sd: any = Array.isArray(row.site_documents) ? row.site_documents[0] : row.site_documents;
+        if (!sd) continue;
+        docs.push({
+          id: sd.id,
+          source: "short_term",
+          title: `${row.company_name} · ${row.package_label} · ${row.title}`,
+          category: `Subcontractor Packs · ${row.company_name}`,
+          fileName: sd.file_name,
+          mimeType: sd.mime_type ?? "application/pdf",
+          bucket: sd.bucket ?? "project-bible",
+          filePath: sd.file_path,
+          sizeBytes: sd.file_size ?? null,
+          uploadedAt: sd.created_at ?? row.subcontractor_accepted_at ?? null,
+          extractionStatus: sd.extraction_status ?? null,
+          archived: !!sd.archived_at,
+        });
+      }
+    }
+
+
 
     // Dedupe by (bucket + filePath), keep first occurrence
 

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays, Camera, ClipboardCheck } from "lucide-react";
+import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays, CalendarRange, Camera, ClipboardCheck } from "lucide-react";
 import { getProject } from "@/lib/projects.functions";
 import { listQsQueue } from "@/lib/daily-diary.functions";
 import {
@@ -228,6 +228,15 @@ function ProjectDetail() {
                 </span>
               )}
             </Link>
+            <Link
+              to="/short-term/$projectId"
+              params={{ projectId }}
+              className="btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs uppercase tracking-wider"
+            >
+              <CalendarRange size={14} /> Short-Term
+            </Link>
+
+
 
             <Link
               to="/snags"
