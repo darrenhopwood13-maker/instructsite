@@ -39,6 +39,8 @@ import { Button } from "@/components/ui/button";
 import { getMyRoles } from "@/lib/projects.functions";
 
 import { TRADE_PACKAGES } from "@/lib/trade-packages";
+import { TradePackageChips } from "@/components/project/TradePackageField";
+
 
 export function TradeDirectoryPanel({
   projectId,
