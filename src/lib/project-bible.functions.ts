@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type BibleDocument = {
   id: string; // site_document_id (or programme_upload id for programmes, or model id for models)
-  source: "drawing" | "logistics" | "rams" | "programme" | "report" | "model" | "pack";
+  source: "drawing" | "logistics" | "rams" | "programme" | "report" | "model" | "pack" | "short_term";
   title: string;
   category: string;
   fileName: string;
