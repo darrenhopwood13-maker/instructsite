@@ -66,7 +66,7 @@ function ShortTermProgrammesPage() {
         params={{ projectId }}
         className="inline-flex items-center gap-2 text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60 hover:text-foreground"
       >
-        <ArrowLeft size={12} /> {project.data?.project?.name ?? "Project"}
+        <ArrowLeft size={12} /> {project.data?.name ?? "Project"}
       </Link>
 
       <header className="mt-3 flex flex-wrap items-end justify-between gap-3">
