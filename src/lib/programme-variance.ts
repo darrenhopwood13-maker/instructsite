@@ -17,10 +17,16 @@ export type VarianceTask = {
   taskName: string;
   trade: string | null;
   location: string | null;
+  /** Explicit package this task belongs to, set when reviewing the import. */
+  packageRef?: string | null;
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
   predecessors: string[];
 };
+
+/** trade_package string (lowercased) -> package key. Explicit beats fuzzy. */
+export type PackageLinkMap = Record<string, string>;
+
 
 export type VariancePin = {
   id: string;
