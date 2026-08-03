@@ -95,6 +95,13 @@ function RegisterPartnerPage() {
     if (!form.projectId && rows.length) setForm((f) => ({ ...f, projectId: rows[0].id }));
   }, [rows, form.projectId]);
 
+  // Prefer the project's real programme packages once a baseline is imported.
+  const programme = useProgrammePackages(form.projectId || undefined);
+  const tradeOptions = programme.hasBaseline
+    ? programme.packages.map((p) => p.label)
+    : [...TRADE_OPTIONS];
+
+
   // Seat usage lookup: only queries once a project + company are picked.
   const seats = useQuery({
     queryKey: ["seat-usage", form.projectId, form.companyName.trim().toLowerCase()],
