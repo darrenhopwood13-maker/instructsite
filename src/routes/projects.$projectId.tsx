@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays, Camera, ClipboardCheck } from "lucide-react";
+import { MapPin, ArrowLeft, ClipboardList, ShieldAlert, CalendarDays, CalendarRange, Camera, ClipboardCheck } from "lucide-react";
 import { getProject } from "@/lib/projects.functions";
 import { listQsQueue } from "@/lib/daily-diary.functions";
 import {
