@@ -10,6 +10,8 @@ import { createSubcontractorInvite } from "@/lib/subcontractors.functions";
 import { getSubcontractorSeatUsage } from "@/lib/subscriptions.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { TRADE_PACKAGES as TRADE_OPTIONS } from "@/lib/trade-packages";
+import { useProgrammePackages } from "@/components/project/TradePackageField";
+
 
 export const Route = createFileRoute("/subcontractors/new")({
   head: () => ({
@@ -94,6 +96,13 @@ function RegisterPartnerPage() {
   useEffect(() => {
     if (!form.projectId && rows.length) setForm((f) => ({ ...f, projectId: rows[0].id }));
   }, [rows, form.projectId]);
+
+  // Prefer the project's real programme packages once a baseline is imported.
+  const programme = useProgrammePackages(form.projectId || undefined);
+  const tradeOptions = programme.hasBaseline
+    ? programme.packages.map((p) => p.label)
+    : [...TRADE_OPTIONS];
+
 
   // Seat usage lookup: only queries once a project + company are picked.
   const seats = useQuery({
@@ -287,7 +296,7 @@ function RegisterPartnerPage() {
                   label="Trade Package"
                   value={form.tradePackage}
                   onChange={(v) => setField("tradePackage", v)}
-                  options={[...TRADE_OPTIONS]}
+                  options={tradeOptions}
                   required
                 />
                 <Field

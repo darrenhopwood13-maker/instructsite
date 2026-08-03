@@ -4,6 +4,28 @@ import { useServerFn } from "@tanstack/react-start";
 import { listProgrammePackages } from "@/lib/programme-packages.functions";
 
 /**
+ * Shared source of truth for "what packages exist on this project" so every
+ * place that tags work (DABS pins, diaries, subcontractor invites) picks from
+ * the same real programme baseline instead of freehand / hardcoded lists.
+ */
+export function useProgrammePackages(projectId: string | undefined) {
+  const listFn = useServerFn(listProgrammePackages);
+  const q = useQuery({
+    queryKey: ["programme-packages", projectId],
+    queryFn: () => listFn({ data: { projectId: projectId! } }),
+    enabled: !!projectId,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  return {
+    packages: q.data?.packages ?? [],
+    hasBaseline: !!q.data?.hasBaseline,
+    isLoading: q.isLoading,
+  };
+}
+
+
+/**
  * Trade package input for pin drops / briefings.
  *
  * When the project has a programme baseline imported, this is a picker of the
@@ -22,16 +44,9 @@ export function TradePackageField({
   onChange: (v: string) => void;
   label?: string;
 }) {
-  const listFn = useServerFn(listProgrammePackages);
-  const q = useQuery({
-    queryKey: ["programme-packages", projectId],
-    queryFn: () => listFn({ data: { projectId } }),
-    staleTime: 5 * 60_000,
-    retry: false,
-  });
+  const { packages, hasBaseline, isLoading } = useProgrammePackages(projectId);
+  const q = { isLoading };
 
-  const packages = q.data?.packages ?? [];
-  const hasBaseline = !!q.data?.hasBaseline;
   const matchesPackage = useMemo(
     () => packages.some((p) => p.label.toLowerCase() === value.trim().toLowerCase()),
     [packages, value],
@@ -92,5 +107,80 @@ export function TradePackageField({
             : "No programme baseline imported yet — free text."}
       </span>
     </label>
+  );
+}
+
+/**
+ * Multi-select variant used where an invite covers one or more packages.
+ * Same rule as the single field: real programme packages once a baseline
+ * exists, otherwise the generic hardcoded trade list as a fallback.
+ */
+export function TradePackageChips({
+  projectId,
+  value,
+  onChange,
+  fallbackOptions,
+}: {
+  projectId: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  fallbackOptions: readonly string[];
+}) {
+  const { packages, hasBaseline, isLoading } = useProgrammePackages(projectId);
+  const [showFallback, setShowFallback] = useState(false);
+
+  const useFallback = !hasBaseline || showFallback;
+  const options = useFallback ? [...fallbackOptions] : packages.map((p) => p.label);
+  // Keep anything already selected visible even if it isn't in the active list.
+  const all = [...new Set([...options, ...value])];
+
+  const toggle = (p: string) =>
+    onChange(value.includes(p) ? value.filter((x) => x !== p) : [...value, p]);
+
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="text-[0.55rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
+          Trade Packages
+        </span>
+        {hasBaseline && (
+          <button
+            type="button"
+            onClick={() => setShowFallback(!useFallback)}
+            className="text-[0.55rem] font-bold uppercase tracking-widest text-alert hover:underline"
+          >
+            {useFallback ? "Pick from programme" : "Not on programme"}
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {all.map((p) => {
+          const on = value.includes(p);
+          return (
+            <button
+              type="button"
+              key={p}
+              onClick={() => toggle(p)}
+              className={`rounded-sm border px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest transition ${
+                on
+                  ? "border-alert bg-alert/20 text-alert"
+                  : "border-white/15 text-foreground/60 hover:border-white/40"
+              }`}
+            >
+              {p}
+            </button>
+          );
+        })}
+      </div>
+      <span className="mt-1 block text-[0.55rem] uppercase tracking-widest text-foreground/40">
+        {isLoading
+          ? "Checking programme baseline…"
+          : hasBaseline
+            ? useFallback
+              ? "Generic trade list — will need matching in the variance panel later."
+              : "Tagged against the imported programme baseline."
+            : "No programme baseline imported yet — generic trade list."}
+      </span>
+    </div>
   );
 }
