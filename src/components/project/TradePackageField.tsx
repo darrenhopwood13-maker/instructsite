@@ -4,6 +4,28 @@ import { useServerFn } from "@tanstack/react-start";
 import { listProgrammePackages } from "@/lib/programme-packages.functions";
 
 /**
+ * Shared source of truth for "what packages exist on this project" so every
+ * place that tags work (DABS pins, diaries, subcontractor invites) picks from
+ * the same real programme baseline instead of freehand / hardcoded lists.
+ */
+export function useProgrammePackages(projectId: string | undefined) {
+  const listFn = useServerFn(listProgrammePackages);
+  const q = useQuery({
+    queryKey: ["programme-packages", projectId],
+    queryFn: () => listFn({ data: { projectId: projectId! } }),
+    enabled: !!projectId,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  return {
+    packages: q.data?.packages ?? [],
+    hasBaseline: !!q.data?.hasBaseline,
+    isLoading: q.isLoading,
+  };
+}
+
+
+/**
  * Trade package input for pin drops / briefings.
  *
  * When the project has a programme baseline imported, this is a picker of the
