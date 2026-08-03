@@ -259,18 +259,43 @@ function parseCsvToTasks(text: string): ProgrammeTask[] {
 const DATE_RE = /(\d{4}-\d{1,2}-\d{1,2}(?:[T\s]\d{1,2}:\d{2}(?::\d{2})?)?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{1,2}[\s\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[A-Za-z]*[\s\-,]\d{2,4})/gi;
 
 /**
+ * Many PDF text extractors (unpdf included) return a whole page as one long
+ * line, which kills row-per-line table parsing. When the sheet is numbered
+ * 1..n we can put the row breaks back: insert a newline in front of each
+ * number that continues the sequence and is followed by a word.
+ */
+export function reflowNumberedRows(text: string): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  if (text.split("\n").filter((l) => l.trim()).length > 5) return text;
+
+  let expected = 1;
+  let out = "";
+  let last = 0;
+  for (const m of flat.matchAll(/(?:^|\s)(\d{1,3})\s+(?=[A-Za-z])/g)) {
+    if (Number(m[1]) !== expected) continue;
+    const at = (m.index ?? 0) + (m[0].startsWith(" ") ? 1 : 0);
+    out += flat.slice(last, at) + "\n";
+    last = at;
+    expected++;
+  }
+  return expected > 3 ? out + flat.slice(last) : text;
+}
+
+/**
  * Row-per-task text tables (very common in PDF programme exports):
  *   `12 Block and beam first floor  28/09/2026 02/10/2026 5 11`
  *   `T07 Second fix  2026-08-09 2026-08-18 10 T04,T06`
  * Captures the task ref and the predecessor column so downstream-risk works
  * on PDF imports, not just CSV.
  */
-export function parseTabularTextToTasks(text: string): ProgrammeTask[] {
+export function parseTabularTextToTasks(rawText: string): ProgrammeTask[] {
+  const text = reflowNumberedRows(rawText);
   const D = "(?:\\d{4}-\\d{1,2}-\\d{1,2}|\\d{1,2}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{2,4}|\\d{1,2}[\\s\\-][A-Za-z]{3,9}[\\s\\-,]+\\d{2,4})";
   const ROW = new RegExp(
     `^([A-Za-z]{0,3}\\d+(?:\\.\\d+)*)\\s+(.+?)\\s+(${D})\\s+(${D})` +
       `(?:\\s+(\\d+(?:\\.\\d+)?)\\s*(?:d|days?|wd)?)?` +
-      `(?:\\s+([A-Za-z0-9.,;\\s\\-]*))?$`,
+      `(?:\\s+([A-Za-z]{0,3}\\d+(?:\\.\\d+)*(?:\\s*[,;]\\s*[A-Za-z]{0,3}\\d+(?:\\.\\d+)*)*|[-–—]))?` +
+      `(?:\\s|$)`,
     "i",
   );
 
@@ -293,6 +318,7 @@ export function parseTabularTextToTasks(text: string): ProgrammeTask[] {
         : parsePredecessors(predRaw)
             .map((p) => p.replace(/\s+/g, ""))
             .filter((p) => /^[A-Za-z]{0,3}\d+(?:\.\d+)*$/.test(p));
+
 
     tasks.push({
       taskRef: m[1].trim(),
