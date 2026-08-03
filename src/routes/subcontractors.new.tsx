@@ -296,7 +296,7 @@ function RegisterPartnerPage() {
                   label="Trade Package"
                   value={form.tradePackage}
                   onChange={(v) => setField("tradePackage", v)}
-                  options={[...TRADE_OPTIONS]}
+                  options={tradeOptions}
                   required
                 />
                 <Field
