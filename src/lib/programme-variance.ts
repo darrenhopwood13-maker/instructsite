@@ -158,7 +158,12 @@ export function isVerified(d: VarianceDiary): boolean {
 }
 
 export function packageLabel(t: VarianceTask): string {
-  return (t.trade?.trim() || t.taskName.split(/[-–—:]/)[0]?.trim() || "Unassigned").slice(0, 60);
+  return (
+    t.packageRef?.trim() ||
+    t.trade?.trim() ||
+    t.taskName.split(/[-–—:]/)[0]?.trim() ||
+    "Unassigned"
+  ).slice(0, 60);
 }
 
 export function buildVariance(input: {
@@ -166,10 +171,23 @@ export function buildVariance(input: {
   pins: VariancePin[];
   diaries: VarianceDiary[];
   today: string;
+  /** Explicit trade_package -> package key links; fuzzy matching is the fallback. */
+  links?: PackageLinkMap;
 }): PackageVariance[] {
   const { tasks, pins, diaries, today } = input;
+  const links: PackageLinkMap = {};
+  for (const [label, key] of Object.entries(input.links ?? {})) {
+    links[label.trim().toLowerCase()] = key.trim().toLowerCase();
+  }
 
-  // 1. Group baseline tasks into packages (programme "trade" is the package).
+  /** Explicit link wins; only fall back to token overlap when unlinked. */
+  const belongs = (key: string, pkgTokens: Set<string>, tradePackage: string | null, zoneName: string | null) => {
+    const linked = tradePackage ? links[tradePackage.trim().toLowerCase()] : undefined;
+    if (linked) return linked === key;
+    return matchesPackage(pkgTokens, tradePackage, zoneName);
+  };
+
+  // 1. Group baseline tasks into packages (explicit package_ref, else trade).
   const groups = new Map<string, VarianceTask[]>();
   for (const t of tasks) {
     const label = packageLabel(t);
@@ -190,11 +208,10 @@ export function buildVariance(input: {
     const label = packageLabel(group[0]);
     const pkgTokens = tokens(label, ...group.map((t) => `${t.taskName} ${t.location ?? ""}`));
 
-    const pkgPins = pins.filter((p) => matchesPackage(pkgTokens, p.tradePackage, p.zoneName));
-    const pkgDiaries = diaries.filter((d) =>
-      matchesPackage(pkgTokens, d.tradePackage, d.zoneName),
-    );
+    const pkgPins = pins.filter((p) => belongs(key, pkgTokens, p.tradePackage, p.zoneName));
+    const pkgDiaries = diaries.filter((d) => belongs(key, pkgTokens, d.tradePackage, d.zoneName));
     const verified = pkgDiaries.filter(isVerified);
+
 
     // Latest verified figure per delivery stream (package + zone), averaged.
     const streams = new Map<string, VarianceDiary>();
