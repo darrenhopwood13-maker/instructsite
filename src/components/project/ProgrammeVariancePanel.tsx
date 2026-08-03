@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, ChevronRight, TrendingDown, TrendingUp, Minus, AlertTriangle } from "lucide-react";
-import { getProgrammeVariance } from "@/lib/programme-variance.functions";
+import { toast } from "sonner";
+import { ChevronDown, ChevronRight, TrendingDown, TrendingUp, Minus, AlertTriangle, Link2 } from "lucide-react";
+import { getProgrammeVariance, setProgrammePackageLink } from "@/lib/programme-variance.functions";
 import { errorMessage } from "@/lib/error-message";
 
 type Status = "ahead" | "on_track" | "behind" | "not_started" | "complete";
@@ -17,7 +18,11 @@ const STATUS_META: Record<Status, { label: string; cls: string }> = {
 
 export function ProgrammeVariancePanel({ projectId }: { projectId: string }) {
   const varianceFn = useServerFn(getProgrammeVariance);
+  const linkFn = useServerFn(setProgrammePackageLink);
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState<string | null>(null);
+  const [showMatcher, setShowMatcher] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const q = useQuery({
     queryKey: ["programme-variance", projectId],
@@ -27,6 +32,26 @@ export function ProgrammeVariancePanel({ projectId }: { projectId: string }) {
 
   const packages = useMemo(() => (q.data?.packages ?? []) as any[], [q.data]);
   const details = (q.data?.details ?? {}) as Record<string, any>;
+  const sources = ((q.data as any)?.sources ?? []) as Array<{
+    label: string;
+    pins: number;
+    diaries: number;
+    linkedTo: string | null;
+  }>;
+
+  async function saveLink(sourceLabel: string, packageKey: string | null) {
+    setSaving(sourceLabel);
+    try {
+      await linkFn({ data: { projectId, sourceLabel, packageKey } });
+      await queryClient.invalidateQueries({ queryKey: ["programme-variance", projectId] });
+      toast.success(packageKey ? "Package match saved" : "Match cleared — back to auto");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(null);
+    }
+  }
+
 
   return (
     <section className="rounded-xl border border-border bg-card/60 p-4">
@@ -37,10 +62,54 @@ export function ProgrammeVariancePanel({ projectId }: { projectId: string }) {
             Baseline compared with DABS pin activity and QS-verified diaries only.
           </p>
         </div>
-        {q.data?.today ? (
-          <span className="text-xs text-muted-foreground">as at {q.data.today}</span>
-        ) : null}
+        <div className="flex shrink-0 items-center gap-2">
+          {q.data?.today ? (
+            <span className="text-xs text-muted-foreground">as at {q.data.today}</span>
+          ) : null}
+          {sources.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowMatcher((v) => !v)}
+              className="flex items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+            >
+              <Link2 className="h-3 w-3" /> {showMatcher ? "DONE" : "FIX MATCHES"}
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      {showMatcher && sources.length > 0 ? (
+        <div className="mb-3 rounded-lg border border-border bg-background/40 p-3">
+          <p className="mb-2 text-xs text-muted-foreground">
+            Tell Randall which programme package each site package belongs to. Anything left on
+            auto is matched by wording.
+          </p>
+          <ul className="space-y-2">
+            {sources.map((s) => (
+              <li key={s.label} className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="min-w-0 flex-1 truncate font-medium">{s.label}</span>
+                <span className="text-muted-foreground">
+                  {s.pins} pins · {s.diaries} diaries
+                </span>
+                <select
+                  value={s.linkedTo ?? ""}
+                  disabled={saving === s.label}
+                  onChange={(e) => saveLink(s.label, e.target.value || null)}
+                  className="rounded border border-border bg-background px-2 py-1 text-xs"
+                >
+                  <option value="">Auto (match by wording)</option>
+                  {packages.map((p) => (
+                    <option key={p.key} value={p.key}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
 
       {q.isLoading ? (
         <p className="text-xs text-muted-foreground">Calculating variance…</p>
