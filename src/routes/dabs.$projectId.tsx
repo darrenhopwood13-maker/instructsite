@@ -225,17 +225,7 @@ function DabsPage() {
                 ))}
             </select>
           </label>
-          <label className="block">
-            <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
-              Trade Package
-            </span>
-            <input
-              value={trade}
-              onChange={(e) => setTrade(e.target.value)}
-              placeholder="e.g. Electrical First Fix"
-              className="w-full rounded-md border border-white/15 bg-black/40 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
-            />
-          </label>
+          <TradePackageField projectId={projectId} value={trade} onChange={setTrade} />
         </div>
 
         <section className="mt-6">
