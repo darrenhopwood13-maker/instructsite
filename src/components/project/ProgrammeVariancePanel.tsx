@@ -62,10 +62,54 @@ export function ProgrammeVariancePanel({ projectId }: { projectId: string }) {
             Baseline compared with DABS pin activity and QS-verified diaries only.
           </p>
         </div>
-        {q.data?.today ? (
-          <span className="text-xs text-muted-foreground">as at {q.data.today}</span>
-        ) : null}
+        <div className="flex shrink-0 items-center gap-2">
+          {q.data?.today ? (
+            <span className="text-xs text-muted-foreground">as at {q.data.today}</span>
+          ) : null}
+          {sources.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowMatcher((v) => !v)}
+              className="flex items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+            >
+              <Link2 className="h-3 w-3" /> {showMatcher ? "DONE" : "FIX MATCHES"}
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      {showMatcher && sources.length > 0 ? (
+        <div className="mb-3 rounded-lg border border-border bg-background/40 p-3">
+          <p className="mb-2 text-xs text-muted-foreground">
+            Tell Randall which programme package each site package belongs to. Anything left on
+            auto is matched by wording.
+          </p>
+          <ul className="space-y-2">
+            {sources.map((s) => (
+              <li key={s.label} className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="min-w-0 flex-1 truncate font-medium">{s.label}</span>
+                <span className="text-muted-foreground">
+                  {s.pins} pins · {s.diaries} diaries
+                </span>
+                <select
+                  value={s.linkedTo ?? ""}
+                  disabled={saving === s.label}
+                  onChange={(e) => saveLink(s.label, e.target.value || null)}
+                  className="rounded border border-border bg-background px-2 py-1 text-xs"
+                >
+                  <option value="">Auto (match by wording)</option>
+                  {packages.map((p) => (
+                    <option key={p.key} value={p.key}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
 
       {q.isLoading ? (
         <p className="text-xs text-muted-foreground">Calculating variance…</p>
