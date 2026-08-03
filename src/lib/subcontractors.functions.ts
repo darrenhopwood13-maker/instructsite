@@ -44,7 +44,7 @@ export const createSubcontractorInvite = createServerFn({ method: "POST" })
         projectId: z.string().uuid(),
         companyName: z.string().trim().min(1).max(200),
         tradePackages: z.array(z.string().trim().min(1).max(80)).min(1).max(20),
-        seatRole: z.enum(["admin", "read_only"]).default("read_only"),
+        seatRole: z.enum(["pm", "admin", "read_only"]).default("read_only"),
         registeredAddress: z.string().trim().max(500).optional().nullable(),
         officePhone: z.string().trim().max(40).optional().nullable(),
         corporateEmail: z.string().trim().email().max(200).optional().nullable().or(z.literal("")),
@@ -85,6 +85,9 @@ export const createSubcontractorInvite = createServerFn({ method: "POST" })
       .single();
     if (error) {
       const m = error.message || "";
+      if (m.includes("SEAT_CAP_PM")) {
+        throw new Error("Maximum Capacity Reached · This subcontractor already has a PM seat.");
+      }
       if (m.includes("SEAT_CAP_ADMIN")) {
         throw new Error("Maximum Capacity Reached · This subcontractor already has an admin seat.");
       }
@@ -93,7 +96,7 @@ export const createSubcontractorInvite = createServerFn({ method: "POST" })
       }
       if (m.includes("SEAT_CAP_TOTAL")) {
         throw new Error(
-          "Maximum Capacity Reached · 3 seats per subcontractor (1 admin + 2 read-only).",
+          "Maximum Capacity Reached · 4 seats per subcontractor (1 PM + 1 admin + 2 read-only).",
         );
       }
       throw new Error(error.message);
