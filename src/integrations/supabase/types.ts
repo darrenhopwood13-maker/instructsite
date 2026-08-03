@@ -844,6 +844,38 @@ export type Database = {
           },
         ]
       }
+      org_activity_types: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          org_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          org_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_activity_types_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_invites: {
         Row: {
           accepted_at: string | null
@@ -1379,6 +1411,38 @@ export type Database = {
           },
         ]
       }
+      project_activity_descriptions: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          label: string
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          label: string
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_activity_descriptions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_bible_reports: {
         Row: {
           category: string
@@ -1840,6 +1904,180 @@ export type Database = {
             columns: ["subcontractor_id"]
             isOneToOne: false
             referencedRelation: "subcontractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      short_term_programme_annotations: {
+        Row: {
+          author_user_id: string
+          created_at: string
+          id: string
+          note: string
+          programme_id: string
+          task_id: string | null
+        }
+        Insert: {
+          author_user_id: string
+          created_at?: string
+          id?: string
+          note: string
+          programme_id: string
+          task_id?: string | null
+        }
+        Update: {
+          author_user_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          programme_id?: string
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "short_term_programme_annotations_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "short_term_programmes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "short_term_programme_annotations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "short_term_programme_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      short_term_programme_tasks: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          local_ref: string
+          predecessors: string[]
+          programme_id: string
+          seq: number
+          start_date: string
+          status: string
+          task_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          local_ref: string
+          predecessors?: string[]
+          programme_id: string
+          seq?: number
+          start_date: string
+          status?: string
+          task_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          local_ref?: string
+          predecessors?: string[]
+          programme_id?: string
+          seq?: number
+          start_date?: string
+          status?: string
+          task_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "short_term_programme_tasks_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "short_term_programmes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      short_term_programmes: {
+        Row: {
+          company_name: string
+          created_at: string
+          created_by: string
+          created_via: string
+          id: string
+          package_invite_id: string
+          package_label: string
+          project_id: string
+          site_document_id: string | null
+          site_manager_accepted_at: string | null
+          site_manager_accepted_by: string | null
+          site_manager_user_id: string | null
+          status: string
+          subcontractor_accepted_at: string | null
+          subcontractor_accepted_by: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          created_by: string
+          created_via: string
+          id?: string
+          package_invite_id: string
+          package_label: string
+          project_id: string
+          site_document_id?: string | null
+          site_manager_accepted_at?: string | null
+          site_manager_accepted_by?: string | null
+          site_manager_user_id?: string | null
+          status?: string
+          subcontractor_accepted_at?: string | null
+          subcontractor_accepted_by?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          created_by?: string
+          created_via?: string
+          id?: string
+          package_invite_id?: string
+          package_label?: string
+          project_id?: string
+          site_document_id?: string | null
+          site_manager_accepted_at?: string | null
+          site_manager_accepted_by?: string | null
+          site_manager_user_id?: string | null
+          status?: string
+          subcontractor_accepted_at?: string | null
+          subcontractor_accepted_by?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "short_term_programmes_package_invite_id_fkey"
+            columns: ["package_invite_id"]
+            isOneToOne: false
+            referencedRelation: "subcontractor_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "short_term_programmes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "short_term_programmes_site_document_id_fkey"
+            columns: ["site_document_id"]
+            isOneToOne: false
+            referencedRelation: "site_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -2550,6 +2788,10 @@ export type Database = {
           out_role: string
         }[]
       }
+      accept_short_term_programme: {
+        Args: { _programme_id: string }
+        Returns: string
+      }
       accept_subcontractor_invite: {
         Args: { _token_hash: string }
         Returns: {
@@ -2707,9 +2949,25 @@ export type Database = {
         Args: { _permit_id: string; _reason?: string }
         Returns: boolean
       }
+      send_short_term_programme_for_approval: {
+        Args: { _programme_id: string }
+        Returns: undefined
+      }
       site_document_project_ids: {
         Args: { _document_id: string }
         Returns: string[]
+      }
+      stp_role_for: {
+        Args: { _programme_id: string; _user_id: string }
+        Returns: string
+      }
+      stp_visible: {
+        Args: {
+          _package_invite_id: string
+          _project_id: string
+          _user_id: string
+        }
+        Returns: boolean
       }
       subcontractor_project_id: { Args: { _sub_id: string }; Returns: string }
       subcontractor_seat_usage: {
