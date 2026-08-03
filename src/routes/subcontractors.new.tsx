@@ -10,6 +10,8 @@ import { createSubcontractorInvite } from "@/lib/subcontractors.functions";
 import { getSubcontractorSeatUsage } from "@/lib/subscriptions.functions";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { TRADE_PACKAGES as TRADE_OPTIONS } from "@/lib/trade-packages";
+import { useProgrammePackages } from "@/components/project/TradePackageField";
+
 
 export const Route = createFileRoute("/subcontractors/new")({
   head: () => ({
