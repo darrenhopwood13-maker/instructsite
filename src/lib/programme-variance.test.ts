@@ -113,3 +113,53 @@ describe("buildVariance", () => {
     expect(note).toContain("20%");
   });
 });
+
+describe("explicit package links", () => {
+  const linkTasks = [
+    task({
+      id: "t1",
+      taskRef: "T01",
+      taskName: "Electrical first fix",
+      trade: "Electrical",
+      startDate: "2026-08-01",
+      endDate: "2026-08-10",
+    }),
+  ];
+
+  it("uses an explicit link even when the wording does not match", () => {
+    const res = buildVariance({
+      tasks: linkTasks,
+      pins: [],
+      diaries: [diary({ id: "d1", tradePackage: "Sparks Ltd package 4", qsVerifiedPct: 60 })],
+      today: "2026-08-05",
+      links: { "sparks ltd package 4": "electrical" },
+    });
+    expect(res[0].actualPct).toBe(60);
+  });
+
+  it("a linked package is excluded from other packages it would fuzzy-match", () => {
+    const res = buildVariance({
+      tasks: linkTasks,
+      pins: [],
+      diaries: [diary({ id: "d1", tradePackage: "Electrical first fix", qsVerifiedPct: 60 })],
+      today: "2026-08-05",
+      links: { "electrical first fix": "some other package" },
+    });
+    expect(res[0].actualPct).toBe(0);
+    expect(res[0].verifiedDiaryIds).toHaveLength(0);
+  });
+
+  it("groups tasks by package_ref when set", () => {
+    const res = buildVariance({
+      tasks: [
+        task({ id: "a", trade: "Electrical", packageRef: "MEP", startDate: "2026-08-01", endDate: "2026-08-10" }),
+        task({ id: "b", trade: "Mechanical", packageRef: "MEP", startDate: "2026-08-01", endDate: "2026-08-10" }),
+      ],
+      pins: [],
+      diaries: [],
+      today: "2026-08-05",
+    });
+    expect(res).toHaveLength(1);
+    expect(res[0].label).toBe("MEP");
+  });
+});
