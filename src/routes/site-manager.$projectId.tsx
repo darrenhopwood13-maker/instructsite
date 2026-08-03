@@ -278,7 +278,15 @@ function SiteManagerPage() {
           >
             <BookOpen size={14} /> My Site Diary
           </Link>
+          <Link
+            to="/short-term/$projectId"
+            params={{ projectId }}
+            className="inline-flex items-center gap-2 rounded-md border-2 border-white/20 bg-black/40 px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest text-foreground/80 hover:border-alert hover:text-alert transition-colors"
+          >
+            <BookOpen size={14} /> Short-Term Programmes
+          </Link>
         </div>
+
 
 
         <section className="mt-6">
