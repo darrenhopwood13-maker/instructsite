@@ -33,6 +33,7 @@ import { Route as SubcontractorProjectIdRouteImport } from './routes/subcontract
 import { Route as SnagsNewRouteImport } from './routes/snags.new'
 import { Route as SnagsSnagIdRouteImport } from './routes/snags.$snagId'
 import { Route as SiteManagerProjectIdRouteImport } from './routes/site-manager.$projectId'
+import { Route as ShortTermProjectIdRouteImport } from './routes/short-term.$projectId'
 import { Route as QsProjectIdRouteImport } from './routes/qs.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
@@ -180,6 +181,11 @@ const SnagsSnagIdRoute = SnagsSnagIdRouteImport.update({
 const SiteManagerProjectIdRoute = SiteManagerProjectIdRouteImport.update({
   id: '/site-manager/$projectId',
   path: '/site-manager/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShortTermProjectIdRoute = ShortTermProjectIdRouteImport.update({
+  id: '/short-term/$projectId',
+  path: '/short-term/$projectId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QsProjectIdRoute = QsProjectIdRouteImport.update({
@@ -362,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/qs/$projectId': typeof QsProjectIdRoute
+  '/short-term/$projectId': typeof ShortTermProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
@@ -415,6 +422,7 @@ export interface FileRoutesByTo {
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/qs/$projectId': typeof QsProjectIdRoute
+  '/short-term/$projectId': typeof ShortTermProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
@@ -470,6 +478,7 @@ export interface FileRoutesById {
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/qs/$projectId': typeof QsProjectIdRoute
+  '/short-term/$projectId': typeof ShortTermProjectIdRoute
   '/site-manager/$projectId': typeof SiteManagerProjectIdRoute
   '/snags/$snagId': typeof SnagsSnagIdRoute
   '/snags/new': typeof SnagsNewRoute
@@ -526,6 +535,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/qs/$projectId'
+    | '/short-term/$projectId'
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
@@ -579,6 +589,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/qs/$projectId'
+    | '/short-term/$projectId'
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
@@ -633,6 +644,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/qs/$projectId'
+    | '/short-term/$projectId'
     | '/site-manager/$projectId'
     | '/snags/$snagId'
     | '/snags/new'
@@ -687,6 +699,7 @@ export interface RootRouteChildren {
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   QsProjectIdRoute: typeof QsProjectIdRoute
+  ShortTermProjectIdRoute: typeof ShortTermProjectIdRoute
   SiteManagerProjectIdRoute: typeof SiteManagerProjectIdRoute
   SnagsSnagIdRoute: typeof SnagsSnagIdRoute
   SnagsNewRoute: typeof SnagsNewRoute
@@ -876,6 +889,13 @@ declare module '@tanstack/react-router' {
       path: '/site-manager/$projectId'
       fullPath: '/site-manager/$projectId'
       preLoaderRoute: typeof SiteManagerProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/short-term/$projectId': {
+      id: '/short-term/$projectId'
+      path: '/short-term/$projectId'
+      fullPath: '/short-term/$projectId'
+      preLoaderRoute: typeof ShortTermProjectIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/qs/$projectId': {
@@ -1135,6 +1155,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   QsProjectIdRoute: QsProjectIdRoute,
+  ShortTermProjectIdRoute: ShortTermProjectIdRoute,
   SiteManagerProjectIdRoute: SiteManagerProjectIdRoute,
   SnagsSnagIdRoute: SnagsSnagIdRoute,
   SnagsNewRoute: SnagsNewRoute,
