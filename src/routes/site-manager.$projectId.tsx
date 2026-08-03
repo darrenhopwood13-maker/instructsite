@@ -19,6 +19,7 @@ import { ForceCheckoutModal } from "@/components/project/ForceCheckoutModal";
 import { ClientOnly } from "@tanstack/react-router";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { PinInfoModal } from "@/components/project/PinInfoModal";
+import { ProgrammeVariancePanel } from "@/components/project/ProgrammeVariancePanel";
 import { pinColor, pinKey } from "@/lib/pin-color";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 
@@ -308,6 +309,11 @@ function SiteManagerPage() {
           <StatCard label="Overtime" value={String(overtime.length)} tone={overtime.length ? "alert" : "ok"} />
           <StatCard label="Archived Today" value={String(archivedToday.data?.count ?? 0)} />
         </section>
+
+        <section className="mt-8">
+          <ProgrammeVariancePanel projectId={projectId} />
+        </section>
+
 
         <CollapsibleSection
           label="BIM / IFC Model"
