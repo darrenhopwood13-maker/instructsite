@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, ChevronRight, TrendingDown, TrendingUp, Minus, AlertTriangle } from "lucide-react";
-import { getProgrammeVariance } from "@/lib/programme-variance.functions";
+import { toast } from "sonner";
+import { ChevronDown, ChevronRight, TrendingDown, TrendingUp, Minus, AlertTriangle, Link2 } from "lucide-react";
+import { getProgrammeVariance, setProgrammePackageLink } from "@/lib/programme-variance.functions";
 import { errorMessage } from "@/lib/error-message";
 
 type Status = "ahead" | "on_track" | "behind" | "not_started" | "complete";
@@ -17,7 +18,11 @@ const STATUS_META: Record<Status, { label: string; cls: string }> = {
 
 export function ProgrammeVariancePanel({ projectId }: { projectId: string }) {
   const varianceFn = useServerFn(getProgrammeVariance);
+  const linkFn = useServerFn(setProgrammePackageLink);
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState<string | null>(null);
+  const [showMatcher, setShowMatcher] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const q = useQuery({
     queryKey: ["programme-variance", projectId],
@@ -27,6 +32,26 @@ export function ProgrammeVariancePanel({ projectId }: { projectId: string }) {
 
   const packages = useMemo(() => (q.data?.packages ?? []) as any[], [q.data]);
   const details = (q.data?.details ?? {}) as Record<string, any>;
+  const sources = ((q.data as any)?.sources ?? []) as Array<{
+    label: string;
+    pins: number;
+    diaries: number;
+    linkedTo: string | null;
+  }>;
+
+  async function saveLink(sourceLabel: string, packageKey: string | null) {
+    setSaving(sourceLabel);
+    try {
+      await linkFn({ data: { projectId, sourceLabel, packageKey } });
+      await queryClient.invalidateQueries({ queryKey: ["programme-variance", projectId] });
+      toast.success(packageKey ? "Package match saved" : "Match cleared — back to auto");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(null);
+    }
+  }
+
 
   return (
     <section className="rounded-xl border border-border bg-card/60 p-4">
