@@ -258,6 +258,58 @@ function parseCsvToTasks(text: string): ProgrammeTask[] {
 
 const DATE_RE = /(\d{4}-\d{1,2}-\d{1,2}(?:[T\s]\d{1,2}:\d{2}(?::\d{2})?)?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{1,2}[\s\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[A-Za-z]*[\s\-,]\d{2,4})/gi;
 
+/**
+ * Row-per-task text tables (very common in PDF programme exports):
+ *   `12 Block and beam first floor  28/09/2026 02/10/2026 5 11`
+ *   `T07 Second fix  2026-08-09 2026-08-18 10 T04,T06`
+ * Captures the task ref and the predecessor column so downstream-risk works
+ * on PDF imports, not just CSV.
+ */
+export function parseTabularTextToTasks(text: string): ProgrammeTask[] {
+  const D = "(?:\\d{4}-\\d{1,2}-\\d{1,2}|\\d{1,2}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{2,4}|\\d{1,2}[\\s\\-][A-Za-z]{3,9}[\\s\\-,]+\\d{2,4})";
+  const ROW = new RegExp(
+    `^([A-Za-z]{0,3}\\d+(?:\\.\\d+)*)\\s+(.+?)\\s+(${D})\\s+(${D})` +
+      `(?:\\s+(\\d+(?:\\.\\d+)?)\\s*(?:d|days?|wd)?)?` +
+      `(?:\\s+([A-Za-z0-9.,;\\s\\-]*))?$`,
+    "i",
+  );
+
+  const tasks: ProgrammeTask[] = [];
+  for (const rawLine of text.replace(/\r/g, "\n").split("\n")) {
+    const line = rawLine.replace(/\s+/g, " ").trim();
+    if (!line || /^page\s+\d+/i.test(line)) continue;
+    const m = line.match(ROW);
+    if (!m) continue;
+
+    const name = cleanTaskName(m[2]);
+    if (name.length < 3) continue;
+    if (dateMatches(name).length) continue;
+
+    const dur = m[5] ? Number(m[5]) : NaN;
+    const predRaw = (m[6] ?? "").trim();
+    const predecessors =
+      !predRaw || /^[-–—]$/.test(predRaw)
+        ? []
+        : parsePredecessors(predRaw)
+            .map((p) => p.replace(/\s+/g, ""))
+            .filter((p) => /^[A-Za-z]{0,3}\d+(?:\.\d+)*$/.test(p));
+
+    tasks.push({
+      taskRef: m[1].trim(),
+      predecessors,
+      durationDays: Number.isFinite(dur) && dur > 0 ? Math.round(dur) : undefined,
+      taskName: name,
+      startDate: m[3],
+      endDate: m[4],
+      trade: inferTrade(name),
+      location: inferLocation(name),
+    });
+  }
+  return mergeTasks(tasks);
+}
+
+
+
 function dateMatches(line: string): { raw: string; iso: string; index: number }[] {
   const matches: { raw: string; iso: string; index: number }[] = [];
   for (const m of line.matchAll(DATE_RE)) {
@@ -439,8 +491,10 @@ async function aiExtractFromText(text: string): Promise<ProgrammeTask[]> {
       system: "You are a construction programme parser. Extract scheduled tasks only, ignoring headers and non-task lines.",
       prompt:
         "Extract construction programme activities from the text below. Return one JSON object only in this exact shape: " +
-        "{\"projectStart\":\"\",\"projectEnd\":\"\",\"tasks\":[{\"taskName\":\"\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"trade\":\"\",\"location\":\"\"}]}. " +
+        "{\"projectStart\":\"\",\"projectEnd\":\"\",\"tasks\":[{\"taskRef\":\"\",\"taskName\":\"\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"durationDays\":0,\"predecessors\":[],\"trade\":\"\",\"location\":\"\"}]}. " +
+        "taskRef is the printed activity ID / line number exactly as shown (empty string if none). predecessors is the list of activity IDs in a Predecessors / Pred / Depends-on column, split on commas, using the same ID format as taskRef; use [] when the cell is blank or '-'. " +
         "Return only dated work tasks. Dates must be ISO YYYY-MM-DD. Skip headings, summaries, blank rows, metadata, legends, and date-axis labels. No prose.\n\n---\n\n" +
+
         text.slice(0, 45_000),
       maxOutputTokens: 16384,
 
@@ -474,12 +528,14 @@ async function aiExtractFromPdf(bytes: Uint8Array, fileName: string): Promise<Pr
   try {
     const prompt =
       "You are reading a construction programme (Gantt chart) PDF. Extract every real scheduled activity. " +
-      "Return one JSON object only in this exact shape: {\"projectStart\":\"\",\"projectEnd\":\"\",\"tasks\":[{\"taskName\":\"\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"trade\":\"\",\"location\":\"\"}]}. " +
+      "Return one JSON object only in this exact shape: {\"projectStart\":\"\",\"projectEnd\":\"\",\"tasks\":[{\"taskRef\":\"\",\"taskName\":\"\",\"startDate\":\"YYYY-MM-DD\",\"endDate\":\"YYYY-MM-DD\",\"durationDays\":0,\"predecessors\":[],\"trade\":\"\",\"location\":\"\"}]}. " +
       "Rules: (1) taskName is the row label as printed. " +
       "(2) startDate and endDate MUST be ISO YYYY-MM-DD — infer year from the chart's date axis; if only month/day is visible, use the year from the header or title block. " +
       "(3) Skip summary/rollup rows, section headers, legends, and zero-duration milestones unless they have an explicit date. " +
       "(4) trade and location only if visibly labelled in a column; otherwise leave empty. " +
-      "(5) If this PDF is not a programme/schedule, return {\"tasks\": []}. No prose.";
+      "(5) taskRef is the printed activity ID / line number (empty string if the sheet has none). predecessors are the activity IDs listed in a Predecessors / Pred / Depends-on column, in the same ID format as taskRef; use [] when blank or '-'. Never invent dependencies from arrows or bar positions — only read a printed column. " +
+      "(6) If this PDF is not a programme/schedule, return {\"tasks\": []}. No prose.";
+
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -575,10 +631,16 @@ export async function compileProgrammeFile(input: {
     try {
       text = await extractPdfText(bytes);
       console.info("[Randall] pdf text extracted", { chars: text.length });
+
+      // Row-per-task tables first — they carry activity IDs and predecessors.
+      const tabular = parseTabularTextToTasks(text);
+      if (tabular.length >= 3) return { tasks: tabular, source: "pdf-text" };
+
       tasks = parseFreeTextToTasks(text);
       // Guard against visual Gantt PDFs whose only text is a month/year
       // scale — those tend to produce 0-2 bogus "tasks" from axis labels.
       if (tasks.length >= 3) return { tasks, source: "pdf-text" };
+
 
       // Try AI on the extracted text if we have any.
       if (text.trim().length > 100) {
@@ -623,8 +685,12 @@ export async function compileProgrammeFile(input: {
     if (tasks.length) return { tasks, source: "csv" };
   }
 
+  tasks = parseTabularTextToTasks(text);
+  if (tasks.length) return { tasks, source: "text" };
+
   tasks = parseFreeTextToTasks(text);
   if (tasks.length) return { tasks, source: "text" };
+
 
   tasks = await aiExtractFromText(text);
   if (tasks.length) return { tasks, source: "ai" };

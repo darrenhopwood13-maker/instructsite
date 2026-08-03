@@ -1225,6 +1225,44 @@ export type Database = {
           },
         ]
       }
+      programme_package_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          package_key: string
+          project_id: string
+          source_label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          package_key: string
+          project_id: string
+          source_label: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          package_key?: string
+          project_id?: string
+          source_label?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_package_links_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       programme_reference_tasks: {
         Row: {
           allowed_days: number | null
@@ -1233,6 +1271,7 @@ export type Database = {
           end_date: string
           id: string
           location: string | null
+          package_ref: string | null
           plain_english: string
           predecessors: string[]
           programme_upload_id: string
@@ -1249,6 +1288,7 @@ export type Database = {
           end_date: string
           id?: string
           location?: string | null
+          package_ref?: string | null
           plain_english: string
           predecessors?: string[]
           programme_upload_id: string
@@ -1265,6 +1305,7 @@ export type Database = {
           end_date?: string
           id?: string
           location?: string | null
+          package_ref?: string | null
           plain_english?: string
           predecessors?: string[]
           programme_upload_id?: string
