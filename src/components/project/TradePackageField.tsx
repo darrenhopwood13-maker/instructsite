@@ -44,16 +44,9 @@ export function TradePackageField({
   onChange: (v: string) => void;
   label?: string;
 }) {
-  const listFn = useServerFn(listProgrammePackages);
-  const q = useQuery({
-    queryKey: ["programme-packages", projectId],
-    queryFn: () => listFn({ data: { projectId } }),
-    staleTime: 5 * 60_000,
-    retry: false,
-  });
+  const { packages, hasBaseline, isLoading } = useProgrammePackages(projectId);
+  const q = { isLoading };
 
-  const packages = q.data?.packages ?? [];
-  const hasBaseline = !!q.data?.hasBaseline;
   const matchesPackage = useMemo(
     () => packages.some((p) => p.label.toLowerCase() === value.trim().toLowerCase()),
     [packages, value],
