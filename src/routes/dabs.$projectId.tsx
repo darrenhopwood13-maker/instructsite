@@ -11,6 +11,7 @@ import { DrawingCanvas } from "@/components/project/DrawingCanvas";
 import { CheckoutDiaryModal } from "@/components/project/CheckoutDiaryModal";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { PinInfoModal } from "@/components/project/PinInfoModal";
+import { TradePackageField } from "@/components/project/TradePackageField";
 import { pinColor, pinKey } from "@/lib/pin-color";
 import { ensureOracleSession } from "@/lib/ensure-oracle-session";
 import { detectHazards, hazardLabel } from "@/lib/high-risk";
