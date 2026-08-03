@@ -536,27 +536,13 @@ export function TradeDirectoryPanel({
           placeholder="Invited contact email"
           className="rounded-sm border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-alert"
         />
-        <div>
-          <div className="flex flex-wrap gap-1">
-            {TRADE_PACKAGES.map((p) => {
-              const on = packages.includes(p);
-              return (
-                <button
-                  type="button"
-                  key={p}
-                  onClick={() => togglePackage(p)}
-                  className={`rounded-sm border px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest transition ${
-                    on
-                      ? "border-alert bg-alert/20 text-alert"
-                      : "border-white/15 text-foreground/60 hover:border-white/40"
-                  }`}
-                >
-                  {p}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <TradePackageChips
+          projectId={projectId}
+          value={packages}
+          onChange={setPackages}
+          fallbackOptions={TRADE_PACKAGES}
+        />
+
         <button
           type="submit"
           disabled={busy || !companyName.trim() || !inviteEmail.trim() || packages.length === 0}
