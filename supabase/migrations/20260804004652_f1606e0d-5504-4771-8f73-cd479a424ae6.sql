@@ -1,0 +1,1 @@
+ALTER TABLE public.subcontractor_invites DROP CONSTRAINT IF EXISTS subcontractor_invites_seat_role_check;
