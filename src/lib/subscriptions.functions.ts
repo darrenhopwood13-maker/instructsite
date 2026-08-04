@@ -197,11 +197,13 @@ export const getSubcontractorSeatUsage = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     const r = (rows as any[])?.[0];
     return {
+      pmUsed: r?.pm_used ?? 0,
       adminUsed: r?.admin_used ?? 0,
       readonlyUsed: r?.readonly_used ?? 0,
+      pmCap: 1,
       adminCap: 1,
       readonlyCap: 2,
-      totalCap: 3,
+      totalCap: 4,
     };
   });
 

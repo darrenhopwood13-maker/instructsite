@@ -237,8 +237,9 @@ export function ShortTermProgrammeDetail({
 
         {!pmSeat && (
           <p className="mt-3 rounded-md border border-amber-400/50 bg-amber-400/10 p-2.5 text-xs text-amber-200">
-            {programme.companyName} has no project manager seat accepted on this project yet, so
-            nobody can counter-sign. Invite their PM on an admin seat from the Trade Directory first.
+            {programme.companyName} has nobody holding the PM seat on this project yet, so nobody
+            can counter-sign. Designate their PM seat in the Trade Directory first (an admin seat is
+            not sufficient).
           </p>
         )}
 

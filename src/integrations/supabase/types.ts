@@ -2827,6 +2827,10 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      designate_subcontractor_pm_seat: {
+        Args: { _invite_id: string }
+        Returns: string
+      }
       email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
@@ -2975,6 +2979,8 @@ export type Database = {
         Returns: {
           admin_cap: number
           admin_used: number
+          pm_cap: number
+          pm_used: number
           readonly_cap: number
           readonly_used: number
           total_cap: number

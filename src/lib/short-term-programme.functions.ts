@@ -45,14 +45,14 @@ async function nameMap(supabase: any, ids: Array<string | null | undefined>) {
   return out;
 }
 
-/** Whether the company has an accepted PM (admin) seat able to counter-sign. */
+/** Whether the company has an accepted PM seat able to counter-sign. */
 async function pmSeatFor(supabase: any, projectId: string, companyName: string) {
   const { data } = await supabase
     .from("subcontractor_invites")
     .select("id,accepted_by,pm_name,seat_role,company_name")
     .eq("project_id", projectId)
     .is("revoked_at", null)
-    .eq("seat_role", "admin")
+    .eq("seat_role", "pm")
     .limit(50);
   const row = ((data ?? []) as any[]).find(
     (r) => r.company_name?.toLowerCase() === companyName.toLowerCase() && r.accepted_by,
@@ -107,7 +107,7 @@ export const listShortTermProgrammes = createServerFn({ method: "POST" })
     const inviteRows = (invites ?? []) as any[];
     const companiesWithPm = new Set(
       inviteRows
-        .filter((i) => i.seat_role === "admin" && i.accepted_by)
+        .filter((i) => i.seat_role === "pm" && i.accepted_by)
         .map((i) => String(i.company_name).toLowerCase()),
     );
     const targets: Array<{
@@ -120,7 +120,7 @@ export const listShortTermProgrammes = createServerFn({ method: "POST" })
       pmName: string | null;
     }> = [];
     for (const inv of inviteRows) {
-      if (inv.seat_role !== "admin") continue;
+      if (inv.seat_role !== "admin" && inv.seat_role !== "pm") continue;
       for (const pkg of (inv.trade_packages ?? []) as string[]) {
         const used = acceptedCounts[`${inv.company_name.toLowerCase()}|${pkg.toLowerCase()}`] ?? 0;
         targets.push({
