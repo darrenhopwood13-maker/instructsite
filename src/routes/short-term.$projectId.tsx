@@ -43,6 +43,7 @@ function ShortTermProgrammesPage() {
   const getP = useServerFn(getProject);
   const listFn = useServerFn(listShortTermProgrammes);
 
+  const [tab, setTab] = useState<"shared" | "private">("shared");
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -58,6 +59,7 @@ function ShortTermProgrammesPage() {
   const programmes = list.data?.programmes ?? [];
   const targets = list.data?.targets ?? [];
   const cap = list.data?.cap ?? 5;
+
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
