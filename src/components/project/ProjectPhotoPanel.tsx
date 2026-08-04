@@ -66,7 +66,7 @@ export function ProjectPhotoPanel({ projectId, ready = true }: Props) {
 
   return (
     <div
-      className="glass-panel relative w-full overflow-hidden rounded-2xl border border-white/10 !p-0"
+      className="glass-panel relative w-full overflow-hidden rounded-2xl border border-white/10 p-0!"
       data-tour="project-photo"
     >
       <input
@@ -87,8 +87,7 @@ export function ProjectPhotoPanel({ projectId, ready = true }: Props) {
             src={url}
             alt="Project cover photograph"
             loading="lazy"
-            className="block w-full object-cover"
-            style={{ height: "13.5rem" }}
+            className="block h-44 w-full object-cover sm:h-52 md:h-[13.5rem]!"
           />
           {canManage && (
             <button
