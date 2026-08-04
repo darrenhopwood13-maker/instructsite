@@ -346,6 +346,7 @@ function ProgrammePage() {
                 </p>
               </div>
               <button
+                data-tour="programme-upload"
                 type="button"
                 disabled={compileMut.isPending}
                 onClick={() => fileInput.current?.click()}

@@ -310,7 +310,7 @@ function ProjectDetail() {
         />
 
         {isAdmin && (
-          <section className="mt-8">
+          <section className="mt-8" data-tour="team-section">
             <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
               Project Administration
             </p>
@@ -352,6 +352,7 @@ function ProjectDetail() {
 
           <div className="mt-5 grid auto-rows-fr gap-4 md:grid-cols-2">
             <DropZone
+              dataTour="upload-drawings"
               projectId={projectId}
               docType="drawing"
               title="GA Drawings"
@@ -359,6 +360,7 @@ function ProjectDetail() {
               onUploaded={refresh}
             />
             <DropZone
+              dataTour="upload-logistics"
               projectId={projectId}
               docType="logistics"
               title="Site Logistics"
@@ -387,7 +389,7 @@ function ProjectDetail() {
 
         {/* Symmetric 2-col: Zones | unified RAMS Management */}
         <section className="mt-8 grid auto-rows-fr gap-6 lg:grid-cols-2">
-          <div className="flex h-full flex-col">
+          <div className="flex h-full flex-col" data-tour="zones">
             <ZoneMap
               zones={(zones.data ?? []) as never}
               selectedId={selectedZone}
@@ -395,7 +397,7 @@ function ProjectDetail() {
               onLockOracle={lockOracle}
             />
           </div>
-          <div className="flex h-full flex-col">
+          <div className="flex h-full flex-col" data-tour="upload-rams">
             <UnifiedRamsBlock
               projectId={projectId}
               rams={rams.data ?? []}
