@@ -147,6 +147,7 @@ function ProjectBiblePage() {
           <div className="relative flex-1 min-w-[220px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
+              data-tour="bible-search"
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -154,7 +155,7 @@ function ProjectBiblePage() {
               className="w-full rounded-md border border-border/60 bg-background/60 px-9 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none"
             />
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5" data-tour="bible-filters">
             {categories.map((c) => (
               <button
                 key={c}

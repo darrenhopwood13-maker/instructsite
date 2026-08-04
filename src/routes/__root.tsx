@@ -22,6 +22,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { getGateStatus } from "../lib/gate.functions";
 import { OracleFAB } from "@/components/OracleFAB";
+import { LiveTourFAB } from "@/components/tour/LiveTourFAB";
 
 
 function NotFoundComponent() {
@@ -529,6 +530,7 @@ function RootComponent() {
         </main>
       </div>
       <OracleFAB />
+      <LiveTourFAB />
     </QueryClientProvider>
   );
 }

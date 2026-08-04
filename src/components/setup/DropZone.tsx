@@ -48,8 +48,11 @@ interface Props {
   };
   /** When set, disables the drop input and shows the reason. */
   disabledReason?: string;
+  /** Stable hook for the live guided tour spotlight. */
+  dataTour?: string;
   onUploaded?: () => void;
 }
+
 
 type PendingDup = {
   file: File;
@@ -72,6 +75,7 @@ export function DropZone({
   accent = "orange",
   extraFields,
   disabledReason,
+  dataTour,
   onUploaded,
 }: Props) {
   const [items, setItems] = useState<Item[]>([]);
@@ -263,7 +267,7 @@ export function DropZone({
         : "border-white/25";
 
   return (
-    <div className="glass-panel p-6">
+    <div className="glass-panel p-6" data-tour={dataTour}>
       <div className="mb-4 flex items-baseline justify-between gap-4">
         <div>
           <p className="text-[0.65rem] font-bold uppercase tracking-[0.35em] text-alert">

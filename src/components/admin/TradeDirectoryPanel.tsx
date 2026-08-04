@@ -391,6 +391,7 @@ export function TradeDirectoryPanel({
             size="sm"
             variant="outline"
             onClick={() => setShowManagerInvite((open) => !open)}
+              data-tour="invite-site-manager"
             className="h-7 border-alert/60 bg-alert/10 px-2 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert hover:bg-alert/20 hover:text-alert"
           >
             <UserPlus size={11} /> Invite a Site Manager
@@ -505,6 +506,7 @@ export function TradeDirectoryPanel({
               size="sm"
               variant="outline"
               onClick={() => setShowPaInvite((open) => !open)}
+              data-tour="invite-project-admin"
               className="h-7 border-alert/60 bg-alert/10 px-2 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert hover:bg-alert/20 hover:text-alert"
             >
               <UserPlus size={11} /> Invite a Project Admin
@@ -586,6 +588,7 @@ export function TradeDirectoryPanel({
               size="sm"
               variant="outline"
               onClick={() => setShowQsInvite((open) => !open)}
+              data-tour="invite-qs"
               className="h-7 border-alert/60 bg-alert/10 px-2 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert hover:bg-alert/20 hover:text-alert"
             >
               <UserPlus size={11} /> Invite a QS
@@ -665,6 +668,7 @@ export function TradeDirectoryPanel({
 
       <form onSubmit={submit} className="mt-2 grid gap-1.5">
         <input
+          data-tour="sub-company"
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
           placeholder="Subcontractor company name"
@@ -686,6 +690,7 @@ export function TradeDirectoryPanel({
         />
 
         <button
+          data-tour="sub-generate"
           type="submit"
           disabled={busy || !companyName.trim() || !inviteEmail.trim() || packages.length === 0}
           className="btn-primary inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.6rem] uppercase tracking-widest disabled:opacity-40"
@@ -742,7 +747,10 @@ export function TradeDirectoryPanel({
         </div>
       )}
 
-      <div className="mt-3 max-h-64 overflow-y-auto rounded-md border border-white/10 bg-black/40">
+      <div
+        data-tour="sub-directory"
+        className="mt-3 max-h-64 overflow-y-auto rounded-md border border-white/10 bg-black/40"
+      >
         {list.length === 0 && (
           <p className="p-3 text-center text-xs text-foreground/50">
             No subcontractors invited yet.

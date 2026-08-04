@@ -100,6 +100,7 @@ function ProjectsPage() {
               key={p.id}
               to="/projects/$projectId"
               params={{ projectId: p.id }}
+              data-tour="project-card"
               className="glass-panel group block p-5 transition-transform hover:-translate-y-0.5"
             >
               <div className="flex items-start justify-between gap-3">
