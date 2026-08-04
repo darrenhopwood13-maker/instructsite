@@ -186,14 +186,22 @@ function ProjectDetail() {
           <ArrowLeft size={12} /> All Projects
         </Link>
 
-        <div className="mt-4 flex flex-col items-start justify-between gap-4 md:flex-row">
-          <div className="min-w-0">
+        <div className="mt-4 flex flex-col items-start justify-between gap-4 md:flex-row md:items-start">
+          <div className="min-w-0 flex-1 md:min-w-[20rem] md:max-w-[42rem]">
             <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
               Project
             </p>
             <h1
-              className="mt-1 break-words text-2xl font-extrabold uppercase tracking-tight text-foreground sm:text-4xl md:text-5xl"
-              style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
+              className={`mt-1 break-normal hyphens-none font-extrabold uppercase tracking-tight text-foreground ${
+                (project.data?.name?.length ?? 0) > 28
+                  ? "text-xl sm:text-2xl md:text-3xl"
+                  : "text-2xl sm:text-4xl md:text-5xl"
+              }`}
+              style={{
+                fontFamily: "'Zen Dots', 'Inter Tight', sans-serif",
+                overflowWrap: "break-word",
+                wordBreak: "normal",
+              }}
             >
               {project.data?.name ?? "…"}
             </h1>
@@ -204,7 +212,8 @@ function ProjectDetail() {
               </p>
             )}
           </div>
-          <div className="flex w-full min-w-0 flex-wrap gap-2 md:w-auto md:flex-nowrap">
+          <div className="flex w-full min-w-0 flex-wrap gap-2 md:w-auto md:max-w-[26rem] md:justify-end">
+
             <Link
               to="/dabs/$projectId"
               params={{ projectId }}
