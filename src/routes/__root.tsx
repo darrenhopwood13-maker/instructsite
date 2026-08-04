@@ -512,7 +512,7 @@ function RootComponent() {
       </div>
       <div className="relative z-10">
         <header className="border-b border-white/10 bg-background/70 backdrop-blur">
-          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
+          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:gap-6 sm:px-6">
             <Link
               to="/"
               className="flex items-baseline text-xl font-extrabold leading-none tracking-tight"
