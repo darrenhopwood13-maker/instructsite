@@ -118,6 +118,10 @@ export async function suggestGenericType(label: string): Promise<string | null> 
 }
 
 /** A4 PDF of an accepted short-term programme, filed into the project bible. */
+/**
+ * Rendered with pdf-lib, not jsPDF: this runs inside the edge worker on
+ * acceptance, where jsPDF's UMD bundle fails with "jsPDF is not a constructor".
+ */
 export async function renderProgrammePdf(input: {
   title: string;
   companyName: string;
@@ -127,59 +131,109 @@ export async function renderProgrammePdf(input: {
   acceptedBySubcontractor: string;
   tasks: StpTask[];
 }): Promise<Uint8Array> {
-  const { default: jsPDF } = await import("jspdf");
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const m = 16;
-  let y = 20;
+  const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
+  const doc = await PDFDocument.create();
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const body = await doc.embedFont(StandardFonts.Helvetica);
 
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(16);
-  pdf.text("Short-Term Programme", m, y);
-  y += 8;
-  pdf.setFontSize(12);
-  pdf.text(pdf.splitTextToSize(input.title, pageW - m * 2), m, y);
-  y += 8;
+  const pageW = 595.28;
+  const pageH = 841.89;
+  const m = 45;
+  let page = doc.addPage([pageW, pageH]);
+  let y = pageH - 56;
 
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.setTextColor(110);
+  // pdf-lib's WinAnsi fonts reject characters like the em dash and middot.
+  const safe = (s: string) =>
+    String(s ?? "")
+      .replace(/[\u2013\u2014]/g, "-")
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201c\u201d]/g, '"')
+      .replace(/\u00b7/g, "-")
+      .replace(/[^\x20-\x7E]/g, " ");
+
+  const wrap = (text: string, font: typeof body, size: number, width: number) => {
+    const words = safe(text).split(/\s+/).filter(Boolean);
+    const lines: string[] = [];
+    let line = "";
+    for (const w of words) {
+      const next = line ? `${line} ${w}` : w;
+      if (font.widthOfTextAtSize(next, size) > width && line) {
+        lines.push(line);
+        line = w;
+      } else line = next;
+    }
+    if (line) lines.push(line);
+    return lines.length ? lines : [""];
+  };
+
+  const draw = (
+    text: string,
+    x: number,
+    size: number,
+    font: typeof body,
+    grey = false,
+  ) => {
+    page.drawText(safe(text), {
+      x,
+      y,
+      size,
+      font,
+      color: grey ? rgb(0.42, 0.42, 0.42) : rgb(0, 0, 0),
+    });
+  };
+
+  draw("Short-Term Programme", m, 18, bold);
+  y -= 22;
+  for (const line of wrap(input.title, bold, 13, pageW - m * 2)) {
+    draw(line, m, 13, bold);
+    y -= 17;
+  }
+  y -= 6;
+
   for (const line of [
     `Project: ${input.projectName}`,
     `Subcontractor: ${input.companyName}`,
     `Package: ${input.packageLabel}`,
     `Accepted by site manager: ${input.acceptedBySiteManager}`,
     `Accepted by subcontractor PM: ${input.acceptedBySubcontractor}`,
-    `Filed: ${new Date().toLocaleString()}`,
+    `Filed: ${new Date().toISOString()}`,
   ]) {
-    pdf.text(line, m, y);
-    y += 5;
+    draw(line, m, 9, body, true);
+    y -= 13;
   }
-  pdf.setTextColor(0);
-  y += 4;
+  y -= 10;
 
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(10);
-  pdf.text("Ref", m, y);
-  pdf.text("Task", m + 14, y);
-  pdf.text("Start", pageW - m - 46, y);
-  pdf.text("Finish", pageW - m - 22, y);
-  y += 5;
-  pdf.setFont("helvetica", "normal");
+  const startX = pageW - m - 130;
+  const endX = pageW - m - 62;
+  draw("Ref", m, 10, bold);
+  draw("Task", m + 34, 10, bold);
+  draw("Start", startX, 10, bold);
+  draw("Finish", endX, 10, bold);
+  y -= 6;
+  page.drawLine({
+    start: { x: m, y },
+    end: { x: pageW - m, y },
+    thickness: 0.6,
+    color: rgb(0.75, 0.75, 0.75),
+  });
+  y -= 14;
 
   for (const t of input.tasks) {
-    if (y > pageH - 20) {
-      pdf.addPage();
-      y = 20;
+    const lines = wrap(t.taskName, body, 10, startX - m - 44);
+    if (y - lines.length * 13 < 50) {
+      page = doc.addPage([pageW, pageH]);
+      y = pageH - 56;
     }
-    const name = pdf.splitTextToSize(t.taskName, pageW - m * 2 - 70);
-    pdf.text(t.localRef, m, y);
-    pdf.text(name, m + 14, y);
-    pdf.text(t.startDate, pageW - m - 46, y);
-    pdf.text(t.endDate, pageW - m - 22, y);
-    y += Math.max(1, name.length) * 4.6 + 1.5;
+    draw(t.localRef, m, 10, body);
+    draw(t.startDate, startX, 10, body);
+    draw(t.endDate, endX, 10, body);
+    for (const line of lines) {
+      draw(line, m + 34, 10, body);
+      y -= 13;
+    }
+    y -= 3;
   }
 
-  return new Uint8Array(pdf.output("arraybuffer") as ArrayBuffer);
+  return await doc.save();
 }
+
