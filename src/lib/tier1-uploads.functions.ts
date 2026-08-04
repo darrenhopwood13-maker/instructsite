@@ -587,7 +587,7 @@ export const retryLogisticsExtraction = createServerFn({ method: "POST" })
       for (const row of rows) {
         const { error: upErr } = await (supabase as any)
           .from("work_zones")
-          .upsert(row, { onConflict: "project_id,name,level,source" });
+          .upsert(row, { onConflict: "project_id,name,level" });
         if (!upErr) linked += 1;
       }
       return { status: "complete" as const, zonesExtracted: zones.length, zonesLinked: linked };
