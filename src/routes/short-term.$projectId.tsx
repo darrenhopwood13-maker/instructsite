@@ -206,6 +206,8 @@ function ShortTermProgrammesPage() {
           </div>
         )}
       </div>
+      )}
+
 
       {creating && (
         <ShortTermProgrammeCreate
