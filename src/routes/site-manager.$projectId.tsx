@@ -254,7 +254,7 @@ function SiteManagerPage() {
         </Link>
 
         <h1
-          className="mt-3 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
+          className="mt-3 break-words text-3xl font-extrabold uppercase tracking-tight text-foreground sm:text-4xl md:text-5xl"
           style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
         >
           Command Tower · Live

@@ -187,19 +187,20 @@ function ProjectDetail() {
         </Link>
 
         <div className="mt-4 flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
               Project
             </p>
             <h1
-              className="mt-1 text-4xl font-extrabold uppercase tracking-tight text-foreground md:text-5xl"
+              className="mt-1 break-words text-2xl font-extrabold uppercase tracking-tight text-foreground sm:text-4xl md:text-5xl"
               style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
             >
               {project.data?.name ?? "…"}
             </h1>
             {project.data?.site_address && (
-              <p className="mt-2 flex items-center gap-1.5 text-sm text-foreground/70">
-                <MapPin size={14} /> {project.data.site_address}
+              <p className="mt-2 flex min-w-0 items-start gap-1.5 text-sm text-foreground/70">
+                <MapPin size={14} className="mt-0.5 shrink-0" />
+                <span className="min-w-0 break-words">{project.data.site_address}</span>
               </p>
             )}
           </div>
