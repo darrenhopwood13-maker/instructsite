@@ -66,7 +66,7 @@ export const initMyProfile = createServerFn({ method: "POST" })
       .eq("user_id", context.userId);
     const privileged = new Set(["master_admin", "project_admin"]);
     const hasPrivileged = (existingRoles ?? []).some((r: any) => privileged.has(r.role));
-    if (!hasPrivileged) {
+    if (!hasPrivileged && !NON_SELF_GRANTABLE.has(data.selectedRole)) {
       await supabaseAdmin
         .from("user_roles")
         .upsert(
