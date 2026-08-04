@@ -369,7 +369,30 @@ function AuthPage() {
                       })}
                     </div>
                   </div>
+
+                  <label className="block">
+                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.3em] text-foreground/60">
+                      Free trial access password
+                    </span>
+                    <input
+                      type="password"
+                      required
+                      value={accessPassword}
+                      onChange={(e) => setAccessPassword(e.target.value)}
+                      autoComplete="off"
+                      placeholder="Provided by instructSite"
+                      className="mt-1.5 w-full rounded-md border border-alert/40 bg-black/50 px-3 py-2.5 text-sm text-foreground outline-none focus:border-alert"
+                    />
+                    <span className="mt-1 block text-[0.65rem] text-foreground/55">
+                      Free trials are invite-only. Don’t have the password?{" "}
+                      <a href="mailto:info@instructsite.com?subject=Free%20trial%20access%20—%20instructSite" className="text-alert">
+                        Request access
+                      </a>
+                      .
+                    </span>
+                  </label>
                 </>
+
               )}
 
               <label className="block">
