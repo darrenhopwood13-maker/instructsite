@@ -32,6 +32,8 @@ import {
   inviteSiteManager,
   inviteQs,
   listProjectQs,
+  inviteProjectAdmin,
+  listProjectAdmins,
 } from "@/lib/subcontractors.functions";
 import { designateSubcontractorPmSeat } from "@/lib/subcontractors.functions";
 import { formatSentDate, daysAgo, expiryCountdown } from "@/lib/invite-format";
@@ -63,6 +65,8 @@ export function TradeDirectoryPanel({
   const rolesFn = useServerFn(getMyRoles);
   const inviteQsFn = useServerFn(inviteQs);
   const projectQsFn = useServerFn(listProjectQs);
+  const inviteProjectAdminFn = useServerFn(inviteProjectAdmin);
+  const projectAdminsFn = useServerFn(listProjectAdmins);
   const qc = useQueryClient();
 
   const rolesQ = useQuery({
@@ -144,6 +148,46 @@ export function TradeDirectoryPanel({
       toast.error(errorMessage(e2, "Could not invite that Site Manager."));
     } finally {
       setInvitingManager(false);
+    }
+  };
+
+  // --- Project Admin invites (admin only) ---------------------------------
+  const projectAdmins = useQuery({
+    queryKey: ["project-admins", projectId],
+    queryFn: () => projectAdminsFn({ data: { projectId } }),
+    enabled: ready && isAdmin,
+    retry: false,
+  });
+
+  const [paEmail, setPaEmail] = useState("");
+  const [paName, setPaName] = useState("");
+  const [invitingPa, setInvitingPa] = useState(false);
+  const [showPaInvite, setShowPaInvite] = useState(false);
+
+  const inviteAProjectAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paEmail.trim() || invitingPa) return;
+    setInvitingPa(true);
+    try {
+      const res = await inviteProjectAdminFn({
+        data: { projectId, email: paEmail.trim(), fullName: paName.trim() || null },
+      });
+      qc.invalidateQueries({ queryKey: ["project-admins", projectId] });
+      setPaEmail("");
+      setPaName("");
+      if ("alreadyInvited" in res && res.alreadyInvited) {
+        toast.success("That person is already a Project Admin on this project.");
+      } else if (res.attached) {
+        toast.success("Project Admin invited and added to this project.");
+      } else if (res.emailed) {
+        toast.success("Invite emailed — they join the project once they sign in.");
+      } else {
+        toast.error(res.emailError ?? "Could not send that invite.");
+      }
+    } catch (e2) {
+      toast.error(errorMessage(e2, "Could not invite that Project Admin."));
+    } finally {
+      setInvitingPa(false);
     }
   };
 
@@ -449,6 +493,87 @@ export function TradeDirectoryPanel({
           </div>
         )}
       </div>
+
+      {isAdmin && (
+        <div className="mt-2 rounded-md border border-white/10 bg-black/40 p-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="flex items-center gap-1 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-foreground/60">
+              <UserCog size={10} /> Project Admins ({(projectAdmins.data ?? []).length})
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setShowPaInvite((open) => !open)}
+              className="h-7 border-alert/60 bg-alert/10 px-2 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert hover:bg-alert/20 hover:text-alert"
+            >
+              <UserPlus size={11} /> Invite a Project Admin
+            </Button>
+          </div>
+          {projectAdmins.isError && (
+            <p className="mt-1 rounded-sm border border-destructive/50 bg-destructive/10 px-1.5 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-destructive-foreground">
+              {(projectAdmins.error as Error)?.message ?? "Failed to load project admins."}
+            </p>
+          )}
+          {showPaInvite && (
+            <form onSubmit={inviteAProjectAdmin} className="mt-1.5 grid gap-1.5">
+              <input
+                type="email"
+                required
+                value={paEmail}
+                onChange={(e) => setPaEmail(e.target.value)}
+                placeholder="project.admin@company.co.uk"
+                className="rounded-sm border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-alert"
+              />
+              <input
+                value={paName}
+                onChange={(e) => setPaName(e.target.value)}
+                placeholder="Full name (optional)"
+                className="rounded-sm border border-white/15 bg-black/50 px-2 py-1.5 font-mono text-xs text-foreground outline-none focus:border-alert"
+              />
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="submit"
+                  disabled={invitingPa || !paEmail.trim()}
+                  className="flex-1 rounded-sm border border-alert/60 bg-alert/10 px-2 py-1 font-mono text-[0.55rem] font-bold uppercase tracking-widest text-alert transition hover:bg-alert/20 disabled:opacity-40"
+                >
+                  {invitingPa ? "Sending…" : "Send Invite"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPaInvite(false)}
+                  className="rounded-sm border border-white/20 px-2 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/60 hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+              <p className="text-[0.6rem] leading-snug text-foreground/50">
+                They receive a secure sign-in link and get full admin control of this
+                project alongside you.
+              </p>
+            </form>
+          )}
+          {(projectAdmins.data ?? []).length > 0 ? (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {(projectAdmins.data ?? []).map((m) => (
+                <span
+                  key={m.user_id}
+                  className="rounded-sm border border-white/15 px-1 py-0.5 font-mono text-[0.5rem] uppercase tracking-widest text-foreground/70"
+                >
+                  {m.full_name ?? "Unnamed"}
+                  {m.email ? ` · ${m.email}` : ""}
+                </span>
+              ))}
+            </div>
+          ) : (
+            !showPaInvite && (
+              <p className="mt-1.5 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/50">
+                No additional Project Admins on this project yet
+              </p>
+            )
+          )}
+        </div>
+      )}
 
       {isAdmin && (
         <div className="mt-2 rounded-md border border-white/10 bg-black/40 p-2">

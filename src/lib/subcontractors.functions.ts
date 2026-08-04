@@ -607,3 +607,139 @@ export const designateSubcontractorPmSeat = createServerFn({ method: "POST" })
     }
     return { seatRole: (res as string) ?? "pm" };
   });
+
+// =========================================================
+// PROJECT ADMIN
+// =========================================================
+
+/** Project admins currently attached to this project (membership rows + the owning column). */
+export const listProjectAdmins = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ projectId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: rows, error }, { data: proj }] = await Promise.all([
+      supabaseAdmin
+        .from("project_members")
+        .select("user_id")
+        .eq("project_id", data.projectId)
+        .eq("role_on_project", "project_admin"),
+      supabaseAdmin
+        .from("projects")
+        .select("project_admin_id")
+        .eq("id", data.projectId)
+        .maybeSingle(),
+    ]);
+    if (error) throw new Error(error.message);
+    const ids = Array.from(
+      new Set([
+        ...(rows ?? []).map((r) => r.user_id),
+        ...(proj?.project_admin_id ? [proj.project_admin_id] : []),
+      ]),
+    );
+    if (ids.length === 0)
+      return [] as { user_id: string; full_name: string | null; email: string | null }[];
+    const { data: profs } = await supabaseAdmin
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", ids);
+    const nameOf = new Map((profs ?? []).map((p) => [p.user_id, p.full_name]));
+    const emails = await Promise.all(
+      ids.map(async (id) => {
+        try {
+          const { data: u } = await supabaseAdmin.auth.admin.getUserById(id);
+          return [id, u?.user?.email ?? null] as const;
+        } catch {
+          return [id, null] as const;
+        }
+      }),
+    );
+    const emailOf = new Map(emails);
+    return ids.map((id) => ({
+      user_id: id,
+      full_name: nameOf.get(id) ?? null,
+      email: emailOf.get(id) ?? null,
+    }));
+  });
+
+/**
+ * Invite a second Project Admin onto the project by email.
+ *
+ * Mirrors inviteSiteManager / inviteQs. `projects.project_admin_id` holds only
+ * one person, so additional project admins are carried as a project_members row
+ * with role_on_project = 'project_admin' plus the matching user_roles grant, and
+ * `is_project_admin` is extended to honour that membership row.
+ */
+export const inviteProjectAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        projectId: z.string().uuid(),
+        email: z.string().trim().email().max(200),
+        fullName: z.string().trim().max(120).optional().nullable(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertProjectAdmin(context.supabase, data.projectId, context.userId);
+    const email = data.email.toLowerCase();
+    const nextPath = `/projects/${data.projectId}`;
+
+    const { sendInviteEmail, findAuthUserByEmail } = await import("@/lib/invite-email.server");
+    const existingUser = await findAuthUserByEmail(email);
+    if (existingUser) {
+      const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+      const { data: already } = await admin
+        .from("project_members")
+        .select("id")
+        .eq("project_id", data.projectId)
+        .eq("user_id", existingUser.id)
+        .eq("role_on_project", "project_admin")
+        .limit(1);
+      if (already && already.length > 0) {
+        return {
+          ok: true,
+          emailed: false,
+          emailError: null,
+          attached: true,
+          alreadyInvited: true as const,
+        };
+      }
+    }
+
+    const sendResult = await sendInviteEmail(email, nextPath);
+    const user = existingUser;
+    if (!user) {
+      return {
+        ok: sendResult.sent,
+        emailed: sendResult.sent,
+        emailError: sendResult.reason ?? null,
+        attached: false,
+      };
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: user.id, role: "project_admin" }, { onConflict: "user_id,role" });
+    const { error: memberErr } = await supabaseAdmin
+      .from("project_members")
+      .insert({ project_id: data.projectId, user_id: user.id, role_on_project: "project_admin" });
+    if (memberErr && !/duplicate key/i.test(memberErr.message)) {
+      throw new Error(memberErr.message);
+    }
+    if (data.fullName?.trim()) {
+      await supabaseAdmin
+        .from("profiles")
+        .upsert({ user_id: user.id, full_name: data.fullName.trim() }, { onConflict: "user_id" });
+    }
+
+    return {
+      ok: true,
+      emailed: sendResult.sent,
+      emailError: sendResult.reason ?? null,
+      attached: true,
+    };
+  });
