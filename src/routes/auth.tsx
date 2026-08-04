@@ -8,7 +8,7 @@ import { routeForRoles } from "@/lib/ensure-oracle-session";
 import {
   Loader2, ShieldAlert, ArrowRight, Eye, EyeOff, MailCheck,
   HardHat, Wrench, GraduationCap, Calculator, Sparkles, PhoneCall,
-  Smartphone,
+  Smartphone, ShieldCheck,
 } from "lucide-react";
 import { z } from "zod";
 
@@ -29,9 +29,10 @@ export const Route = createFileRoute("/auth")({
 });
 
 type Mode = "signin" | "signup" | "forgot";
-type RoleChoice = "site_manager" | "subcontractor" | "apprentice" | "qs";
+type RoleChoice = "project_admin" | "site_manager" | "subcontractor" | "apprentice" | "qs";
 
 const ROLE_OPTIONS: { value: RoleChoice; label: string; icon: any; desc: string }[] = [
+  { value: "project_admin", label: "Project Admin", icon: ShieldCheck,     desc: "Owns projects, invites & seats" },
   { value: "site_manager",  label: "Site Manager",  icon: HardHat,        desc: "Zones, DABS, permits" },
   { value: "subcontractor", label: "Subcontractor", icon: Wrench,         desc: "Trade packages & sign-in" },
   { value: "apprentice",    label: "Apprentice",    icon: GraduationCap,  desc: "Guided plain-English briefs" },
