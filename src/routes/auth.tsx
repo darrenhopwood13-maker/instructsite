@@ -166,9 +166,11 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<RoleChoice | null>(null);
+  const [accessPassword, setAccessPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
 
   useEffect(() => {
     (async () => {
