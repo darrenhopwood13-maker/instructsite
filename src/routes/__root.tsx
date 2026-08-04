@@ -525,7 +525,7 @@ function RootComponent() {
             <AuthNav />
           </nav>
         </header>
-        <main className="min-w-0">
+        <main className="min-w-0 pb-28 sm:pb-0">
           <Outlet />
         </main>
       </div>
