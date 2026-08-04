@@ -579,3 +579,31 @@ export const inviteQs = createServerFn({ method: "POST" })
       attached: true,
     };
   });
+
+/**
+ * Designate which of a company's seats holds the PM role on this project.
+ *
+ * The PM seat is the only seat that can counter-sign a short-term programme,
+ * so it is deliberately a single, explicit designation rather than something
+ * inferred from the admin seat. The RPC moves any previous PM down into a free
+ * admin/read-only seat and refuses if there is nowhere to move them.
+ */
+export const designateSubcontractorPmSeat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ inviteId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: res, error } = await (context.supabase.rpc as any)(
+      "designate_subcontractor_pm_seat",
+      { _invite_id: data.inviteId },
+    );
+    if (error) {
+      const m = error.message || "";
+      if (m.includes("SEAT_NO_ROOM")) {
+        throw new Error(
+          "No free seat to move the current PM into — revoke a seat for this company first.",
+        );
+      }
+      throw new Error(m);
+    }
+    return { seatRole: (res as string) ?? "pm" };
+  });
