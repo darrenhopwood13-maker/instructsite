@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Copy, Check, Building2, UserSquare2, HardHat, QrCode, ShieldCheck, Eye } from "lucide-react";
+import { ArrowLeft, Copy, Check, Building2, UserSquare2, HardHat, QrCode, ShieldCheck, Eye, UserCog } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { listMyProjects, getMyRoles } from "@/lib/projects.functions";
@@ -31,7 +31,7 @@ interface FormState {
   projectId: string;
   companyName: string;
   tradePackage: string;
-  seatRole: "admin" | "read_only";
+  seatRole: "pm" | "admin" | "read_only";
   registeredAddress: string;
   officePhone: string;
   corporateEmail: string;
@@ -47,7 +47,7 @@ const EMPTY: FormState = {
   projectId: "",
   companyName: "",
   tradePackage: "",
-  seatRole: "admin",
+  seatRole: "pm",
   registeredAddress: "",
   officePhone: "",
   corporateEmail: "",
@@ -119,15 +119,18 @@ function RegisterPartnerPage() {
   });
 
   const seatData = seats.data ?? {
+    pmUsed: 0,
     adminUsed: 0,
     readonlyUsed: 0,
+    pmCap: 1,
     adminCap: 1,
     readonlyCap: 2,
-    totalCap: 3,
+    totalCap: 4,
   };
+  const pmFull = seatData.pmUsed >= seatData.pmCap;
   const adminFull = seatData.adminUsed >= seatData.adminCap;
   const readonlyFull = seatData.readonlyUsed >= seatData.readonlyCap;
-  const capFull = adminFull && readonlyFull;
+  const capFull = pmFull && adminFull && readonlyFull;
 
   const inviteUrl = useMemo(() => {
     if (!result) return "";
@@ -145,6 +148,9 @@ function RegisterPartnerPage() {
     if (!form.companyName.trim()) return toast.error("Company name is required.");
     if (!form.tradePackage) return toast.error("Select a trade package.");
     if (capFull) return toast.error("Maximum Capacity Reached · 3 seats per subcontractor.");
+    if (form.seatRole === "pm" && pmFull) {
+      return toast.error("Maximum Capacity Reached · PM seat already assigned.");
+    }
     if (form.seatRole === "admin" && adminFull) {
       return toast.error("Admin seat already assigned — pick Read-Only.");
     }
@@ -272,6 +278,8 @@ function RegisterPartnerPage() {
                 adminUsed={seatData.adminUsed}
                 readonlyUsed={seatData.readonlyUsed}
                 capFull={capFull}
+                pmUsed={seatData.pmUsed}
+                pmFull={pmFull}
                 seatRole={form.seatRole}
                 onSeatRole={(v) => setField("seatRole", v)}
                 adminFull={adminFull}
@@ -402,6 +410,8 @@ function RegisterPartnerPage() {
 
 function SeatCapacityBar({
   company,
+  pmUsed,
+  pmFull,
   adminUsed,
   readonlyUsed,
   capFull,
@@ -411,15 +421,17 @@ function SeatCapacityBar({
   readonlyFull,
 }: {
   company: string;
+  pmUsed: number;
+  pmFull: boolean;
   adminUsed: number;
   readonlyUsed: number;
   capFull: boolean;
-  seatRole: "admin" | "read_only";
-  onSeatRole: (v: "admin" | "read_only") => void;
+  seatRole: "pm" | "admin" | "read_only";
+  onSeatRole: (v: "pm" | "admin" | "read_only") => void;
   adminFull: boolean;
   readonlyFull: boolean;
 }) {
-  const total = adminUsed + readonlyUsed;
+  const total = pmUsed + adminUsed + readonlyUsed;
   return (
     <div
       className={`mt-4 rounded-lg border-2 p-5 shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] ${
@@ -442,9 +454,9 @@ function SeatCapacityBar({
               capFull ? "text-white" : "text-neutral-900"
             }`}
           >
-            {total} / 3 seats used
+            {total} / 4 seats used
             <span className="ml-2 text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-neutral-400">
-              (1 admin · 2 read-only)
+              (1 PM · 1 admin · 2 read-only)
             </span>
           </p>
         </div>
@@ -455,7 +467,16 @@ function SeatCapacityBar({
         )}
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <SeatRoleTile
+          selected={seatRole === "pm"}
+          disabled={pmFull}
+          onClick={() => onSeatRole("pm")}
+          icon={<UserCog size={14} />}
+          label="PM"
+          hint={pmFull ? "Assigned" : `${pmUsed}/1 used`}
+          dark={capFull}
+        />
         <SeatRoleTile
           selected={seatRole === "admin"}
           disabled={adminFull}
