@@ -8,6 +8,8 @@ import { listShortTermProgrammes } from "@/lib/short-term-programme.functions";
 import { STP_STATUS_LABEL, type StpStatus } from "@/lib/short-term-programme";
 import { ShortTermProgrammeDetail } from "@/components/project/ShortTermProgrammeDetail";
 import { ShortTermProgrammeCreate } from "@/components/project/ShortTermProgrammeCreate";
+import { PrivateProgrammePanel } from "@/components/project/PrivateProgrammePanel";
+
 
 export const Route = createFileRoute("/short-term/$projectId")({
   head: () => ({
@@ -43,6 +45,7 @@ function ShortTermProgrammesPage() {
   const getP = useServerFn(getProject);
   const listFn = useServerFn(listShortTermProgrammes);
 
+  const [tab, setTab] = useState<"shared" | "private">("shared");
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -58,6 +61,7 @@ function ShortTermProgrammesPage() {
   const programmes = list.data?.programmes ?? [];
   const targets = list.data?.targets ?? [];
   const cap = list.data?.cap ?? 5;
+
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
@@ -82,7 +86,7 @@ function ShortTermProgrammesPage() {
             subcontractor's PM, then locked — after that it's status flags and comments only.
           </p>
         </div>
-        {!openId && (
+        {!openId && tab === "shared" && (
           <button
             type="button"
             onClick={() => setCreating(true)}
@@ -94,8 +98,39 @@ function ShortTermProgrammesPage() {
         )}
       </header>
 
+      <div className="mt-4 flex gap-1.5">
+        {(
+          [
+            ["shared", "Agreed with subcontractor"],
+            ["private", "My private programmes"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => {
+              setTab(key);
+              setOpenId(null);
+            }}
+            className={`rounded-sm border px-3 py-2 font-mono text-[0.55rem] uppercase tracking-widest ${
+              tab === key
+                ? "border-alert bg-alert/20 text-alert"
+                : "border-white/15 text-foreground/55"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "private" ? (
+        <div className="mt-5">
+          <PrivateProgrammePanel projectId={projectId} />
+        </div>
+      ) : (
       <div className="mt-5">
         {openId ? (
+
           <ShortTermProgrammeDetail programmeId={openId} onBack={() => setOpenId(null)} />
         ) : list.isLoading ? (
           <div className="flex items-center gap-2 p-6 text-sm text-foreground/60">
@@ -172,6 +207,8 @@ function ShortTermProgrammesPage() {
           </div>
         )}
       </div>
+      )}
+
 
       {creating && (
         <ShortTermProgrammeCreate
