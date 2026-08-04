@@ -44,7 +44,18 @@ export async function insertMissingZones(
     .eq("project_id", projectId);
   if (readErr) return { inserted: 0, skipped: 0, error: readErr.message };
 
+  // A site-wide zone (compound, laydown, pedestrian route) is stored once with
+  // no level. Drawing allocation defaults a missing level to the sheet's level,
+  // which would otherwise clone those zones onto every floor.
+  const siteWide = new Set(
+    (existing ?? [])
+      .filter((e: any) => !(e.level ?? "").trim())
+      .map((e: any) => e.name.trim().toLowerCase()),
+  );
   for (const e of existing ?? []) wanted.delete(key(e.name, e.level));
+  for (const k of [...wanted.keys()]) {
+    if (siteWide.has(k.split("|")[0]!)) wanted.delete(k);
+  }
   const toInsert = [...wanted.values()];
   const skipped = rows.length - toInsert.length;
   if (toInsert.length === 0) return { inserted: 0, skipped, error: null };
