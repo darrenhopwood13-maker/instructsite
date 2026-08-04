@@ -34,6 +34,10 @@ export const TRADE_PACKAGES = [
   "Demolition",
   "Scaffolding",
   "Cleaning",
+  "Strip-Out & Enabling Works",
+  "Structural Steelwork",
+  "M&E",
+  "Plastering & Drylining",
 ] as const;
 
 export type TradePackage = (typeof TRADE_PACKAGES)[number];
@@ -62,7 +66,6 @@ export const TRADE_ALIASES: Record<string, TradePackage> = {
   "structural steel": "Steel Frame",
   steelwork: "Steel Frame",
   "steel erection": "Steel Frame",
-  "m&e": "Mechanical",
   "mechanical & electrical": "Mechanical",
   "mechanical services": "Mechanical",
   hvac: "Mechanical",
