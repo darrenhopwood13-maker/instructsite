@@ -1118,6 +1118,97 @@ export type Database = {
           },
         ]
       }
+      private_programme_tasks: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          local_ref: string
+          package_label: string | null
+          programme_id: string
+          seq: number
+          start_date: string
+          status: string
+          task_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          local_ref?: string
+          package_label?: string | null
+          programme_id: string
+          seq?: number
+          start_date: string
+          status?: string
+          task_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          local_ref?: string
+          package_label?: string | null
+          programme_id?: string
+          seq?: number
+          start_date?: string
+          status?: string
+          task_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_programme_tasks_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "private_programmes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      private_programmes: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          owner_user_id: string
+          packages: string[]
+          project_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_user_id: string
+          packages?: string[]
+          project_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_user_id?: string
+          packages?: string[]
+          project_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_programmes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
