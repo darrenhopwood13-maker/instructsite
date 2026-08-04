@@ -64,8 +64,11 @@ function h1(num, title) {
   else space(16);
   toc.push({ num, title, page: pages.length });
   page.drawRectangle({ x: M, y: y - 4, width: 4, height: 22, color: ACCENT });
-  const label = num ? `${num}.  ${title}` : title;
-  page.drawText(label.toUpperCase(), { x: M + 14, y, size: 15, font: bold, color: INK });
+  const label = (num ? `${num}.  ${title}` : title).toUpperCase();
+  const maxW = A4[0] - M * 2 - 14;
+  let hs = 15;
+  while (hs > 10 && bold.widthOfTextAtSize(label, hs) > maxW) hs -= 0.5;
+  page.drawText(label, { x: M + 14, y, size: hs, font: bold, color: INK });
   y -= 12;
   page.drawLine({ start: { x: M, y }, end: { x: A4[0] - M, y }, thickness: 0.75, color: RULE });
   y -= 20;
