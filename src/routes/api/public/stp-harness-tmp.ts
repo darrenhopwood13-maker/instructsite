@@ -6,6 +6,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import * as stp from "@/lib/short-term-programme.functions";
 import * as priv from "@/lib/private-programme.functions";
+import * as subs from "@/lib/subcontractors.functions";
 
 const REGISTRY: Record<string, (args: any) => Promise<any>> = {
   listShortTermProgrammes: stp.listShortTermProgrammes as any,
@@ -17,6 +18,7 @@ const REGISTRY: Record<string, (args: any) => Promise<any>> = {
   setShortTermTaskStatus: stp.setShortTermTaskStatus as any,
   addShortTermAnnotation: stp.addShortTermAnnotation as any,
   deleteShortTermProgramme: stp.deleteShortTermProgramme as any,
+  designateSubcontractorPmSeat: subs.designateSubcontractorPmSeat as any,
   listPrivateProgrammes: priv.listPrivateProgrammes as any,
   getPrivateProgramme: priv.getPrivateProgramme as any,
   createPrivateProgramme: priv.createPrivateProgramme as any,
