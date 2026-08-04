@@ -33,6 +33,7 @@ import {
   inviteQs,
   listProjectQs,
 } from "@/lib/subcontractors.functions";
+import { designateSubcontractorPmSeat } from "@/lib/subcontractors.functions";
 import { formatSentDate, daysAgo, expiryCountdown } from "@/lib/invite-format";
 import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ export function TradeDirectoryPanel({
   const unassignedManagersFn = useServerFn(listUnassignedSiteManagers);
   const addManagerFn = useServerFn(addSiteManagerToProject);
   const assignPmFn = useServerFn(assignPackageManager);
+  const designatePmFn = useServerFn(designateSubcontractorPmSeat);
   const refreshInviteFn = useServerFn(refreshSubcontractorInvite);
   const inviteManagerFn = useServerFn(inviteSiteManager);
   const rolesFn = useServerFn(getMyRoles);
@@ -268,6 +270,19 @@ export function TradeDirectoryPanel({
       toast.success("Link copied to clipboard.");
     } catch {
       toast.error("Copy failed.");
+    }
+  };
+
+  const designatePm = async (inviteId: string, company: string) => {
+    try {
+      setRowBusy(inviteId);
+      await designatePmFn({ data: { inviteId } });
+      qc.invalidateQueries({ queryKey: ["subcontractor-invites", projectId] });
+      toast.success(`PM seat designated for ${company}.`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not designate the PM seat.");
+    } finally {
+      setRowBusy(null);
     }
   };
 
@@ -696,6 +711,31 @@ export function TradeDirectoryPanel({
                 {status.label === "Accepted" && <Check size={10} />}
                 {status.label}
               </span>
+              {inv.seat_role === "pm" ? (
+                <span
+                  title="Holds the PM seat — the only seat that can counter-sign a short-term programme"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-sm border border-sky-400/60 bg-sky-400/10 px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-sky-200"
+                >
+                  <UserCog size={9} /> PM Seat
+                </span>
+              ) : (
+                <span className="inline-flex shrink-0 items-center gap-1">
+                  <span className="rounded-sm border border-white/15 px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-foreground/55">
+                    {inv.seat_role === "read_only" ? "Read-Only" : "Admin"}
+                  </span>
+                  {isAdmin && !inv.revoked_at && (
+                    <button
+                      type="button"
+                      onClick={() => designatePm(inv.id, inv.company_name)}
+                      disabled={busyRow}
+                      title="Make this seat the company's PM for this project"
+                      className="rounded-sm border border-sky-400/50 bg-sky-400/10 px-1.5 py-0.5 font-mono text-[0.55rem] uppercase tracking-widest text-sky-200 transition hover:bg-sky-400/20 disabled:opacity-40"
+                    >
+                      Make PM
+                    </button>
+                  )}
+                </span>
+              )}
               {managers.length === 0 ? (
                 <button
                   type="button"
