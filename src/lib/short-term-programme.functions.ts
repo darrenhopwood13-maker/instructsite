@@ -660,7 +660,7 @@ async function fileAcceptedProgramme(
       mime_type: "application/pdf",
       file_size: bytes.byteLength,
       uploaded_by: userId,
-      extraction_status: "ready",
+      extraction_status: "complete",
     })
     .select("id")
     .single();
