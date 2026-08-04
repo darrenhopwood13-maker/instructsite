@@ -84,7 +84,7 @@ function ShortTermProgrammesPage() {
             subcontractor's PM, then locked — after that it's status flags and comments only.
           </p>
         </div>
-        {!openId && (
+        {!openId && tab === "shared" && (
           <button
             type="button"
             onClick={() => setCreating(true)}
@@ -96,7 +96,39 @@ function ShortTermProgrammesPage() {
         )}
       </header>
 
+      <div className="mt-4 flex gap-1.5">
+        {(
+          [
+            ["shared", "Agreed with subcontractor"],
+            ["private", "My private programmes"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => {
+              setTab(key);
+              setOpenId(null);
+            }}
+            className={`rounded-sm border px-3 py-2 font-mono text-[0.55rem] uppercase tracking-widest ${
+              tab === key
+                ? "border-alert bg-alert/20 text-alert"
+                : "border-white/15 text-foreground/55"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "private" ? (
+        <div className="mt-5">
+          <PrivateProgrammePanel projectId={projectId} />
+        </div>
+      ) : (
       <div className="mt-5">
+        {openId ? (
+
         {openId ? (
           <ShortTermProgrammeDetail programmeId={openId} onBack={() => setOpenId(null)} />
         ) : list.isLoading ? (
