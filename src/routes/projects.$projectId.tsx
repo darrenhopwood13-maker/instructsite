@@ -186,7 +186,7 @@ function ProjectDetail() {
           <ArrowLeft size={12} /> All Projects
         </Link>
 
-        <div className="mt-4 flex items-start justify-between gap-4">
+        <div className="mt-4 flex flex-col items-start justify-between gap-4 md:flex-row">
           <div className="min-w-0">
             <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
               Project
@@ -204,7 +204,7 @@ function ProjectDetail() {
               </p>
             )}
           </div>
-          <div className="flex flex-col gap-2 md:flex-row">
+          <div className="flex w-full min-w-0 flex-wrap gap-2 md:w-auto md:flex-nowrap">
             <Link
               to="/dabs/$projectId"
               params={{ projectId }}

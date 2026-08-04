@@ -49,12 +49,12 @@ export function ZoneMatrixBoard({ projectId }: { projectId: string }) {
   return (
     <section className="mt-8">
       <div className="flex items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
             2D Fallback Viewport
           </p>
           <h2
-            className="mt-1 text-2xl font-extrabold uppercase tracking-tight text-foreground"
+            className="mt-1 break-words text-xl font-extrabold uppercase tracking-tight text-foreground sm:text-2xl"
             style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
           >
             Zone Progress Matrix
@@ -64,7 +64,7 @@ export function ZoneMatrixBoard({ projectId }: { projectId: string }) {
             subcontractor diaries hit each zone.
           </p>
         </div>
-        <LayoutGrid className="text-alert/70" size={28} />
+        <LayoutGrid className="shrink-0 text-alert/70" size={28} />
       </div>
 
       {/* Legend */}
