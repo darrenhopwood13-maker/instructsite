@@ -195,7 +195,7 @@ function ProjectDetail() {
             <h1
               className={`mt-1 break-normal hyphens-none font-extrabold uppercase tracking-tight text-foreground ${
                 (project.data?.name?.length ?? 0) > 28
-                  ? "text-xl sm:text-2xl md:text-[1.65rem] lg:text-3xl"
+                  ? "text-xl sm:text-2xl md:text-[1.65rem] lg:text-[1.75rem]"
                   : "text-2xl sm:text-4xl md:text-5xl"
               }`}
               style={{
