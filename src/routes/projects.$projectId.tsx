@@ -19,6 +19,7 @@ import { ZoneMap } from "@/components/project/ZoneMap";
 import { MasterAdminHUD } from "@/components/admin/MasterAdminHUD";
 import { AccessDeniedScreen } from "@/components/project/AccessDeniedScreen";
 import { ZoneMatrixBoard } from "@/components/project/ZoneMatrixBoard";
+import { ProjectPhotoPanel } from "@/components/project/ProjectPhotoPanel";
 import { TradeDirectoryPanel } from "@/components/admin/TradeDirectoryPanel";
 import { WorkfaceRegisterPanel } from "@/components/admin/WorkfaceRegisterPanel";
 import { getMyRoles } from "@/lib/projects.functions";
@@ -187,14 +188,14 @@ function ProjectDetail() {
         </Link>
 
         <div className="mt-4 flex flex-col items-start justify-between gap-4 md:flex-row md:items-start">
-          <div className="min-w-0 flex-1 md:min-w-[20rem] md:max-w-[42rem]">
+          <div className="min-w-0 flex-1 md:min-w-[17rem] md:max-w-[42rem]">
             <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-alert">
               Project
             </p>
             <h1
               className={`mt-1 break-normal hyphens-none font-extrabold uppercase tracking-tight text-foreground ${
                 (project.data?.name?.length ?? 0) > 28
-                  ? "text-xl sm:text-2xl md:text-3xl"
+                  ? "text-xl sm:text-2xl md:text-[1.65rem] lg:text-3xl"
                   : "text-2xl sm:text-4xl md:text-5xl"
               }`}
               style={{
@@ -212,7 +213,7 @@ function ProjectDetail() {
               </p>
             )}
           </div>
-          <div className="flex w-full min-w-0 flex-wrap gap-2 md:w-auto md:max-w-[26rem] md:justify-end">
+          <div className="flex w-full min-w-0 flex-wrap gap-2 md:w-auto md:max-w-[22rem] md:justify-end">
 
             <Link
               to="/dabs/$projectId"
@@ -284,7 +285,11 @@ function ProjectDetail() {
               </Link>
             )}
           </div>
+          <div className="w-full min-w-0 shrink-0 md:w-[17rem] lg:w-[19rem]">
+            <ProjectPhotoPanel projectId={projectId} ready={ready} />
+          </div>
         </div>
+
 
         <div className="mt-6 flex flex-wrap items-center gap-6">
           <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-foreground/50">
