@@ -532,15 +532,17 @@ export const acceptShortTermProgramme = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message.replace(/^.*STP_[A-Z_]+:\s*/, ""));
 
     let filed: string | null = null;
+    let filedError: string | null = null;
     if (state === "accepted") {
       try {
         filed = await fileAcceptedProgramme(context, data.programmeId);
-      } catch (err) {
+      } catch (err: any) {
         // Filing must never undo an acceptance.
+        filedError = String(err?.message ?? err);
         console.error("[stp] project bible filing failed", err);
       }
     }
-    return { state: state as string, filed };
+    return { state: state as string, filed, filedError };
   });
 
 export const setShortTermTaskStatus = createServerFn({ method: "POST" })
@@ -658,11 +660,23 @@ async function fileAcceptedProgramme(
       mime_type: "application/pdf",
       file_size: bytes.byteLength,
       uploaded_by: userId,
-      extraction_status: "ready",
+      extraction_status: "complete",
     })
     .select("id")
     .single();
   if (sdErr || !sd) throw new Error(sdErr?.message ?? "Failed to file the programme.");
+
+  // Without this link row the PDF exists in storage but never shows in the
+  // Project Bible, so file it into the register too.
+  const { error: linkErr } = await supabaseAdmin.from("project_bible_reports").insert({
+    project_id: p.project_id,
+    site_document_id: sd.id,
+    category: "Programme",
+    source: `Short-term programme · ${p.company_name} · ${p.package_label}`,
+    title: p.title,
+    created_by: userId,
+  });
+  if (linkErr) throw new Error(linkErr.message);
 
   await supabaseAdmin
     .from("short_term_programmes")

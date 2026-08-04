@@ -3023,6 +3023,10 @@ export type Database = {
         }
         Returns: number
       }
+      my_invite_companies: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: string[]
+      }
       org_admin_count: { Args: { _org_id: string }; Returns: number }
       project_delete_cascade_gaps: {
         Args: never

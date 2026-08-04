@@ -47,3 +47,21 @@ describe("CSV programme import", () => {
     });
   });
 });
+
+describe("CSV rows with unquoted commas", () => {
+  it("keeps a task whose name contains an unquoted comma", async () => {
+    const csv = [
+      "Task Name,Start Date,End Date",
+      "Site set-up & surface protection,2026-08-10,2026-08-10",
+      "Snag, clean down and handover,2026-08-14,2026-08-14",
+    ].join("\n");
+    const result = await compileProgrammeFile({
+      fileName: "overflow.csv",
+      mimeType: "text/csv",
+      dataBase64: Buffer.from(csv, "utf-8").toString("base64"),
+    });
+    expect(result.tasks).toHaveLength(2);
+    expect(result.tasks.map((t) => t.taskName)).toContain("Snag, clean down and handover");
+    expect(result.tasks.at(-1)).toMatchObject({ startDate: "2026-08-14", endDate: "2026-08-14" });
+  });
+});

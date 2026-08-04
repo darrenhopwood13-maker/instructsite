@@ -220,6 +220,38 @@ function parsePredecessors(raw: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * A CSV row can contain more fields than the header when a task name holds an
+ * unquoted comma ("Snag, clean down and handover,2026-08-14,2026-08-14").
+ * Papa parks the overflow in `__parsed_extra`, which shunts the dates out of
+ * their columns and would otherwise make the row vanish silently. When that
+ * happens, rebuild the row from its raw values: the last two date-like values
+ * are the dates, everything before them is the name.
+ */
+function repairOverflowRow(
+  row: Record<string, unknown>,
+  headerKeys: string[],
+): { taskName: string; startDate: string; endDate: string } | null {
+  const extra = (row as any).__parsed_extra;
+  if (!Array.isArray(extra) || extra.length === 0) return null;
+  const values = [
+    ...headerKeys.map((k) => String(row[k] ?? "").trim()),
+    ...extra.map((v: unknown) => String(v ?? "").trim()),
+  ].filter((v) => v.length > 0);
+
+  const dateAt: number[] = [];
+  values.forEach((v, i) => {
+    if (isIso(normalizeDate(v))) dateAt.push(i);
+  });
+  if (dateAt.length < 2) return null;
+
+  const startIdx = dateAt[dateAt.length - 2]!;
+  const endIdx = dateAt[dateAt.length - 1]!;
+  const taskName = values.slice(0, startIdx).join(", ").trim();
+  if (!taskName) return null;
+  return { taskName, startDate: values[startIdx]!, endDate: values[endIdx]! };
+}
+
 function parseCsvToTasks(text: string): ProgrammeTask[] {
   const parsed = Papa.parse<Record<string, unknown>>(text, {
     header: true,
@@ -239,22 +271,34 @@ function parseCsvToTasks(text: string): ProgrammeTask[] {
   const refKey = pickKey(first, REF_KEYS);
   const predKey = pickKey(first, PRED_KEYS);
   const durKey = pickKey(first, DURATION_KEYS);
+  const headerKeys = Object.keys(first).filter((k) => k !== "__parsed_extra");
 
   return mergeTasks(rows.map((row) => {
-    const name = String(row[nameKey] ?? "").trim();
+    let name = String(row[nameKey] ?? "").trim();
+    let startDate = String(row[startKey] ?? "");
+    let endDate = String(row[endKey] ?? "");
+    if (!isIso(normalizeDate(startDate)) || !isIso(normalizeDate(endDate))) {
+      const fixed = repairOverflowRow(row, headerKeys);
+      if (fixed) {
+        name = fixed.taskName;
+        startDate = fixed.startDate;
+        endDate = fixed.endDate;
+      }
+    }
     const dur = durKey ? Number(String(row[durKey] ?? "").trim()) : NaN;
     return {
       taskRef: refKey ? String(row[refKey] ?? "").trim() : "",
       predecessors: predKey ? parsePredecessors(String(row[predKey] ?? "")) : [],
       durationDays: Number.isFinite(dur) && dur > 0 ? Math.round(dur) : undefined,
       taskName: name,
-      startDate: String(row[startKey] ?? ""),
-      endDate: String(row[endKey] ?? ""),
+      startDate,
+      endDate,
       trade: tradeKey ? String(row[tradeKey] ?? "").trim() : inferTrade(name),
       location: locKey ? String(row[locKey] ?? "").trim() : inferLocation(name),
     };
   }));
 }
+
 
 const DATE_RE = /(\d{4}-\d{1,2}-\d{1,2}(?:[T\s]\d{1,2}:\d{2}(?::\d{2})?)?|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{1,2}[\s\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[A-Za-z]*[\s\-,]\d{2,4})/gi;
 
