@@ -56,6 +56,7 @@ import { Route as SubcontractorPackProjectIdManagerRouteImport } from './routes/
 import { Route as ProjectsProjectIdBibleRouteImport } from './routes/projects_.$projectId.bible'
 import { Route as OrgOrgIdEditRouteImport } from './routes/org.$orgId.edit'
 import { Route as JoinOrgInviteTokenRouteImport } from './routes/join-org.invite.$token'
+import { Route as ApiPublicDemoHarnessRouteImport } from './routes/api/public/demo-harness'
 import { Route as ApiDrawingDrawingIdRouteImport } from './routes/api/drawing.$drawingId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -302,6 +303,11 @@ const JoinOrgInviteTokenRoute = JoinOrgInviteTokenRouteImport.update({
   path: '/join-org/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicDemoHarnessRoute = ApiPublicDemoHarnessRouteImport.update({
+  id: '/api/public/demo-harness',
+  path: '/api/public/demo-harness',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDrawingDrawingIdRoute = ApiDrawingDrawingIdRouteImport.update({
   id: '/api/drawing/$drawingId',
   path: '/api/drawing/$drawingId',
@@ -381,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
+  '/api/public/demo-harness': typeof ApiPublicDemoHarnessRoute
   '/join-org/invite/$token': typeof JoinOrgInviteTokenRoute
   '/org/$orgId/edit': typeof OrgOrgIdEditRoute
   '/projects/$projectId/bible': typeof ProjectsProjectIdBibleRoute
@@ -435,6 +442,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
+  '/api/public/demo-harness': typeof ApiPublicDemoHarnessRoute
   '/join-org/invite/$token': typeof JoinOrgInviteTokenRoute
   '/org/$orgId/edit': typeof OrgOrgIdEditRoute
   '/projects/$projectId/bible': typeof ProjectsProjectIdBibleRoute
@@ -491,6 +499,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/drawing/$drawingId': typeof ApiDrawingDrawingIdRoute
+  '/api/public/demo-harness': typeof ApiPublicDemoHarnessRoute
   '/join-org/invite/$token': typeof JoinOrgInviteTokenRoute
   '/org/$orgId/edit': typeof OrgOrgIdEditRoute
   '/projects_/$projectId/bible': typeof ProjectsProjectIdBibleRoute
@@ -548,6 +557,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
+    | '/api/public/demo-harness'
     | '/join-org/invite/$token'
     | '/org/$orgId/edit'
     | '/projects/$projectId/bible'
@@ -602,6 +612,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
+    | '/api/public/demo-harness'
     | '/join-org/invite/$token'
     | '/org/$orgId/edit'
     | '/projects/$projectId/bible'
@@ -657,6 +668,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/drawing/$drawingId'
+    | '/api/public/demo-harness'
     | '/join-org/invite/$token'
     | '/org/$orgId/edit'
     | '/projects_/$projectId/bible'
@@ -712,6 +724,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiDrawingDrawingIdRoute: typeof ApiDrawingDrawingIdRoute
+  ApiPublicDemoHarnessRoute: typeof ApiPublicDemoHarnessRoute
   JoinOrgInviteTokenRoute: typeof JoinOrgInviteTokenRoute
   ProjectsProjectIdBibleRoute: typeof ProjectsProjectIdBibleRoute
   SubcontractorPackProjectIdManagerRoute: typeof SubcontractorPackProjectIdManagerRoute
@@ -1052,6 +1065,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JoinOrgInviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/demo-harness': {
+      id: '/api/public/demo-harness'
+      path: '/api/public/demo-harness'
+      fullPath: '/api/public/demo-harness'
+      preLoaderRoute: typeof ApiPublicDemoHarnessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/drawing/$drawingId': {
       id: '/api/drawing/$drawingId'
       path: '/api/drawing/$drawingId'
@@ -1168,6 +1188,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiDrawingDrawingIdRoute: ApiDrawingDrawingIdRoute,
+  ApiPublicDemoHarnessRoute: ApiPublicDemoHarnessRoute,
   JoinOrgInviteTokenRoute: JoinOrgInviteTokenRoute,
   ProjectsProjectIdBibleRoute: ProjectsProjectIdBibleRoute,
   SubcontractorPackProjectIdManagerRoute:
