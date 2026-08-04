@@ -279,7 +279,7 @@ export const registerTier1Document = createServerFn({ method: "POST" })
             // logistics_plans.extracted_zones for manual reconciliation.
             const { error: zErr } = await (supabase as any)
               .from("work_zones")
-              .upsert(rows, { onConflict: "project_id,name,level,source", ignoreDuplicates: true });
+              .upsert(rows, { onConflict: "project_id,name,level", ignoreDuplicates: true });
             if (zErr) {
               extractionError = `Zones extracted but not all could be saved: ${zErr.message}`;
             }
@@ -587,7 +587,7 @@ export const retryLogisticsExtraction = createServerFn({ method: "POST" })
       for (const row of rows) {
         const { error: upErr } = await (supabase as any)
           .from("work_zones")
-          .upsert(row, { onConflict: "project_id,name,level,source" });
+          .upsert(row, { onConflict: "project_id,name,level" });
         if (!upErr) linked += 1;
       }
       return { status: "complete" as const, zonesExtracted: zones.length, zonesLinked: linked };
