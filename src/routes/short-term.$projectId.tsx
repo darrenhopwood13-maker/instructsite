@@ -129,7 +129,6 @@ function ShortTermProgrammesPage() {
       <div className="mt-5">
         {openId ? (
 
-        {openId ? (
           <ShortTermProgrammeDetail programmeId={openId} onBack={() => setOpenId(null)} />
         ) : list.isLoading ? (
           <div className="flex items-center gap-2 p-6 text-sm text-foreground/60">
