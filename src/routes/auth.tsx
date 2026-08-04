@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyRoles } from "@/lib/projects.functions";
 import { getMyProfile, initMyProfile } from "@/lib/profiles.functions";
+import { verifyTrialAccess } from "@/lib/trial-access.functions";
+
 import { routeForRoles } from "@/lib/ensure-oracle-session";
 import {
   Loader2, ShieldAlert, ArrowRight, Eye, EyeOff, MailCheck,
@@ -166,9 +168,11 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<RoleChoice | null>(null);
+  const [accessPassword, setAccessPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
 
   useEffect(() => {
     (async () => {
@@ -231,7 +235,16 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        // Fixed global access password required to request a free trial.
+        const gate = await verifyTrialAccess({
+          data: { email, accessPassword },
+        });
+        if (!gate.ok) {
+          setError(gate.reason);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
+
           email,
           password,
           options: {
@@ -356,7 +369,30 @@ function AuthPage() {
                       })}
                     </div>
                   </div>
+
+                  <label className="block">
+                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.3em] text-foreground/60">
+                      Free trial access password
+                    </span>
+                    <input
+                      type="password"
+                      required
+                      value={accessPassword}
+                      onChange={(e) => setAccessPassword(e.target.value)}
+                      autoComplete="off"
+                      placeholder="Provided by instructSite"
+                      className="mt-1.5 w-full rounded-md border border-alert/40 bg-black/50 px-3 py-2.5 text-sm text-foreground outline-none focus:border-alert"
+                    />
+                    <span className="mt-1 block text-[0.65rem] text-foreground/55">
+                      Free trials are invite-only. Don’t have the password?{" "}
+                      <a href="mailto:info@instructsite.com?subject=Free%20trial%20access%20—%20instructSite" className="text-alert">
+                        Request access
+                      </a>
+                      .
+                    </span>
+                  </label>
                 </>
+
               )}
 
               <label className="block">
