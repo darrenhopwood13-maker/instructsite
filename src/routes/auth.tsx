@@ -94,7 +94,7 @@ function InstallPwaButton() {
       <button
         type="button"
         onClick={onClick}
-        className="fixed left-4 top-4 z-50 flex items-center gap-2 rounded-full border border-alert/60 bg-alert/15 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-[0.28em] text-alert shadow-lg backdrop-blur"
+        className="fixed bottom-4 left-4 z-50 flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border border-alert/60 bg-alert/15 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-[0.28em] text-alert shadow-lg backdrop-blur sm:bottom-auto sm:top-4"
       >
         <Smartphone size={12} /> Add to Home Screen
       </button>
