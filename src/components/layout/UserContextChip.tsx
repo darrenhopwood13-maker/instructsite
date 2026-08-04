@@ -88,11 +88,11 @@ export function UserContextChip() {
   };
 
   return (
-    <div className="relative flex items-center gap-2">
+    <div className="relative flex shrink-0 items-center gap-2">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="btn-secondary flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left"
+        className="btn-secondary flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-left sm:gap-2 sm:px-2.5"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ff7a00] text-[0.65rem] font-bold text-black">
           {initials(s.fullName)}

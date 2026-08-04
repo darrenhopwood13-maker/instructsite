@@ -512,10 +512,10 @@ function RootComponent() {
       </div>
       <div className="relative z-10">
         <header className="border-b border-white/10 bg-background/70 backdrop-blur">
-          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:gap-6 sm:px-6">
+          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-4 sm:gap-6 sm:px-6">
             <Link
               to="/"
-              className="flex items-baseline text-xl font-extrabold leading-none tracking-tight"
+              className="flex min-w-0 shrink items-baseline truncate text-lg font-extrabold leading-none tracking-tight sm:text-xl"
               style={{ fontFamily: "'Zen Dots', 'Inter Tight', sans-serif" }}
             >
               <span style={{ color: "#ff7a00" }}>instruct</span>
@@ -567,7 +567,7 @@ function AuthNav() {
   };
 
   return (
-    <div className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
+    <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
       {signedIn ? (
         <>
           <UserContextChip />
