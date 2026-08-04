@@ -2,7 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const ROLE_VALUES = ["site_manager", "subcontractor", "apprentice", "qs"] as const;
+const ROLE_VALUES = [
+  "project_admin",
+  "site_manager",
+  "subcontractor",
+  "apprentice",
+  "qs",
+] as const;
+
+/** Roles a user may NOT self-grant at signup — they only come from a real invite. */
+const NON_SELF_GRANTABLE = new Set<string>(["project_admin"]);
 
 export const getMyProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
