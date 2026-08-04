@@ -532,15 +532,17 @@ export const acceptShortTermProgramme = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message.replace(/^.*STP_[A-Z_]+:\s*/, ""));
 
     let filed: string | null = null;
+    let filedError: string | null = null;
     if (state === "accepted") {
       try {
         filed = await fileAcceptedProgramme(context, data.programmeId);
-      } catch (err) {
+      } catch (err: any) {
         // Filing must never undo an acceptance.
+        filedError = String(err?.message ?? err);
         console.error("[stp] project bible filing failed", err);
       }
     }
-    return { state: state as string, filed };
+    return { state: state as string, filed, filedError };
   });
 
 export const setShortTermTaskStatus = createServerFn({ method: "POST" })
