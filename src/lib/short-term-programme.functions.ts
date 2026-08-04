@@ -666,6 +666,18 @@ async function fileAcceptedProgramme(
     .single();
   if (sdErr || !sd) throw new Error(sdErr?.message ?? "Failed to file the programme.");
 
+  // Without this link row the PDF exists in storage but never shows in the
+  // Project Bible, so file it into the register too.
+  const { error: linkErr } = await supabaseAdmin.from("project_bible_reports").insert({
+    project_id: p.project_id,
+    site_document_id: sd.id,
+    category: "Programme",
+    source: `Short-term programme · ${p.company_name} · ${p.package_label}`,
+    title: p.title,
+    created_by: userId,
+  });
+  if (linkErr) throw new Error(linkErr.message);
+
   await supabaseAdmin
     .from("short_term_programmes")
     .update({ site_document_id: sd.id })
