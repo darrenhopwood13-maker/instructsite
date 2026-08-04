@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
+import { useFabVisibility } from "@/hooks/use-fab-visibility";
 
 /**
  * Sticky bottom-right Oracle floating action button.
@@ -22,6 +23,7 @@ const HIDE_PREFIXES = [
 
 export function OracleFAB() {
   const location = useLocation();
+  const fabVisible = useFabVisibility();
   const path = location.pathname;
 
   // Hide on marketing/auth surfaces AND on the home page — user is
@@ -34,7 +36,11 @@ export function OracleFAB() {
     <Link
       to="/tooling"
       aria-label="Open The Oracle"
-      className="oracle-fab fixed z-[60] grid place-items-center rounded-full text-white shadow-[0_16px_36px_-8px_rgba(139,92,246,0.65)] transition hover:scale-105 active:scale-95"
+      className={`oracle-fab fixed z-[60] grid place-items-center rounded-full text-white shadow-[0_16px_36px_-8px_rgba(139,92,246,0.65)] transition duration-200 hover:scale-105 active:scale-95 ${
+        fabVisible
+          ? "pointer-events-auto translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-6 opacity-0"
+      }`}
       style={{
         right: "max(1rem, env(safe-area-inset-right))",
         bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 1rem))",

@@ -218,10 +218,10 @@ export function SettingsMenu({ isOwner }: { isOwner: boolean }) {
         <button
           type="button"
           aria-label="Settings"
-          className="btn-secondary relative inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs uppercase tracking-widest"
+          className="btn-secondary relative inline-flex shrink-0 items-center justify-center gap-2 rounded-lg px-2.5 py-2 text-xs uppercase tracking-widest sm:px-3"
         >
-          <Settings className="h-3.5 w-3.5" />
-          <span>Settings</span>
+          <Settings className="h-4 w-4 shrink-0 sm:h-3.5 sm:w-3.5" />
+          <span className="hidden sm:inline">Settings</span>
           {unread > 0 && (
             <span
               aria-hidden

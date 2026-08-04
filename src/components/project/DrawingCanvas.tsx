@@ -196,11 +196,11 @@ export function DrawingCanvas({
           <span className="mb-1 block font-mono text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
             Select Sheet
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={selectedId ?? ""}
               onChange={(e) => onSelect(e.target.value)}
-              className="flex-1 rounded-md border border-white/15 bg-black/50 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
+              className="w-full min-w-0 flex-1 basis-full rounded-md sm:basis-auto border border-white/15 bg-black/50 px-3 py-2.5 font-mono text-sm text-foreground outline-none focus:border-alert"
             >
               <option value="" disabled>
                 {drawings.length ? "— Choose a drawing —" : "No drawings uploaded"}
