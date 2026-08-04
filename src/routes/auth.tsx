@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyRoles } from "@/lib/projects.functions";
 import { getMyProfile, initMyProfile } from "@/lib/profiles.functions";
+import { verifyTrialAccess } from "@/lib/trial-access.functions";
+
 import { routeForRoles } from "@/lib/ensure-oracle-session";
 import {
   Loader2, ShieldAlert, ArrowRight, Eye, EyeOff, MailCheck,
