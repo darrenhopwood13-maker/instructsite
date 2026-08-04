@@ -8,7 +8,7 @@ import { routeForRoles } from "@/lib/ensure-oracle-session";
 import {
   Loader2, ShieldAlert, ArrowRight, Eye, EyeOff, MailCheck,
   HardHat, Wrench, GraduationCap, Calculator, Sparkles, PhoneCall,
-  Smartphone,
+  Smartphone, ShieldCheck,
 } from "lucide-react";
 import { z } from "zod";
 
