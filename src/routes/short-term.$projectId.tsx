@@ -8,6 +8,8 @@ import { listShortTermProgrammes } from "@/lib/short-term-programme.functions";
 import { STP_STATUS_LABEL, type StpStatus } from "@/lib/short-term-programme";
 import { ShortTermProgrammeDetail } from "@/components/project/ShortTermProgrammeDetail";
 import { ShortTermProgrammeCreate } from "@/components/project/ShortTermProgrammeCreate";
+import { PrivateProgrammePanel } from "@/components/project/PrivateProgrammePanel";
+
 
 export const Route = createFileRoute("/short-term/$projectId")({
   head: () => ({
