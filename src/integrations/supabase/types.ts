@@ -1852,6 +1852,7 @@ export type Database = {
           master_admin_id: string | null
           name: string
           org_id: string
+          photo_path: string | null
           project_admin_id: string | null
           project_number: string | null
           scope_brief: string | null
@@ -1867,6 +1868,7 @@ export type Database = {
           master_admin_id?: string | null
           name: string
           org_id: string
+          photo_path?: string | null
           project_admin_id?: string | null
           project_number?: string | null
           scope_brief?: string | null
@@ -1882,6 +1884,7 @@ export type Database = {
           master_admin_id?: string | null
           name?: string
           org_id?: string
+          photo_path?: string | null
           project_admin_id?: string | null
           project_number?: string | null
           scope_brief?: string | null
@@ -2908,6 +2911,10 @@ export type Database = {
       }
       can_admin_site_document: {
         Args: { _document_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_manage_project_photo: {
+        Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
       can_view_site_document: {
