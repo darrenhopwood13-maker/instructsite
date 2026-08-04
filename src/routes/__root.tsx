@@ -512,7 +512,7 @@ function RootComponent() {
       </div>
       <div className="relative z-10">
         <header className="border-b border-white/10 bg-background/70 backdrop-blur">
-          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
+          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:gap-6 sm:px-6">
             <Link
               to="/"
               className="flex items-baseline text-xl font-extrabold leading-none tracking-tight"
@@ -567,7 +567,7 @@ function AuthNav() {
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
       {signedIn ? (
         <>
           <UserContextChip />
@@ -575,7 +575,7 @@ function AuthNav() {
             asChild
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="hidden gap-2 sm:inline-flex"
           >
             <a
               href="https://www.instructsite.ai"
@@ -596,7 +596,7 @@ function AuthNav() {
             asChild
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="hidden gap-2 sm:inline-flex"
           >
             <a
               href="https://www.instructsite.ai"
@@ -608,12 +608,16 @@ function AuthNav() {
               instructSite.ai
             </a>
           </Button>
-          <Link to="/auth" className="btn-primary rounded-lg px-4 py-2 text-sm uppercase tracking-widest">
+          <Link
+            to="/auth"
+            className="btn-primary shrink-0 rounded-lg px-3 py-2 text-xs uppercase tracking-wider sm:px-4 sm:text-sm sm:tracking-widest"
+          >
             Sign in
           </Link>
         </>
       )}
     </div>
+
   );
 }
 
