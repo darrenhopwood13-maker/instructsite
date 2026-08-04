@@ -24,7 +24,7 @@ const REGISTRY: Record<string, (args: any) => Promise<any>> = {
   deletePrivateProgramme: priv.deletePrivateProgramme as any,
 };
 
-export const Route = createFileRoute("/api/public/__stp-harness")({
+export const Route = createFileRoute("/api/public/stp-harness-tmp")({
   server: {
     handlers: {
       POST: async ({ request }) => {
