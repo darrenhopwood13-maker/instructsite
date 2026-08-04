@@ -279,7 +279,7 @@ export const registerTier1Document = createServerFn({ method: "POST" })
             // logistics_plans.extracted_zones for manual reconciliation.
             const { error: zErr } = await (supabase as any)
               .from("work_zones")
-              .upsert(rows, { onConflict: "project_id,name,level,source", ignoreDuplicates: true });
+              .upsert(rows, { onConflict: "project_id,name,level", ignoreDuplicates: true });
             if (zErr) {
               extractionError = `Zones extracted but not all could be saved: ${zErr.message}`;
             }
