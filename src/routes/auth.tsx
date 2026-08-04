@@ -233,7 +233,16 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        // Fixed global access password required to request a free trial.
+        const gate = await verifyTrialAccess({
+          data: { email, accessPassword },
+        });
+        if (!gate.ok) {
+          setError(gate.reason);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
+
           email,
           password,
           options: {
