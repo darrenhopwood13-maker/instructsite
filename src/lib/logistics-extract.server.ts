@@ -15,10 +15,13 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
+import { ZONE_NAME_RULE } from "./zone-normalise";
+
 const ZONE_PROMPT =
   'Extract the work zones / site areas / compounds / levels marked on this Site Logistics Plan. ' +
   'Return JSON: { "zones": [{ "name": string, "level": string|null, "description": string|null }] }. ' +
-  "Only include zones that are actually labelled on the plan. Never invent zones.";
+  ZONE_NAME_RULE +
+  " Only include zones that are actually labelled on the plan. Never invent zones.";
 
 async function gateway() {
   const apiKey = process.env.LOVABLE_API_KEY;

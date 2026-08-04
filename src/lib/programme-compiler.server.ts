@@ -159,16 +159,30 @@ function inferLocation(name: string): string {
   return match?.[0]?.trim() ?? "";
 }
 
-function cleanTaskName(raw: string): string {
-  return raw
-    .replace(/\b(?:start|finish|end|duration|dur|activity id|task mode|baseline|early|late|planned|actual)\b/gi, " ")
-    .replace(/\b\d+(?:\.\d+)?\s*(?:d|day|days|w|wk|week|weeks|hrs?|hours?)\b/gi, " ")
-    .replace(/\b\d{1,3}%\b/g, " ")
+/**
+ * Strips scraped-layout noise out of a task name.
+ *
+ * `structured` sources (CSV / XML / XER / AI JSON) already give us a real task
+ * name column, so the aggressive header-word stripping must NOT run on them:
+ * it silently ate legitimate words, e.g. "Plastering - Tape Joint and Skim
+ * Finish" became "... and Skim". Only free-text/PDF scraping needs it, because
+ * there the name is carved out of a line that also holds column headings.
+ */
+function cleanTaskName(raw: string, structured = false): string {
+  let out = raw;
+  if (!structured) {
+    out = out
+      .replace(/\b(?:start|finish|end|duration|dur|activity id|task mode|baseline|early|late|planned|actual)\b/gi, " ")
+      .replace(/\b\d+(?:\.\d+)?\s*(?:d|day|days|w|wk|week|weeks|hrs?|hours?)\b/gi, " ")
+      .replace(/\b\d{1,3}%\b/g, " ");
+  }
+  return out
     .replace(/^[\s#\-–—_:|/\\]+/, "")
     .replace(/^\d+(?:\.\d+)*[.)\-:]?(?=\s)\s*/, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
+
 
 function validTask(t: ProgrammeTask): boolean {
   if (!t.taskName || t.taskName.length < 3) return false;
@@ -177,10 +191,11 @@ function validTask(t: ProgrammeTask): boolean {
   return true;
 }
 
-function normaliseTask(t: ProgrammeTask): ProgrammeTask | null {
+function normaliseTask(t: ProgrammeTask, structured = false): ProgrammeTask | null {
   const start = normalizeDate(t.startDate);
   const end = normalizeDate(t.endDate);
-  const name = cleanTaskName(t.taskName);
+  const name = cleanTaskName(t.taskName, structured);
+
   const task = {
     taskRef: (t.taskRef ?? "").trim(),
     predecessors: (t.predecessors ?? []).map((p) => p.trim()).filter(Boolean),
@@ -199,10 +214,11 @@ function normaliseTask(t: ProgrammeTask): ProgrammeTask | null {
   return validTask(task) ? task : null;
 }
 
-function mergeTasks(all: ProgrammeTask[]): ProgrammeTask[] {
+function mergeTasks(all: ProgrammeTask[], structured = false): ProgrammeTask[] {
   const seen = new Map<string, ProgrammeTask>();
   for (const raw of all) {
-    const t = normaliseTask(raw);
+    const t = normaliseTask(raw, structured);
+
     if (!t) continue;
     const key = t.taskRef
       ? `ref:${t.taskRef.toLowerCase()}`
@@ -296,7 +312,7 @@ function parseCsvToTasks(text: string): ProgrammeTask[] {
       trade: tradeKey ? String(row[tradeKey] ?? "").trim() : inferTrade(name),
       location: locKey ? String(row[locKey] ?? "").trim() : inferLocation(name),
     };
-  }));
+  }), true);
 }
 
 
@@ -450,7 +466,7 @@ function parseXmlToTasks(text: string): ProgrammeTask[] {
       tasks.push({ taskName: name, startDate: start, endDate: finish, trade: inferTrade(name), location: inferLocation(name) });
     }
   }
-  return mergeTasks(tasks);
+  return mergeTasks(tasks, true);
 }
 
 function parseXerToTasks(text: string): ProgrammeTask[] {
@@ -475,7 +491,7 @@ function parseXerToTasks(text: string): ProgrammeTask[] {
       }
     }
   }
-  return mergeTasks(tasks);
+  return mergeTasks(tasks, true);
 }
 
 async function extractPdfText(bytes: Uint8Array): Promise<string> {
@@ -508,7 +524,7 @@ function salvageJson(raw: string): z.infer<typeof ExtractSchema> {
 function parseAiTasks(raw: string): ProgrammeTask[] {
   if (!raw.trim()) return [];
   try {
-    return mergeTasks(salvageJson(raw).tasks ?? []);
+    return mergeTasks(salvageJson(raw).tasks ?? [], true);
   } catch (err) {
     console.warn("[Randall] AI JSON parse failed", {
       chars: raw.length,

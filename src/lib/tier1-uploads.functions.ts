@@ -3,6 +3,8 @@ import { z } from "zod";
 import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { canonicalizeTrade, inferTradeFromText, GENERAL_TRADE } from "@/lib/trade-packages";
+import { fullZoneName, normaliseLevel, ZONE_NAME_RULE } from "@/lib/zone-normalise";
+import { insertMissingZones } from "@/lib/work-zones.server";
 
 
 const DOC_TYPES = ["drawing", "logistics", "rams"] as const;
@@ -239,7 +241,8 @@ export const registerTier1Document = createServerFn({ method: "POST" })
         const meta = await aiJson<{
           zones: { name: string; level?: string; description?: string }[];
         }>(
-          'Extract the work zones / site areas / levels described in this Site Logistics Plan. Return JSON: { "zones": [{ "name": string, "level"?: string, "description"?: string }] }.',
+          'Extract the work zones / site areas / levels described in this Site Logistics Plan. Return JSON: { "zones": [{ "name": string, "level"?: string, "description"?: string }] }. ' +
+            ZONE_NAME_RULE,
           rawText,
         );
         const zones = Array.isArray(meta.zones) ? meta.zones : [];
@@ -261,8 +264,8 @@ export const registerTier1Document = createServerFn({ method: "POST" })
           const rows = zones
             .map((z) => ({
               project_id: data.projectId,
-              name: (z?.name ?? "").trim(),
-              level: z?.level?.trim() || null,
+              name: fullZoneName(z?.name, z?.description),
+              level: normaliseLevel(z?.level),
               source: "logistics" as const,
               status: "active" as const,
             }))
@@ -277,11 +280,9 @@ export const registerTier1Document = createServerFn({ method: "POST" })
             // Best-effort — a partial failure here shouldn't fail the whole
             // logistics extraction, since the raw zones are already saved on
             // logistics_plans.extracted_zones for manual reconciliation.
-            const { error: zErr } = await (supabase as any)
-              .from("work_zones")
-              .upsert(rows, { onConflict: "project_id,name,level", ignoreDuplicates: true });
-            if (zErr) {
-              extractionError = `Zones extracted but not all could be saved: ${zErr.message}`;
+            const res = await insertMissingZones(supabase, data.projectId, rows);
+            if (res.error) {
+              extractionError = `Zones extracted but not all could be saved: ${res.error}`;
             }
           }
         }
@@ -442,7 +443,7 @@ export const allocateZonesForDabsDrawing = createServerFn({ method: "POST" })
     let zones: { name: string; level?: string | null }[] = [];
     try {
       const meta = await aiJson<{ zones?: { name: string; level?: string | null }[] }>(
-        `This drawing "${dwg.drawing_no ?? ""} ${dwg.title ?? ""}" is now a live DABS work sheet. Identify the work zones / grid areas / levels a site manager would pin activities to. Return {"zones":[{"name":string,"level":string|null}]}. Do NOT invent zones — only what's shown on the sheet or corroborated by the logistics plan. Logistics-plan zones for cross-reference: ${JSON.stringify(logisticsZones).slice(0, 2000)}`,
+        `This drawing "${dwg.drawing_no ?? ""} ${dwg.title ?? ""}" is now a live DABS work sheet. Identify the work zones / grid areas / levels a site manager would pin activities to. Return {"zones":[{"name":string,"level":string|null,"description":string|null}]}. ${ZONE_NAME_RULE} Do NOT invent zones — only what's shown on the sheet or corroborated by the logistics plan. Logistics-plan zones for cross-reference: ${JSON.stringify(logisticsZones).slice(0, 2000)}`,
         drawingText || `Drawing ${dwg.drawing_no ?? ""} — ${dwg.title ?? ""} (level ${dwg.level ?? "?"})`,
       );
       zones = (meta.zones ?? []).filter((z) => z?.name);
@@ -450,21 +451,19 @@ export const allocateZonesForDabsDrawing = createServerFn({ method: "POST" })
       zones = [];
     }
 
-    let inserted = 0;
-    for (const z of zones) {
-      const { error: upErr } = await supabase.from("work_zones").upsert(
-        {
-          project_id: dwg.project_id,
-          drawing_id: dwg.id,
-          name: z.name,
-          level: z.level ?? dwg.level ?? null,
-          source: "oracle",
-        },
-        { onConflict: "project_id,name,level", ignoreDuplicates: true },
-      );
-      if (!upErr) inserted += 1;
-    }
-    return { zones, allocated: inserted };
+    const res = await insertMissingZones(
+      supabase,
+      dwg.project_id,
+      zones.map((z) => ({
+        project_id: dwg.project_id,
+        drawing_id: dwg.id,
+        name: fullZoneName(z.name, (z as any).description),
+        level: normaliseLevel(z.level ?? dwg.level ?? null),
+        source: "oracle",
+        status: "active",
+      })),
+    );
+    return { zones, allocated: res.inserted };
   });
 
 
@@ -570,8 +569,8 @@ export const retryLogisticsExtraction = createServerFn({ method: "POST" })
       const rows = zones
         .map((z) => ({
           project_id: plan.project_id,
-          name: z.name.trim(),
-          level: z.level?.trim() || null,
+          name: fullZoneName(z.name, (z as any).description),
+          level: normaliseLevel(z.level),
           source: "logistics" as const,
           status: "active" as const,
           logistics_plan_id: plan.id,
@@ -583,14 +582,20 @@ export const retryLogisticsExtraction = createServerFn({ method: "POST" })
           return true;
         });
 
-      let linked = 0;
-      for (const row of rows) {
-        const { error: upErr } = await (supabase as any)
-          .from("work_zones")
-          .upsert(row, { onConflict: "project_id,name,level" });
-        if (!upErr) linked += 1;
+      const res = await insertMissingZones(supabase, plan.project_id, rows);
+      if (res.error) {
+        await supabase
+          .from("logistics_plans")
+          .update({
+            extraction_error: `Zones extracted but not all could be saved: ${res.error}`,
+          })
+          .eq("id", plan.id);
       }
-      return { status: "complete" as const, zonesExtracted: zones.length, zonesLinked: linked };
+      return {
+        status: "complete" as const,
+        zonesExtracted: zones.length,
+        zonesLinked: res.inserted,
+      };
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Extraction failed";
       await supabase
