@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ClipboardList, LogOut, MapPin, ShieldAlert, X } from "lucide-react";
 import { toast } from "sonner";
+import { ActivityPicker } from "@/components/project/ActivityPicker";
 import { getProject, getMyRoles } from "@/lib/projects.functions";
 import { listDabsDrawings, listProjectZones } from "@/lib/tier1-uploads.functions";
 import { createLivePin, listLivePins, closeLivePin } from "@/lib/live-activity.functions";
@@ -93,6 +94,7 @@ function DabsPage() {
   const [operatives, setOperatives] = useState(1);
   const [taskNotes, setTaskNotes] = useState("");
   const [activityDescription, setActivityDescription] = useState("");
+  const [programmeTaskRef, setProgrammeTaskRef] = useState<string | null>(null);
   const [startTime, setStartTime] = useState(() => toLocalInput(new Date()));
   const [finishTime, setFinishTime] = useState(() =>
     toLocalInput(new Date(Date.now() + 8 * 3600 * 1000)),
@@ -136,6 +138,7 @@ function DabsPage() {
           notes: taskNotes.trim() || undefined,
           highRiskFlags: detectedHazards,
           activityDescription: activityDescription.trim() || undefined,
+          programmeTaskRef: programmeTaskRef ?? undefined,
         },
       });
       if ((result as any)?.permit_required) {
@@ -148,6 +151,7 @@ function DabsPage() {
       setPending(null);
       setTaskNotes("");
       setActivityDescription("");
+      setProgrammeTaskRef(null);
       qc.invalidateQueries({ queryKey: ["live-pins", projectId] });
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to save pin.");
@@ -435,20 +439,24 @@ function DabsPage() {
                 className="mt-1 w-full rounded-md border border-white/15 bg-black/40 px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-alert"
               />
             </label>
-            <label className="mt-3 block">
-              <span className="text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
-                Activity / Paper Briefing (goes to the permit register)
-              </span>
-              <input
-                value={activityDescription}
-                onChange={(e) => setActivityDescription(e.target.value)}
-                placeholder="e.g. Hot works — welding brackets, Level 3 riser"
-                className="mt-1 w-full rounded-md border border-white/15 bg-black/40 px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-alert"
+            <div className="mt-3">
+              <ActivityPicker
+                projectId={projectId}
+                single
+                tradePackage={trade}
+                label="Activity / Paper Briefing (goes to the permit register)"
+                placeholder="Search the programme, or describe the activity…"
+                selected={activityDescription ? [activityDescription] : []}
+                onChange={(next) => setActivityDescription(next[0] ?? "")}
+                programmeTaskRef={programmeTaskRef}
+                onProgrammeTaskRefChange={setProgrammeTaskRef}
               />
               <span className="mt-1 block text-[0.6rem] text-foreground/40">
-                Leave blank to reuse the trade package and task description.
+                {programmeTaskRef
+                  ? `Linked to programme task ${programmeTaskRef} — progress tracks against that task.`
+                  : "Leave blank to reuse the trade package and task description."}
               </span>
-            </label>
+            </div>
             {willFlagPermit && (
               <p className="mt-2 flex items-start gap-1.5 rounded-md border-2 border-amber-400 bg-amber-400/10 px-2.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300">
                 <ShieldAlert size={12} className="mt-0.5 shrink-0" /> High-risk task detected ·{" "}
