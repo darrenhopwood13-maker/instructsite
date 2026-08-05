@@ -36,7 +36,7 @@ export function ActivityPicker({
   programmeTaskRef = null,
   onProgrammeTaskRefChange,
   label = "Scope of Work · Activities",
-  placeholder = "Search or describe an activity…",
+  placeholder = "Search or describe activity…",
 }: {
   projectId: string;
   selected: string[];

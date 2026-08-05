@@ -445,7 +445,7 @@ function DabsPage() {
                 single
                 tradePackage={trade}
                 label="Activity / Paper Briefing (goes to the permit register)"
-                placeholder="Search the programme, or describe the activity…"
+                placeholder="Search programme or describe activity…"
                 selected={activityDescription ? [activityDescription] : []}
                 onChange={(next) => setActivityDescription(next[0] ?? "")}
                 programmeTaskRef={programmeTaskRef}
