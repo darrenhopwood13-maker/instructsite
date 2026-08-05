@@ -173,10 +173,12 @@ export function ActivityPicker({
     }
   };
 
-  const showPanel = q.length > 0 || (open && programmeOpts.length > 0);
+  const hasRows = programmeOpts.length > 0 || projectOpts.length > 0 || sharedOpts.length > 0;
+  const showPanel = open && (hasRows || showProgrammeHint || q.length > 0);
 
   return (
-    <div>
+    <div ref={rootRef}>
+
       <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
         {label}
       </span>
