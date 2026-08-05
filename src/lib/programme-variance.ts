@@ -199,13 +199,6 @@ export function buildVariance(input: {
     links[label.trim().toLowerCase()] = key.trim().toLowerCase();
   }
 
-  /** Explicit link wins; only fall back to token overlap when unlinked. */
-  const belongs = (key: string, pkgTokens: Set<string>, tradePackage: string | null, zoneName: string | null) => {
-    const linked = tradePackage ? links[tradePackage.trim().toLowerCase()] : undefined;
-    if (linked) return linked === key;
-    return matchesPackage(pkgTokens, tradePackage, zoneName);
-  };
-
   // 1. Group baseline tasks into packages (explicit package_ref, else trade).
   const groups = new Map<string, VarianceTask[]>();
   for (const t of tasks) {
@@ -220,6 +213,28 @@ export function buildVariance(input: {
   for (const t of tasks) if (t.taskRef) byRef.set(t.taskRef, t);
   const packageOfTask = new Map<string, string>();
   for (const [key, arr] of groups) for (const t of arr) packageOfTask.set(t.id, key);
+  /** task_ref (lowercased) -> package key, so an explicit pin ref is decisive. */
+  const packageOfRef = new Map<string, string>();
+  for (const [key, arr] of groups) {
+    for (const t of arr) if (t.taskRef) packageOfRef.set(t.taskRef.trim().toLowerCase(), key);
+  }
+
+  /**
+   * Precedence: the baseline task the crew actually booked against, then the
+   * explicit package link, then token overlap for legacy/unlinked records.
+   */
+  const belongs = (
+    key: string,
+    pkgTokens: Set<string>,
+    r: { tradePackage: string | null; zoneName: string | null; programmeTaskRef?: string | null },
+  ) => {
+    const ref = r.programmeTaskRef?.trim().toLowerCase();
+    const refKey = ref ? packageOfRef.get(ref) : undefined;
+    if (refKey) return refKey === key;
+    const linked = r.tradePackage ? links[r.tradePackage.trim().toLowerCase()] : undefined;
+    if (linked) return linked === key;
+    return matchesPackage(pkgTokens, r.tradePackage, r.zoneName);
+  };
 
   const results: PackageVariance[] = [];
 
@@ -227,9 +242,36 @@ export function buildVariance(input: {
     const label = packageLabel(group[0]);
     const pkgTokens = tokens(label, ...group.map((t) => `${t.taskName} ${t.location ?? ""}`));
 
-    const pkgPins = pins.filter((p) => belongs(key, pkgTokens, p.tradePackage, p.zoneName));
-    const pkgDiaries = diaries.filter((d) => belongs(key, pkgTokens, d.tradePackage, d.zoneName));
+    const pkgPins = pins.filter((p) => belongs(key, pkgTokens, p));
+    const pkgDiaries = diaries.filter((d) => belongs(key, pkgTokens, d));
     const verified = pkgDiaries.filter(isVerified);
+
+    // Task-level roll-up, only for tasks records explicitly named.
+    const taskActuals: TaskActual[] = [];
+    for (const t of group) {
+      const ref = t.taskRef?.trim().toLowerCase();
+      if (!ref) continue;
+      const tPins = pkgPins.filter((p) => p.programmeTaskRef?.trim().toLowerCase() === ref);
+      const tDiaries = pkgDiaries.filter((d) => d.programmeTaskRef?.trim().toLowerCase() === ref);
+      if (tPins.length === 0 && tDiaries.length === 0) continue;
+      const tVerified = tDiaries.filter(isVerified);
+      const latest = tVerified
+        .slice()
+        .sort((a, b) => Date.parse(a.checkoutTime) - Date.parse(b.checkoutTime))
+        .slice(-1)[0];
+      taskActuals.push({
+        taskId: t.id,
+        taskRef: t.taskRef,
+        taskName: t.taskName,
+        plannedPct: plannedPctAt([t], today),
+        actualPct: latest ? verifiedPct(latest) : 0,
+        verifiedDiaryIds: tVerified.map((d) => d.id),
+        unverifiedDiaryCount: tDiaries.length - tVerified.length,
+        pinIds: tPins.map((p) => p.id),
+      });
+    }
+
+
 
 
     // Latest verified figure per delivery stream (package + zone), averaged.
