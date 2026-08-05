@@ -35,6 +35,8 @@ export type VariancePin = {
   startTime: string;
   status: string;
   operativeCount: number;
+  /** Explicit baseline task this pin was booked against (task_ref). */
+  programmeTaskRef?: string | null;
 };
 
 export type VarianceDiary = {
@@ -46,6 +48,20 @@ export type VarianceDiary = {
   completionPct: number | null;
   managerCompletionPct: number | null;
   qsVerifiedPct: number | null;
+  /** Inherited from the pin at close-out. */
+  programmeTaskRef?: string | null;
+};
+
+/** Progress rolled up against one specific baseline task, when pins name it. */
+export type TaskActual = {
+  taskId: string;
+  taskRef: string | null;
+  taskName: string;
+  plannedPct: number;
+  actualPct: number;
+  verifiedDiaryIds: string[];
+  unverifiedDiaryCount: number;
+  pinIds: string[];
 };
 
 export type PackageVariance = {
@@ -66,8 +82,11 @@ export type PackageVariance = {
   pinIds: string[];
   lastPinDate: string | null;
   lastVerifiedDiaryDate: string | null;
+  /** Only tasks that had explicitly-referenced pins/diaries appear here. */
+  taskActuals: TaskActual[];
   note: string;
 };
+
 
 const DAY = 86_400_000;
 
