@@ -17,7 +17,7 @@ export const submitDailyDiary = createServerFn({ method: "POST" })
     const { data: pin, error: pinErr } = await (context.supabase
       .from("live_site_activity") as any)
       .select(
-        "id, project_id, subcontractor_id, drawing_id, zone_id, workface_id, trade_package, operative_count, start_time, scheduled_finish, status",
+        "id, project_id, subcontractor_id, drawing_id, zone_id, workface_id, trade_package, programme_task_ref, operative_count, start_time, scheduled_finish, status",
       )
       .eq("id", data.liveActivityId)
       .single();
@@ -40,6 +40,7 @@ export const submitDailyDiary = createServerFn({ method: "POST" })
         zone_id: pin.zone_id,
         workface_id: pin.workface_id,
         trade_package: pin.trade_package,
+        programme_task_ref: pin.programme_task_ref ?? null,
         operative_count: pin.operative_count,
         start_time: pin.start_time,
         scheduled_finish: pin.scheduled_finish,
