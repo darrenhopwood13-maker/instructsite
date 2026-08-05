@@ -59,6 +59,7 @@ export function ActivityPicker({
   const [open, setOpen] = useState(false);
   const [promptFor, setPromptFor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const opts = useQuery({
     queryKey: ["activity-options", projectId],
@@ -85,15 +86,17 @@ export function ActivityPicker({
         (t.taskRef ?? "").toLowerCase().includes(q) ||
         t.packageLabel.toLowerCase().includes(q),
     );
-    // Tasks in the package the crew already picked come first.
-    const ranked = pkgKey
-      ? [
-          ...matching.filter((t) => t.packageKey === pkgKey),
-          ...matching.filter((t) => t.packageKey !== pkgKey),
-        ]
-      : matching;
+    if (!pkgKey) return q ? matching.slice(0, 10) : [];
+    const inPkg = matching.filter((t) => t.packageKey === pkgKey);
+    // With nothing typed, only the crew's own package is offered; a search
+    // may legitimately reach across the whole programme.
+    const ranked = q ? [...inPkg, ...matching.filter((t) => t.packageKey !== pkgKey)] : inPkg;
     return ranked.slice(0, 10);
   }, [programme.data, q, pkgKey]);
+
+  const showProgrammeHint =
+    !!onProgrammeTaskRefChange && !pkgKey && !q && (programme.data?.tasks?.length ?? 0) > 0;
+
 
   const projectOpts = useMemo(
     () => (opts.data?.project ?? []).filter((o) => o.label.toLowerCase().includes(q)).slice(0, 8),
