@@ -22,6 +22,7 @@ export type Database = {
           high_risk_flags: string[]
           id: string
           permit_status: string
+          programme_task_ref: string | null
           project_id: string
           subcontractor_id: string
           updated_at: string
@@ -34,6 +35,7 @@ export type Database = {
           high_risk_flags?: string[]
           id?: string
           permit_status?: string
+          programme_task_ref?: string | null
           project_id: string
           subcontractor_id: string
           updated_at?: string
@@ -46,6 +48,7 @@ export type Database = {
           high_risk_flags?: string[]
           id?: string
           permit_status?: string
+          programme_task_ref?: string | null
           project_id?: string
           subcontractor_id?: string
           updated_at?: string
@@ -190,6 +193,7 @@ export type Database = {
           notes: string | null
           operative_count: number
           photo_urls: string[]
+          programme_task_ref: string | null
           progress_status: string
           project_id: string
           qs_notes: string | null
@@ -224,6 +228,7 @@ export type Database = {
           notes?: string | null
           operative_count: number
           photo_urls?: string[]
+          programme_task_ref?: string | null
           progress_status: string
           project_id: string
           qs_notes?: string | null
@@ -258,6 +263,7 @@ export type Database = {
           notes?: string | null
           operative_count?: number
           photo_urls?: string[]
+          programme_task_ref?: string | null
           progress_status?: string
           project_id?: string
           qs_notes?: string | null
@@ -606,6 +612,7 @@ export type Database = {
           operative_count: number
           permit_required: boolean
           permit_status: string
+          programme_task_ref: string | null
           project_id: string
           scheduled_finish: string
           start_time: string
@@ -629,6 +636,7 @@ export type Database = {
           operative_count?: number
           permit_required?: boolean
           permit_status?: string
+          programme_task_ref?: string | null
           project_id: string
           scheduled_finish: string
           start_time?: string
@@ -652,6 +660,7 @@ export type Database = {
           operative_count?: number
           permit_required?: boolean
           permit_status?: string
+          programme_task_ref?: string | null
           project_id?: string
           scheduled_finish?: string
           start_time?: string
