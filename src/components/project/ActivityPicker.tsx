@@ -219,22 +219,35 @@ export function ActivityPicker({
         />
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setOpen(false);
+              return;
+            }
             if (e.key === "Enter") {
               e.preventDefault();
               void addCustom();
             }
           }}
           placeholder={placeholder}
-          className="w-full rounded-md border border-white/15 bg-black/40 py-2.5 pl-9 pr-3 font-mono text-sm text-foreground outline-none focus:border-alert"
+          className="w-full min-w-0 truncate rounded-md border border-white/15 bg-black/40 py-2.5 pl-9 pr-3 font-mono text-[0.78rem] text-foreground outline-none placeholder:text-foreground/40 focus:border-alert"
         />
       </div>
 
       {showPanel && (
-        <div className="mt-1.5 overflow-hidden rounded-md border border-white/15 bg-black/70">
+        <div className="mt-1.5 max-h-72 overflow-y-auto rounded-md border border-white/15 bg-black/85">
+          {showProgrammeHint && (
+            <p className="border-b border-white/10 bg-white/5 px-3 py-2 text-[0.65rem] text-foreground/60">
+              Select a trade package to see programme tasks.
+            </p>
+          )}
           {programmeOpts.length > 0 && (
+
             <>
               <p className="border-b border-white/10 bg-alert/10 px-3 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-alert">
                 From the master programme
