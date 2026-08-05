@@ -335,7 +335,9 @@ export function buildVariance(input: {
       pinIds: pkgPins.map((p) => p.id),
       lastPinDate,
       lastVerifiedDiaryDate,
+      taskActuals,
       note: "",
+
     });
   }
 
