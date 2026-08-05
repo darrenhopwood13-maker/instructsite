@@ -163,3 +163,56 @@ describe("explicit package links", () => {
     expect(res[0].label).toBe("MEP");
   });
 });
+
+describe("explicit programme task refs", () => {
+  const refTasks = [
+    task({
+      id: "t1",
+      taskRef: "T01",
+      taskName: "Electrical first fix",
+      trade: "Electrical",
+      startDate: "2026-08-01",
+      endDate: "2026-08-10",
+    }),
+    task({
+      id: "t2",
+      taskRef: "T02",
+      taskName: "Plaster and skim",
+      trade: "Plastering",
+      startDate: "2026-08-01",
+      endDate: "2026-08-10",
+    }),
+  ];
+
+  it("beats both the explicit link and the wording", () => {
+    const res = buildVariance({
+      tasks: refTasks,
+      pins: [],
+      diaries: [
+        diary({
+          id: "d1",
+          tradePackage: "Plaster and skim",
+          programmeTaskRef: "T01",
+          qsVerifiedPct: 40,
+        }),
+      ],
+      today: "2026-08-05",
+      links: { "plaster and skim": "plastering" },
+    });
+    expect(res.find((r) => r.label === "Electrical")!.actualPct).toBe(40);
+    expect(res.find((r) => r.label === "Plastering")!.actualPct).toBe(0);
+  });
+
+  it("rolls progress up per task and leaves unreferenced tasks out", () => {
+    const res = buildVariance({
+      tasks: refTasks,
+      pins: [],
+      diaries: [diary({ id: "d1", programmeTaskRef: "T01", qsVerifiedPct: 55 })],
+      today: "2026-08-05",
+    });
+    const elec = res.find((r) => r.label === "Electrical")!;
+    expect(elec.taskActuals).toHaveLength(1);
+    expect(elec.taskActuals[0]).toMatchObject({ taskRef: "T01", actualPct: 55 });
+    expect(res.find((r) => r.label === "Plastering")!.taskActuals).toHaveLength(0);
+  });
+});

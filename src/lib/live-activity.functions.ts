@@ -21,6 +21,8 @@ export const createLivePin = createServerFn({ method: "POST" })
         highRiskFlags: z.array(z.string().trim().max(64)).max(20).optional(),
         /** Paper-briefing description recorded against the activities register. */
         activityDescription: z.string().trim().max(2000).optional(),
+        /** task_ref of the baseline programme task this pin delivers, when known. */
+        programmeTaskRef: z.string().trim().max(120).nullable().optional(),
       })
       .parse(i),
   )
@@ -41,6 +43,7 @@ export const createLivePin = createServerFn({ method: "POST" })
         y_pct: data.yPct,
         notes: data.notes ?? null,
         high_risk_flags: data.highRiskFlags ?? [],
+        programme_task_ref: data.programmeTaskRef ?? null,
       })
       .select("id,permit_required,permit_status,high_risk_flags,hazard_scanned")
       .single();
@@ -63,6 +66,7 @@ export const createLivePin = createServerFn({ method: "POST" })
         description,
         // Use the flags the DB trigger actually derived, not the client's guess.
         high_risk_flags: (row?.high_risk_flags ?? data.highRiskFlags ?? []) as string[],
+        programme_task_ref: data.programmeTaskRef ?? null,
       })
       .select("id,permit_status")
       .single();
@@ -96,7 +100,7 @@ export const listLivePins = createServerFn({ method: "GET" })
     let q = context.supabase
       .from("live_site_activity")
       .select(
-        "id,project_id,drawing_id,zone_id,subcontractor_id,trade_package,operative_count,start_time,scheduled_finish,x_pct,y_pct,status,notes,permit_required,permit_status,high_risk_flags,hazard_scanned,activity_id,created_at,work_zones(name,level),project_drawings(drawing_no,title)",
+        "id,project_id,drawing_id,zone_id,subcontractor_id,trade_package,operative_count,start_time,scheduled_finish,x_pct,y_pct,status,notes,permit_required,permit_status,high_risk_flags,hazard_scanned,activity_id,programme_task_ref,created_at,work_zones(name,level),project_drawings(drawing_no,title)",
       )
       .eq("project_id", data.projectId)
       .order("created_at", { ascending: false })
@@ -178,7 +182,7 @@ export const getPinDetail = createServerFn({ method: "GET" })
     const { data: pin, error } = await context.supabase
       .from("live_site_activity")
       .select(
-        "id,project_id,drawing_id,zone_id,subcontractor_id,trade_package,operative_count,start_time,scheduled_finish,x_pct,y_pct,status,notes,permit_required,permit_status,high_risk_flags,hazard_scanned,activity_id,created_at,work_zones(name,level),project_drawings(drawing_no,title)",
+        "id,project_id,drawing_id,zone_id,subcontractor_id,trade_package,operative_count,start_time,scheduled_finish,x_pct,y_pct,status,notes,permit_required,permit_status,high_risk_flags,hazard_scanned,activity_id,programme_task_ref,created_at,work_zones(name,level),project_drawings(drawing_no,title)",
       )
       .eq("id", data.pinId)
       .maybeSingle();

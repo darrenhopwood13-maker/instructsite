@@ -54,13 +54,13 @@ export const getProgrammeVariance = createServerFn({ method: "POST" })
         .order("start_date", { ascending: true })
         .limit(1000),
       (supabase.from("live_site_activity") as any)
-        .select("id, trade_package, start_time, status, operative_count, work_zones(name)")
+        .select("id, trade_package, programme_task_ref, start_time, status, operative_count, work_zones(name)")
         .eq("project_id", data.projectId)
         .order("start_time", { ascending: false })
         .limit(500),
       (supabase.from("daily_site_diaries") as any)
         .select(
-          "id, trade_package, checkout_time, qs_status, completion_pct, manager_completion_pct, qs_verified_pct, zone_id, work_zones(name)",
+          "id, trade_package, programme_task_ref, checkout_time, qs_status, completion_pct, manager_completion_pct, qs_verified_pct, zone_id, work_zones(name)",
         )
         .eq("project_id", data.projectId)
         .order("checkout_time", { ascending: false })
@@ -91,6 +91,7 @@ export const getProgrammeVariance = createServerFn({ method: "POST" })
       startTime: p.start_time,
       status: p.status,
       operativeCount: p.operative_count ?? 0,
+      programmeTaskRef: p.programme_task_ref ?? null,
     }));
 
     const diaries: VarianceDiary[] = ((diaryRows ?? []) as any[]).map((d) => ({
@@ -102,6 +103,7 @@ export const getProgrammeVariance = createServerFn({ method: "POST" })
       completionPct: d.completion_pct ?? null,
       managerCompletionPct: d.manager_completion_pct ?? null,
       qsVerifiedPct: d.qs_verified_pct ?? null,
+      programmeTaskRef: d.programme_task_ref ?? null,
     }));
 
     const links: PackageLinkMap = {};
