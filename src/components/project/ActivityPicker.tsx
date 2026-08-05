@@ -116,6 +116,21 @@ export function ActivityPicker({
     if (single && selected.length === 0 && programmeTaskRef) onProgrammeTaskRefChange?.(null);
   }, [single, selected.length, programmeTaskRef, onProgrammeTaskRefChange]);
 
+  // The panel now opens on focus, so it must also get out of the way on its own.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+    };
+  }, [open]);
+
+
   const add = (labelText: string, taskRef: string | null = null) => {
     if (single) {
       onChange([labelText]);
