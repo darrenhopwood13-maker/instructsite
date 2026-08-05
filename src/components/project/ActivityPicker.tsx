@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CalendarRange, Check, Plus, Search, Share2, X } from "lucide-react";
@@ -36,7 +36,7 @@ export function ActivityPicker({
   programmeTaskRef = null,
   onProgrammeTaskRefChange,
   label = "Scope of Work · Activities",
-  placeholder = "Search or describe an activity…",
+  placeholder = "Search or describe activity…",
 }: {
   projectId: string;
   selected: string[];
@@ -59,6 +59,7 @@ export function ActivityPicker({
   const [open, setOpen] = useState(false);
   const [promptFor, setPromptFor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const opts = useQuery({
     queryKey: ["activity-options", projectId],
@@ -85,15 +86,17 @@ export function ActivityPicker({
         (t.taskRef ?? "").toLowerCase().includes(q) ||
         t.packageLabel.toLowerCase().includes(q),
     );
-    // Tasks in the package the crew already picked come first.
-    const ranked = pkgKey
-      ? [
-          ...matching.filter((t) => t.packageKey === pkgKey),
-          ...matching.filter((t) => t.packageKey !== pkgKey),
-        ]
-      : matching;
+    if (!pkgKey) return q ? matching.slice(0, 10) : [];
+    const inPkg = matching.filter((t) => t.packageKey === pkgKey);
+    // With nothing typed, only the crew's own package is offered; a search
+    // may legitimately reach across the whole programme.
+    const ranked = q ? [...inPkg, ...matching.filter((t) => t.packageKey !== pkgKey)] : inPkg;
     return ranked.slice(0, 10);
   }, [programme.data, q, pkgKey]);
+
+  const showProgrammeHint =
+    !!onProgrammeTaskRefChange && !pkgKey && !q && (programme.data?.tasks?.length ?? 0) > 0;
+
 
   const projectOpts = useMemo(
     () => (opts.data?.project ?? []).filter((o) => o.label.toLowerCase().includes(q)).slice(0, 8),
@@ -112,6 +115,21 @@ export function ActivityPicker({
   useEffect(() => {
     if (single && selected.length === 0 && programmeTaskRef) onProgrammeTaskRefChange?.(null);
   }, [single, selected.length, programmeTaskRef, onProgrammeTaskRefChange]);
+
+  // The panel now opens on focus, so it must also get out of the way on its own.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+    };
+  }, [open]);
+
 
   const add = (labelText: string, taskRef: string | null = null) => {
     if (single) {
@@ -155,10 +173,12 @@ export function ActivityPicker({
     }
   };
 
-  const showPanel = q.length > 0 || (open && programmeOpts.length > 0);
+  const hasRows = programmeOpts.length > 0 || projectOpts.length > 0 || sharedOpts.length > 0;
+  const showPanel = open && (hasRows || showProgrammeHint || q.length > 0);
 
   return (
-    <div>
+    <div ref={rootRef}>
+
       <span className="mb-1 block text-[0.6rem] font-bold uppercase tracking-[0.28em] text-foreground/60">
         {label}
       </span>
@@ -199,22 +219,35 @@ export function ActivityPicker({
         />
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
           onFocus={() => setOpen(true)}
           onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setOpen(false);
+              return;
+            }
             if (e.key === "Enter") {
               e.preventDefault();
               void addCustom();
             }
           }}
           placeholder={placeholder}
-          className="w-full rounded-md border border-white/15 bg-black/40 py-2.5 pl-9 pr-3 font-mono text-sm text-foreground outline-none focus:border-alert"
+          className="w-full min-w-0 truncate rounded-md border border-white/15 bg-black/40 py-2.5 pl-9 pr-3 font-mono text-[0.78rem] text-foreground outline-none placeholder:text-foreground/40 focus:border-alert"
         />
       </div>
 
       {showPanel && (
-        <div className="mt-1.5 overflow-hidden rounded-md border border-white/15 bg-black/70">
+        <div className="mt-1.5 max-h-72 overflow-y-auto rounded-md border border-white/15 bg-black/85">
+          {showProgrammeHint && (
+            <p className="border-b border-white/10 bg-white/5 px-3 py-2 text-[0.65rem] text-foreground/60">
+              Select a trade package to see programme tasks.
+            </p>
+          )}
           {programmeOpts.length > 0 && (
+
             <>
               <p className="border-b border-white/10 bg-alert/10 px-3 py-1 font-mono text-[0.55rem] uppercase tracking-widest text-alert">
                 From the master programme
